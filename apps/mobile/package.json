@@ -1,0 +1,26 @@
+{
+  "name": "@paldora/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "expo start",
+    "lint": "eslint . --max-warnings=0",
+    "start": "expo start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run App.tsx --passWithNoTests"
+  },
+  "dependencies": {
+    "@paldora/api-client": "workspace:*",
+    "@paldora/ui": "workspace:*",
+    "expo": "57.0.14",
+    "expo-status-bar": "57.0.1",
+    "react": "19.2.8",
+    "react-native": "0.87.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "vitest": "4.1.11"
+  }
+}
