@@ -45,37 +45,37 @@ This is the source of truth for Paldora design generation. Each asset is generat
 
 ## Landing, authentication, and onboarding
 
-| ID      | Screen                  | Platform          | Appearance | Dimensions | Filename                                       | Status | Dependencies       |
-| ------- | ----------------------- | ----------------- | ---------- | ---------- | ---------------------------------------------- | ------ | ------------------ |
-| PAL-023 | Landing page            | Desktop           | Dark       | 1440×6000  | `02-landing/landing-desktop-dark.png`          | TODO   | PAL-001–003        |
-| PAL-024 | Landing page            | Desktop           | Light      | 1440×6000  | `02-landing/landing-desktop-light.png`         | TODO   | PAL-023            |
-| PAL-025 | Landing page            | Mobile            | Dark       | 390×4200   | `02-landing/landing-mobile-dark.png`           | TODO   | PAL-023            |
-| PAL-026 | Landing page            | Mobile            | Light      | 390×4200   | `02-landing/landing-mobile-light.png`          | TODO   | PAL-024, PAL-025   |
-| PAL-027 | Sign in                 | Desktop           | Light      | 1440×1024  | `03-auth/sign-in-desktop-light.png`            | TODO   | PAL-003            |
-| PAL-028 | Create account          | Desktop           | Light      | 1440×1024  | `03-auth/create-account-desktop-light.png`     | TODO   | PAL-027            |
-| PAL-029 | Verify email            | Desktop           | Light      | 1440×1024  | `03-auth/verify-email-desktop-light.png`       | TODO   | PAL-027            |
-| PAL-030 | Forgot password         | Desktop           | Light      | 1440×1024  | `03-auth/forgot-password-desktop-light.png`    | TODO   | PAL-027            |
-| PAL-031 | Reset password          | Desktop           | Light      | 1440×1024  | `03-auth/reset-password-desktop-light.png`     | TODO   | PAL-030            |
-| PAL-032 | Magic link sent         | Desktop           | Light      | 1440×1024  | `03-auth/magic-link-sent-desktop-light.png`    | TODO   | PAL-027            |
-| PAL-033 | Username selection      | Desktop           | Light      | 1440×1024  | `03-auth/username-selection-desktop-light.png` | TODO   | PAL-028            |
-| PAL-034 | Profile setup           | Desktop           | Light      | 1440×1024  | `03-auth/profile-setup-desktop-light.png`      | TODO   | PAL-033            |
-| PAL-035 | Avatar setup            | Desktop           | Light      | 1440×1024  | `03-auth/avatar-setup-desktop-light.png`       | TODO   | PAL-034            |
-| PAL-036 | Auth error states       | Design board      | Mixed      | 2048×1536  | `03-auth/auth-error-states.png`                | TODO   | PAL-027–035        |
-| PAL-037 | Sign in                 | Mobile            | Dark       | 390×844    | `03-auth/sign-in-mobile-dark.png`              | TODO   | PAL-027            |
-| PAL-038 | Create account          | Mobile            | Light      | 390×844    | `03-auth/create-account-mobile-light.png`      | TODO   | PAL-028            |
-| PAL-039 | Username unavailable    | Mobile            | Light      | 390×844    | `03-auth/username-unavailable-mobile.png`      | TODO   | PAL-033            |
-| PAL-040 | Welcome to Paldora      | Mobile onboarding | Light      | 390×844    | `04-onboarding/welcome.png`                    | TODO   | PAL-038            |
-| PAL-041 | Choose username         | Mobile onboarding | Light      | 390×844    | `04-onboarding/choose-username.png`            | TODO   | PAL-040            |
-| PAL-042 | Upload profile photo    | Mobile onboarding | Light      | 390×844    | `04-onboarding/upload-photo.png`               | TODO   | PAL-041            |
-| PAL-043 | About yourself          | Mobile onboarding | Light      | 390×844    | `04-onboarding/about-yourself.png`             | TODO   | PAL-042            |
-| PAL-044 | Choose interests        | Mobile onboarding | Light      | 390×844    | `04-onboarding/interests.png`                  | TODO   | PAL-043            |
-| PAL-045 | Find friends            | Mobile onboarding | Light      | 390×844    | `04-onboarding/find-friends.png`               | TODO   | PAL-044            |
-| PAL-046 | Create first Box        | Mobile onboarding | Light      | 390×844    | `04-onboarding/create-first-box.png`           | TODO   | PAL-045            |
-| PAL-047 | Join existing Box       | Mobile onboarding | Light      | 390×844    | `04-onboarding/join-box.png`                   | TODO   | PAL-045            |
-| PAL-048 | Choose first theme      | Mobile onboarding | Light      | 390×844    | `04-onboarding/choose-theme.png`               | TODO   | PAL-046 or PAL-047 |
-| PAL-049 | Customize Room          | Mobile onboarding | Light      | 390×844    | `04-onboarding/customize-room.png`             | TODO   | PAL-048            |
-| PAL-050 | Notification permission | Mobile onboarding | Light      | 390×844    | `04-onboarding/notifications.png`              | TODO   | PAL-049            |
-| PAL-051 | You're ready            | Mobile onboarding | Light      | 390×844    | `04-onboarding/complete.png`                   | TODO   | PAL-050            |
+| ID      | Screen                  | Platform          | Appearance | Dimensions | Filename                                       | Status   | Dependencies       |
+| ------- | ----------------------- | ----------------- | ---------- | ---------- | ---------------------------------------------- | -------- | ------------------ |
+| PAL-023 | Landing page            | Desktop           | Dark       | 1440×6000  | `02-landing/landing-desktop-dark.png`          | TODO     | PAL-001–003        |
+| PAL-024 | Landing page            | Desktop           | Light      | 1440×6000  | `02-landing/landing-desktop-light.png`         | TODO     | PAL-023            |
+| PAL-025 | Landing page            | Mobile            | Dark       | 390×4200   | `02-landing/landing-mobile-dark.png`           | TODO     | PAL-023            |
+| PAL-026 | Landing page            | Mobile            | Light      | 390×4200   | `02-landing/landing-mobile-light.png`          | TODO     | PAL-024, PAL-025   |
+| PAL-027 | Sign in                 | Desktop           | Light      | 1440×1024  | `03-auth/sign-in-desktop-light.png`            | COMPLETE | PAL-003            |
+| PAL-028 | Create account          | Desktop           | Light      | 1440×1024  | `03-auth/create-account-desktop-light.png`     | TODO     | PAL-027            |
+| PAL-029 | Verify email            | Desktop           | Light      | 1440×1024  | `03-auth/verify-email-desktop-light.png`       | TODO     | PAL-027            |
+| PAL-030 | Forgot password         | Desktop           | Light      | 1440×1024  | `03-auth/forgot-password-desktop-light.png`    | COMPLETE | PAL-027            |
+| PAL-031 | Reset password          | Desktop           | Light      | 1440×1024  | `03-auth/reset-password-desktop-light.png`     | COMPLETE | PAL-030            |
+| PAL-032 | Magic link sent         | Desktop           | Light      | 1440×1024  | `03-auth/magic-link-sent-desktop-light.png`    | TODO     | PAL-027            |
+| PAL-033 | Username selection      | Desktop           | Light      | 1440×1024  | `03-auth/username-selection-desktop-light.png` | COMPLETE | PAL-027            |
+| PAL-034 | Profile setup           | Desktop           | Light      | 1440×1024  | `03-auth/profile-setup-desktop-light.png`      | COMPLETE | PAL-033            |
+| PAL-035 | Avatar setup            | Desktop           | Light      | 1440×1024  | `03-auth/avatar-setup-desktop-light.png`       | COMPLETE | PAL-034            |
+| PAL-036 | Auth error states       | Design board      | Mixed      | 2048×1536  | `03-auth/auth-error-states.png`                | COMPLETE | PAL-027–035        |
+| PAL-037 | Sign in                 | Mobile            | Light      | 390×844    | `03-auth/sign-in-mobile-light.png`             | COMPLETE | PAL-027            |
+| PAL-038 | Create account          | Mobile            | Light      | 390×844    | `03-auth/create-account-mobile-light.png`      | TODO     | PAL-028            |
+| PAL-039 | Username unavailable    | Mobile            | Light      | 390×844    | `03-auth/username-unavailable-mobile.png`      | COMPLETE | PAL-033            |
+| PAL-040 | Welcome to Paldora      | Mobile onboarding | Light      | 390×844    | `04-onboarding/welcome.png`                    | TODO     | PAL-038            |
+| PAL-041 | Choose username         | Mobile onboarding | Light      | 390×844    | `04-onboarding/choose-username.png`            | TODO     | PAL-040            |
+| PAL-042 | Upload profile photo    | Mobile onboarding | Light      | 390×844    | `04-onboarding/upload-photo.png`               | TODO     | PAL-041            |
+| PAL-043 | About yourself          | Mobile onboarding | Light      | 390×844    | `04-onboarding/about-yourself.png`             | TODO     | PAL-042            |
+| PAL-044 | Choose interests        | Mobile onboarding | Light      | 390×844    | `04-onboarding/interests.png`                  | TODO     | PAL-043            |
+| PAL-045 | Find friends            | Mobile onboarding | Light      | 390×844    | `04-onboarding/find-friends.png`               | TODO     | PAL-044            |
+| PAL-046 | Create first Box        | Mobile onboarding | Light      | 390×844    | `04-onboarding/create-first-box.png`           | TODO     | PAL-045            |
+| PAL-047 | Join existing Box       | Mobile onboarding | Light      | 390×844    | `04-onboarding/join-box.png`                   | TODO     | PAL-045            |
+| PAL-048 | Choose first theme      | Mobile onboarding | Light      | 390×844    | `04-onboarding/choose-theme.png`               | TODO     | PAL-046 or PAL-047 |
+| PAL-049 | Customize Room          | Mobile onboarding | Light      | 390×844    | `04-onboarding/customize-room.png`             | TODO     | PAL-048            |
+| PAL-050 | Notification permission | Mobile onboarding | Light      | 390×844    | `04-onboarding/notifications.png`              | TODO     | PAL-049            |
+| PAL-051 | You're ready            | Mobile onboarding | Light      | 390×844    | `04-onboarding/complete.png`                   | TODO     | PAL-050            |
 
 ## Posts and Life Updates
 
@@ -175,41 +175,41 @@ This is the source of truth for Paldora design generation. Each asset is generat
 
 ## Settings, security, premium, and trust
 
-| ID      | Screen                           | Platform         | Appearance | Dimensions | Filename                                      | Status | Dependencies |
-| ------- | -------------------------------- | ---------------- | ---------- | ---------- | --------------------------------------------- | ------ | ------------ |
-| PAL-128 | Account settings                 | Desktop          | Light      | 1440×1024  | `18-settings/account.png`                     | TODO   | PAL-004      |
-| PAL-129 | Profile settings                 | Desktop          | Light      | 1440×1024  | `18-settings/profile.png`                     | TODO   | PAL-128      |
-| PAL-130 | Appearance settings              | Desktop          | Dark       | 1440×1024  | `18-settings/appearance.png`                  | TODO   | PAL-128      |
-| PAL-131 | Privacy settings                 | Desktop          | Light      | 1440×1024  | `18-settings/privacy.png`                     | TODO   | PAL-128      |
-| PAL-132 | Notification settings            | Desktop          | Light      | 1440×1024  | `18-settings/notifications.png`               | TODO   | PAL-128      |
-| PAL-133 | Blocked users settings           | Desktop          | Light      | 1440×1024  | `18-settings/blocked-users.png`               | TODO   | PAL-128      |
-| PAL-134 | Connected services               | Desktop          | Light      | 1440×1024  | `18-settings/connected-services.png`          | TODO   | PAL-128      |
-| PAL-135 | Data and storage                 | Desktop          | Light      | 1440×1024  | `18-settings/data-storage.png`                | TODO   | PAL-128      |
-| PAL-136 | Export data                      | Desktop          | Light      | 1440×1024  | `18-settings/export-data.png`                 | TODO   | PAL-135      |
-| PAL-137 | Delete account                   | Desktop          | Light      | 1440×1024  | `18-settings/delete-account.png`              | TODO   | PAL-128      |
-| PAL-138 | Privacy controls library         | Design board     | Mixed      | 2048×1800  | `18-settings/privacy-controls.png`            | TODO   | PAL-131      |
-| PAL-139 | Security center                  | Desktop          | Dark       | 1440×1024  | `19-security/security-center.png`             | TODO   | PAL-128      |
-| PAL-140 | Password and recovery            | Desktop          | Light      | 1440×1024  | `19-security/password-recovery.png`           | TODO   | PAL-139      |
-| PAL-141 | Passkeys and MFA                 | Desktop          | Light      | 1440×1024  | `19-security/passkeys-mfa.png`                | TODO   | PAL-139      |
-| PAL-142 | Active sessions and devices      | Desktop          | Light      | 1440×1024  | `19-security/sessions-devices.png`            | TODO   | PAL-139      |
-| PAL-143 | Login history                    | Desktop          | Light      | 1440×1024  | `19-security/login-history.png`               | TODO   | PAL-139      |
-| PAL-144 | Future encrypted Boxes explainer | Desktop          | Dark       | 1440×1024  | `19-security/encrypted-boxes-future.png`      | TODO   | PAL-139      |
-| PAL-145 | Storage dashboard                | Desktop          | Light      | 1440×1024  | `20-premium/storage-dashboard.png`            | TODO   | PAL-135      |
-| PAL-146 | Paldora+ overview                | Desktop          | Dark       | 1440×1024  | `20-premium/paldora-plus.png`                 | TODO   | PAL-003      |
-| PAL-147 | Subscription plans               | Desktop          | Light      | 1440×1024  | `20-premium/subscription-desktop.png`         | TODO   | PAL-146      |
-| PAL-148 | Subscription plans               | Mobile           | Dark       | 390×844    | `20-premium/subscription-mobile.png`          | TODO   | PAL-146      |
-| PAL-149 | Over-quota reassurance           | Desktop          | Light      | 1440×1024  | `20-premium/over-quota.png`                   | TODO   | PAL-145      |
-| PAL-150 | Report post                      | Desktop modal    | Light      | 1440×1024  | `21-moderation/report-post.png`               | TODO   | PAL-003      |
-| PAL-151 | Report comment                   | Desktop modal    | Light      | 1440×1024  | `21-moderation/report-comment.png`            | TODO   | PAL-150      |
-| PAL-152 | Report user                      | Mobile sheet     | Light      | 390×844    | `21-moderation/report-user-mobile.png`        | TODO   | PAL-150      |
-| PAL-153 | Report Box                       | Desktop modal    | Light      | 1440×1024  | `21-moderation/report-box.png`                | TODO   | PAL-150      |
-| PAL-154 | Block user and confirmation      | Mobile sheet     | Light      | 390×844    | `21-moderation/block-confirmation-mobile.png` | TODO   | PAL-150      |
-| PAL-155 | Admin overview                   | Desktop internal | Light      | 1440×1024  | `22-admin/admin-overview.png`                 | TODO   | PAL-003      |
-| PAL-156 | Report queue                     | Desktop internal | Light      | 1440×1024  | `22-admin/report-queue.png`                   | TODO   | PAL-155      |
-| PAL-157 | Report detail and content review | Desktop internal | Light      | 1440×1024  | `22-admin/report-detail.png`                  | TODO   | PAL-156      |
-| PAL-158 | User lookup and detail           | Desktop internal | Light      | 1440×1024  | `22-admin/user-detail.png`                    | TODO   | PAL-155      |
-| PAL-159 | Suspension modal                 | Desktop internal | Light      | 1440×1024  | `22-admin/suspension-modal.png`               | TODO   | PAL-158      |
-| PAL-160 | Audit history                    | Desktop internal | Light      | 1440×1024  | `22-admin/audit-history.png`                  | TODO   | PAL-155      |
+| ID      | Screen                           | Platform         | Appearance | Dimensions | Filename                                      | Status   | Dependencies |
+| ------- | -------------------------------- | ---------------- | ---------- | ---------- | --------------------------------------------- | -------- | ------------ |
+| PAL-128 | Account settings                 | Desktop          | Dark shell | 1440×1024  | `18-settings/account.png`                     | COMPLETE | PAL-004      |
+| PAL-129 | Profile settings                 | Desktop          | Light      | 1440×1024  | `18-settings/profile.png`                     | TODO     | PAL-128      |
+| PAL-130 | Appearance settings              | Desktop          | Dark       | 1440×1024  | `18-settings/appearance.png`                  | TODO     | PAL-128      |
+| PAL-131 | Privacy settings                 | Desktop          | Light      | 1440×1024  | `18-settings/privacy.png`                     | TODO     | PAL-128      |
+| PAL-132 | Notification settings            | Desktop          | Light      | 1440×1024  | `18-settings/notifications.png`               | TODO     | PAL-128      |
+| PAL-133 | Blocked users settings           | Desktop          | Light      | 1440×1024  | `18-settings/blocked-users.png`               | TODO     | PAL-128      |
+| PAL-134 | Connected services               | Desktop          | Light      | 1440×1024  | `18-settings/connected-services.png`          | TODO     | PAL-128      |
+| PAL-135 | Data and storage                 | Desktop          | Light      | 1440×1024  | `18-settings/data-storage.png`                | TODO     | PAL-128      |
+| PAL-136 | Export data                      | Desktop          | Light      | 1440×1024  | `18-settings/export-data.png`                 | TODO     | PAL-135      |
+| PAL-137 | Delete account                   | Desktop          | Light      | 1440×1024  | `18-settings/delete-account.png`              | TODO     | PAL-128      |
+| PAL-138 | Privacy controls library         | Design board     | Mixed      | 2048×1800  | `18-settings/privacy-controls.png`            | TODO     | PAL-131      |
+| PAL-139 | Security center                  | Desktop          | Dark       | 1440×1024  | `19-security/security-center.png`             | TODO     | PAL-128      |
+| PAL-140 | Password and recovery            | Desktop          | Light      | 1440×1024  | `19-security/password-recovery.png`           | TODO     | PAL-139      |
+| PAL-141 | Passkeys and MFA                 | Desktop          | Light      | 1440×1024  | `19-security/passkeys-mfa.png`                | TODO     | PAL-139      |
+| PAL-142 | Active sessions and devices      | Desktop          | Light      | 1440×1024  | `19-security/sessions-devices.png`            | TODO     | PAL-139      |
+| PAL-143 | Login history                    | Desktop          | Light      | 1440×1024  | `19-security/login-history.png`               | TODO     | PAL-139      |
+| PAL-144 | Future encrypted Boxes explainer | Desktop          | Dark       | 1440×1024  | `19-security/encrypted-boxes-future.png`      | TODO     | PAL-139      |
+| PAL-145 | Storage dashboard                | Desktop          | Light      | 1440×1024  | `20-premium/storage-dashboard.png`            | TODO     | PAL-135      |
+| PAL-146 | Paldora+ overview                | Desktop          | Dark       | 1440×1024  | `20-premium/paldora-plus.png`                 | TODO     | PAL-003      |
+| PAL-147 | Subscription plans               | Desktop          | Light      | 1440×1024  | `20-premium/subscription-desktop.png`         | TODO     | PAL-146      |
+| PAL-148 | Subscription plans               | Mobile           | Dark       | 390×844    | `20-premium/subscription-mobile.png`          | TODO     | PAL-146      |
+| PAL-149 | Over-quota reassurance           | Desktop          | Light      | 1440×1024  | `20-premium/over-quota.png`                   | TODO     | PAL-145      |
+| PAL-150 | Report post                      | Desktop modal    | Light      | 1440×1024  | `21-moderation/report-post.png`               | TODO     | PAL-003      |
+| PAL-151 | Report comment                   | Desktop modal    | Light      | 1440×1024  | `21-moderation/report-comment.png`            | TODO     | PAL-150      |
+| PAL-152 | Report user                      | Mobile sheet     | Light      | 390×844    | `21-moderation/report-user-mobile.png`        | TODO     | PAL-150      |
+| PAL-153 | Report Box                       | Desktop modal    | Light      | 1440×1024  | `21-moderation/report-box.png`                | TODO     | PAL-150      |
+| PAL-154 | Block user and confirmation      | Mobile sheet     | Light      | 390×844    | `21-moderation/block-confirmation-mobile.png` | TODO     | PAL-150      |
+| PAL-155 | Admin overview                   | Desktop internal | Light      | 1440×1024  | `22-admin/admin-overview.png`                 | TODO     | PAL-003      |
+| PAL-156 | Report queue                     | Desktop internal | Light      | 1440×1024  | `22-admin/report-queue.png`                   | TODO     | PAL-155      |
+| PAL-157 | Report detail and content review | Desktop internal | Light      | 1440×1024  | `22-admin/report-detail.png`                  | TODO     | PAL-156      |
+| PAL-158 | User lookup and detail           | Desktop internal | Light      | 1440×1024  | `22-admin/user-detail.png`                    | TODO     | PAL-155      |
+| PAL-159 | Suspension modal                 | Desktop internal | Light      | 1440×1024  | `22-admin/suspension-modal.png`               | TODO     | PAL-158      |
+| PAL-160 | Audit history                    | Desktop internal | Light      | 1440×1024  | `22-admin/audit-history.png`                  | TODO     | PAL-155      |
 
 ## Mobile product and system states
 

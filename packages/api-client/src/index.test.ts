@@ -23,4 +23,31 @@ describe('PaldoraApiClient', () => {
       expect.any(Object),
     );
   });
+
+  it('attaches a fresh bearer token to authenticated requests', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          user: { id: 'user' },
+          profile: { userId: 'user' },
+        }),
+      ),
+    );
+    const getAccessToken = vi.fn().mockResolvedValue('fresh-token');
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.example/api/v1',
+      fetchImplementation: request,
+      getAccessToken,
+    });
+    await client.currentUser();
+    expect(getAccessToken).toHaveBeenCalledOnce();
+    expect(request).toHaveBeenCalledWith(
+      'https://api.example/api/v1/me',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: 'Bearer fresh-token',
+        }),
+      }),
+    );
+  });
 });

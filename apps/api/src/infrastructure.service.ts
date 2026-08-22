@@ -4,6 +4,7 @@ import { parseServiceEnvironment } from '@paldora/config';
 import {
   createDatabaseConnection,
   type DatabaseConnection,
+  type PaldoraDatabase,
 } from '@paldora/database';
 import { Redis } from 'ioredis';
 
@@ -29,6 +30,10 @@ export class InfrastructureService implements OnApplicationShutdown {
     } catch {
       return false;
     }
+  }
+
+  public get databaseClient(): PaldoraDatabase {
+    return this.database.database;
   }
 
   public async onApplicationShutdown(): Promise<void> {

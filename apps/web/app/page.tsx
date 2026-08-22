@@ -11,9 +11,9 @@ export default function HomePage() {
         <a className="wordmark" href="#top" aria-label="Paldora home">
           <span aria-hidden="true">✦</span> Paldora
         </a>
-        <div className="status-pill">
-          <span /> Foundation online
-        </div>
+        <a className="landing-signin" href="/sign-in">
+          Sign in
+        </a>
       </header>
 
       <section className="hero" id="top">
@@ -36,24 +36,24 @@ export default function HomePage() {
 
       <section className="postcard" aria-label="Product foundation status">
         <div className="tape" />
-        <p className="postcard-kicker">August 2026 · Foundation</p>
+        <p className="postcard-kicker">Private spaces · Real friendships</p>
         <h2>
-          Expression on the surface.
+          Your people, in one place.
           <br />
-          Discipline underneath.
+          Your memories, kept close.
         </h2>
         <p>
-          The web, API, worker, and mobile foundations now share strict
-          contracts without sharing responsibilities.
+          Paldora is a private living scrapbook built for the friends who are
+          actually part of your life.
         </p>
         <div className="architecture">
-          <span>Next.js</span>
+          <span>Private by default</span>
           <b>→</b>
-          <span>Typed API</span>
+          <span>Chronological</span>
           <b>→</b>
-          <span>NestJS</span>
+          <span>No targeted ads</span>
           <b>→</b>
-          <span>PostgreSQL</span>
+          <span>Made to last</span>
         </div>
       </section>
 

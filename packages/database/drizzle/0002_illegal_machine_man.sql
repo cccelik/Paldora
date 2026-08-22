@@ -1,0 +1,7 @@
+ALTER TABLE "paldora"."media_assets" ADD CONSTRAINT "media_assets_avatar_purpose_check" CHECK ("paldora"."media_assets"."purpose" = 'avatar');--> statement-breakpoint
+ALTER TABLE "paldora"."media_assets" ADD CONSTRAINT "media_assets_content_type_check" CHECK ("paldora"."media_assets"."content_type" in ('image/jpeg', 'image/png', 'image/webp'));--> statement-breakpoint
+ALTER TABLE "paldora"."media_assets" ADD CONSTRAINT "media_assets_content_length_check" CHECK ("paldora"."media_assets"."content_length" between 1 and 10485760);--> statement-breakpoint
+ALTER TABLE "paldora"."profiles" ADD CONSTRAINT "profiles_username_pair_check" CHECK (("paldora"."profiles"."username" is null) = ("paldora"."profiles"."username_normalized" is null));--> statement-breakpoint
+ALTER TABLE "paldora"."profiles" ADD CONSTRAINT "profiles_username_length_check" CHECK ("paldora"."profiles"."username" is null or char_length("paldora"."profiles"."username") between 3 and 30);--> statement-breakpoint
+ALTER TABLE "paldora"."profiles" ADD CONSTRAINT "profiles_display_name_length_check" CHECK ("paldora"."profiles"."display_name" is null or char_length("paldora"."profiles"."display_name") between 1 and 80);--> statement-breakpoint
+ALTER TABLE "paldora"."profiles" ADD CONSTRAINT "profiles_bio_length_check" CHECK ("paldora"."profiles"."bio" is null or char_length("paldora"."profiles"."bio") <= 500);

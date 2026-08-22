@@ -13,8 +13,11 @@
   },
   "dependencies": {
     "@paldora/config": "workspace:*",
+    "@paldora/database": "workspace:*",
     "@paldora/observability": "workspace:*",
+    "@paldora/storage": "workspace:*",
     "bullmq": "6.2.0",
+    "drizzle-orm": "0.45.2",
     "ioredis": "6.0.0"
   },
   "devDependencies": {

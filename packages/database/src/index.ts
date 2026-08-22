@@ -1,8 +1,11 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool, type PoolConfig } from 'pg';
+import * as schema from './schema.js';
+
+export type PaldoraDatabase = NodePgDatabase<typeof schema>;
 
 export interface DatabaseConnection {
-  database: NodePgDatabase;
+  database: PaldoraDatabase;
   pool: Pool;
   close: () => Promise<void>;
   check: () => Promise<void>;
@@ -19,7 +22,7 @@ export function createDatabaseConnection(
   };
   const pool = new Pool(poolConfig);
   return {
-    database: drizzle(pool),
+    database: drizzle(pool, { schema }),
     pool,
     close: async () => pool.end(),
     check: async () => {
@@ -28,4 +31,4 @@ export function createDatabaseConnection(
   };
 }
 
-export { applicationSchemaName } from './schema.js';
+export * from './schema.js';

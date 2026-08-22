@@ -7,3 +7,7 @@ Release order is: back up/verify database, apply backward-compatible migrations,
 The platform must terminate TLS, enforce HTTPS, inject secrets, restrict infrastructure networking, aggregate structured logs, collect error/latency/job metrics, and alert on readiness failures. API replicas require a connection-pool budget. Worker concurrency must be tuned per job class.
 
 Required external credentials once deployed are PostgreSQL and Redis URLs, S3-compatible private-storage credentials, and later provider credentials for authentication, error tracking, email, push, and billing. None are required to build or run unit tests.
+
+Phase 1 also requires a dedicated Supabase project, a private S3-compatible bucket, bucket CORS for the deployed web origin, and `NEXT_PUBLIC_MEDIA_ORIGIN` for CSP. Apply database migrations before starting the new API. Provision demo accounts only from a trusted administration environment; `SUPABASE_SERVICE_ROLE_KEY` must never be present in the web deployment.
+
+Rotate Supabase service-role and object-storage credentials through the deployment secret manager. Re-run the idempotent demo seed after rotation only when account details need reconciliation.

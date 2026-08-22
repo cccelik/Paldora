@@ -54,3 +54,5 @@ pnpm test:e2e
 ```
 
 See [development instructions](docs/development.md), [architecture](docs/architecture.md), and [security assumptions](docs/security.md) before contributing.
+
+Phase 1 adds hosted Supabase email/password authentication, provisioned demo users, profile onboarding/settings, normalized usernames, and private S3-compatible avatar uploads. Configure `.env`, migrate, and run `pnpm seed:demo` before exercising the signed-in flow.

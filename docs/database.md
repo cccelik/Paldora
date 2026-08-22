@@ -7,3 +7,5 @@ Migrations in `packages/database/drizzle` are immutable after deployment. Genera
 The foundation migration creates a dedicated `paldora` schema. Product tables and indexes will be introduced with the feature that owns their invariants. IDs will use UUIDs, visibility queries will use keyset indexes, and relational constraints will enforce uniqueness and lifecycle rules.
 
 Connection pools are bounded per API instance. Pool size must be tuned against the database connection budget before scaling replica counts.
+
+Phase 1 owns `paldora.users`, `paldora.profiles`, and `paldora.media_assets`. Authentication subjects remain separate from internal user IDs. Username comparison uses the unique `username_normalized` column, while database checks preserve username/profile bounds and avatar MIME/size invariants. Image bytes never enter PostgreSQL.

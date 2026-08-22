@@ -23,14 +23,41 @@ const serviceEnvironmentSchema = baseEnvironmentSchema.extend({
     ),
 });
 
+const objectStorageEnvironmentShape = {
+  S3_ENDPOINT: z.url().optional(),
+  S3_REGION: z.string().min(1).default('auto'),
+  S3_BUCKET: z.string().min(1),
+  S3_ACCESS_KEY_ID: z.string().min(1),
+  S3_SECRET_ACCESS_KEY: z.string().min(1),
+  S3_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
+};
+
 const apiEnvironmentSchema = serviceEnvironmentSchema.extend({
   API_HOST: z.string().min(1).default('0.0.0.0'),
   API_PORT: z.coerce.number().int().positive().max(65_535).default(4000),
   WEB_ORIGIN: z.url(),
+  SUPABASE_URL: z.url(),
+  SUPABASE_JWT_AUDIENCE: z.string().min(1).default('authenticated'),
+  ...objectStorageEnvironmentShape,
+});
+
+const workerEnvironmentSchema = serviceEnvironmentSchema.extend({
+  ...objectStorageEnvironmentShape,
+});
+
+const demoSeedEnvironmentSchema = serviceEnvironmentSchema.extend({
+  SUPABASE_URL: z.url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  DEMO_USER_EMAIL: z.email(),
+  DEMO_USER_PASSWORD: z.string().min(8),
+  DEMO_USERNAME: z.string().min(3).max(30),
+  DEMO_DISPLAY_NAME: z.string().min(1).max(80),
 });
 
 export type ApiEnvironment = z.infer<typeof apiEnvironmentSchema>;
 export type ServiceEnvironment = z.infer<typeof serviceEnvironmentSchema>;
+export type DemoSeedEnvironment = z.infer<typeof demoSeedEnvironmentSchema>;
+export type WorkerEnvironment = z.infer<typeof workerEnvironmentSchema>;
 export type EnvironmentInput = Readonly<Record<string, string | undefined>>;
 
 function formatEnvironmentError(error: z.ZodError): Error {
@@ -50,6 +77,22 @@ export function parseServiceEnvironment(
   input: EnvironmentInput,
 ): ServiceEnvironment {
   const result = serviceEnvironmentSchema.safeParse(input);
+  if (!result.success) throw formatEnvironmentError(result.error);
+  return result.data;
+}
+
+export function parseDemoSeedEnvironment(
+  input: EnvironmentInput,
+): DemoSeedEnvironment {
+  const result = demoSeedEnvironmentSchema.safeParse(input);
+  if (!result.success) throw formatEnvironmentError(result.error);
+  return result.data;
+}
+
+export function parseWorkerEnvironment(
+  input: EnvironmentInput,
+): WorkerEnvironment {
+  const result = workerEnvironmentSchema.safeParse(input);
   if (!result.success) throw formatEnvironmentError(result.error);
   return result.data;
 }

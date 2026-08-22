@@ -18,7 +18,9 @@
     "test:e2e": "playwright test",
     "db:generate": "pnpm --filter @paldora/database db:generate",
     "db:migrate": "pnpm --filter @paldora/database db:migrate",
-    "db:studio": "pnpm --filter @paldora/database db:studio"
+    "db:studio": "pnpm --filter @paldora/database db:studio",
+    "seed:demo": "pnpm --filter @paldora/api seed:demo",
+    "design:capture:phase1": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase1-designs.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

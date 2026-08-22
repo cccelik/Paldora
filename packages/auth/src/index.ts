@@ -2,7 +2,14 @@ import type { UserId } from '@paldora/domain';
 
 export interface AuthenticatedPrincipal {
   userId: UserId;
+  authSubject: string;
   sessionId: string;
+}
+
+export interface VerifiedIdentity {
+  subject: string;
+  sessionId: string;
+  email: string;
 }
 
 export type AuthorizationDecision =

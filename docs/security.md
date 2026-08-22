@@ -15,3 +15,7 @@ Security assumptions for this foundation:
 - Future encrypted Boxes require established protocols, client key management, external review, and a separate threat model. No encryption claim is made now.
 
 Logs must never include bodies of private posts, credentials, access tokens, cookies, or private media URLs. Error responses will use stable codes and omit stacks in production.
+
+Phase 1 uses Supabase only as the identity provider. Nest validates access tokens and maps `sub` to a separately provisioned internal user; arbitrary valid Supabase users are denied. The browser receives only the Supabase anonymous key. Password recovery does not disclose whether an address exists.
+
+Avatar buckets remain private. Clients upload only through short-lived, size-bound, content-type-bound signed URLs; completion verifies metadata and ownership before attaching an asset. Replaced assets are deleted asynchronously. Production CSP origins and bucket CORS must be explicit rather than wildcarded.

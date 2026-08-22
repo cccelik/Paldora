@@ -8,6 +8,10 @@ describe('parseApiEnvironment', () => {
       REDIS_URL: 'redis://localhost:6379',
       WEB_ORIGIN: 'http://localhost:3000',
       API_PORT: '4100',
+      SUPABASE_URL: 'https://example.supabase.co',
+      S3_BUCKET: 'paldora-private',
+      S3_ACCESS_KEY_ID: 'test',
+      S3_SECRET_ACCESS_KEY: 'test-secret',
     });
     expect(config.API_PORT).toBe(4100);
   });

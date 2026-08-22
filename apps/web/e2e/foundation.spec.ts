@@ -5,6 +5,8 @@ test('renders the Paldora foundation and brand promise', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: /a box for your people/i }),
   ).toBeVisible();
-  await expect(page.getByText('Private by default')).toBeVisible();
+  await expect(
+    page.getByText('Private by default', { exact: true }).first(),
+  ).toBeVisible();
   await expect(page).toHaveTitle(/Paldora/);
 });
