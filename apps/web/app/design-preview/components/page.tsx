@@ -4,12 +4,16 @@ import type {
   BoxMember,
   Friendship,
   FriendshipId,
+  Post,
+  PostId,
   UserId,
 } from '@paldora/domain';
 import { notFound } from 'next/navigation';
 import { BoxInvitePanel } from '../../components/box-invite-panel';
 import { BoxMemberPanel } from '../../components/box-member-panel';
 import { BoxSettingsPanel } from '../../components/box-settings-panel';
+import { PostComposer } from '../../components/post-composer';
+import { PostFeed } from '../../components/post-feed';
 
 const previewOwnerId = '30000000-0000-4000-8000-000000000001' as UserId;
 const previewBoxId = '20000000-0000-4000-8000-000000000001' as BoxId;
@@ -89,10 +93,55 @@ const previewMembers: BoxMember[] = [
   },
 ];
 
+const previewPosts: Post[] = [
+  {
+    id: '40000000-0000-4000-8000-000000000001' as PostId,
+    boxId: previewBoxId,
+    boxName: previewBox.name,
+    author: {
+      userId: previewOwnerId,
+      username: 'alice_moreno',
+      displayName: 'Alice Moreno',
+      avatarUrl: null,
+    },
+    content:
+      'Finished our August pick tonight. The final chapter completely changed how I understood the opening scene.',
+    status: 'active',
+    editedAt: null,
+    createdAt: '2026-08-23T12:00:00.000Z',
+    updatedAt: '2026-08-23T12:00:00.000Z',
+  },
+  {
+    id: '40000000-0000-4000-8000-000000000002' as PostId,
+    boxId: previewBoxId,
+    boxName: previewBox.name,
+    author: {
+      userId: previewFriends[0]!.user.id,
+      username: 'maya_chen',
+      displayName: 'Maya Chen',
+      avatarUrl: null,
+    },
+    content: 'I left three possible books for September in the Box chat.',
+    status: 'active',
+    editedAt: null,
+    createdAt: '2026-08-22T18:30:00.000Z',
+    updatedAt: '2026-08-22T18:30:00.000Z',
+  },
+];
+
 export default function ComponentDesignPreview() {
   if (process.env.NODE_ENV === 'production') notFound();
   return (
     <main className="component-preview-page">
+      <section className="component-preview-posts" aria-label="Post preview">
+        <PostComposer boxId={previewBoxId} />
+        <PostFeed
+          currentUserId={previewOwnerId}
+          nextCursor="preview-cursor"
+          posts={previewPosts}
+          returnPath="/design-preview/components"
+        />
+      </section>
       <BoxInvitePanel
         boxId={previewBoxId}
         friends={previewFriends}

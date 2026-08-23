@@ -170,7 +170,7 @@ export class AvatarService implements OnApplicationShutdown {
     if (oldMediaAssetId && oldMediaAssetId !== asset.id) {
       await this.enqueueMediaDeletion(oldMediaAssetId);
     }
-    return this.users.getCurrentUser(userId, this.storage);
+    return this.users.getCurrentUser(userId);
   }
 
   public async deleteAvatar(
@@ -193,7 +193,7 @@ export class AvatarService implements OnApplicationShutdown {
       },
     );
     if (mediaAssetId) await this.enqueueMediaDeletion(mediaAssetId);
-    return this.users.getCurrentUser(userId, this.storage);
+    return this.users.getCurrentUser(userId);
   }
 
   public async onApplicationShutdown(): Promise<void> {

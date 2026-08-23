@@ -62,6 +62,7 @@ export default async function FriendsPage({
                       'Paldora friend'
                     }
                     username={request.user.username ?? ''}
+                    avatarUrl={request.user.avatarUrl}
                     actions={
                       <>
                         <form
@@ -113,6 +114,7 @@ export default async function FriendsPage({
                       key={friend.id}
                       name={name}
                       username={friend.user.username ?? ''}
+                      avatarUrl={friend.user.avatarUrl}
                       detail="Accepted friend"
                       actions={
                         <form
@@ -150,6 +152,7 @@ export default async function FriendsPage({
                       'Paldora friend'
                     }
                     username={request.user.username ?? ''}
+                    avatarUrl={request.user.avatarUrl}
                     detail="Request pending"
                   />
                 ))}
@@ -162,6 +165,7 @@ export default async function FriendsPage({
                       'Paldora friend'
                     }
                     username={item.user.username ?? ''}
+                    avatarUrl={item.user.avatarUrl}
                     detail="Blocked"
                     actions={
                       <form action={unblockUserAction.bind(null, item.user.id)}>

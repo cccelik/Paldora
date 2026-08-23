@@ -20,6 +20,10 @@ export class RateLimitService {
     return this.assertAllowed('box-invitation', userId, 60, oneHourSeconds);
   }
 
+  public assertPostAllowed(userId: UserId): Promise<void> {
+    return this.assertAllowed('post', userId, 120, oneHourSeconds);
+  }
+
   private async assertAllowed(
     scope: string,
     userId: UserId,

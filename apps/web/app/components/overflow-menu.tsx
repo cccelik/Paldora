@@ -6,9 +6,11 @@ import { useEffect, useRef, useState } from 'react';
 export function OverflowMenu({
   label,
   children,
+  className,
 }: {
   label: string;
   children: ReactNode;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
@@ -34,7 +36,10 @@ export function OverflowMenu({
   }, [open]);
 
   return (
-    <div className="member-actions-menu" ref={container}>
+    <div
+      className={`member-actions-menu${className ? ` ${className}` : ''}`}
+      ref={container}
+    >
       <button
         aria-expanded={open}
         aria-label={label}
@@ -45,7 +50,17 @@ export function OverflowMenu({
       >
         …
       </button>
-      {open && <div className="member-actions-popover">{children}</div>}
+      {open && (
+        <div
+          className="member-actions-popover"
+          onClick={(event) => {
+            const button = (event.target as Element).closest('button');
+            if (button?.type === 'button') setOpen(false);
+          }}
+        >
+          {children}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { BoxId, UserId } from '@paldora/domain';
+import type { BoxId, PostId, UserId } from '@paldora/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { PaldoraApiClient } from './index.js';
 
@@ -169,6 +169,55 @@ describe('PaldoraApiClient', () => {
     expect(request).toHaveBeenNthCalledWith(
       7,
       'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  it('uses text-post and cursor feed contracts', async () => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'post-id' })))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ items: [], nextCursor: null })),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'post-id' })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.example/api/v1',
+      fetchImplementation: request,
+      getAccessToken: () => Promise.resolve('token'),
+    });
+    const boxId = '00000000-0000-4000-8000-000000000001' as BoxId;
+    const postId = '00000000-0000-4000-8000-000000000002' as PostId;
+    await client.createPost(boxId, { content: 'Hello circle' });
+    await client.feed({ cursor: 'next page', limit: 10 });
+    await client.updatePost(postId, { content: 'Edited' });
+    await client.deletePost(postId);
+
+    expect(request).toHaveBeenNthCalledWith(
+      1,
+      `https://api.example/api/v1/boxes/${boxId}/posts`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ content: 'Hello circle' }),
+      }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      2,
+      'https://api.example/api/v1/me/feed?cursor=next+page&limit=10',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      3,
+      `https://api.example/api/v1/posts/${postId}`,
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ content: 'Edited' }),
+      }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      4,
+      `https://api.example/api/v1/posts/${postId}`,
       expect.objectContaining({ method: 'DELETE' }),
     );
   });

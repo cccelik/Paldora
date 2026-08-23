@@ -1,10 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import {
-  mediaAssets,
-  profiles,
-  users,
-  type PaldoraDatabase,
-} from '@paldora/database';
+import { profiles, users, type PaldoraDatabase } from '@paldora/database';
+import type { mediaAssets } from '@paldora/database';
 import type {
   CurrentUser,
   MediaAsset,
@@ -13,7 +9,6 @@ import type {
   UserId,
   UsernameAvailability,
 } from '@paldora/domain';
-import type { ObjectStorage } from '@paldora/storage';
 import {
   isReservedUsername,
   normalizeUsername,
@@ -23,6 +18,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { ApiError } from './api-error.js';
 import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
+import { ProfileAvatarService } from './profile-avatar.service.js';
 
 @Injectable()
 export class UserService {
@@ -30,19 +26,17 @@ export class UserService {
 
   public constructor(
     @Inject(InfrastructureService) infrastructure: InfrastructureService,
+    @Inject(ProfileAvatarService)
+    private readonly avatars: ProfileAvatarService,
   ) {
     this.database = infrastructure.databaseClient;
   }
 
-  public async getCurrentUser(
-    userId: UserId,
-    storage?: ObjectStorage,
-  ): Promise<CurrentUser> {
+  public async getCurrentUser(userId: UserId): Promise<CurrentUser> {
     const [row] = await this.database
-      .select({ user: users, profile: profiles, avatar: mediaAssets })
+      .select({ user: users, profile: profiles })
       .from(users)
       .innerJoin(profiles, eq(profiles.userId, users.id))
-      .leftJoin(mediaAssets, eq(profiles.avatarMediaId, mediaAssets.id))
       .where(eq(users.id, userId))
       .limit(1);
     if (!row) {
@@ -52,10 +46,7 @@ export class UserService {
         'User not found.',
       );
     }
-    const avatarUrl =
-      storage && row.avatar?.status === 'ready'
-        ? await storage.createSignedDownload(row.avatar.objectKey, 900)
-        : null;
+    const avatarUrl = await this.avatars.forUser(userId);
     return {
       user: {
         id: row.user.id as UserId,
@@ -108,7 +99,6 @@ export class UserService {
   public async updateProfile(
     userId: UserId,
     input: UpdateProfileInput,
-    storage?: ObjectStorage,
   ): Promise<CurrentUser> {
     const [existing] = await this.database
       .select({
@@ -194,7 +184,7 @@ export class UserService {
       }
       throw error;
     }
-    return this.getCurrentUser(userId, storage);
+    return this.getCurrentUser(userId);
   }
 
   public mapMediaAsset(row: typeof mediaAssets.$inferSelect): MediaAsset {

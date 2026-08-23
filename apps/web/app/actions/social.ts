@@ -1,6 +1,5 @@
 'use server';
 
-import { ApiClientError } from '@paldora/api-client';
 import type {
   BoxId,
   BoxInvitationId,
@@ -11,49 +10,11 @@ import type { Route } from 'next';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { authenticatedApiClient } from '../lib/api';
-
-function errorMessage(error: unknown): string {
-  if (!(error instanceof ApiClientError))
-    return 'Something went wrong. Try again.';
-  const messages: Record<string, string> = {
-    ALREADY_FRIENDS: 'You are already friends.',
-    FRIEND_REQUEST_ALREADY_PENDING: 'A friend request is already pending.',
-    FRIENDSHIP_NOT_FOUND: 'That friendship is no longer available.',
-    INTERACTION_NOT_AVAILABLE: 'This interaction is not available.',
-    INVITATION_ALREADY_PENDING: 'An invitation is already pending.',
-    ALREADY_BOX_MEMBER: 'That person is already in this Box.',
-    BOX_ARCHIVED: 'That Box is not accepting new members.',
-    BOX_ACCESS_DENIED: error.message,
-    BOX_MEMBER_NOT_FOUND: 'That Box member is no longer available.',
-    INVITATION_EXPIRED: 'That invitation has expired.',
-    INVITATION_ALREADY_HANDLED: 'That invitation was already handled.',
-    RATE_LIMITED: 'You have sent too many requests. Try again later.',
-    RATE_LIMIT_UNAVAILABLE:
-      'This action is temporarily unavailable. Try again shortly.',
-    USER_NOT_FOUND: 'No person with that username was found.',
-    VALIDATION_FAILED: error.message,
-  };
-  return messages[error.code] ?? error.message;
-}
-
-function withNotice(path: string, key: 'error' | 'notice', message: string) {
-  return `${path}?${key}=${encodeURIComponent(message)}`;
-}
-
-async function mutateAndRedirect(
-  path: string,
-  successMessage: string,
-  operation: () => Promise<unknown>,
-): Promise<never> {
-  let destination = withNotice(path, 'notice', successMessage);
-  try {
-    await operation();
-    revalidatePath(path as Route);
-  } catch (error) {
-    destination = withNotice(path, 'error', errorMessage(error));
-  }
-  redirect(destination as Route);
-}
+import {
+  apiErrorMessage,
+  mutateAndRedirect,
+  withNotice,
+} from '../lib/action-result';
 
 export async function createBoxAction(formData: FormData) {
   let destination: string;
@@ -63,7 +24,7 @@ export async function createBoxAction(formData: FormData) {
     ).createBox({ name: String(formData.get('name') ?? '') });
     destination = `/boxes/${box.id}`;
   } catch (error) {
-    destination = withNotice('/boxes/new', 'error', errorMessage(error));
+    destination = withNotice('/boxes/new', 'error', apiErrorMessage(error));
   }
   redirect(destination as Route);
 }
@@ -204,7 +165,7 @@ export async function deleteBoxAction(
     revalidatePath('/boxes');
     revalidatePath(boxPath as Route);
   } catch (error) {
-    destination = withNotice(boxPath, 'error', errorMessage(error));
+    destination = withNotice(boxPath, 'error', apiErrorMessage(error));
   }
   redirect(destination as Route);
 }
@@ -244,7 +205,7 @@ export async function leaveBoxAction(boxId: string) {
     revalidatePath('/boxes');
     revalidatePath(boxPath);
   } catch (error) {
-    destination = withNotice(boxPath, 'error', errorMessage(error));
+    destination = withNotice(boxPath, 'error', apiErrorMessage(error));
   }
   redirect(destination as Route);
 }

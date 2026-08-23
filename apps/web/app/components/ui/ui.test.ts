@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { FeedbackMessage } from './feedback';
 import { UsernameField } from './form-fields';
-import { initials } from './identity';
+import { initials, PersonRow } from './identity';
 
 describe('shared UI primitives', () => {
   it('keeps username constraints in the reusable field', () => {
@@ -38,5 +38,17 @@ describe('shared UI primitives', () => {
     expect(initials('Alice Moreno')).toBe('A');
     expect(initials('Alice Moreno', 2)).toBe('AM');
     expect(initials('')).toBe('?');
+  });
+
+  it('passes current profile pictures through shared person rows', () => {
+    const markup = renderToStaticMarkup(
+      createElement(PersonRow, {
+        name: 'Alice Moreno',
+        username: 'alice',
+        avatarUrl: 'https://images.example/alice.webp',
+      }),
+    );
+    expect(markup).toContain('src="https://images.example/alice.webp"');
+    expect(markup).not.toContain('>A</span>');
   });
 });

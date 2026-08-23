@@ -63,3 +63,11 @@ rename/archive/delete controls, and explicit ownership transfer. Add the
 optional `DEMO_FRIEND_*` values to `.env` to provision a second verified account
 for the two-person test flow described in
 [development instructions](docs/development.md#phase-2-social-testing).
+
+Phase 3A adds private text posts inside Boxes and a chronological home feed.
+Only active Box members can read posts, only the author can edit or delete one,
+and archived Boxes remain readable while publishing is paused.
+
+Phase 3B adds authenticated realtime Box and Home feed updates. Redis carries
+metadata-only create/edit/delete notifications, while connected clients
+re-fetch the authoritative private feed through the existing API.

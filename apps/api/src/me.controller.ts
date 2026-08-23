@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { MediaAssetId } from '@paldora/domain';
-import type { ObjectStorage } from '@paldora/storage';
 import {
   createAvatarUploadSchema,
   updateProfileSchema,
@@ -22,7 +21,6 @@ import {
   SupabaseAuthGuard,
   type AuthenticatedRequest,
 } from './auth.service.js';
-import { OBJECT_STORAGE } from './storage.provider.js';
 import { parseRequest } from './request-validation.js';
 import { UserService } from './user.service.js';
 
@@ -34,12 +32,11 @@ export class MeController {
     private readonly users: UserService,
     @Inject(AvatarService)
     private readonly avatars: AvatarService,
-    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
   @Get()
   public getCurrentUser(@Req() request: AuthenticatedRequest) {
-    return this.users.getCurrentUser(request.principal.userId, this.storage);
+    return this.users.getCurrentUser(request.principal.userId);
   }
 
   @Post('username/availability')
@@ -57,11 +54,7 @@ export class MeController {
     @Body() body: unknown,
   ) {
     const input = parseRequest(updateProfileSchema, body);
-    return this.users.updateProfile(
-      request.principal.userId,
-      input,
-      this.storage,
-    );
+    return this.users.updateProfile(request.principal.userId, input);
   }
 
   @Post('avatar/uploads')

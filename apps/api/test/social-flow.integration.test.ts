@@ -2,15 +2,19 @@ import { randomUUID } from 'node:crypto';
 import { HttpStatus } from '@nestjs/common';
 import {
   createDatabaseConnection,
+  mediaAssets,
   profiles,
   users,
   type DatabaseConnection,
 } from '@paldora/database';
 import type { FriendshipId, UserId } from '@paldora/domain';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BoxService } from '../src/box.service.js';
 import type { InfrastructureService } from '../src/infrastructure.service.js';
 import { SocialService } from '../src/social.service.js';
+import { ProfileAvatarService } from '../src/profile-avatar.service.js';
+import { createFakeObjectStorage } from './fake-object-storage.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -30,8 +34,12 @@ describe.runIf(Boolean(databaseUrl))('Boxes and social graph flow', () => {
     const infrastructure = {
       databaseClient: connection.database,
     } as unknown as InfrastructureService;
-    boxes = new BoxService(infrastructure);
-    social = new SocialService(infrastructure);
+    const avatars = new ProfileAvatarService(
+      infrastructure,
+      createFakeObjectStorage(),
+    );
+    boxes = new BoxService(infrastructure, avatars);
+    social = new SocialService(infrastructure, avatars);
     const inserted = await connection.database
       .insert(users)
       .values(
@@ -103,6 +111,42 @@ describe.runIf(Boolean(databaseUrl))('Boxes and social graph flow', () => {
         direction: 'established',
       }),
     ]);
+
+    const avatars = await connection.database
+      .insert(mediaAssets)
+      .values(
+        ['first', 'second'].map((version) => ({
+          ownerUserId: friend,
+          purpose: 'avatar' as const,
+          objectKey: `avatars/${friend}/${version}.webp`,
+          contentType: 'image/webp' as const,
+          contentLength: 128,
+          status: 'ready' as const,
+        })),
+      )
+      .returning({ id: mediaAssets.id, objectKey: mediaAssets.objectKey });
+    for (const avatar of avatars) {
+      await connection.database
+        .update(profiles)
+        .set({ avatarMediaId: avatar.id })
+        .where(eq(profiles.userId, friend));
+      await expect(boxes.members(owner, box.id)).resolves.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            userId: friend,
+            avatarUrl: `signed:${avatar.objectKey}`,
+          }),
+        ]),
+      );
+      await expect(social.listFriends(owner)).resolves.toEqual([
+        expect.objectContaining({
+          user: expect.objectContaining({
+            id: friend,
+            avatarUrl: `signed:${avatar.objectKey}`,
+          }),
+        }),
+      ]);
+    }
 
     await expect(
       boxes.updateMemberRole(owner, box.id, friend, 'admin'),

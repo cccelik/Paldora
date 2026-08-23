@@ -48,11 +48,13 @@ export function SocialRow({
 export function PersonRow({
   name,
   username,
+  avatarUrl = null,
   detail = 'Friend request',
   actions,
 }: {
   name: string;
   username: string;
+  avatarUrl?: string | null;
   detail?: ReactNode;
   actions?: ReactNode;
 }) {
@@ -64,7 +66,7 @@ export function PersonRow({
           @{username} · {detail}
         </>
       }
-      leading={<InitialAvatar name={name} />}
+      leading={<InitialAvatar name={name} imageUrl={avatarUrl} />}
       actions={actions}
     />
   );

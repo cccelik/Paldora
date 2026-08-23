@@ -11,6 +11,7 @@ import { and, eq, ne, or, sql } from 'drizzle-orm';
 import { ApiError } from './api-error.js';
 import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
+import { ProfileAvatarService } from './profile-avatar.service.js';
 
 @Injectable()
 export class SocialService {
@@ -18,6 +19,8 @@ export class SocialService {
 
   public constructor(
     @Inject(InfrastructureService) infrastructure: InfrastructureService,
+    @Inject(ProfileAvatarService)
+    private readonly avatars: ProfileAvatarService,
   ) {
     this.database = infrastructure.databaseClient;
   }
@@ -266,11 +269,15 @@ export class SocialService {
             : []),
         ),
       );
+    const avatarUrls = await this.avatars.forUsers(
+      rows.map(({ other }) => other.userId as UserId),
+    );
     return rows.map(({ friendship, other }) =>
       this.map(friendship, userId, {
         userId: other.userId as UserId,
         username: other.username,
         displayName: other.displayName,
+        avatarUrl: avatarUrls.get(other.userId as UserId) ?? null,
       }),
     );
   }
@@ -296,6 +303,7 @@ export class SocialService {
       userId: profile.userId as UserId,
       username: profile.username,
       displayName: profile.displayName,
+      avatarUrl: await this.avatars.forUser(profile.userId as UserId),
     };
   }
 
@@ -315,6 +323,7 @@ export class SocialService {
       userId: profile.userId as UserId,
       username: profile.username,
       displayName: profile.displayName,
+      avatarUrl: await this.avatars.forUser(profile.userId as UserId),
     };
   }
 
@@ -325,6 +334,7 @@ export class SocialService {
       userId: UserId;
       username: string | null;
       displayName: string | null;
+      avatarUrl: string | null;
     },
   ): Friendship {
     const direction =
@@ -341,7 +351,7 @@ export class SocialService {
         id: other.userId,
         username: other.username,
         displayName: other.displayName,
-        avatarUrl: null,
+        avatarUrl: other.avatarUrl,
       },
       status: row.status,
       direction,

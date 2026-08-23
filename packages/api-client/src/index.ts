@@ -11,11 +11,17 @@ import type {
   CreateFriendRequestInput,
   CreateAvatarUploadInput,
   CreateAvatarUploadResult,
+  CreatePostInput,
+  CursorPageInput,
   CurrentUser,
   HealthStatus,
   Friendship,
   FriendshipId,
   MediaAssetId,
+  Post,
+  PostId,
+  PostPage,
+  UpdatePostInput,
   UpdateProfileInput,
   UsernameAvailability,
   UserId,
@@ -276,6 +282,53 @@ export class PaldoraApiClient {
     return this.send(`/blocks/${userId}`, { method: 'DELETE', signal });
   }
 
+  public createPost(
+    boxId: BoxId,
+    input: CreatePostInput,
+    signal?: AbortSignal,
+  ): Promise<Post> {
+    return this.send(`/boxes/${boxId}/posts`, {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public boxPosts(
+    boxId: BoxId,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<PostPage> {
+    return this.send(pagePath(`/boxes/${boxId}/posts`, page), { signal });
+  }
+
+  public feed(page?: CursorPageInput, signal?: AbortSignal): Promise<PostPage> {
+    return this.send(pagePath('/me/feed', page), { signal });
+  }
+
+  public post(id: PostId, signal?: AbortSignal): Promise<Post> {
+    return this.send(`/posts/${id}`, { signal });
+  }
+
+  public updatePost(
+    id: PostId,
+    input: UpdatePostInput,
+    signal?: AbortSignal,
+  ): Promise<Post> {
+    return this.send(`/posts/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+    });
+  }
+
+  public deletePost(
+    id: PostId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/posts/${id}`, { method: 'DELETE', signal });
+  }
+
   private async send<Result>(
     path: string,
     options: {
@@ -313,4 +366,12 @@ export class PaldoraApiClient {
     }
     return (await response.json()) as Result;
   }
+}
+
+function pagePath(path: string, page?: CursorPageInput): string {
+  const query = new URLSearchParams();
+  if (page?.cursor) query.set('cursor', page.cursor);
+  if (page?.limit !== undefined) query.set('limit', String(page.limit));
+  const value = query.toString();
+  return value ? `${path}?${value}` : path;
 }

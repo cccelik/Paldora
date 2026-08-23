@@ -29,6 +29,16 @@ describe('RateLimitService', () => {
     });
   });
 
+  it('uses a separate post creation budget', async () => {
+    const incrementRateLimit = vi.fn().mockResolvedValue(120);
+    const service = rateLimits(incrementRateLimit);
+    await expect(service.assertPostAllowed(userId)).resolves.toBeUndefined();
+    expect(incrementRateLimit).toHaveBeenCalledWith(
+      `paldora:rate-limit:post:${userId}`,
+      3600,
+    );
+  });
+
   it('fails closed when Redis is unavailable', async () => {
     const service = rateLimits(vi.fn().mockRejectedValue(new Error('offline')));
     await expect(

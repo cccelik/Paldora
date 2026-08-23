@@ -11,6 +11,13 @@ import { BoxService } from './box.service.js';
 import { SocialController } from './social.controller.js';
 import { SocialService } from './social.service.js';
 import { RateLimitService } from './rate-limit.service.js';
+import { PostController } from './post.controller.js';
+import { PostService } from './post.service.js';
+import { ProfileAvatarService } from './profile-avatar.service.js';
+import {
+  POST_EVENT_PUBLISHER,
+  PostEventService,
+} from './post-event.service.js';
 
 @Module({
   controllers: [
@@ -19,6 +26,7 @@ import { RateLimitService } from './rate-limit.service.js';
     BoxController,
     BoxInvitationController,
     SocialController,
+    PostController,
   ],
   providers: [
     InfrastructureService,
@@ -29,6 +37,10 @@ import { RateLimitService } from './rate-limit.service.js';
     BoxService,
     SocialService,
     RateLimitService,
+    ProfileAvatarService,
+    PostEventService,
+    { provide: POST_EVENT_PUBLISHER, useExisting: PostEventService },
+    PostService,
     objectStorageProvider,
   ],
 })

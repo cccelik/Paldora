@@ -4,6 +4,7 @@ import {
   createBoxSchema,
   createAvatarUploadSchema,
   createFriendRequestSchema,
+  createPostSchema,
   cursorPageSchema,
   isReservedUsername,
   normalizeUsername,
@@ -91,6 +92,16 @@ describe('Boxes and social validation', () => {
     ).toBe(true);
     expect(
       transferBoxOwnershipSchema.safeParse({ userId: 'not-a-user' }).success,
+    ).toBe(false);
+  });
+
+  it('bounds and trims text posts', () => {
+    expect(createPostSchema.parse({ content: '  hello Box  ' })).toEqual({
+      content: 'hello Box',
+    });
+    expect(createPostSchema.safeParse({ content: '   ' }).success).toBe(false);
+    expect(
+      createPostSchema.safeParse({ content: 'x'.repeat(5_001) }).success,
     ).toBe(false);
   });
 });

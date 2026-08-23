@@ -21,6 +21,47 @@ test('shared feedback exposes an accessible error role', async ({ page }) => {
   );
 });
 
+test('text posts compose into a responsive chronological feed', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/design-preview/components');
+  await expect(
+    page.getByRole('textbox', { name: 'Post' }).first(),
+  ).toHaveAttribute('maxlength', '5000');
+  await expect(
+    page.getByRole('button', { name: 'Share post' }),
+  ).not.toBeVisible();
+  await page.getByRole('textbox', { name: 'Post' }).first().click();
+  await expect(page.getByRole('button', { name: 'Share post' })).toBeVisible();
+  const feed = page.getByRole('region', { name: 'Posts' });
+  await expect(feed.getByRole('article')).toHaveCount(2);
+  await expect(feed.getByText('Alice Moreno', { exact: true })).toBeVisible();
+  await expect(
+    feed.getByText('Readers after dark', { exact: true }),
+  ).toHaveCount(2);
+  await expect(feed.getByText('Edit post')).toHaveCount(0);
+  await feed
+    .getByRole('button', { name: 'Manage post by Alice Moreno' })
+    .click();
+  await feed.getByRole('button', { name: 'Edit post' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Save changes' }),
+  ).toBeVisible();
+  await feed
+    .getByRole('button', { name: 'Manage post by Alice Moreno' })
+    .click();
+  await expect(feed.getByRole('button', { name: 'Delete post' })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Load older posts' }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
+
 test('Box invite panel shows five friends and expands the complete list', async ({
   page,
 }) => {
@@ -60,6 +101,25 @@ test('Box owner sees member role and removal controls', async ({ page }) => {
   ).toBeVisible();
   await page.getByRole('button', { name: 'Manage Noah Williams' }).click();
   await expect(page.getByRole('button', { name: 'Make admin' })).toHaveCount(1);
+  const promoteForm = page.locator('form', {
+    has: page.getByRole('button', { name: 'Make admin' }),
+  });
+  await promoteForm.evaluate((form) => {
+    form.addEventListener(
+      'submit',
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        document.documentElement.dataset.overflowSubmit = 'received';
+      },
+      { capture: true, once: true },
+    );
+  });
+  await page.getByRole('button', { name: 'Make admin' }).click();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-overflow-submit',
+    'received',
+  );
   await expect(page.getByRole('button', { name: 'Remove admin' })).toHaveCount(
     0,
   );

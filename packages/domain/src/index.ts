@@ -19,6 +19,7 @@ export type BoxMembershipStatus = 'active' | 'left' | 'removed';
 export type BoxInvitationStatus =
   'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined' | 'blocked';
+export type PostStatus = 'active' | 'deleted';
 
 export interface User {
   id: UserId;
@@ -124,6 +125,41 @@ export interface Friendship {
   direction: 'incoming' | 'outgoing' | 'established' | 'blocked';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Post {
+  id: PostId;
+  boxId: BoxId;
+  boxName: string;
+  author: {
+    userId: UserId;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+  content: string;
+  status: 'active';
+  editedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PostPage {
+  items: Post[];
+  nextCursor: string | null;
+}
+
+export interface CursorPageInput {
+  cursor?: string | undefined;
+  limit?: number | undefined;
+}
+
+export interface CreatePostInput {
+  content: string;
+}
+
+export interface UpdatePostInput {
+  content: string;
 }
 
 export interface CreateBoxInput {

@@ -6,7 +6,10 @@ import { AppShell } from '../../components/app-shell';
 import { BoxInvitePanel } from '../../components/box-invite-panel';
 import { BoxMemberPanel } from '../../components/box-member-panel';
 import { BoxSettingsPanel } from '../../components/box-settings-panel';
-import { EmptyState, PageFeedback, PageHeader } from '../../components/ui';
+import { PostComposer } from '../../components/post-composer';
+import { PostFeed } from '../../components/post-feed';
+import { PostRealtimeRefresh } from '../../components/post-realtime-refresh';
+import { PageFeedback, PageHeader } from '../../components/ui';
 import {
   authenticatedApiClient,
   loadCompletedCurrentUser,
@@ -19,7 +22,11 @@ export default async function BoxDetailPage({
   searchParams,
 }: {
   params: Promise<{ boxId: string }>;
-  searchParams: Promise<{ error?: string; notice?: string }>;
+  searchParams: Promise<{
+    cursor?: string;
+    error?: string;
+    notice?: string;
+  }>;
 }) {
   const current = await loadCompletedCurrentUser();
   const { boxId } = await params;
@@ -30,14 +37,20 @@ export default async function BoxDetailPage({
   let friends;
   let friendRequests;
   let blockedUsers;
+  let postPage;
   try {
-    [box, members, friends, friendRequests, blockedUsers] = await Promise.all([
-      api.box(boxId as BoxId),
-      api.boxMembers(boxId as BoxId),
-      api.friends(),
-      api.friendRequests(),
-      api.blockedUsers(),
-    ]);
+    [box, members, friends, friendRequests, blockedUsers, postPage] =
+      await Promise.all([
+        api.box(boxId as BoxId),
+        api.boxMembers(boxId as BoxId),
+        api.friends(),
+        api.friendRequests(),
+        api.blockedUsers(),
+        api.boxPosts(boxId as BoxId, {
+          ...(notices.cursor ? { cursor: notices.cursor } : {}),
+          limit: 20,
+        }),
+      ]);
   } catch (error) {
     if (
       error instanceof ApiClientError &&
@@ -61,6 +74,7 @@ export default async function BoxDetailPage({
   ].map((connection) => connection.user.id);
   return (
     <AppShell current={current} active="boxes">
+      <PostRealtimeRefresh boxId={box.id} />
       <PageHeader
         className="social-heading"
         eyebrow={`Private Box · ${box.currentUserRole} · ${box.status}`}
@@ -79,12 +93,22 @@ export default async function BoxDetailPage({
       />
       <PageFeedback error={notices.error} notice={notices.notice} />
       <div className="box-detail-layout">
-        <EmptyState
-          className="box-feed-empty"
-          eyebrow="The Box is ready"
-          title="Stories come in the next phase."
-          description="Membership and privacy are live. Posts are intentionally not simulated until the feed milestone."
-        />
+        <div className="box-post-column">
+          {box.status === 'active' ? (
+            <PostComposer boxId={box.id} />
+          ) : (
+            <p className="archived-post-notice">
+              This Box is archived. Existing posts remain private and readable,
+              but new posts are paused until the owner restores it.
+            </p>
+          )}
+          <PostFeed
+            currentUserId={current.user.id}
+            nextCursor={postPage.nextCursor}
+            posts={postPage.items}
+            returnPath={`/boxes/${box.id}`}
+          />
+        </div>
         <aside className="settings-side">
           {canInvite && (
             <BoxInvitePanel

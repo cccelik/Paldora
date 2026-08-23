@@ -61,3 +61,30 @@ acceptance.
 Friend requests are limited to 20 per user per hour and Box invitations to 60
 per user per hour. Limits are enforced through Redis and return `RATE_LIMITED`
 or `RATE_LIMIT_UNAVAILABLE` without weakening Box authorization.
+
+## Phase 3A post endpoints
+
+| Method   | Path                                | Purpose                         |
+| -------- | ----------------------------------- | ------------------------------- |
+| `POST`   | `/api/v1/boxes/:boxId/posts`        | Publish a text post             |
+| `GET`    | `/api/v1/boxes/:boxId/posts`        | Read a Box's chronological feed |
+| `GET`    | `/api/v1/me/feed`                   | Read posts from joined Boxes    |
+| `GET`    | `/api/v1/me/feed/events`            | Stream joined-Box post changes  |
+| `GET`    | `/api/v1/posts/:postId`             | Read one accessible post        |
+| `PATCH`  | `/api/v1/posts/:postId`             | Edit an authored post           |
+| `DELETE` | `/api/v1/posts/:postId`             | Soft-delete an authored post    |
+| `GET`    | `/api/v1/boxes/:boxId/posts/events` | Stream Box post changes         |
+
+Post content is plain text from 1 to 5,000 characters. Box and home feeds use
+opaque keyset cursors ordered by creation time and UUID, newest first. Only an
+active member can read a Box's posts. Only an active Box can receive new posts,
+and only the post author can edit or delete their post. Inaccessible and
+guessed post IDs return `POST_NOT_FOUND` to avoid leaking private resources.
+Publishing is limited to 120 attempts per user per hour.
+
+The event endpoints use authenticated Server-Sent Events. They emit
+`post.created`, `post.updated`, and `post.deleted` notifications plus periodic
+heartbeats. Event data contains identifiers and timestamps only—not post
+content. Clients treat notifications as invalidation hints and re-fetch the
+normal authorized feed. The Box stream checks access before connecting; both
+streams check active membership again before each event is delivered.

@@ -1,14 +1,31 @@
 import { AppShell } from '../components/app-shell';
-import { EmptyState, InitialAvatar, PageHeader } from '../components/ui';
-import { loadCompletedCurrentUser } from '../lib/api';
-import Link from 'next/link';
+import { PostFeed } from '../components/post-feed';
+import { PostRealtimeRefresh } from '../components/post-realtime-refresh';
+import { InitialAvatar, PageFeedback, PageHeader } from '../components/ui';
+import { authenticatedApiClient, loadCompletedCurrentUser } from '../lib/api';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    cursor?: string;
+    error?: string;
+    notice?: string;
+  }>;
+}) {
   const current = await loadCompletedCurrentUser();
+  const query = await searchParams;
+  const feed = await (
+    await authenticatedApiClient()
+  ).feed({
+    ...(query.cursor ? { cursor: query.cursor } : {}),
+    limit: 20,
+  });
   return (
     <AppShell current={current} active="home">
+      <PostRealtimeRefresh />
       <PageHeader
         eyebrow="Your private corner"
         title="Home"
@@ -21,24 +38,14 @@ export default async function HomePage() {
           />
         }
       />
-      <EmptyState
-        eyebrow="The beginning"
-        title="Your circles arrive next."
-        description={
-          <>
-            Your profile is ready. Boxes, posts, and the chronological feed will
-            be introduced in the next product milestones—there is no pretend
-            activity here.
-          </>
-        }
-        actions={
-          <Link
-            className="button-secondary inline-button"
-            href="/settings/account"
-          >
-            Review your profile
-          </Link>
-        }
+      <PageFeedback error={query.error} notice={query.notice} />
+      <PostFeed
+        currentUserId={current.user.id}
+        emptyDescription="Join or create a Box, then share the first story with your people."
+        emptyTitle="Your chronological feed is quiet."
+        nextCursor={feed.nextCursor}
+        posts={feed.items}
+        returnPath="/home"
       />
     </AppShell>
   );

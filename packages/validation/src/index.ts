@@ -15,6 +15,7 @@ export const DISPLAY_NAME_MAX_LENGTH = 80;
 export const BIO_MAX_LENGTH = 500;
 export const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
 export const BOX_NAME_MAX_LENGTH = 80;
+export const POST_CONTENT_MAX_LENGTH = 5_000;
 
 const reservedUsernames = new Set([
   'account',
@@ -122,6 +123,15 @@ export const createFriendRequestSchema = z.object({
 
 export const createBlockSchema = z.object({ username: usernameSchema });
 
+export const postContentSchema = z
+  .string()
+  .trim()
+  .min(1, 'Write something before posting.')
+  .max(POST_CONTENT_MAX_LENGTH, 'Posts must be 5,000 characters or fewer.');
+
+export const createPostSchema = z.object({ content: postContentSchema });
+export const updatePostSchema = z.object({ content: postContentSchema });
+
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type CreateAvatarUpload = z.infer<typeof createAvatarUploadSchema>;
 export type CreateBox = z.infer<typeof createBoxSchema>;
@@ -130,3 +140,5 @@ export type CreateBoxInvitation = z.infer<typeof createBoxInvitationSchema>;
 export type UpdateBoxMember = z.infer<typeof updateBoxMemberSchema>;
 export type TransferBoxOwnership = z.infer<typeof transferBoxOwnershipSchema>;
 export type CreateFriendRequest = z.infer<typeof createFriendRequestSchema>;
+export type CreatePost = z.infer<typeof createPostSchema>;
+export type UpdatePost = z.infer<typeof updatePostSchema>;

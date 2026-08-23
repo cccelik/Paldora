@@ -57,8 +57,7 @@ Use two browser profiles (for example, a normal window and a private window):
    the exact Box name and a second browser confirmation before deleting all
    memberships, invitations, and Box-owned content.
 
-Boxes are private and deny access to non-members. Posts and Box feeds remain an
-honest empty state until the posts/feed phase.
+Boxes are private and deny access to non-members.
 
 Redis enforces per-user mutation limits in local and deployed environments: 20
 friend requests and 60 Box invitations per hour. Flush only the dedicated
@@ -68,3 +67,36 @@ Run `pnpm test:e2e:hosted` for the hosted Supabase smoke gate. It loads the
 uncommitted `.env`, starts/reuses the API and web servers, and verifies every
 configured demo account can sign in, access Boxes/Friends, and sign out. The
 normal `pnpm test:e2e` suite remains credential-free.
+
+## Phase 3A post testing
+
+Use the same two browser profiles after completing the Phase 2 flow:
+
+1. Publish text from both members inside their shared active Box.
+2. Confirm both posts appear newest-first in the Box and on each member's Home.
+3. Edit and delete one of your own posts; confirm the other member has no edit
+   or delete controls and that deletion removes the post from both feeds.
+4. Archive the Box as its owner. Existing posts stay readable, but the composer
+   is replaced by a read-only notice. Restore it to publish again.
+5. Remove or leave as one member and confirm that account can no longer read the
+   Box or its posts, including by pasting a known identifier.
+6. Permanently delete the Box and confirm its posts disappear with it.
+
+The normal unit suite uses no credentials. Database integration tests require
+the local Docker PostgreSQL service and the uncommitted `DATABASE_URL`; run
+`node --env-file=.env apps/api/node_modules/vitest/vitest.mjs run
+apps/api/test/post-flow.integration.test.ts` after applying migrations.
+
+## Phase 3B realtime testing
+
+Keep the same shared Box open in two browser profiles, and keep Home open in a
+second tab for one profile. Publish, edit, and delete a post in one profile;
+the other profile should reconcile both its Box and Home feeds without a manual
+refresh. Stop Redis to confirm posting still succeeds, then restart it and
+confirm the browser reconnects with bounded backoff. Removing a member must
+prevent that account from receiving later events for that Box.
+
+Realtime browser requests use the exact `WEB_ORIGIN`. Open the site through that
+configured origin (normally `http://localhost:3000`), not an alternate hostname.
+The hosted smoke suite creates and removes a temporary shared Box to verify
+actual two-account delivery without leaving test content behind.

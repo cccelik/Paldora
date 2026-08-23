@@ -21,3 +21,10 @@ foreign keys use `on delete cascade`, so deletion removes access-control state
 in the same database statement. Every future Box-owned relational table must
 reference `boxes.id` with a reviewed cascade policy; object-storage cleanup
 must be queued before deleting media metadata.
+
+Phase 3A owns `paldora.posts`. Each post belongs to one Box and one internal
+author. The Box foreign key cascades so permanent Box deletion also removes its
+posts; the author foreign key preserves the same account-deletion contract.
+Deletion during normal product use is soft and excludes the post from reads.
+The `(box_id, created_at desc, id desc)` index supports deterministic keyset
+pagination without offset drift.

@@ -24,6 +24,7 @@ import { randomUUID } from 'node:crypto';
 import { ApiError } from './api-error.js';
 import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
+import { ProfileAvatarService } from './profile-avatar.service.js';
 
 @Injectable()
 export class BoxService {
@@ -31,6 +32,8 @@ export class BoxService {
 
   public constructor(
     @Inject(InfrastructureService) infrastructure: InfrastructureService,
+    @Inject(ProfileAvatarService)
+    private readonly avatars: ProfileAvatarService,
   ) {
     this.database = infrastructure.databaseClient;
   }
@@ -174,11 +177,14 @@ export class BoxService {
           eq(boxMemberships.status, 'active'),
         ),
       );
+    const avatarUrls = await this.avatars.forUsers(
+      rows.map(({ membership }) => membership.userId as UserId),
+    );
     return rows.map(({ membership, profile }) => ({
       userId: membership.userId as UserId,
       username: profile.username ?? '',
       displayName: profile.displayName ?? profile.username ?? 'Paldora member',
-      avatarUrl: null,
+      avatarUrl: avatarUrls.get(membership.userId as UserId) ?? null,
       role: membership.role,
       status: membership.status,
       joinedAt: membership.joinedAt.toISOString(),

@@ -57,6 +57,10 @@ export const friendshipStatus = paldoraSchema.enum('friendship_status', [
   'declined',
   'blocked',
 ]);
+export const postStatus = paldoraSchema.enum('post_status', [
+  'active',
+  'deleted',
+]);
 
 export const users = paldoraSchema.table(
   'users',
@@ -256,6 +260,45 @@ export const boxInvitations = paldoraSchema.table(
     check(
       'box_invitations_distinct_users_check',
       sql`${table.inviterUserId} <> ${table.inviteeUserId}`,
+    ),
+  ],
+);
+
+export const posts = paldoraSchema.table(
+  'posts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => boxes.id, { onDelete: 'cascade' }),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    status: postStatus('status').notNull().default('active'),
+    editedAt: timestamp('edited_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('posts_box_chronological_index').on(
+      table.boxId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    index('posts_author_status_index').on(table.authorUserId, table.status),
+    check(
+      'posts_content_state_check',
+      sql`(${table.status} = 'active' and char_length(${table.content}) between 1 and 5000) or (${table.status} = 'deleted' and ${table.content} = '')`,
+    ),
+    check(
+      'posts_deleted_at_state_check',
+      sql`(${table.status} = 'deleted') = (${table.deletedAt} is not null)`,
     ),
   ],
 );

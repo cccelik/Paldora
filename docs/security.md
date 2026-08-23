@@ -15,6 +15,20 @@ membership and invitation records through foreign-key cascades. Destructive UI
 requires the exact Box name plus a second confirmation. Future private media
 cleanup must be queued before its Box-owned metadata is deleted.
 
+Phase 3A post reads require an active Box membership on every query. Post
+absence and access denial intentionally share `POST_NOT_FOUND`; Box feed access
+does the same with `BOX_NOT_FOUND`. Authors alone can edit or soft-delete their
+posts, archived Boxes reject new posts, and publishing fails closed when the
+Redis rate limiter is unavailable. Post bodies are plain text, length-bounded,
+and must never appear in application logs.
+
+Realtime post notifications use the same Supabase bearer-token guard as other
+private endpoints. Redis events contain only event IDs, Box IDs, post IDs,
+actions, and timestamps. They never contain post bodies or profile data. Active
+Box membership is checked before opening a stream and before forwarding every
+event, so removed or departed members stop receiving invalidations. Browser
+connections must originate from the exact configured `WEB_ORIGIN`.
+
 Security assumptions for this foundation:
 
 - TLS is terminated by the deployment edge and HTTPS is enforced there.
