@@ -13,7 +13,7 @@ export default async function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   await connection();
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

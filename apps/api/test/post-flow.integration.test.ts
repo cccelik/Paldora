@@ -4,20 +4,22 @@ import {
   boxMemberships,
   createDatabaseConnection,
   mediaAssets,
+  mediaJobOutbox,
   posts as postsTable,
   profiles,
   users,
   type DatabaseConnection,
 } from '@paldora/database';
-import type { PostId, UserId } from '@paldora/domain';
+import type { MediaAssetId, PostId, UserId } from '@paldora/domain';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { BoxService } from '../src/box.service.js';
+import type { BoxService } from '../src/box.service.js';
 import type { InfrastructureService } from '../src/infrastructure.service.js';
 import { PostService } from '../src/post.service.js';
 import { ProfileAvatarService } from '../src/profile-avatar.service.js';
 import type { PublishPostEventInput } from '../src/post-event.service.js';
 import { createFakeObjectStorage } from './fake-object-storage.js';
+import { createBoxService } from './create-box-service.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -39,13 +41,18 @@ describe.runIf(Boolean(databaseUrl))('private text-post flow', () => {
       infrastructure,
       createFakeObjectStorage(),
     );
-    boxes = new BoxService(infrastructure, avatars);
-    posts = new PostService(infrastructure, avatars, {
-      publish: async (event) => {
-        publishedEvents.push(event);
-        return true;
+    boxes = createBoxService(infrastructure, avatars);
+    posts = new PostService(
+      infrastructure,
+      avatars,
+      {
+        publish: async (event) => {
+          publishedEvents.push(event);
+          return true;
+        },
       },
-    });
+      createFakeObjectStorage(),
+    );
     const inserted = await connection.database
       .insert(users)
       .values(
@@ -98,6 +105,54 @@ describe.runIf(Boolean(databaseUrl))('private text-post flow', () => {
       privateBox.id,
       'Private story',
     );
+    const [postImage] = await connection.database
+      .insert(mediaAssets)
+      .values({
+        ownerUserId: owner,
+        boxId: sharedBox.id,
+        purpose: 'post_image',
+        objectKey: `posts/${sharedBox.id}/${owner}/photo.jpg`,
+        contentType: 'image/jpeg',
+        contentLength: 128,
+        displayObjectKey: `posts/${sharedBox.id}/${owner}/photo.display.webp`,
+        thumbnailObjectKey: `posts/${sharedBox.id}/${owner}/photo.thumb.webp`,
+        width: 1_200,
+        height: 800,
+        status: 'ready',
+      })
+      .returning({ id: mediaAssets.id });
+    if (!postImage) throw new Error('Test post image is missing.');
+    const mediaPost = await posts.create(owner, sharedBox.id, '', [
+      postImage.id as MediaAssetId,
+    ]);
+    expect(mediaPost).toMatchObject({
+      content: '',
+      media: [
+        {
+          id: postImage.id,
+          status: 'ready',
+          url: expect.stringContaining('photo.display.webp'),
+          thumbnailUrl: expect.stringContaining('photo.thumb.webp'),
+          width: 1_200,
+          height: 800,
+        },
+      ],
+    });
+    await expect(
+      posts.create(owner, sharedBox.id, 'Reuse', [
+        postImage.id as MediaAssetId,
+      ]),
+    ).rejects.toMatchObject({
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      response: { error: { code: 'INVALID_POST_MEDIA' } },
+    });
+    await posts.delete(owner, mediaPost.id);
+    await expect(
+      connection.database
+        .select({ id: mediaJobOutbox.id })
+        .from(mediaJobOutbox)
+        .where(eq(mediaJobOutbox.mediaAssetId, postImage.id)),
+    ).resolves.toHaveLength(1);
     await expect(
       posts.assertBoxAccess(outsider, sharedBox.id),
     ).rejects.toMatchObject({

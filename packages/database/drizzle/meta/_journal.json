@@ -36,6 +36,20 @@
       "when": 1787487576938,
       "tag": "0004_quick_morg",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787493482522,
+      "tag": "0005_safe_skaar",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787516467235,
+      "tag": "0006_giant_menace",
+      "breakpoints": true
     }
   ]
 }

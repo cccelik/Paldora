@@ -1,4 +1,5 @@
 declare const brand: unique symbol;
+export const POST_EVENT_CHANNEL = 'paldora:post-events:v1';
 export type Brand<Value, Name extends string> = Value & {
   readonly [brand]: Name;
 };
@@ -12,7 +13,8 @@ export type PostId = Brand<string, 'PostId'>;
 
 export type UserStatus = 'active' | 'suspended' | 'deleted';
 export type OnboardingState = 'username' | 'profile' | 'avatar' | 'complete';
-export type MediaAssetStatus = 'pending' | 'ready' | 'failed';
+export type MediaAssetStatus = 'pending' | 'processing' | 'ready' | 'failed';
+export type MediaAssetPurpose = 'avatar' | 'post_image';
 export type BoxRole = 'owner' | 'admin' | 'member';
 export type BoxStatus = 'active' | 'archived';
 export type BoxMembershipStatus = 'active' | 'left' | 'removed';
@@ -48,7 +50,7 @@ export interface CurrentUser {
 export interface MediaAsset {
   id: MediaAssetId;
   ownerUserId: UserId;
-  purpose: 'avatar';
+  purpose: MediaAssetPurpose;
   contentType: 'image/jpeg' | 'image/png' | 'image/webp';
   contentLength: number;
   status: MediaAssetStatus;
@@ -138,10 +140,21 @@ export interface Post {
     avatarUrl: string | null;
   };
   content: string;
+  media: PostMedia[];
   status: 'active';
   editedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PostMedia {
+  id: MediaAssetId;
+  contentType: MediaAsset['contentType'];
+  status: 'processing' | 'ready' | 'failed';
+  url: string | null;
+  thumbnailUrl: string | null;
+  width: number | null;
+  height: number | null;
 }
 
 export interface PostPage {
@@ -156,7 +169,11 @@ export interface CursorPageInput {
 
 export interface CreatePostInput {
   content: string;
+  mediaAssetIds?: MediaAssetId[] | undefined;
 }
+
+export type CreatePostMediaUploadInput = CreateAvatarUploadInput;
+export type CreatePostMediaUploadResult = CreateAvatarUploadResult;
 
 export interface UpdatePostInput {
   content: string;

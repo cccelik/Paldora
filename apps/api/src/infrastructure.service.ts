@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import type { OnApplicationShutdown } from '@nestjs/common';
+import { Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import { parseServiceEnvironment } from '@paldora/config';
 import {
   createDatabaseConnection,
@@ -12,11 +11,15 @@ import { Redis } from 'ioredis';
 export class InfrastructureService implements OnApplicationShutdown {
   private readonly database: DatabaseConnection;
   private readonly redis: Redis;
+  public readonly mediaJobQueueName: string;
+  public readonly redisUrl: string;
 
   public constructor() {
     const environment = parseServiceEnvironment(process.env);
+    this.mediaJobQueueName = environment.MEDIA_JOB_QUEUE_NAME;
+    this.redisUrl = environment.REDIS_URL;
     this.database = createDatabaseConnection(environment.DATABASE_URL);
-    this.redis = new Redis(environment.REDIS_URL, {
+    this.redis = new Redis(this.redisUrl, {
       enableOfflineQueue: false,
       lazyConnect: true,
       maxRetriesPerRequest: 1,

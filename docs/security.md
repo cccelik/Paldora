@@ -29,6 +29,16 @@ Box membership is checked before opening a stream and before forwarding every
 event, so removed or departed members stop receiving invalidations. Browser
 connections must originate from the exact configured `WEB_ORIGIN`.
 
+Phase 3C image uploads are signed for an exact MIME type and content length,
+limited to JPEG, PNG, and WebP files of at most 10 MB. Completion rechecks
+ownership, Box membership, object metadata, and single-use attachment state.
+The worker decodes untrusted originals with Sharp, applies orientation, strips
+metadata, limits decoded input pixels, bounds output dimensions, and publishes
+WebP derivatives. Feeds expose only
+short-lived signed derivative URLs, never bucket credentials or object keys.
+The viewer shares a protected `/posts/:id` application permalink rather than a
+signed object URL, so recipients must authenticate and retain Box membership.
+
 Security assumptions for this foundation:
 
 - TLS is terminated by the deployment edge and HTTPS is enforced there.

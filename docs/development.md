@@ -17,6 +17,13 @@ Before opening a pull request run `pnpm format:check`, `pnpm lint`, `pnpm typech
 
 Keep controllers thin, business rules in domain/services, database access behind repositories, and shared packages acyclic. Do not weaken strict TypeScript rules or use `any` to bypass a contract.
 
+Production TypeScript is guarded against excessive cyclomatic complexity,
+nesting depth, function length, and parameter lists. Exceptions are allowed
+only for an inherent protocol state machine or sequential stream loop and must
+carry a local explanation. Before adding a component, search the web component
+catalog in `apps/web/app/components/README.md`; route files should load data and
+compose reusable sections rather than own repeated product markup.
+
 ## Phase 1 local setup
 
 1. Set the hosted development Supabase URL, anonymous key, and service-role key in `.env`. Never use a production service-role key locally.
@@ -68,6 +75,14 @@ uncommitted `.env`, starts/reuses the API and web servers, and verifies every
 configured demo account can sign in, access Boxes/Friends, and sign out. The
 normal `pnpm test:e2e` suite remains credential-free.
 
+Set `PLAYWRIGHT_API_PORT` and `PLAYWRIGHT_WEB_PORT` to run the hosted gate in
+isolation from active development servers. The Docker MinIO configuration
+allows the default isolated web port `3100`; recreate MinIO after changing its
+CORS origins. Hosted runs also derive an isolated BullMQ queue name from the
+API port so a development worker cannot consume jobs belonging to the test
+database. Deployed environments sharing Redis must likewise use distinct
+`MEDIA_JOB_QUEUE_NAME` values.
+
 ## Phase 3A post testing
 
 Use the same two browser profiles after completing the Phase 2 flow:
@@ -100,3 +115,22 @@ Realtime browser requests use the exact `WEB_ORIGIN`. Open the site through that
 configured origin (normally `http://localhost:3000`), not an alternate hostname.
 The hosted smoke suite creates and removes a temporary shared Box to verify
 actual two-account delivery without leaving test content behind.
+
+## Phase 3C image-post testing
+
+Apply migrations through `0006`, then keep API, web, worker, PostgreSQL, Redis, and MinIO
+running. In an active Box, expand the composer and select up to four JPEG, PNG,
+or WebP images no larger than 10 MB each. Local previews should be removable.
+After sharing, the feed may briefly show a processing placeholder before the
+worker-created image appears in both the Box and Home feeds. Deleting the post
+or Box must enqueue deletion of the original, display, and thumbnail objects.
+Selecting a ready image opens the fullscreen viewer without a new tab. Verify
+Escape/Close, Save, Share, and multi-photo previous/next controls at desktop and
+390px widths; shared links must use `/posts/:id`, not a storage URL.
+
+Media jobs are durable in PostgreSQL. To exercise recovery, stop Redis, upload
+or delete media, and confirm a pending row exists in
+`paldora.media_job_outbox`. Restart Redis and the API; the dispatcher should
+publish the row, the worker should process it, and `published_at` should become
+non-null. Permanent Box deletion snapshots object keys in the outbox before
+the `media_assets.box_id` cascade removes the metadata.

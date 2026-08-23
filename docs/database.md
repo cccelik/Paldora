@@ -20,7 +20,7 @@ Deleting a Box is owner-only at the API boundary. Membership and invitation
 foreign keys use `on delete cascade`, so deletion removes access-control state
 in the same database statement. Every future Box-owned relational table must
 reference `boxes.id` with a reviewed cascade policy; object-storage cleanup
-must be queued before deleting media metadata.
+must be recorded in the transactional media outbox before deleting metadata.
 
 Phase 3A owns `paldora.posts`. Each post belongs to one Box and one internal
 author. The Box foreign key cascades so permanent Box deletion also removes its
@@ -28,3 +28,19 @@ posts; the author foreign key preserves the same account-deletion contract.
 Deletion during normal product use is soft and excludes the post from reads.
 The `(box_id, created_at desc, id desc)` index supports deterministic keyset
 pagination without offset drift.
+
+Phase 3C extends `media_assets` with Box-scoped `post_image` assets and
+processing metadata. `post_media` attaches each asset to exactly one post and
+stores its stable gallery position. Originals remain private; display and
+thumbnail object keys are populated only after worker processing succeeds.
+
+Phase 3/4 hardening adds a foreign key from `media_assets.box_id` to
+`boxes.id` with `on delete cascade` and introduces `media_job_outbox`.
+Processing and deletion intent is inserted in the same PostgreSQL transaction
+as the owning media, profile, post, or Box mutation. Deletion payloads snapshot
+all private object keys, so a Box cascade may remove its media rows without
+losing the cleanup instructions. The API dispatcher claims rows with
+`for update skip locked`, publishes them to BullMQ with the outbox UUID as the
+job ID, and retries unpublished rows with bounded backoff when Redis is
+unavailable. Published rows remain as an audit record and worker operations are
+idempotent.

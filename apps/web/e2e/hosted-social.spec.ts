@@ -50,6 +50,7 @@ for (const account of accounts) {
 test('Box and Home feeds receive another member post without a reload', async ({
   browser,
 }) => {
+  test.setTimeout(60_000);
   test.skip(
     accounts.length < 2 || !process.env.DEMO_FRIEND_USERNAME,
     'Two provisioned demo accounts and DEMO_FRIEND_USERNAME are required.',
@@ -65,6 +66,7 @@ test('Box and Home feeds receive another member post without a reload', async ({
   const boxName = `Realtime test ${marker}`;
   const postText = `Live post ${marker}`;
   const editedText = `${postText} edited`;
+  const photoText = `Photo post ${marker}`;
   let boxUrl: string | null = null;
   try {
     await signIn(primaryPage, primary);
@@ -78,7 +80,10 @@ test('Box and Home feeds receive another member post without a reload', async ({
     await expect(primaryPage).toHaveURL(/\/boxes\/[0-9a-f-]+/);
     boxUrl = primaryPage.url();
 
-    await primaryPage.getByText('Invite anyone by username').click();
+    await primaryPage.getByRole('button', { name: 'Manage Box' }).click();
+    await primaryPage
+      .getByText('Invite anyone by username', { exact: true })
+      .click();
     const invitePanel = primaryPage.locator('.invite-fallback');
     await invitePanel
       .getByLabel('Username')
@@ -86,6 +91,12 @@ test('Box and Home feeds receive another member post without a reload', async ({
     await invitePanel
       .getByRole('button', { name: 'Invite by username' })
       .click();
+    await expect(
+      primaryPage.getByRole('status').filter({ hasText: 'Invitation sent.' }),
+    ).toBeVisible();
+    await expect(
+      primaryPage.getByRole('dialog', { name: 'Manage Box' }),
+    ).toBeVisible();
 
     await friendPage.goto('/boxes');
     const invitation = friendPage.locator('.social-row', { hasText: boxName });
@@ -132,6 +143,16 @@ test('Box and Home feeds receive another member post without a reload', async ({
     await editedPost.getByRole('button', { name: /Manage post by/ }).click();
     primaryPage.once('dialog', (dialog) => dialog.accept());
     await editedPost.getByRole('button', { name: 'Delete post' }).click();
+    const deletedToast = primaryPage.getByRole('status').filter({
+      hasText: 'Post deleted.',
+    });
+    await expect(deletedToast).toBeVisible();
+    await expect(deletedToast).toHaveClass(/toast-success/);
+    await expect(
+      deletedToast.locator('.toast-countdown-progress'),
+    ).toBeVisible();
+    await deletedToast.getByRole('button', { name: 'Dismiss message' }).click();
+    await expect(deletedToast).not.toBeVisible();
     await expect(friendPage.getByText(editedText, { exact: true })).toHaveCount(
       0,
       { timeout: 10_000 },
@@ -139,9 +160,67 @@ test('Box and Home feeds receive another member post without a reload', async ({
     await expect(
       friendHomePage.getByText(editedText, { exact: true }),
     ).toHaveCount(0, { timeout: 10_000 });
+
+    await primaryPage.getByRole('textbox', { name: 'Post' }).fill(photoText);
+    await primaryPage.locator('input[type="file"]').setInputFiles({
+      name: 'paldora-test.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    });
+    await primaryPage.getByRole('button', { name: 'Share post' }).click();
+    const photoSharedToast = primaryPage.getByRole('status').filter({
+      hasText: 'Post shared. Photos may take a moment to finish.',
+    });
+    await expect(photoSharedToast).toBeVisible();
+    const homePhotoPost = friendHomePage.getByRole('article').filter({
+      hasText: photoText,
+    });
+    await expect(homePhotoPost).toBeVisible({ timeout: 10_000 });
+    await expect(
+      homePhotoPost.getByRole('img', { name: /Photo 1 shared by/ }),
+    ).toBeVisible({ timeout: 20_000 });
+    await expect(photoSharedToast).not.toBeVisible({ timeout: 7_000 });
+    await homePhotoPost
+      .getByRole('button', { name: /Open photo 1 from/ })
+      .click();
+    const photoViewer = friendHomePage.getByRole('dialog', {
+      name: /Photo viewer for/,
+    });
+    await expect(photoViewer).toBeVisible();
+    await expect(
+      photoViewer.getByRole('button', { name: 'Save' }),
+    ).toBeVisible();
+    await expect(
+      photoViewer.getByRole('button', { name: 'Share' }),
+    ).toBeVisible();
+    await photoViewer
+      .getByRole('button', { name: 'Close photo viewer' })
+      .click();
+    const photoPostElementId = await homePhotoPost.getAttribute('id');
+    expect(photoPostElementId).toMatch(/^post-[0-9a-f-]+$/);
+    if (!photoPostElementId) throw new Error('Photo post ID is missing.');
+    const photoPostId = photoPostElementId.slice('post-'.length);
+    const permalinkPage = await friendContext.newPage();
+    await permalinkPage.goto(`/posts/${photoPostId}`);
+    await expect(
+      permalinkPage.getByText(photoText, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      permalinkPage.getByRole('img', { name: /Photo 1 shared by/ }),
+    ).toBeVisible();
+    await permalinkPage.close();
   } finally {
     if (boxUrl) {
       await primaryPage.goto(boxUrl).catch(() => undefined);
+      const manageBox = primaryPage.getByRole('button', {
+        name: 'Manage Box',
+      });
+      if (await manageBox.isVisible().catch(() => false)) {
+        await manageBox.click();
+      }
       const confirmation = primaryPage.getByLabel(
         `Type “${boxName}” to confirm`,
       );

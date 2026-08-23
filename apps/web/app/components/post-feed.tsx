@@ -9,6 +9,7 @@ import { ConfirmSubmitButton } from './confirm-submit-button';
 import { InitialAvatar } from './ui';
 import { OverflowMenu } from './overflow-menu';
 import { PendingSubmitButton } from './pending-submit-button';
+import { PostMediaGallery } from './post-media-gallery';
 
 export function PostFeed({
   posts,
@@ -70,7 +71,7 @@ function PostCard({
   const owned = post.author.userId === currentUserId;
   const [editing, setEditing] = useState(false);
   return (
-    <article className="post-card">
+    <article className="post-card" id={`post-${post.id}`}>
       <header className={`post-card-header${owned ? ' has-actions' : ''}`}>
         <InitialAvatar
           className="post-avatar"
@@ -91,26 +92,33 @@ function PostCard({
             {post.editedAt ? ' · edited' : ''}
           </span>
         </div>
-        {owned && (
-          <OverflowMenu
-            className="post-actions-menu"
-            label={`Manage post by ${post.author.displayName}`}
-          >
-            <button type="button" onClick={() => setEditing(true)}>
-              Edit post
-            </button>
-            <form action={deletePostAction.bind(null, post.id, returnPath)}>
-              <ConfirmSubmitButton
-                className="danger"
-                confirmation="Delete this post? It will disappear from every member's feed and cannot be restored."
-              >
-                Delete post
-              </ConfirmSubmitButton>
-            </form>
-          </OverflowMenu>
-        )}
       </header>
-      <p className="post-content">{post.content}</p>
+      {owned && (
+        <OverflowMenu
+          className="post-actions-menu"
+          label={`Manage post by ${post.author.displayName}`}
+        >
+          <button type="button" onClick={() => setEditing(true)}>
+            Edit post
+          </button>
+          <form action={deletePostAction.bind(null, post.id, returnPath)}>
+            <ConfirmSubmitButton
+              className="danger"
+              confirmation="Delete this post? It will disappear from every member's feed and cannot be restored."
+            >
+              Delete post
+            </ConfirmSubmitButton>
+          </form>
+        </OverflowMenu>
+      )}
+      {post.content && <p className="post-content">{post.content}</p>}
+      {post.media.length > 0 && (
+        <PostMediaGallery
+          authorName={post.author.displayName}
+          media={post.media}
+          postId={post.id}
+        />
+      )}
       {editing && (
         <form
           className="form-stack post-edit-form"

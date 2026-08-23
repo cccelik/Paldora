@@ -1,16 +1,8 @@
 'use server';
 
-import type { BoxId, PostId } from '@paldora/domain';
+import type { PostId } from '@paldora/domain';
 import { authenticatedApiClient } from '../lib/api';
 import { mutateAndRedirect } from '../lib/action-result';
-
-export async function createPostAction(boxId: string, formData: FormData) {
-  return mutateAndRedirect(`/boxes/${boxId}`, 'Post shared.', async () =>
-    (await authenticatedApiClient()).createPost(boxId as BoxId, {
-      content: String(formData.get('content') ?? ''),
-    }),
-  );
-}
 
 export async function updatePostAction(
   postId: string,

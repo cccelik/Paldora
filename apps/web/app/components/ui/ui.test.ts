@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { FeedbackMessage } from './feedback';
 import { UsernameField } from './form-fields';
 import { initials, PersonRow } from './identity';
+import { Toast } from './toast';
 
 describe('shared UI primitives', () => {
   it('keeps username constraints in the reusable field', () => {
@@ -32,6 +33,39 @@ describe('shared UI primitives', () => {
         createElement(FeedbackMessage, { tone: 'success' }, 'Saved.'),
       ),
     ).toContain('role="status"');
+  });
+
+  it('renders a reusable, dismissible status toast', () => {
+    const markup = renderToStaticMarkup(
+      createElement(Toast, {
+        message: 'Post shared.',
+        onDismiss: () => undefined,
+      }),
+    );
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('toast-success');
+    expect(markup).toContain('Post shared.');
+    expect(markup).toContain('aria-label="Dismiss message"');
+    expect(markup).toContain('toast-countdown-progress');
+    expect(markup).toContain('--toast-duration:5000ms');
+    expect(
+      renderToStaticMarkup(
+        createElement(Toast, {
+          message: 'Check this.',
+          tone: 'warning',
+          onDismiss: () => undefined,
+        }),
+      ),
+    ).toContain('toast-warning');
+    expect(
+      renderToStaticMarkup(
+        createElement(Toast, {
+          message: 'Failed.',
+          tone: 'error',
+          onDismiss: () => undefined,
+        }),
+      ),
+    ).toContain('toast-error');
   });
 
   it('creates stable one- and two-character avatar fallbacks', () => {

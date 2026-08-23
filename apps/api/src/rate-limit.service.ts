@@ -24,6 +24,10 @@ export class RateLimitService {
     return this.assertAllowed('post', userId, 120, oneHourSeconds);
   }
 
+  public assertPostMediaUploadAllowed(userId: UserId): Promise<void> {
+    return this.assertAllowed('post-media-upload', userId, 480, oneHourSeconds);
+  }
+
   private async assertAllowed(
     scope: string,
     userId: UserId,

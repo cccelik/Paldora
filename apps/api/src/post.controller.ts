@@ -14,9 +14,10 @@ import {
   Sse,
   UseGuards,
 } from '@nestjs/common';
-import type { BoxId, PostId } from '@paldora/domain';
+import type { BoxId, MediaAssetId, PostId } from '@paldora/domain';
 import {
   createPostSchema,
+  createPostMediaUploadSchema,
   cursorPageSchema,
   updatePostSchema,
 } from '@paldora/validation';
@@ -27,6 +28,7 @@ import {
 } from './auth.service.js';
 import { PostService } from './post.service.js';
 import { PostEventService } from './post-event.service.js';
+import { PostMediaService } from './post-media.service.js';
 import { RateLimitService } from './rate-limit.service.js';
 import { parseRequest, parseUuid } from './request-validation.js';
 
@@ -38,6 +40,8 @@ export class PostController {
     @Inject(RateLimitService) private readonly rateLimits: RateLimitService,
     @Inject(PostEventService)
     private readonly postEvents: PostEventService,
+    @Inject(PostMediaService)
+    private readonly postMedia: PostMediaService,
   ) {}
 
   @Post('boxes/:boxId/posts')
@@ -49,7 +53,47 @@ export class PostController {
     const boxId = parseUuid<BoxId>(rawBoxId);
     const input = parseRequest(createPostSchema, body);
     await this.rateLimits.assertPostAllowed(request.principal.userId);
-    return this.posts.create(request.principal.userId, boxId, input.content);
+    return this.posts.create(
+      request.principal.userId,
+      boxId,
+      input.content,
+      input.mediaAssetIds as MediaAssetId[],
+    );
+  }
+
+  @Post('boxes/:boxId/post-media/uploads')
+  public async createMediaUpload(
+    @Req() request: AuthenticatedRequest,
+    @Param('boxId') rawBoxId: string,
+    @Body() body: unknown,
+  ) {
+    const boxId = parseUuid<BoxId>(rawBoxId);
+    const input = parseRequest(createPostMediaUploadSchema, body);
+    await this.rateLimits.assertPostMediaUploadAllowed(
+      request.principal.userId,
+    );
+    return this.postMedia.createUpload(request.principal.userId, boxId, input);
+  }
+
+  @Post('post-media/uploads/:id/complete')
+  public completeMediaUpload(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') rawMediaAssetId: string,
+  ) {
+    const mediaAssetId = parseUuid<MediaAssetId>(rawMediaAssetId);
+    return this.postMedia.completeUpload(
+      request.principal.userId,
+      mediaAssetId,
+    );
+  }
+
+  @Delete('post-media/uploads/:id')
+  public cancelMediaUpload(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') rawMediaAssetId: string,
+  ) {
+    const mediaAssetId = parseUuid<MediaAssetId>(rawMediaAssetId);
+    return this.postMedia.cancelUpload(request.principal.userId, mediaAssetId);
   }
 
   @Get('boxes/:boxId/posts')

@@ -1,11 +1,8 @@
+import { ApiClientError, type PaldoraApiClient } from '@paldora/api-client';
 import type { BoxId } from '@paldora/domain';
-import { ApiClientError } from '@paldora/api-client';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell } from '../../components/app-shell';
-import { BoxInvitePanel } from '../../components/box-invite-panel';
-import { BoxMemberPanel } from '../../components/box-member-panel';
-import { BoxSettingsPanel } from '../../components/box-settings-panel';
+import { BoxDetailHeaderActions } from '../../components/box-detail-header-actions';
 import { PostComposer } from '../../components/post-composer';
 import { PostFeed } from '../../components/post-feed';
 import { PostRealtimeRefresh } from '../../components/post-realtime-refresh';
@@ -25,53 +22,24 @@ export default async function BoxDetailPage({
   searchParams: Promise<{
     cursor?: string;
     error?: string;
+    warning?: string;
     notice?: string;
+    manage?: string;
   }>;
 }) {
   const current = await loadCompletedCurrentUser();
   const { boxId } = await params;
   const notices = await searchParams;
   const api = await authenticatedApiClient();
-  let box;
-  let members;
-  let friends;
-  let friendRequests;
-  let blockedUsers;
-  let postPage;
-  try {
-    [box, members, friends, friendRequests, blockedUsers, postPage] =
-      await Promise.all([
-        api.box(boxId as BoxId),
-        api.boxMembers(boxId as BoxId),
-        api.friends(),
-        api.friendRequests(),
-        api.blockedUsers(),
-        api.boxPosts(boxId as BoxId, {
-          ...(notices.cursor ? { cursor: notices.cursor } : {}),
-          limit: 20,
-        }),
-      ]);
-  } catch (error) {
-    if (
-      error instanceof ApiClientError &&
-      error.status === 404 &&
-      error.code === 'BOX_NOT_FOUND'
-    ) {
-      notFound();
-    }
-    throw error;
-  }
+  const { box, members, friends, friendRequests, blockedUsers, postPage } =
+    await loadBoxDetail(api, boxId as BoxId, notices.cursor);
   const canInvite =
     box.status === 'active' &&
     (box.currentUserRole === 'owner' || box.currentUserRole === 'admin');
   const pendingInvitations = canInvite
     ? await api.pendingBoxInvitees(box.id)
     : { inviteeUserIds: [] };
-  const socialConnectionUserIds = [
-    ...friends,
-    ...friendRequests,
-    ...blockedUsers,
-  ].map((connection) => connection.user.id);
+  const socialConnections = [...friends, ...friendRequests, ...blockedUsers];
   return (
     <AppShell current={current} active="boxes">
       <PostRealtimeRefresh boxId={box.id} />
@@ -86,13 +54,23 @@ export default async function BoxDetailPage({
           </>
         }
         trailing={
-          <Link className="button-quiet" href="/boxes">
-            All Boxes
-          </Link>
+          <BoxDetailHeaderActions
+            box={box}
+            currentUserId={current.user.id}
+            members={members}
+            friends={friends}
+            socialConnections={socialConnections}
+            pendingInviteeUserIds={pendingInvitations.inviteeUserIds}
+            managementOpen={notices.manage === '1'}
+          />
         }
       />
-      <PageFeedback error={notices.error} notice={notices.notice} />
-      <div className="box-detail-layout">
+      <PageFeedback
+        error={notices.error}
+        warning={notices.warning}
+        notice={notices.notice}
+      />
+      <div className="box-detail-layout box-feed-layout">
         <div className="box-post-column">
           {box.status === 'active' ? (
             <PostComposer boxId={box.id} />
@@ -109,25 +87,35 @@ export default async function BoxDetailPage({
             returnPath={`/boxes/${box.id}`}
           />
         </div>
-        <aside className="settings-side">
-          {canInvite && (
-            <BoxInvitePanel
-              boxId={box.id}
-              friends={friends}
-              memberUserIds={members.map((member) => member.userId)}
-              pendingInviteeUserIds={pendingInvitations.inviteeUserIds}
-            />
-          )}
-          <BoxMemberPanel
-            boxId={box.id}
-            currentUserId={current.user.id}
-            currentUserRole={box.currentUserRole}
-            members={members}
-            socialConnectionUserIds={socialConnectionUserIds}
-          />
-          {box.currentUserRole === 'owner' && <BoxSettingsPanel box={box} />}
-        </aside>
       </div>
     </AppShell>
   );
+}
+
+async function loadBoxDetail(
+  api: PaldoraApiClient,
+  boxId: BoxId,
+  cursor?: string,
+) {
+  try {
+    const [box, members, friends, friendRequests, blockedUsers, postPage] =
+      await Promise.all([
+        api.box(boxId),
+        api.boxMembers(boxId),
+        api.friends(),
+        api.friendRequests(),
+        api.blockedUsers(),
+        api.boxPosts(boxId, { ...(cursor ? { cursor } : {}), limit: 20 }),
+      ]);
+    return { box, members, friends, friendRequests, blockedUsers, postPage };
+  } catch (error) {
+    if (
+      error instanceof ApiClientError &&
+      error.status === 404 &&
+      error.code === 'BOX_NOT_FOUND'
+    ) {
+      notFound();
+    }
+    throw error;
+  }
 }

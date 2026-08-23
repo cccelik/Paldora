@@ -13,7 +13,6 @@
   "dependencies": {
     "@paldora/api-client": "workspace:*",
     "@paldora/domain": "workspace:*",
-    "@paldora/ui": "workspace:*",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "next": "16.3.2",
@@ -24,6 +23,7 @@
     "@tailwindcss/postcss": "4.3.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "postcss": "8.5.26",
     "tailwindcss": "4.3.3",
     "vitest": "4.1.11"
   }

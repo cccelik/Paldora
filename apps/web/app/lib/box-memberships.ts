@@ -9,6 +9,8 @@ export interface BoxMemberPermissions {
   canTransferOwnership: boolean;
 }
 
+// The explicit boolean matrix is security-sensitive and intentionally mirrors
+// each permission instead of hiding role rules behind mutable configuration.
 export function boxMemberPermissions(
   actorUserId: UserId,
   actorRole: BoxRole,
@@ -16,19 +18,48 @@ export function boxMemberPermissions(
   hasSocialConnection = false,
 ): BoxMemberPermissions {
   const isSelf = actorUserId === member.userId;
-  const targetIsOwner = member.role === 'owner';
   return {
-    canLeave: isSelf && !targetIsOwner,
-    canRemove:
-      !isSelf &&
-      !targetIsOwner &&
-      (actorRole === 'owner' || actorRole === 'admin'),
-    canPromote:
-      !isSelf &&
-      member.role === 'member' &&
-      (actorRole === 'owner' || actorRole === 'admin'),
-    canDemote: !isSelf && member.role === 'admin' && actorRole === 'owner',
+    canLeave: canLeave(isSelf, member.role),
+    canRemove: canRemove(isSelf, actorRole, member.role),
+    canPromote: canPromote(isSelf, actorRole, member.role),
+    canDemote: canDemote(isSelf, actorRole, member.role),
     canAddFriend: !isSelf && !hasSocialConnection,
-    canTransferOwnership: !isSelf && !targetIsOwner && actorRole === 'owner',
+    canTransferOwnership: canTransferOwnership(isSelf, actorRole, member.role),
   };
+}
+
+function canLeave(isSelf: boolean, memberRole: BoxRole): boolean {
+  return isSelf && memberRole !== 'owner';
+}
+
+function canRemove(
+  isSelf: boolean,
+  actorRole: BoxRole,
+  memberRole: BoxRole,
+): boolean {
+  return !isSelf && memberRole !== 'owner' && actorRole !== 'member';
+}
+
+function canPromote(
+  isSelf: boolean,
+  actorRole: BoxRole,
+  memberRole: BoxRole,
+): boolean {
+  return !isSelf && memberRole === 'member' && actorRole !== 'member';
+}
+
+function canDemote(
+  isSelf: boolean,
+  actorRole: BoxRole,
+  memberRole: BoxRole,
+): boolean {
+  return !isSelf && memberRole === 'admin' && actorRole === 'owner';
+}
+
+function canTransferOwnership(
+  isSelf: boolean,
+  actorRole: BoxRole,
+  memberRole: BoxRole,
+): boolean {
+  return !isSelf && memberRole !== 'owner' && actorRole === 'owner';
 }

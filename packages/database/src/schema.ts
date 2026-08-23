@@ -2,6 +2,8 @@ import {
   bigint,
   check,
   index,
+  integer,
+  jsonb,
   pgSchema,
   primaryKey,
   text,
@@ -27,6 +29,7 @@ export const onboardingState = paldoraSchema.enum('onboarding_state', [
 ]);
 export const mediaStatus = paldoraSchema.enum('media_status', [
   'pending',
+  'processing',
   'ready',
   'failed',
 ]);
@@ -84,6 +87,35 @@ export const users = paldoraSchema.table(
   ],
 );
 
+export const boxes = paldoraSchema.table(
+  'boxes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    privacyMode: text('privacy_mode').notNull().default('private'),
+    status: boxStatus('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('boxes_slug_unique').on(table.slug),
+    index('boxes_owner_status_index').on(table.ownerUserId, table.status),
+    check(
+      'boxes_name_length_check',
+      sql`char_length(${table.name}) between 1 and 80`,
+    ),
+    check('boxes_private_check', sql`${table.privacyMode} = 'private'`),
+  ],
+);
+
 export const mediaAssets = paldoraSchema.table(
   'media_assets',
   {
@@ -91,10 +123,17 @@ export const mediaAssets = paldoraSchema.table(
     ownerUserId: uuid('owner_user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    boxId: uuid('box_id').references(() => boxes.id, {
+      onDelete: 'cascade',
+    }),
     purpose: text('purpose').notNull().default('avatar'),
     objectKey: text('object_key').notNull(),
     contentType: text('content_type').notNull(),
     contentLength: bigint('content_length', { mode: 'number' }).notNull(),
+    displayObjectKey: text('display_object_key'),
+    thumbnailObjectKey: text('thumbnail_object_key'),
+    width: integer('width'),
+    height: integer('height'),
     status: mediaStatus('status').notNull().default('pending'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -109,9 +148,14 @@ export const mediaAssets = paldoraSchema.table(
       table.ownerUserId,
       table.status,
     ),
+    index('media_assets_box_status_index').on(table.boxId, table.status),
     check(
-      'media_assets_avatar_purpose_check',
-      sql`${table.purpose} = 'avatar'`,
+      'media_assets_purpose_check',
+      sql`${table.purpose} in ('avatar', 'post_image')`,
+    ),
+    check(
+      'media_assets_purpose_box_check',
+      sql`(${table.purpose} = 'avatar' and ${table.boxId} is null) or (${table.purpose} = 'post_image' and ${table.boxId} is not null)`,
     ),
     check(
       'media_assets_content_type_check',
@@ -121,6 +165,45 @@ export const mediaAssets = paldoraSchema.table(
       'media_assets_content_length_check',
       sql`${table.contentLength} between 1 and 10485760`,
     ),
+  ],
+);
+
+export interface MediaJobPayload {
+  mediaAssetId: string;
+  objectKeys?: string[];
+}
+
+export const mediaJobOutbox = paldoraSchema.table(
+  'media_job_outbox',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobType: text('job_type').notNull(),
+    mediaAssetId: uuid('media_asset_id').notNull(),
+    payload: jsonb('payload').$type<MediaJobPayload>().notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    availableAt: timestamp('available_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lockedAt: timestamp('locked_at', { withTimezone: true }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('media_job_outbox_pending_index')
+      .on(table.availableAt, table.createdAt)
+      .where(sql`${table.publishedAt} is null`),
+    index('media_job_outbox_media_asset_index').on(table.mediaAssetId),
+    check(
+      'media_job_outbox_job_type_check',
+      sql`${table.jobType} in ('delete-media-object', 'process-post-image')`,
+    ),
+    check('media_job_outbox_attempts_check', sql`${table.attempts} >= 0`),
   ],
 );
 
@@ -167,35 +250,6 @@ export const profiles = paldoraSchema.table(
       'profiles_bio_length_check',
       sql`${table.bio} is null or char_length(${table.bio}) <= 500`,
     ),
-  ],
-);
-
-export const boxes = paldoraSchema.table(
-  'boxes',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    name: text('name').notNull(),
-    slug: text('slug').notNull(),
-    ownerUserId: uuid('owner_user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'restrict' }),
-    privacyMode: text('privacy_mode').notNull().default('private'),
-    status: boxStatus('status').notNull().default('active'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex('boxes_slug_unique').on(table.slug),
-    index('boxes_owner_status_index').on(table.ownerUserId, table.status),
-    check(
-      'boxes_name_length_check',
-      sql`char_length(${table.name}) between 1 and 80`,
-    ),
-    check('boxes_private_check', sql`${table.privacyMode} = 'private'`),
   ],
 );
 
@@ -294,12 +348,36 @@ export const posts = paldoraSchema.table(
     index('posts_author_status_index').on(table.authorUserId, table.status),
     check(
       'posts_content_state_check',
-      sql`(${table.status} = 'active' and char_length(${table.content}) between 1 and 5000) or (${table.status} = 'deleted' and ${table.content} = '')`,
+      sql`(${table.status} = 'active' and char_length(${table.content}) between 0 and 5000) or (${table.status} = 'deleted' and ${table.content} = '')`,
     ),
     check(
       'posts_deleted_at_state_check',
       sql`(${table.status} = 'deleted') = (${table.deletedAt} is not null)`,
     ),
+  ],
+);
+
+export const postMedia = paldoraSchema.table(
+  'post_media',
+  {
+    mediaAssetId: uuid('media_asset_id')
+      .primaryKey()
+      .references(() => mediaAssets.id, { onDelete: 'cascade' }),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('post_media_post_position_unique').on(
+      table.postId,
+      table.position,
+    ),
+    index('post_media_post_index').on(table.postId),
+    check('post_media_position_check', sql`${table.position} between 0 and 3`),
   ],
 );
 

@@ -11,7 +11,7 @@ Expo mobile ─┘                                 ├─> Redis
                                       BullMQ worker ─> asynchronous adapters
 ```
 
-The API owns authorization and orchestration. PostgreSQL is canonical. Redis is disposable infrastructure for queues, distributed rate limits, and carefully selected caches. Large media belongs in private S3-compatible object storage. The worker owns expensive or retryable operations.
+The API owns authorization and orchestration. PostgreSQL is canonical. Redis is disposable infrastructure for queue delivery, distributed rate limits, and carefully selected caches. Durable media-job intent lives in PostgreSQL's transactional outbox and is relayed to BullMQ, so a temporary Redis failure cannot lose processing or deletion work. Large media belongs in private S3-compatible object storage. The worker owns expensive or retryable operations.
 
 Shared packages are intentionally narrow. `domain` has no framework dependency, `validation` owns transport-neutral schemas, `api-client` owns request behavior, and infrastructure packages expose interfaces or factories. React web and React Native do not share view components; only tokens and portable contracts cross that boundary.
 

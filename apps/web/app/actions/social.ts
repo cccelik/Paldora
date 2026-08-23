@@ -12,6 +12,7 @@ import { redirect } from 'next/navigation';
 import { authenticatedApiClient } from '../lib/api';
 import {
   apiErrorMessage,
+  apiErrorNoticeKey,
   mutateAndRedirect,
   withNotice,
 } from '../lib/action-result';
@@ -24,7 +25,11 @@ export async function createBoxAction(formData: FormData) {
     ).createBox({ name: String(formData.get('name') ?? '') });
     destination = `/boxes/${box.id}`;
   } catch (error) {
-    destination = withNotice('/boxes/new', 'error', apiErrorMessage(error));
+    destination = withNotice(
+      '/boxes/new',
+      apiErrorNoticeKey(error),
+      apiErrorMessage(error),
+    );
   }
   redirect(destination as Route);
 }
@@ -63,10 +68,14 @@ export async function respondToFriendRequestAction(
 
 export async function inviteToBoxAction(boxId: string, formData: FormData) {
   const path = `/boxes/${boxId}`;
-  return mutateAndRedirect(path, 'Invitation sent.', async () =>
-    (await authenticatedApiClient()).inviteToBox(boxId as BoxId, {
-      username: String(formData.get('username') ?? ''),
-    }),
+  return mutateAndRedirect(
+    path,
+    'Invitation sent.',
+    async () =>
+      (await authenticatedApiClient()).inviteToBox(boxId as BoxId, {
+        username: String(formData.get('username') ?? ''),
+      }),
+    `${path}?manage=1`,
   );
 }
 
@@ -154,7 +163,7 @@ export async function deleteBoxAction(
     redirect(
       withNotice(
         boxPath,
-        'error',
+        'warning',
         'Enter the exact Box name to confirm.',
       ) as Route,
     );
@@ -165,7 +174,11 @@ export async function deleteBoxAction(
     revalidatePath('/boxes');
     revalidatePath(boxPath as Route);
   } catch (error) {
-    destination = withNotice(boxPath, 'error', apiErrorMessage(error));
+    destination = withNotice(
+      boxPath,
+      apiErrorNoticeKey(error),
+      apiErrorMessage(error),
+    );
   }
   redirect(destination as Route);
 }
@@ -205,7 +218,11 @@ export async function leaveBoxAction(boxId: string) {
     revalidatePath('/boxes');
     revalidatePath(boxPath);
   } catch (error) {
-    destination = withNotice(boxPath, 'error', apiErrorMessage(error));
+    destination = withNotice(
+      boxPath,
+      apiErrorNoticeKey(error),
+      apiErrorMessage(error),
+    );
   }
   redirect(destination as Route);
 }

@@ -28,6 +28,12 @@ export interface ObjectStorage {
   ): Promise<string>;
   deleteObject(objectKey: string): Promise<void>;
   inspectObject(objectKey: string): Promise<StoredObject | null>;
+  readObject(objectKey: string): Promise<Uint8Array>;
+  writeObject(
+    objectKey: string,
+    contentType: string,
+    body: Uint8Array,
+  ): Promise<void>;
 }
 
 export interface StoredObject {
@@ -115,6 +121,30 @@ export class S3ObjectStorage implements ObjectStorage {
   public async deleteObject(objectKey: string): Promise<void> {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.options.bucket, Key: objectKey }),
+    );
+  }
+
+  public async readObject(objectKey: string): Promise<Uint8Array> {
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.options.bucket, Key: objectKey }),
+    );
+    if (!result.Body) throw new Error('Stored object has no body.');
+    return result.Body.transformToByteArray();
+  }
+
+  public async writeObject(
+    objectKey: string,
+    contentType: string,
+    body: Uint8Array,
+  ): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.options.bucket,
+        Key: objectKey,
+        ContentType: contentType,
+        ContentLength: body.byteLength,
+        Body: body,
+      }),
     );
   }
 }

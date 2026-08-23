@@ -39,6 +39,18 @@ describe('RateLimitService', () => {
     );
   });
 
+  it('bounds direct post image uploads separately', async () => {
+    const incrementRateLimit = vi.fn().mockResolvedValue(480);
+    const service = rateLimits(incrementRateLimit);
+    await expect(
+      service.assertPostMediaUploadAllowed(userId),
+    ).resolves.toBeUndefined();
+    expect(incrementRateLimit).toHaveBeenCalledWith(
+      `paldora:rate-limit:post-media-upload:${userId}`,
+      3600,
+    );
+  });
+
   it('fails closed when Redis is unavailable', async () => {
     const service = rateLimits(vi.fn().mockRejectedValue(new Error('offline')));
     await expect(

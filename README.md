@@ -71,3 +71,9 @@ and archived Boxes remain readable while publishing is paused.
 Phase 3B adds authenticated realtime Box and Home feed updates. Redis carries
 metadata-only create/edit/delete notifications, while connected clients
 re-fetch the authoritative private feed through the existing API.
+
+Phase 3C adds up to four private JPEG, PNG, or WebP images per post. Browsers
+upload originals directly through short-lived signed requests; the worker
+creates metadata-stripped display and thumbnail WebP variants, and realtime
+feed invalidation reveals completed images without a manual refresh. Photos
+open in an accessible fullscreen viewer with download and private-post sharing.

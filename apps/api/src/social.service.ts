@@ -7,7 +7,7 @@ import {
 } from '@paldora/database';
 import type { Friendship, FriendshipId, UserId } from '@paldora/domain';
 import { normalizeUsername } from '@paldora/validation';
-import { and, eq, ne, or, sql } from 'drizzle-orm';
+import { and, eq, ne, or, sql, type SQL } from 'drizzle-orm';
 import { ApiError } from './api-error.js';
 import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
@@ -54,55 +54,8 @@ export class SocialService {
         and(eq(friendships.userLowId, low), eq(friendships.userHighId, high)),
       )
       .limit(1);
-    if (existing?.status === 'blocked') this.interactionUnavailable();
-    if (existing?.status === 'accepted') {
-      throw new ApiError(
-        HttpStatus.CONFLICT,
-        'ALREADY_FRIENDS',
-        'You are already friends.',
-      );
-    }
-    if (existing?.status === 'pending') {
-      throw new ApiError(
-        HttpStatus.CONFLICT,
-        'FRIEND_REQUEST_ALREADY_PENDING',
-        'A friend request is already pending.',
-      );
-    }
-    const now = new Date();
-    let rows: (typeof friendships.$inferSelect)[];
-    try {
-      rows = existing
-        ? await this.database
-            .update(friendships)
-            .set({
-              initiatedByUserId: userId,
-              blockedByUserId: null,
-              status: 'pending',
-              respondedAt: null,
-              updatedAt: now,
-            })
-            .where(eq(friendships.id, existing.id))
-            .returning()
-        : await this.database
-            .insert(friendships)
-            .values({
-              userLowId: low,
-              userHighId: high,
-              initiatedByUserId: userId,
-            })
-            .returning();
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw new ApiError(
-          HttpStatus.CONFLICT,
-          'FRIEND_REQUEST_ALREADY_PENDING',
-          'A friend request is already pending.',
-        );
-      }
-      throw error;
-    }
-    const [row] = rows;
+    this.assertFriendRequestAvailable(existing);
+    const row = await this.persistFriendRequest(userId, low, high, existing);
     if (!row) throw new Error('Friend request did not return a row.');
     return this.map(row, userId, target);
   }
@@ -283,6 +236,16 @@ export class SocialService {
   }
 
   private async profileByUsername(username: string) {
+    return this.profileBy(
+      eq(profiles.usernameNormalized, normalizeUsername(username)),
+    );
+  }
+
+  private async profileByUserId(userId: UserId) {
+    return this.profileBy(eq(profiles.userId, userId));
+  }
+
+  private async profileBy(condition: SQL<unknown>) {
     const [profile] = await this.database
       .select({
         userId: profiles.userId,
@@ -291,12 +254,7 @@ export class SocialService {
       })
       .from(profiles)
       .innerJoin(users, eq(users.id, profiles.userId))
-      .where(
-        and(
-          eq(profiles.usernameNormalized, normalizeUsername(username)),
-          eq(users.status, 'active'),
-        ),
-      )
+      .where(and(condition, eq(users.status, 'active')))
       .limit(1);
     if (!profile) this.userNotFound();
     return {
@@ -307,24 +265,52 @@ export class SocialService {
     };
   }
 
-  private async profileByUserId(userId: UserId) {
-    const [profile] = await this.database
-      .select({
-        userId: profiles.userId,
-        username: profiles.username,
-        displayName: profiles.displayName,
-      })
-      .from(profiles)
-      .innerJoin(users, eq(users.id, profiles.userId))
-      .where(and(eq(profiles.userId, userId), eq(users.status, 'active')))
-      .limit(1);
-    if (!profile) this.userNotFound();
-    return {
-      userId: profile.userId as UserId,
-      username: profile.username,
-      displayName: profile.displayName,
-      avatarUrl: await this.avatars.forUser(profile.userId as UserId),
-    };
+  private assertFriendRequestAvailable(
+    existing: typeof friendships.$inferSelect | undefined,
+  ): void {
+    if (existing?.status === 'blocked') this.interactionUnavailable();
+    if (existing?.status === 'accepted') {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'ALREADY_FRIENDS',
+        'You are already friends.',
+      );
+    }
+    if (existing?.status === 'pending') this.friendRequestPending();
+  }
+
+  private async persistFriendRequest(
+    userId: UserId,
+    low: UserId,
+    high: UserId,
+    existing: typeof friendships.$inferSelect | undefined,
+  ): Promise<typeof friendships.$inferSelect | undefined> {
+    try {
+      const rows = existing
+        ? await this.database
+            .update(friendships)
+            .set({
+              initiatedByUserId: userId,
+              blockedByUserId: null,
+              status: 'pending',
+              respondedAt: null,
+              updatedAt: new Date(),
+            })
+            .where(eq(friendships.id, existing.id))
+            .returning()
+        : await this.database
+            .insert(friendships)
+            .values({
+              userLowId: low,
+              userHighId: high,
+              initiatedByUserId: userId,
+            })
+            .returning();
+      return rows[0];
+    } catch (error) {
+      if (isUniqueViolation(error)) this.friendRequestPending();
+      throw error;
+    }
   }
 
   private map(
@@ -377,6 +363,14 @@ export class SocialService {
       HttpStatus.NOT_FOUND,
       'FRIENDSHIP_NOT_FOUND',
       'That friendship is unavailable.',
+    );
+  }
+
+  private friendRequestPending(): never {
+    throw new ApiError(
+      HttpStatus.CONFLICT,
+      'FRIEND_REQUEST_ALREADY_PENDING',
+      'A friend request is already pending.',
     );
   }
 

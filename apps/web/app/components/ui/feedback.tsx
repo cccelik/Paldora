@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useEffect, useState, type ReactNode } from 'react';
 import { classNames } from './class-names';
+import { PageToasts, Toast, ToastViewport } from './toast';
 
 type FeedbackTone = 'error' | 'success';
 type ActionFeedbackState =
@@ -33,9 +36,29 @@ export function FeedbackMessage({
 }
 
 export function ActionFeedback({ state }: { state: ActionFeedbackState }) {
-  if (state.status === 'idle') return null;
+  const [successVisible, setSuccessVisible] = useState(
+    state.status === 'success',
+  );
+
+  useEffect(() => {
+    setSuccessVisible(state.status === 'success');
+  }, [state]);
+
+  if (state.status === 'idle' || !state.message) return null;
+  if (state.status === 'success') {
+    return successVisible ? (
+      <ToastViewport>
+        <Toast
+          key={state.message}
+          message={state.message}
+          tone="success"
+          onDismiss={() => setSuccessVisible(false)}
+        />
+      </ToastViewport>
+    ) : null;
+  }
   return (
-    <FeedbackMessage variant="notice" tone={state.status}>
+    <FeedbackMessage variant="notice" tone="error">
       {state.message}
     </FeedbackMessage>
   );
@@ -43,19 +66,19 @@ export function ActionFeedback({ state }: { state: ActionFeedbackState }) {
 
 export function PageFeedback({
   error,
+  warning,
   notice,
 }: {
   error?: string | undefined;
+  warning?: string | undefined;
   notice?: string | undefined;
 }) {
   return (
-    <>
-      <FeedbackMessage tone="error" className="page-notice">
-        {error}
-      </FeedbackMessage>
-      <FeedbackMessage tone="success" className="page-notice">
-        {notice}
-      </FeedbackMessage>
-    </>
+    <PageToasts
+      key={`${error ?? ''}:${warning ?? ''}:${notice ?? ''}`}
+      error={error}
+      warning={warning}
+      notice={notice}
+    />
   );
 }

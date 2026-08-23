@@ -98,10 +98,26 @@ describe('Boxes and social validation', () => {
   it('bounds and trims text posts', () => {
     expect(createPostSchema.parse({ content: '  hello Box  ' })).toEqual({
       content: 'hello Box',
+      mediaAssetIds: [],
     });
     expect(createPostSchema.safeParse({ content: '   ' }).success).toBe(false);
     expect(
       createPostSchema.safeParse({ content: 'x'.repeat(5_001) }).success,
+    ).toBe(false);
+    expect(
+      createPostSchema.safeParse({
+        content: '',
+        mediaAssetIds: ['00000000-0000-4000-8000-000000000001'],
+      }).success,
+    ).toBe(true);
+    expect(
+      createPostSchema.safeParse({
+        content: '',
+        mediaAssetIds: Array.from(
+          { length: 5 },
+          (_, index) => `00000000-0000-4000-8000-00000000000${index + 1}`,
+        ),
+      }).success,
     ).toBe(false);
   });
 });

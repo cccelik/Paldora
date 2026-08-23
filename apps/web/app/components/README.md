@@ -31,3 +31,14 @@ markup or behavior.
    and existing responsive CSS when extracting a component.
 7. Add or update tests whenever shared behavior, validation, routing, or client
    interaction changes.
+
+`BoxManagementMenu` owns the responsive Box management dialog. Keep invitation,
+membership, and owner settings controls inside it so the Box feed remains the
+primary page content.
+
+Route-sized product sections are also reusable components: `BoxGrid`,
+`BoxInvitationList`, `FriendControls`, the friend list sections, and
+`BoxDetailHeaderActions`. Client components separate browser orchestration from
+rendering through `AvatarUploaderView`, `PostComposerForm`, and
+`PostMediaLightbox`. Extend these components or extract a new focused sibling;
+do not copy their markup back into a route.

@@ -16,6 +16,7 @@ export const BIO_MAX_LENGTH = 500;
 export const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
 export const BOX_NAME_MAX_LENGTH = 80;
 export const POST_CONTENT_MAX_LENGTH = 5_000;
+export const POST_MEDIA_MAX_ITEMS = 4;
 
 const reservedUsernames = new Set([
   'account',
@@ -126,11 +127,28 @@ export const createBlockSchema = z.object({ username: usernameSchema });
 export const postContentSchema = z
   .string()
   .trim()
-  .min(1, 'Write something before posting.')
   .max(POST_CONTENT_MAX_LENGTH, 'Posts must be 5,000 characters or fewer.');
 
-export const createPostSchema = z.object({ content: postContentSchema });
-export const updatePostSchema = z.object({ content: postContentSchema });
+export const createPostSchema = z
+  .object({
+    content: postContentSchema,
+    mediaAssetIds: z
+      .array(uuidSchema)
+      .max(POST_MEDIA_MAX_ITEMS)
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: 'Each photo can only be attached once.',
+      })
+      .default([]),
+  })
+  .refine(
+    ({ content, mediaAssetIds }) =>
+      content.length > 0 || mediaAssetIds.length > 0,
+    { message: 'Write something or add a photo before posting.' },
+  );
+export const updatePostSchema = z.object({
+  content: postContentSchema.min(1, 'Post text cannot be empty.'),
+});
+export const createPostMediaUploadSchema = createAvatarUploadSchema;
 
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type CreateAvatarUpload = z.infer<typeof createAvatarUploadSchema>;
@@ -142,3 +160,4 @@ export type TransferBoxOwnership = z.infer<typeof transferBoxOwnershipSchema>;
 export type CreateFriendRequest = z.infer<typeof createFriendRequestSchema>;
 export type CreatePost = z.infer<typeof createPostSchema>;
 export type UpdatePost = z.infer<typeof updatePostSchema>;
+export type CreatePostMediaUpload = z.infer<typeof createPostMediaUploadSchema>;

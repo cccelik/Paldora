@@ -1,7 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 export function OverflowMenu({
   label,
@@ -48,7 +47,11 @@ export function OverflowMenu({
         type="button"
         onClick={() => setOpen((current) => !current)}
       >
-        …
+        <svg aria-hidden="true" viewBox="0 0 18 6">
+          <circle cx="3" cy="3" r="1.5" />
+          <circle cx="9" cy="3" r="1.5" />
+          <circle cx="15" cy="3" r="1.5" />
+        </svg>
       </button>
       {open && (
         <div

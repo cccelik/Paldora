@@ -37,6 +37,8 @@ const previewUser: CurrentUser = {
   },
 };
 
+// The development-only gallery keeps its deterministic screenshot variants in
+// one entry point; it is not shipped as an application route in production.
 export default async function PhaseOneDesignPreview({
   searchParams,
 }: {

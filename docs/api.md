@@ -64,18 +64,22 @@ or `RATE_LIMIT_UNAVAILABLE` without weakening Box authorization.
 
 ## Phase 3A post endpoints
 
-| Method   | Path                                | Purpose                         |
-| -------- | ----------------------------------- | ------------------------------- |
-| `POST`   | `/api/v1/boxes/:boxId/posts`        | Publish a text post             |
-| `GET`    | `/api/v1/boxes/:boxId/posts`        | Read a Box's chronological feed |
-| `GET`    | `/api/v1/me/feed`                   | Read posts from joined Boxes    |
-| `GET`    | `/api/v1/me/feed/events`            | Stream joined-Box post changes  |
-| `GET`    | `/api/v1/posts/:postId`             | Read one accessible post        |
-| `PATCH`  | `/api/v1/posts/:postId`             | Edit an authored post           |
-| `DELETE` | `/api/v1/posts/:postId`             | Soft-delete an authored post    |
-| `GET`    | `/api/v1/boxes/:boxId/posts/events` | Stream Box post changes         |
+| Method   | Path                                      | Purpose                         |
+| -------- | ----------------------------------------- | ------------------------------- |
+| `POST`   | `/api/v1/boxes/:boxId/posts`              | Publish a text post             |
+| `GET`    | `/api/v1/boxes/:boxId/posts`              | Read a Box's chronological feed |
+| `GET`    | `/api/v1/me/feed`                         | Read posts from joined Boxes    |
+| `GET`    | `/api/v1/me/feed/events`                  | Stream joined-Box post changes  |
+| `GET`    | `/api/v1/posts/:postId`                   | Read one accessible post        |
+| `PATCH`  | `/api/v1/posts/:postId`                   | Edit an authored post           |
+| `DELETE` | `/api/v1/posts/:postId`                   | Soft-delete an authored post    |
+| `GET`    | `/api/v1/boxes/:boxId/posts/events`       | Stream Box post changes         |
+| `POST`   | `/api/v1/boxes/:boxId/post-media/uploads` | Prepare a private image upload  |
+| `POST`   | `/api/v1/post-media/uploads/:id/complete` | Verify and queue an image       |
+| `DELETE` | `/api/v1/post-media/uploads/:id`          | Cancel an unattached upload     |
 
-Post content is plain text from 1 to 5,000 characters. Box and home feeds use
+Post content is plain text up to 5,000 characters and may be empty when the post
+contains an image. Box and home feeds use
 opaque keyset cursors ordered by creation time and UUID, newest first. Only an
 active member can read a Box's posts. Only an active Box can receive new posts,
 and only the post author can edit or delete their post. Inaccessible and
@@ -88,3 +92,8 @@ heartbeats. Event data contains identifiers and timestamps only—not post
 content. Clients treat notifications as invalidation hints and re-fetch the
 normal authorized feed. The Box stream checks access before connecting; both
 streams check active membership again before each event is delivered.
+
+Post creation accepts zero to four `mediaAssetIds`. A post must contain text or
+at least one verified image. Each image is owned by its uploader, scoped to its
+destination Box, and can be attached once. Completion verifies the stored MIME
+type and exact byte count before the worker is allowed to decode it.

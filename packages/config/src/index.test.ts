@@ -15,7 +15,23 @@ describe('parseApiEnvironment', () => {
       S3_FORCE_PATH_STYLE: 'false',
     });
     expect(config.API_PORT).toBe(4100);
+    expect(config.MEDIA_JOB_QUEUE_NAME).toBe('paldora-jobs');
     expect(config.S3_FORCE_PATH_STYLE).toBe(false);
+  });
+
+  it('rejects unsafe media queue names', () => {
+    expect(() =>
+      parseApiEnvironment({
+        DATABASE_URL: 'postgresql://localhost/paldora',
+        REDIS_URL: 'redis://localhost:6379',
+        MEDIA_JOB_QUEUE_NAME: 'queue with spaces',
+        WEB_ORIGIN: 'http://localhost:3000',
+        SUPABASE_URL: 'https://example.supabase.co',
+        S3_BUCKET: 'paldora-private',
+        S3_ACCESS_KEY_ID: 'test',
+        S3_SECRET_ACCESS_KEY: 'test-secret',
+      }),
+    ).toThrow('Invalid environment configuration');
   });
 
   it('fails closed when required configuration is missing', () => {

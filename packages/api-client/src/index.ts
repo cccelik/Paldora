@@ -12,11 +12,14 @@ import type {
   CreateAvatarUploadInput,
   CreateAvatarUploadResult,
   CreatePostInput,
+  CreatePostMediaUploadInput,
+  CreatePostMediaUploadResult,
   CursorPageInput,
   CurrentUser,
   HealthStatus,
   Friendship,
   FriendshipId,
+  MediaAsset,
   MediaAssetId,
   Post,
   PostId,
@@ -42,6 +45,13 @@ export interface ApiClientOptions {
   baseUrl: string;
   fetchImplementation?: typeof fetch;
   getAccessToken?: () => Promise<string | null>;
+}
+
+interface SendOptions {
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  body?: unknown;
+  signal?: AbortSignal | undefined;
+  authenticated?: boolean;
 }
 
 export class PaldoraApiClient {
@@ -294,6 +304,38 @@ export class PaldoraApiClient {
     });
   }
 
+  public createPostMediaUpload(
+    boxId: BoxId,
+    input: CreatePostMediaUploadInput,
+    signal?: AbortSignal,
+  ): Promise<CreatePostMediaUploadResult> {
+    return this.send(`/boxes/${boxId}/post-media/uploads`, {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public completePostMediaUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<MediaAsset> {
+    return this.send(`/post-media/uploads/${id}/complete`, {
+      method: 'POST',
+      signal,
+    });
+  }
+
+  public cancelPostMediaUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/post-media/uploads/${id}`, {
+      method: 'DELETE',
+      signal,
+    });
+  }
+
   public boxPosts(
     boxId: BoxId,
     page?: CursorPageInput,
@@ -331,41 +373,43 @@ export class PaldoraApiClient {
 
   private async send<Result>(
     path: string,
-    options: {
-      method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
-      body?: unknown;
-      signal?: AbortSignal | undefined;
-      authenticated?: boolean;
-    } = {},
+    options: SendOptions = {},
   ): Promise<Result> {
-    const headers: Record<string, string> = { accept: 'application/json' };
-    if (options.body !== undefined)
-      headers['content-type'] = 'application/json';
-    if (options.authenticated !== false) {
-      const token = await this.getAccessToken();
-      if (token) headers.authorization = `Bearer ${token}`;
-    }
-    const requestInit: RequestInit = {
-      method: options.method ?? 'GET',
-      headers,
-      ...(options.body !== undefined
-        ? { body: JSON.stringify(options.body) }
-        : {}),
-      ...(options.signal ? { signal: options.signal } : {}),
-    };
+    const token =
+      options.authenticated === false ? null : await this.getAccessToken();
+    const requestInit = requestOptions(options, token);
     const response = await this.request(`${this.baseUrl}${path}`, requestInit);
-    if (!response.ok) {
-      const body = (await response
-        .json()
-        .catch(() => null)) as ApiErrorShape | null;
-      throw new ApiClientError(
-        response.status,
-        body?.error.code ?? 'UNEXPECTED_API_ERROR',
-        body?.error.message ?? 'The Paldora API request failed.',
-      );
-    }
+    if (!response.ok) throw await responseError(response);
     return (await response.json()) as Result;
   }
+}
+
+function requestOptions(
+  options: SendOptions,
+  token: string | null,
+): RequestInit {
+  const headers: Record<string, string> = { accept: 'application/json' };
+  if (options.body !== undefined) headers['content-type'] = 'application/json';
+  if (token) headers.authorization = `Bearer ${token}`;
+  return {
+    method: options.method ?? 'GET',
+    headers,
+    ...(options.body !== undefined
+      ? { body: JSON.stringify(options.body) }
+      : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
+  };
+}
+
+async function responseError(response: Response): Promise<ApiClientError> {
+  const body = (await response
+    .json()
+    .catch(() => null)) as ApiErrorShape | null;
+  return new ApiClientError(
+    response.status,
+    body?.error.code ?? 'UNEXPECTED_API_ERROR',
+    body?.error.message ?? 'The Paldora API request failed.',
+  );
 }
 
 function pagePath(path: string, page?: CursorPageInput): string {

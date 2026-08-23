@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { parseMediaAssetId } from './job-payload.js';
+import { parseMediaJobPayload } from './job-payload.js';
 
-describe('parseMediaAssetId', () => {
-  it('accepts a UUID and rejects untrusted object keys or malformed ids', () => {
+const mediaAssetId = '10000000-0000-4000-8000-000000000001';
+
+describe('parseMediaJobPayload', () => {
+  it('preserves deletion object snapshots after media metadata is gone', () => {
     expect(
-      parseMediaAssetId({
-        mediaAssetId: '0198d447-ecb2-7bf2-9f0d-b2dd38be8107',
-        objectKey: 'avatars/someone-else/private.webp',
+      parseMediaJobPayload({
+        mediaAssetId,
+        objectKeys: ['original.png', 'display.webp', 'thumbnail.webp'],
       }),
-    ).toBe('0198d447-ecb2-7bf2-9f0d-b2dd38be8107');
-    expect(() => parseMediaAssetId({ mediaAssetId: '../object' })).toThrow(
-      'Invalid delete-media-object job payload',
+    ).toEqual({
+      mediaAssetId,
+      objectKeys: ['original.png', 'display.webp', 'thumbnail.webp'],
+    });
+  });
+
+  it('rejects malformed IDs and object key lists', () => {
+    expect(() => parseMediaJobPayload({ mediaAssetId: 'invalid' })).toThrow(
+      'Invalid media job payload.',
     );
+    expect(() =>
+      parseMediaJobPayload({ mediaAssetId, objectKeys: [''] }),
+    ).toThrow('Invalid media job object keys.');
   });
 });

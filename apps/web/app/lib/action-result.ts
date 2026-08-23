@@ -32,23 +32,53 @@ export function apiErrorMessage(error: unknown): string {
 
 export function withNotice(
   path: string,
-  key: 'error' | 'notice',
+  key: 'error' | 'warning' | 'notice',
   message: string,
 ) {
-  return `${path}?${key}=${encodeURIComponent(message)}`;
+  const [pathname, query = ''] = path.split('?', 2);
+  const searchParams = new URLSearchParams(query);
+  searchParams.set(key, message);
+  return `${pathname}?${searchParams.toString()}`;
+}
+
+export function apiErrorNoticeKey(error: unknown): 'error' | 'warning' {
+  if (!(error instanceof ApiClientError)) return 'error';
+  const attentionCodes = new Set([
+    'ALREADY_BOX_MEMBER',
+    'ALREADY_FRIENDS',
+    'BOX_ACCESS_DENIED',
+    'BOX_ARCHIVED',
+    'BOX_MEMBER_NOT_FOUND',
+    'FRIEND_REQUEST_ALREADY_PENDING',
+    'FRIENDSHIP_NOT_FOUND',
+    'INTERACTION_NOT_AVAILABLE',
+    'INVITATION_ALREADY_HANDLED',
+    'INVITATION_ALREADY_PENDING',
+    'INVITATION_EXPIRED',
+    'POST_NOT_FOUND',
+    'RATE_LIMITED',
+    'USER_NOT_FOUND',
+    'VALIDATION_FAILED',
+  ]);
+  return attentionCodes.has(error.code) ? 'warning' : 'error';
 }
 
 export async function mutateAndRedirect(
   path: string,
   successMessage: string,
   operation: () => Promise<unknown>,
+  destinationPath = path,
 ): Promise<never> {
-  let destination = withNotice(path, 'notice', successMessage);
+  let destination = withNotice(destinationPath, 'notice', successMessage);
   try {
     await operation();
     revalidatePath(path as Route);
   } catch (error) {
-    destination = withNotice(path, 'error', apiErrorMessage(error));
+    destination = withNotice(
+      destinationPath,
+      apiErrorNoticeKey(error),
+      apiErrorMessage(error),
+    );
   }
   redirect(destination as Route);
 }

@@ -1,4 +1,5 @@
 import type { BoxId, BoxMember, BoxRole, UserId } from '@paldora/domain';
+import type { ReactNode } from 'react';
 import {
   leaveBoxAction,
   removeBoxMemberAction,
@@ -29,116 +30,16 @@ export function BoxMemberPanel({
   return (
     <SurfaceCard title="Members">
       <div className="member-list">
-        {members.map((member) => {
-          const permissions = boxMemberPermissions(
-            currentUserId,
-            currentUserRole,
-            member,
-            socialConnections.has(member.userId),
-          );
-          const hasActions = Object.values(permissions).some(Boolean);
-          return (
-            <div className="member-row" key={member.userId}>
-              <InitialAvatar
-                name={member.displayName}
-                imageUrl={member.avatarUrl}
-              />
-              <div className="member-row-copy">
-                <strong>{member.displayName}</strong>
-                <div className="member-identity-line">
-                  <small className="member-username">@{member.username}</small>
-                  <span className="member-role">{member.role}</span>
-                  {hasActions && (
-                    <OverflowMenu label={`Manage ${member.displayName}`}>
-                      {permissions.canAddFriend && (
-                        <form
-                          action={sendFriendRequestFromBoxAction.bind(
-                            null,
-                            boxId,
-                          )}
-                        >
-                          <input
-                            type="hidden"
-                            name="username"
-                            value={member.username}
-                          />
-                          <PendingSubmitButton pendingChildren="Request sent">
-                            Add friend
-                          </PendingSubmitButton>
-                        </form>
-                      )}
-                      {permissions.canPromote && (
-                        <form
-                          action={updateBoxMemberRoleAction.bind(
-                            null,
-                            boxId,
-                            member.userId,
-                            'admin',
-                          )}
-                        >
-                          <button type="submit">Make admin</button>
-                        </form>
-                      )}
-                      {permissions.canDemote && (
-                        <form
-                          action={updateBoxMemberRoleAction.bind(
-                            null,
-                            boxId,
-                            member.userId,
-                            'member',
-                          )}
-                        >
-                          <button type="submit">Remove admin</button>
-                        </form>
-                      )}
-                      {permissions.canTransferOwnership && (
-                        <form
-                          action={transferBoxOwnershipAction.bind(
-                            null,
-                            boxId,
-                            member.userId,
-                          )}
-                        >
-                          <ConfirmSubmitButton
-                            confirmation={`Transfer this Box to ${member.displayName}? You will become an admin and they will become the owner.`}
-                          >
-                            Transfer ownership
-                          </ConfirmSubmitButton>
-                        </form>
-                      )}
-                      {permissions.canRemove && (
-                        <form
-                          action={removeBoxMemberAction.bind(
-                            null,
-                            boxId,
-                            member.userId,
-                          )}
-                        >
-                          <ConfirmSubmitButton
-                            className="danger"
-                            confirmation={`Remove ${member.displayName} from this Box? They will immediately lose access.`}
-                          >
-                            Remove
-                          </ConfirmSubmitButton>
-                        </form>
-                      )}
-                      {permissions.canLeave && (
-                        <form action={leaveBoxAction.bind(null, boxId)}>
-                          <ConfirmSubmitButton
-                            className="danger"
-                            confirmation="Leave this Box? You will lose access and need another invitation to return."
-                          >
-                            Leave
-                          </ConfirmSubmitButton>
-                        </form>
-                      )}
-                    </OverflowMenu>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {members.map((member) => (
+          <BoxMemberRow
+            key={member.userId}
+            boxId={boxId}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+            member={member}
+            hasSocialConnection={socialConnections.has(member.userId)}
+          />
+        ))}
       </div>
       {currentUserRole === 'owner' && (
         <p className="owner-membership-note">
@@ -146,5 +47,129 @@ export function BoxMemberPanel({
         </p>
       )}
     </SurfaceCard>
+  );
+}
+
+function BoxMemberRow({
+  boxId,
+  currentUserId,
+  currentUserRole,
+  member,
+  hasSocialConnection,
+}: {
+  boxId: BoxId;
+  currentUserId: UserId;
+  currentUserRole: BoxRole;
+  member: BoxMember;
+  hasSocialConnection: boolean;
+}) {
+  const permissions = boxMemberPermissions(
+    currentUserId,
+    currentUserRole,
+    member,
+    hasSocialConnection,
+  );
+  return (
+    <div className="member-row">
+      <InitialAvatar name={member.displayName} imageUrl={member.avatarUrl} />
+      <div className="member-row-copy">
+        <strong>{member.displayName}</strong>
+        <div className="member-identity-line">
+          <small className="member-username">@{member.username}</small>
+          <span className="member-role">{member.role}</span>
+        </div>
+      </div>
+      {Object.values(permissions).some(Boolean) && (
+        <MemberActions boxId={boxId} member={member} {...permissions} />
+      )}
+    </div>
+  );
+}
+
+function MemberActions({
+  boxId,
+  member,
+  canLeave,
+  canRemove,
+  canPromote,
+  canDemote,
+  canAddFriend,
+  canTransferOwnership,
+}: ReturnType<typeof boxMemberPermissions> & {
+  boxId: BoxId;
+  member: BoxMember;
+}) {
+  return (
+    <OverflowMenu label={`Manage ${member.displayName}`}>
+      {canAddFriend && (
+        <form action={sendFriendRequestFromBoxAction.bind(null, boxId)}>
+          <input type="hidden" name="username" value={member.username} />
+          <PendingSubmitButton pendingChildren="Request sent">
+            Add friend
+          </PendingSubmitButton>
+        </form>
+      )}
+      {canPromote && (
+        <RoleForm boxId={boxId} memberUserId={member.userId} role="admin">
+          Make admin
+        </RoleForm>
+      )}
+      {canDemote && (
+        <RoleForm boxId={boxId} memberUserId={member.userId} role="member">
+          Remove admin
+        </RoleForm>
+      )}
+      {canTransferOwnership && (
+        <form
+          action={transferBoxOwnershipAction.bind(null, boxId, member.userId)}
+        >
+          <ConfirmSubmitButton
+            confirmation={`Transfer this Box to ${member.displayName}? You will become an admin and they will become the owner.`}
+          >
+            Transfer ownership
+          </ConfirmSubmitButton>
+        </form>
+      )}
+      {canRemove && (
+        <form action={removeBoxMemberAction.bind(null, boxId, member.userId)}>
+          <ConfirmSubmitButton
+            className="danger"
+            confirmation={`Remove ${member.displayName} from this Box? They will immediately lose access.`}
+          >
+            Remove
+          </ConfirmSubmitButton>
+        </form>
+      )}
+      {canLeave && (
+        <form action={leaveBoxAction.bind(null, boxId)}>
+          <ConfirmSubmitButton
+            className="danger"
+            confirmation="Leave this Box? You will lose access and need another invitation to return."
+          >
+            Leave
+          </ConfirmSubmitButton>
+        </form>
+      )}
+    </OverflowMenu>
+  );
+}
+
+function RoleForm({
+  boxId,
+  memberUserId,
+  role,
+  children,
+}: {
+  boxId: BoxId;
+  memberUserId: UserId;
+  role: 'admin' | 'member';
+  children: ReactNode;
+}) {
+  return (
+    <form
+      action={updateBoxMemberRoleAction.bind(null, boxId, memberUserId, role)}
+    >
+      <button type="submit">{children}</button>
+    </form>
   );
 }

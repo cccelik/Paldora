@@ -31,6 +31,10 @@ const serviceEnvironmentSchema = baseEnvironmentSchema.extend({
         message: 'REDIS_URL must use the redis or rediss protocol',
       },
     ),
+  MEDIA_JOB_QUEUE_NAME: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]+$/)
+    .default('paldora-jobs'),
 });
 
 const objectStorageEnvironmentShape = {

@@ -4,12 +4,14 @@ import type {
   BoxMember,
   Friendship,
   FriendshipId,
+  MediaAssetId,
   Post,
   PostId,
   UserId,
 } from '@paldora/domain';
 import { notFound } from 'next/navigation';
 import { BoxInvitePanel } from '../../components/box-invite-panel';
+import { BoxManagementMenu } from '../../components/box-management-menu';
 import { BoxMemberPanel } from '../../components/box-member-panel';
 import { BoxSettingsPanel } from '../../components/box-settings-panel';
 import { PostComposer } from '../../components/post-composer';
@@ -106,6 +108,28 @@ const previewPosts: Post[] = [
     },
     content:
       'Finished our August pick tonight. The final chapter completely changed how I understood the opening scene.',
+    media: [
+      {
+        id: '50000000-0000-4000-8000-000000000001' as MediaAssetId,
+        contentType: 'image/png',
+        status: 'ready',
+        url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        thumbnailUrl:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        width: 1_200,
+        height: 800,
+      },
+      {
+        id: '50000000-0000-4000-8000-000000000002' as MediaAssetId,
+        contentType: 'image/png',
+        status: 'ready',
+        url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        thumbnailUrl:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        width: 800,
+        height: 1_200,
+      },
+    ],
     status: 'active',
     editedAt: null,
     createdAt: '2026-08-23T12:00:00.000Z',
@@ -122,6 +146,7 @@ const previewPosts: Post[] = [
       avatarUrl: null,
     },
     content: 'I left three possible books for September in the Box chat.',
+    media: [],
     status: 'active',
     editedAt: null,
     createdAt: '2026-08-22T18:30:00.000Z',
@@ -142,20 +167,24 @@ export default function ComponentDesignPreview() {
           returnPath="/design-preview/components"
         />
       </section>
-      <BoxInvitePanel
-        boxId={previewBoxId}
-        friends={previewFriends}
-        memberUserIds={[]}
-        pendingInviteeUserIds={[previewFriends[0]!.user.id]}
-      />
-      <BoxMemberPanel
-        boxId={previewBoxId}
-        currentUserId={previewOwnerId}
-        currentUserRole="owner"
-        members={previewMembers}
-        socialConnectionUserIds={previewFriends.map((friend) => friend.user.id)}
-      />
-      <BoxSettingsPanel box={previewBox} />
+      <BoxManagementMenu>
+        <BoxInvitePanel
+          boxId={previewBoxId}
+          friends={previewFriends}
+          memberUserIds={[]}
+          pendingInviteeUserIds={[previewFriends[0]!.user.id]}
+        />
+        <BoxMemberPanel
+          boxId={previewBoxId}
+          currentUserId={previewOwnerId}
+          currentUserRole="owner"
+          members={previewMembers}
+          socialConnectionUserIds={previewFriends.map(
+            (friend) => friend.user.id,
+          )}
+        />
+        <BoxSettingsPanel box={previewBox} />
+      </BoxManagementMenu>
     </main>
   );
 }

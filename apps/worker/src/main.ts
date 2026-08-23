@@ -1,10 +1,13 @@
 import { parseWorkerEnvironment } from '@paldora/config';
-import { createDatabaseConnection, mediaAssets } from '@paldora/database';
+import { createDatabaseConnection } from '@paldora/database';
 import { createLogger } from '@paldora/observability';
 import { S3ObjectStorage } from '@paldora/storage';
 import { Worker } from 'bullmq';
-import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
+import {
+  handleMediaJob,
+  markFinalProcessingFailure,
+} from './media-job-handlers.js';
 import { parseMediaAssetId } from './job-payload.js';
 
 const environment = parseWorkerEnvironment(process.env);
@@ -16,6 +19,9 @@ const logger = createLogger({
 const connection = new Redis(environment.REDIS_URL, {
   maxRetriesPerRequest: null,
 });
+const eventPublisher = new Redis(environment.REDIS_URL, {
+  maxRetriesPerRequest: 1,
+});
 const database = createDatabaseConnection(environment.DATABASE_URL);
 const storage = new S3ObjectStorage({
   ...(environment.S3_ENDPOINT ? { endpoint: environment.S3_ENDPOINT } : {}),
@@ -25,29 +31,16 @@ const storage = new S3ObjectStorage({
   secretAccessKey: environment.S3_SECRET_ACCESS_KEY,
   forcePathStyle: environment.S3_FORCE_PATH_STYLE,
 });
+const jobDependencies = {
+  database: database.database,
+  storage,
+  eventPublisher,
+};
 
 const worker = new Worker(
-  'paldora-jobs',
+  environment.MEDIA_JOB_QUEUE_NAME,
   async (job) => {
-    if (job.name === 'delete-media-object') {
-      const mediaAssetId = parseMediaAssetId(job.data);
-      const [asset] = await database.database
-        .select({ objectKey: mediaAssets.objectKey })
-        .from(mediaAssets)
-        .where(eq(mediaAssets.id, mediaAssetId))
-        .limit(1);
-      if (!asset) return;
-      await storage.deleteObject(asset.objectKey);
-      await database.database
-        .delete(mediaAssets)
-        .where(eq(mediaAssets.id, mediaAssetId));
-      return;
-    }
-    logger.warn(
-      { jobId: job.id, jobName: job.name },
-      'No job handler registered; job rejected',
-    );
-    throw new Error(`Unsupported job type: ${job.name}`);
+    await handleMediaJob(job, jobDependencies);
   },
   { connection },
 );
@@ -55,11 +48,22 @@ const worker = new Worker(
 worker.on('completed', (job) =>
   logger.info({ jobId: job.id, jobName: job.name }, 'job completed'),
 );
-worker.on('failed', (job, error) =>
-  logger.error(
-    { jobId: job?.id, jobName: job?.name, err: error },
-    'job failed',
-  ),
+worker.on(
+  'failed',
+  (job, error) =>
+    void (async () => {
+      logger.error(
+        { jobId: job?.id, jobName: job?.name, err: error },
+        'job failed',
+      );
+      if (
+        job?.name === 'process-post-image' &&
+        job.attemptsMade >= (job.opts.attempts ?? 1)
+      ) {
+        const mediaAssetId = parseMediaAssetId(job.data);
+        await markFinalProcessingFailure(mediaAssetId, jobDependencies);
+      }
+    })(),
 );
 worker.on('error', (error) =>
   logger.error({ err: error }, 'worker connection error'),
@@ -72,6 +76,7 @@ async function closeResources(signal: string): Promise<void> {
   logger.info({ signal }, 'worker shutting down');
   await worker.close();
   await connection.quit();
+  await eventPublisher.quit();
   await database.close();
 }
 

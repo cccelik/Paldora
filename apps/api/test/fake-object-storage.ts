@@ -8,5 +8,7 @@ export function createFakeObjectStorage(): ObjectStorage {
     },
     deleteObject: async () => undefined,
     inspectObject: async () => null,
+    readObject: async () => new Uint8Array(),
+    writeObject: async () => undefined,
   };
 }

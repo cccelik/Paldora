@@ -12,8 +12,6 @@
     "test": "vitest run App.tsx --passWithNoTests"
   },
   "dependencies": {
-    "@paldora/api-client": "workspace:*",
-    "@paldora/ui": "workspace:*",
     "expo": "57.0.15",
     "expo-status-bar": "57.0.1",
     "react": "19.2.3",

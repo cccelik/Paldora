@@ -19,6 +19,7 @@ describe.runIf(configured)('S3ObjectStorage', () => {
       forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
     });
     const objectKey = `integration/${randomUUID()}.webp`;
+    const derivedKey = `${objectKey}.derived.webp`;
     const body = new Uint8Array([82, 73, 70, 70]);
     try {
       const signed = await storage.createSignedUpload({
@@ -37,8 +38,17 @@ describe.runIf(configured)('S3ObjectStorage', () => {
         contentType: 'image/webp',
         contentLength: body.byteLength,
       });
+      expect(await storage.readObject(objectKey)).toEqual(body);
+      await storage.writeObject(derivedKey, 'image/webp', body);
+      expect(await storage.inspectObject(derivedKey)).toEqual({
+        contentType: 'image/webp',
+        contentLength: body.byteLength,
+      });
     } finally {
-      await storage.deleteObject(objectKey);
+      await Promise.all([
+        storage.deleteObject(objectKey),
+        storage.deleteObject(derivedKey),
+      ]);
     }
     expect(await storage.inspectObject(objectKey)).toBeNull();
   });

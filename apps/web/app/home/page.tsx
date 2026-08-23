@@ -12,6 +12,7 @@ export default async function HomePage({
   searchParams: Promise<{
     cursor?: string;
     error?: string;
+    warning?: string;
     notice?: string;
   }>;
 }) {
@@ -38,7 +39,11 @@ export default async function HomePage({
           />
         }
       />
-      <PageFeedback error={query.error} notice={query.notice} />
+      <PageFeedback
+        error={query.error}
+        warning={query.warning}
+        notice={query.notice}
+      />
       <PostFeed
         currentUserId={current.user.id}
         emptyDescription="Join or create a Box, then share the first story with your people."

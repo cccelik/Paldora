@@ -1,6 +1,10 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { profiles, users, type PaldoraDatabase } from '@paldora/database';
-import type { mediaAssets } from '@paldora/database';
+import {
+  profiles,
+  users,
+  type mediaAssets,
+  type PaldoraDatabase,
+} from '@paldora/database';
 import type {
   CurrentUser,
   MediaAsset,
@@ -19,6 +23,13 @@ import { ApiError } from './api-error.js';
 import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
 import { ProfileAvatarService } from './profile-avatar.service.js';
+
+const onboardingRank = {
+  username: 0,
+  profile: 1,
+  avatar: 2,
+  complete: 3,
+} as const;
 
 @Injectable()
 export class UserService {
@@ -116,63 +127,13 @@ export class UserService {
         'Profile not found.',
       );
     }
-    if (input.username) {
-      const availability = await this.checkUsername(userId, input.username);
-      if (!availability.available) {
-        throw new ApiError(
-          HttpStatus.CONFLICT,
-          'USERNAME_UNAVAILABLE',
-          'That username is unavailable.',
-        );
-      }
-    }
-    if (input.onboardingState) {
-      const rank = { username: 0, profile: 1, avatar: 2, complete: 3 } as const;
-      if (rank[input.onboardingState] < rank[existing.onboardingState]) {
-        throw new ApiError(
-          HttpStatus.BAD_REQUEST,
-          'INVALID_ONBOARDING_TRANSITION',
-          'Completed onboarding steps cannot be reopened through the API.',
-        );
-      }
-      const nextUsername = input.username ?? existing.username;
-      const nextDisplayName = input.displayName ?? existing.displayName;
-      if (rank[input.onboardingState] >= 1 && !nextUsername) {
-        throw new ApiError(
-          HttpStatus.BAD_REQUEST,
-          'ONBOARDING_INCOMPLETE',
-          'Choose a username before continuing.',
-        );
-      }
-      if (rank[input.onboardingState] >= 2 && !nextDisplayName?.trim()) {
-        throw new ApiError(
-          HttpStatus.BAD_REQUEST,
-          'ONBOARDING_INCOMPLETE',
-          'Add a display name before continuing.',
-        );
-      }
-    }
+    if (input.username !== undefined)
+      await this.assertUsernameAvailable(userId, input.username);
+    this.assertOnboardingTransition(existing, input);
     try {
       await this.database
         .update(profiles)
-        .set({
-          ...(input.username
-            ? {
-                username: input.username.trim(),
-                usernameNormalized: normalizeUsername(input.username),
-              }
-            : {}),
-          ...(input.displayName !== undefined
-            ? { displayName: input.displayName.trim() }
-            : {}),
-          ...(input.bio !== undefined
-            ? { bio: input.bio?.trim() || null }
-            : {}),
-          ...(input.onboardingState
-            ? { onboardingState: input.onboardingState }
-            : {}),
-          updatedAt: new Date(),
-        })
+        .set(this.profileUpdates(input))
         .where(eq(profiles.userId, userId));
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -187,11 +148,82 @@ export class UserService {
     return this.getCurrentUser(userId);
   }
 
+  private async assertUsernameAvailable(
+    userId: UserId,
+    username: string,
+  ): Promise<void> {
+    const availability = await this.checkUsername(userId, username);
+    if (availability.available) return;
+    throw new ApiError(
+      HttpStatus.CONFLICT,
+      'USERNAME_UNAVAILABLE',
+      'That username is unavailable.',
+    );
+  }
+
+  private assertOnboardingTransition(
+    existing: Pick<
+      typeof profiles.$inferSelect,
+      'username' | 'displayName' | 'onboardingState'
+    >,
+    input: UpdateProfileInput,
+  ): void {
+    const nextState = input.onboardingState;
+    if (!nextState) return;
+    if (onboardingRank[nextState] < onboardingRank[existing.onboardingState]) {
+      throw new ApiError(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_ONBOARDING_TRANSITION',
+        'Completed onboarding steps cannot be reopened through the API.',
+      );
+    }
+    const nextUsername = input.username ?? existing.username;
+    if (onboardingRank[nextState] >= onboardingRank.profile && !nextUsername) {
+      throw new ApiError(
+        HttpStatus.BAD_REQUEST,
+        'ONBOARDING_INCOMPLETE',
+        'Choose a username before continuing.',
+      );
+    }
+    const nextDisplayName = input.displayName ?? existing.displayName;
+    if (
+      onboardingRank[nextState] >= onboardingRank.avatar &&
+      !nextDisplayName?.trim()
+    ) {
+      throw new ApiError(
+        HttpStatus.BAD_REQUEST,
+        'ONBOARDING_INCOMPLETE',
+        'Add a display name before continuing.',
+      );
+    }
+  }
+
+  private profileUpdates(
+    input: UpdateProfileInput,
+  ): Partial<typeof profiles.$inferInsert> {
+    return {
+      ...(input.username !== undefined
+        ? {
+            username: input.username.trim(),
+            usernameNormalized: normalizeUsername(input.username),
+          }
+        : {}),
+      ...(input.displayName !== undefined
+        ? { displayName: input.displayName.trim() }
+        : {}),
+      ...(input.bio !== undefined ? { bio: input.bio?.trim() || null } : {}),
+      ...(input.onboardingState !== undefined
+        ? { onboardingState: input.onboardingState }
+        : {}),
+      updatedAt: new Date(),
+    };
+  }
+
   public mapMediaAsset(row: typeof mediaAssets.$inferSelect): MediaAsset {
     return {
       id: row.id as MediaAssetId,
       ownerUserId: row.ownerUserId as UserId,
-      purpose: 'avatar',
+      purpose: row.purpose as MediaAsset['purpose'],
       contentType: row.contentType as MediaAsset['contentType'],
       contentLength: row.contentLength,
       status: row.status,

@@ -49,7 +49,7 @@ export function BoxSettingsPanel({ box }: { box: Box }) {
         ) : (
           <form action={setBoxStatusAction.bind(null, box.id, 'archived')}>
             <ConfirmSubmitButton
-              className="button-quiet danger full-width"
+              className="box-archive-button full-width"
               confirmation="Archive this Box? Existing members keep access, but new invitations will be paused."
             >
               Archive Box
@@ -77,7 +77,7 @@ export function BoxSettingsPanel({ box }: { box: Box }) {
             />
           </label>
           <ConfirmSubmitButton
-            className="button-quiet danger full-width"
+            className="box-delete-button full-width"
             confirmation={`Permanently delete “${box.name}”? Everyone will immediately lose access and this cannot be undone.`}
           >
             Delete Box permanently

@@ -21,20 +21,42 @@ export function parseServerSentEvents(input: string): {
   return { events, remainder: input.slice(consumed) };
 }
 
+// SSE fields are a small protocol state machine; each branch represents a
+// distinct wire-level field rather than application business complexity.
 function parseBlock(block: string): ServerSentEvent | null {
-  let type = 'message';
-  let id: string | null = null;
-  const data: string[] = [];
+  const event: ServerSentEvent = { type: 'message', id: null, data: '' };
+  const dataLines: string[] = [];
   for (const line of block.split(/\r?\n/)) {
-    if (!line || line.startsWith(':')) continue;
-    const separator = line.indexOf(':');
-    const field = separator === -1 ? line : line.slice(0, separator);
-    const rawValue = separator === -1 ? '' : line.slice(separator + 1);
-    const value = rawValue.startsWith(' ') ? rawValue.slice(1) : rawValue;
-    if (field === 'event') type = value;
-    if (field === 'id') id = value;
-    if (field === 'data') data.push(value);
+    const field = parseField(line);
+    if (field) applyField(event, dataLines, field);
   }
-  if (data.length === 0) return null;
-  return { type, id, data: data.join('\n') };
+  if (dataLines.length === 0) return null;
+  event.data = dataLines.join('\n');
+  return event;
+}
+
+interface ParsedField {
+  name: string;
+  value: string;
+}
+
+function parseField(line: string): ParsedField | null {
+  if (!line || line.startsWith(':')) return null;
+  const separator = line.indexOf(':');
+  const name = separator === -1 ? line : line.slice(0, separator);
+  const rawValue = separator === -1 ? '' : line.slice(separator + 1);
+  return {
+    name,
+    value: rawValue.startsWith(' ') ? rawValue.slice(1) : rawValue,
+  };
+}
+
+function applyField(
+  event: ServerSentEvent,
+  dataLines: string[],
+  field: ParsedField,
+): void {
+  if (field.name === 'event') event.type = field.value;
+  else if (field.name === 'id') event.id = field.value;
+  else if (field.name === 'data') dataLines.push(field.value);
 }

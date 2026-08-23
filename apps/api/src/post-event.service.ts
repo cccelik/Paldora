@@ -1,9 +1,7 @@
 import { Injectable, type OnApplicationShutdown } from '@nestjs/common';
-import type { BoxId, PostId } from '@paldora/domain';
+import { POST_EVENT_CHANNEL, type BoxId, type PostId } from '@paldora/domain';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
-
-const POST_EVENT_CHANNEL = 'paldora:post-events:v1';
 
 export type PostEventAction = 'created' | 'updated' | 'deleted';
 

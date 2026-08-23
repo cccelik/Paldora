@@ -10,11 +10,12 @@ import {
 import type { FriendshipId, UserId } from '@paldora/domain';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { BoxService } from '../src/box.service.js';
+import type { BoxService } from '../src/box.service.js';
 import type { InfrastructureService } from '../src/infrastructure.service.js';
 import { SocialService } from '../src/social.service.js';
 import { ProfileAvatarService } from '../src/profile-avatar.service.js';
 import { createFakeObjectStorage } from './fake-object-storage.js';
+import { createBoxService } from './create-box-service.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -38,7 +39,7 @@ describe.runIf(Boolean(databaseUrl))('Boxes and social graph flow', () => {
       infrastructure,
       createFakeObjectStorage(),
     );
-    boxes = new BoxService(infrastructure, avatars);
+    boxes = createBoxService(infrastructure, avatars);
     social = new SocialService(infrastructure, avatars);
     const inserted = await connection.database
       .insert(users)

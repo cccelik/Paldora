@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createBoxAction } from '../../actions/social';
 import { AppShell } from '../../components/app-shell';
-import { FeedbackMessage, PageHeader, SurfaceCard } from '../../components/ui';
+import { PageFeedback, PageHeader, SurfaceCard } from '../../components/ui';
 import { loadCompletedCurrentUser } from '../../lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -9,10 +9,10 @@ export const dynamic = 'force-dynamic';
 export default async function NewBoxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; warning?: string }>;
 }) {
   const current = await loadCompletedCurrentUser();
-  const { error } = await searchParams;
+  const notices = await searchParams;
   return (
     <AppShell current={current} active="boxes">
       <PageHeader
@@ -20,9 +20,9 @@ export default async function NewBoxPage({
         title="Create a Box"
         description="Start with a name. You can invite friends after it is created."
       />
+      <PageFeedback error={notices.error} warning={notices.warning} />
       <SurfaceCard className="focused-form-card">
         <form className="form-stack" action={createBoxAction}>
-          <FeedbackMessage tone="error">{error}</FeedbackMessage>
           <label>
             Box name
             <input
