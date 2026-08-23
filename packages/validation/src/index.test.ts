@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createBoxInvitationSchema,
+  createBoxSchema,
   createAvatarUploadSchema,
+  createFriendRequestSchema,
   cursorPageSchema,
   isReservedUsername,
   normalizeUsername,
@@ -55,6 +58,27 @@ describe('profile and avatar validation', () => {
         contentType: 'image/gif',
         contentLength: 1_024,
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe('Boxes and social validation', () => {
+  it('accepts a named Box and rejects empty or oversized names', () => {
+    expect(createBoxSchema.parse({ name: 'Weekend crew' })).toEqual({
+      name: 'Weekend crew',
+    });
+    expect(createBoxSchema.safeParse({ name: '   ' }).success).toBe(false);
+    expect(createBoxSchema.safeParse({ name: 'x'.repeat(81) }).success).toBe(
+      false,
+    );
+  });
+
+  it('applies username rules to invitations and friend requests', () => {
+    expect(
+      createBoxInvitationSchema.safeParse({ username: 'arkadaş_34' }).success,
+    ).toBe(true);
+    expect(
+      createFriendRequestSchema.safeParse({ username: 'not.valid' }).success,
     ).toBe(false);
   });
 });

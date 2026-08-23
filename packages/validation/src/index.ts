@@ -14,6 +14,7 @@ export const USERNAME_MAX_LENGTH = 30;
 export const DISPLAY_NAME_MAX_LENGTH = 80;
 export const BIO_MAX_LENGTH = 500;
 export const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
+export const BOX_NAME_MAX_LENGTH = 80;
 
 const reservedUsernames = new Set([
   'account',
@@ -86,5 +87,41 @@ export const createAvatarUploadSchema = z.object({
   contentLength: z.number().int().positive().max(AVATAR_MAX_BYTES),
 });
 
+export const boxNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Give your Box a name.')
+  .max(BOX_NAME_MAX_LENGTH, 'Box names must be 80 characters or fewer.');
+
+export const createBoxSchema = z.object({ name: boxNameSchema });
+
+export const updateBoxSchema = z
+  .object({
+    name: boxNameSchema.optional(),
+    status: z.enum(['active', 'archived']).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one Box field is required.',
+  });
+
+export const createBoxInvitationSchema = z.object({
+  username: usernameSchema,
+});
+
+export const updateBoxMemberSchema = z.object({
+  role: z.enum(['admin', 'member']),
+});
+
+export const createFriendRequestSchema = z.object({
+  username: usernameSchema,
+});
+
+export const createBlockSchema = z.object({ username: usernameSchema });
+
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type CreateAvatarUpload = z.infer<typeof createAvatarUploadSchema>;
+export type CreateBox = z.infer<typeof createBoxSchema>;
+export type UpdateBox = z.infer<typeof updateBoxSchema>;
+export type CreateBoxInvitation = z.infer<typeof createBoxInvitationSchema>;
+export type UpdateBoxMember = z.infer<typeof updateBoxMemberSchema>;
+export type CreateFriendRequest = z.infer<typeof createFriendRequestSchema>;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseApiEnvironment } from './index.js';
+import { parseApiEnvironment, parseDemoSeedEnvironment } from './index.js';
 
 describe('parseApiEnvironment', () => {
   it('coerces validated configuration', () => {
@@ -20,5 +20,39 @@ describe('parseApiEnvironment', () => {
     expect(() => parseApiEnvironment({})).toThrow(
       'Invalid environment configuration',
     );
+  });
+});
+
+describe('parseDemoSeedEnvironment', () => {
+  const required = {
+    DATABASE_URL: 'postgresql://localhost/paldora',
+    REDIS_URL: 'redis://localhost:6379',
+    SUPABASE_URL: 'https://example.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'server-only',
+    DEMO_USER_EMAIL: 'first@example.com',
+    DEMO_USER_PASSWORD: 'strong-enough',
+    DEMO_USERNAME: 'first_friend',
+    DEMO_DISPLAY_NAME: 'First Friend',
+  };
+
+  it('allows an omitted second demo account', () => {
+    expect(
+      parseDemoSeedEnvironment({
+        ...required,
+        DEMO_FRIEND_EMAIL: '',
+        DEMO_FRIEND_PASSWORD: '',
+        DEMO_FRIEND_USERNAME: '',
+        DEMO_FRIEND_DISPLAY_NAME: '',
+      }).DEMO_FRIEND_EMAIL,
+    ).toBeUndefined();
+  });
+
+  it('requires every second-account value when any is supplied', () => {
+    expect(() =>
+      parseDemoSeedEnvironment({
+        ...required,
+        DEMO_FRIEND_EMAIL: 'second@example.com',
+      }),
+    ).toThrow('All DEMO_FRIEND_* values are required');
   });
 });

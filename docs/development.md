@@ -33,3 +33,21 @@ already seeded, provision a second account with the real email and a different
 `DEMO_USERNAME` to avoid colliding with the first profile.
 
 With the development web server running, `pnpm design:capture:phase1` refreshes the implementation-accurate auth/settings artboards.
+
+## Phase 2 social testing
+
+Phase 2 adds private Boxes, explicit memberships, Box invitations, friend
+requests, and blocking. To test a two-person flow, optionally set all four
+`DEMO_FRIEND_*` values in the uncommitted `.env` and rerun `pnpm seed:demo`.
+The command is idempotent and provisions both accounts as verified users.
+
+Use two browser profiles (for example, a normal window and a private window):
+
+1. Sign in as the first account, open **Friends**, and request the second
+   account by its exact username.
+2. Sign in as the second account and accept the request.
+3. Create a Box from either account and invite the accepted friend.
+4. Sign in as the invitee and accept the Box invitation.
+
+Boxes are private and deny access to non-members. Posts and Box feeds remain an
+honest empty state until the posts/feed phase.

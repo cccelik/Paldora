@@ -76,4 +76,39 @@ describe('PaldoraApiClient', () => {
       vi.unstubAllGlobals();
     }
   });
+
+  it('uses the versioned Boxes and friendship contracts', async () => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'box-id',
+            name: 'Close friends',
+            currentUserRole: 'owner',
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify([])));
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.example/api/v1',
+      fetchImplementation: request,
+      getAccessToken: () => Promise.resolve('token'),
+    });
+    await client.createBox({ name: 'Close friends' });
+    await client.friendRequests();
+    expect(request).toHaveBeenNthCalledWith(
+      1,
+      'https://api.example/api/v1/boxes',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ name: 'Close friends' }),
+      }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      2,
+      'https://api.example/api/v1/friend-requests',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
 });

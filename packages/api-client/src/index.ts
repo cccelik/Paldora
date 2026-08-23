@@ -1,12 +1,24 @@
 import type {
   ApiErrorShape,
+  Box,
+  BoxId,
+  BoxInvitation,
+  BoxInvitationId,
+  BoxMember,
+  BoxRole,
+  CreateBoxInput,
+  CreateBoxInvitationInput,
+  CreateFriendRequestInput,
   CreateAvatarUploadInput,
   CreateAvatarUploadResult,
   CurrentUser,
   HealthStatus,
+  Friendship,
+  FriendshipId,
   MediaAssetId,
   UpdateProfileInput,
   UsernameAvailability,
+  UserId,
 } from '@paldora/domain';
 
 export class ApiClientError extends Error {
@@ -92,6 +104,129 @@ export class PaldoraApiClient {
 
   public deleteAvatar(signal?: AbortSignal): Promise<CurrentUser> {
     return this.send('/me/avatar', { method: 'DELETE', signal });
+  }
+
+  public boxes(signal?: AbortSignal): Promise<Box[]> {
+    return this.send('/boxes', { signal });
+  }
+
+  public createBox(input: CreateBoxInput, signal?: AbortSignal): Promise<Box> {
+    return this.send('/boxes', { method: 'POST', body: input, signal });
+  }
+
+  public box(id: BoxId, signal?: AbortSignal): Promise<Box> {
+    return this.send(`/boxes/${id}`, { signal });
+  }
+
+  public updateBox(
+    id: BoxId,
+    input: { name?: string; status?: 'active' | 'archived' },
+    signal?: AbortSignal,
+  ): Promise<Box> {
+    return this.send(`/boxes/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+    });
+  }
+
+  public boxMembers(id: BoxId, signal?: AbortSignal): Promise<BoxMember[]> {
+    return this.send(`/boxes/${id}/members`, { signal });
+  }
+
+  public inviteToBox(
+    id: BoxId,
+    input: CreateBoxInvitationInput,
+    signal?: AbortSignal,
+  ): Promise<BoxInvitation> {
+    return this.send(`/boxes/${id}/invitations`, {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public boxInvitations(signal?: AbortSignal): Promise<BoxInvitation[]> {
+    return this.send('/me/box-invitations', { signal });
+  }
+
+  public respondToBoxInvitation(
+    id: BoxInvitationId,
+    response: 'accept' | 'decline',
+    signal?: AbortSignal,
+  ): Promise<{ status: 'accepted' | 'declined' }> {
+    return this.send(`/box-invitations/${id}/${response}`, {
+      method: 'POST',
+      signal,
+    });
+  }
+
+  public updateBoxMemberRole(
+    boxId: BoxId,
+    userId: UserId,
+    role: Exclude<BoxRole, 'owner'>,
+    signal?: AbortSignal,
+  ): Promise<{ role: Exclude<BoxRole, 'owner'> }> {
+    return this.send(`/boxes/${boxId}/members/${userId}`, {
+      method: 'PATCH',
+      body: { role },
+      signal,
+    });
+  }
+
+  public friends(signal?: AbortSignal): Promise<Friendship[]> {
+    return this.send('/friends', { signal });
+  }
+
+  public friendRequests(signal?: AbortSignal): Promise<Friendship[]> {
+    return this.send('/friend-requests', { signal });
+  }
+
+  public createFriendRequest(
+    input: CreateFriendRequestInput,
+    signal?: AbortSignal,
+  ): Promise<Friendship> {
+    return this.send('/friend-requests', {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public respondToFriendRequest(
+    id: FriendshipId,
+    response: 'accept' | 'decline',
+    signal?: AbortSignal,
+  ): Promise<Friendship> {
+    return this.send(`/friend-requests/${id}/${response}`, {
+      method: 'POST',
+      signal,
+    });
+  }
+
+  public removeFriend(
+    userId: UserId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/friends/${userId}`, { method: 'DELETE', signal });
+  }
+
+  public blockedUsers(signal?: AbortSignal): Promise<Friendship[]> {
+    return this.send('/blocks', { signal });
+  }
+
+  public blockUser(
+    input: CreateFriendRequestInput,
+    signal?: AbortSignal,
+  ): Promise<Friendship> {
+    return this.send('/blocks', { method: 'POST', body: input, signal });
+  }
+
+  public unblockUser(
+    userId: UserId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/blocks/${userId}`, { method: 'DELETE', signal });
   }
 
   private async send<Result>(

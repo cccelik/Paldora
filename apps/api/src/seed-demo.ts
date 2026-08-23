@@ -16,67 +16,88 @@ async function seedDemo(): Promise<void> {
     perPage: 1_000,
   });
   if (listed.error) throw listed.error;
-  let authUser = listed.data.users.find(
-    (candidate) =>
-      candidate.email?.toLocaleLowerCase('en-US') ===
-      environment.DEMO_USER_EMAIL.toLocaleLowerCase('en-US'),
-  );
-  if (!authUser) {
-    const created = await supabase.auth.admin.createUser({
-      email: environment.DEMO_USER_EMAIL,
-      password: environment.DEMO_USER_PASSWORD,
-      email_confirm: true,
-    });
-    if (created.error) throw created.error;
-    authUser = created.data.user;
-  }
-
   const connection = createDatabaseConnection(environment.DATABASE_URL);
   try {
-    const emailNormalized =
-      environment.DEMO_USER_EMAIL.trim().toLocaleLowerCase('en-US');
-    const [appUser] = await connection.database
-      .insert(users)
-      .values({
-        authSubject: authUser.id,
+    const accounts = [
+      {
         email: environment.DEMO_USER_EMAIL,
-        emailNormalized,
-      })
-      .onConflictDoUpdate({
-        target: users.authSubject,
-        set: {
-          email: environment.DEMO_USER_EMAIL,
-          emailNormalized,
-          status: 'active',
-          updatedAt: new Date(),
-        },
-      })
-      .returning({ id: users.id });
-    if (!appUser) throw new Error('Demo user upsert returned no row.');
-    await connection.database
-      .insert(profiles)
-      .values({
-        userId: appUser.id,
+        password: environment.DEMO_USER_PASSWORD,
         username: environment.DEMO_USERNAME,
-        usernameNormalized: normalizeUsername(environment.DEMO_USERNAME),
         displayName: environment.DEMO_DISPLAY_NAME,
-        onboardingState: 'complete',
-      })
-      .onConflictDoUpdate({
-        target: profiles.userId,
-        set: {
-          username: environment.DEMO_USERNAME,
-          usernameNormalized: normalizeUsername(environment.DEMO_USERNAME),
-          displayName: environment.DEMO_DISPLAY_NAME,
+      },
+      ...(environment.DEMO_FRIEND_EMAIL &&
+      environment.DEMO_FRIEND_PASSWORD &&
+      environment.DEMO_FRIEND_USERNAME &&
+      environment.DEMO_FRIEND_DISPLAY_NAME
+        ? [
+            {
+              email: environment.DEMO_FRIEND_EMAIL,
+              password: environment.DEMO_FRIEND_PASSWORD,
+              username: environment.DEMO_FRIEND_USERNAME,
+              displayName: environment.DEMO_FRIEND_DISPLAY_NAME,
+            },
+          ]
+        : []),
+    ];
+    for (const account of accounts) {
+      let authUser = listed.data.users.find(
+        (candidate) =>
+          candidate.email?.toLocaleLowerCase('en-US') ===
+          account.email.toLocaleLowerCase('en-US'),
+      );
+      if (!authUser) {
+        const created = await supabase.auth.admin.createUser({
+          email: account.email,
+          password: account.password,
+          email_confirm: true,
+        });
+        if (created.error) throw created.error;
+        authUser = created.data.user;
+      }
+      const emailNormalized = account.email.trim().toLocaleLowerCase('en-US');
+      const [appUser] = await connection.database
+        .insert(users)
+        .values({
+          authSubject: authUser.id,
+          email: account.email,
+          emailNormalized,
+        })
+        .onConflictDoUpdate({
+          target: users.authSubject,
+          set: {
+            email: account.email,
+            emailNormalized,
+            status: 'active',
+            updatedAt: new Date(),
+          },
+        })
+        .returning({ id: users.id });
+      if (!appUser) throw new Error('Demo user upsert returned no row.');
+      await connection.database
+        .insert(profiles)
+        .values({
+          userId: appUser.id,
+          username: account.username,
+          usernameNormalized: normalizeUsername(account.username),
+          displayName: account.displayName,
           onboardingState: 'complete',
-          updatedAt: new Date(),
-        },
-      });
-    const [result] = await connection.database
-      .select({ id: users.id, email: users.email })
-      .from(users)
-      .where(eq(users.id, appUser.id));
-    process.stdout.write(`Provisioned demo account ${result?.email ?? ''}\n`);
+        })
+        .onConflictDoUpdate({
+          target: profiles.userId,
+          set: {
+            username: account.username,
+            usernameNormalized: normalizeUsername(account.username),
+            displayName: account.displayName,
+            onboardingState: 'complete',
+            updatedAt: new Date(),
+          },
+        });
+      const [result] = await connection.database
+        .select({ id: users.id, email: users.email })
+        .from(users)
+        .where(eq(users.id, appUser.id));
+      process.stdout.write(`Provisioned demo account ${result?.email ?? ''}\n`);
+    }
   } finally {
     await connection.close();
   }

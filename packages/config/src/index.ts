@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 const nodeEnvironment = z.enum(['development', 'test', 'production']);
+const optionalEnvironmentValue = <Schema extends z.ZodType>(schema: Schema) =>
+  z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    schema.optional(),
+  );
 
 const baseEnvironmentSchema = z.object({
   NODE_ENV: nodeEnvironment.default('development'),
@@ -45,14 +50,37 @@ const workerEnvironmentSchema = serviceEnvironmentSchema.extend({
   ...objectStorageEnvironmentShape,
 });
 
-const demoSeedEnvironmentSchema = serviceEnvironmentSchema.extend({
-  SUPABASE_URL: z.url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  DEMO_USER_EMAIL: z.email(),
-  DEMO_USER_PASSWORD: z.string().min(8),
-  DEMO_USERNAME: z.string().min(3).max(30),
-  DEMO_DISPLAY_NAME: z.string().min(1).max(80),
-});
+const demoSeedEnvironmentSchema = serviceEnvironmentSchema
+  .extend({
+    SUPABASE_URL: z.url(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+    DEMO_USER_EMAIL: z.email(),
+    DEMO_USER_PASSWORD: z.string().min(8),
+    DEMO_USERNAME: z.string().min(3).max(30),
+    DEMO_DISPLAY_NAME: z.string().min(1).max(80),
+    DEMO_FRIEND_EMAIL: optionalEnvironmentValue(z.email()),
+    DEMO_FRIEND_PASSWORD: optionalEnvironmentValue(z.string().min(8)),
+    DEMO_FRIEND_USERNAME: optionalEnvironmentValue(z.string().min(3).max(30)),
+    DEMO_FRIEND_DISPLAY_NAME: optionalEnvironmentValue(
+      z.string().min(1).max(80),
+    ),
+  })
+  .superRefine((value, context) => {
+    const friendValues = [
+      value.DEMO_FRIEND_EMAIL,
+      value.DEMO_FRIEND_PASSWORD,
+      value.DEMO_FRIEND_USERNAME,
+      value.DEMO_FRIEND_DISPLAY_NAME,
+    ];
+    if (friendValues.some(Boolean) && !friendValues.every(Boolean)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['DEMO_FRIEND_EMAIL'],
+        message:
+          'All DEMO_FRIEND_* values are required when provisioning a second demo account',
+      });
+    }
+  });
 
 export type ApiEnvironment = z.infer<typeof apiEnvironmentSchema>;
 export type ServiceEnvironment = z.infer<typeof serviceEnvironmentSchema>;

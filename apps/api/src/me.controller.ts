@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpStatus,
   Inject,
   Param,
   Patch,
@@ -18,14 +17,13 @@ import {
   updateProfileSchema,
   usernameAvailabilitySchema,
 } from '@paldora/validation';
-import { ZodError } from 'zod';
-import { ApiError } from './api-error.js';
 import { AvatarService } from './avatar.service.js';
 import {
   SupabaseAuthGuard,
   type AuthenticatedRequest,
 } from './auth.service.js';
 import { OBJECT_STORAGE } from './storage.provider.js';
+import { parseRequest } from './request-validation.js';
 import { UserService } from './user.service.js';
 
 @Controller('me')
@@ -49,7 +47,7 @@ export class MeController {
     @Req() request: AuthenticatedRequest,
     @Body() body: unknown,
   ) {
-    const input = this.parse(usernameAvailabilitySchema, body);
+    const input = parseRequest(usernameAvailabilitySchema, body);
     return this.users.checkUsername(request.principal.userId, input.username);
   }
 
@@ -58,7 +56,7 @@ export class MeController {
     @Req() request: AuthenticatedRequest,
     @Body() body: unknown,
   ) {
-    const input = this.parse(updateProfileSchema, body);
+    const input = parseRequest(updateProfileSchema, body);
     return this.users.updateProfile(
       request.principal.userId,
       input,
@@ -71,7 +69,7 @@ export class MeController {
     @Req() request: AuthenticatedRequest,
     @Body() body: unknown,
   ) {
-    const input = this.parse(createAvatarUploadSchema, body);
+    const input = parseRequest(createAvatarUploadSchema, body);
     return this.avatars.createUpload(request.principal.userId, input);
   }
 
@@ -89,23 +87,5 @@ export class MeController {
   @Delete('avatar')
   public deleteAvatar(@Req() request: AuthenticatedRequest) {
     return this.avatars.deleteAvatar(request.principal.userId);
-  }
-
-  private parse<Output>(
-    schema: { parse: (value: unknown) => Output },
-    body: unknown,
-  ): Output {
-    try {
-      return schema.parse(body);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new ApiError(
-          HttpStatus.BAD_REQUEST,
-          'VALIDATION_FAILED',
-          error.issues[0]?.message ?? 'The request is invalid.',
-        );
-      }
-      throw error;
-    }
   }
 }

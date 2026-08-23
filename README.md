@@ -56,3 +56,9 @@ pnpm test:e2e
 See [development instructions](docs/development.md), [architecture](docs/architecture.md), and [security assumptions](docs/security.md) before contributing.
 
 Phase 1 adds hosted Supabase email/password authentication, provisioned demo users, profile onboarding/settings, normalized usernames, and private S3-compatible avatar uploads. Configure `.env`, migrate, and run `pnpm seed:demo` before exercising the signed-in flow.
+
+Phase 2 begins the social graph with private Boxes, owner/admin/member roles,
+friend-only Box invitations, bilateral friend requests, and blocking. Add the
+optional `DEMO_FRIEND_*` values to `.env` to provision a second verified account
+for the two-person test flow described in
+[development instructions](docs/development.md#phase-2-social-testing).

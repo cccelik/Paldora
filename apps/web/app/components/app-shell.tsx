@@ -7,9 +7,9 @@ import { Wordmark } from './wordmark';
 const navigation = [
   ['Home', '/home', '⌂'],
   ['Life Updates', '#later-life-updates', '♡'],
-  ['Boxes', '#later-boxes', '◇'],
+  ['Boxes', '/boxes', '◇'],
   ['Memories', '#later-memories', '▧'],
-  ['Friends', '#later-friends', '♧'],
+  ['Friends', '/friends', '♧'],
 ] as const;
 
 export function AppShell({
@@ -18,7 +18,7 @@ export function AppShell({
   children,
 }: {
   current: CurrentUser;
-  active: 'home' | 'settings';
+  active: 'home' | 'boxes' | 'friends' | 'settings';
   children: ReactNode;
 }) {
   const initials = (current.profile.displayName ?? current.user.email)
@@ -35,9 +35,9 @@ export function AppShell({
           {navigation.map(([label, href, icon]) => (
             <Link
               aria-current={
-                active === 'home' && label === 'Home' ? 'page' : undefined
+                active === label.toLocaleLowerCase() ? 'page' : undefined
               }
-              className={active === 'home' && label === 'Home' ? 'active' : ''}
+              className={active === label.toLocaleLowerCase() ? 'active' : ''}
               href={href}
               key={label}
             >
@@ -79,15 +79,19 @@ export function AppShell({
         <Link className={active === 'home' ? 'active' : ''} href="/home">
           <span>⌂</span>Home
         </Link>
-        <span aria-disabled="true">
-          ◇<small>Boxes</small>
-        </span>
-        <span className="mobile-create" aria-disabled="true">
-          ＋<small>Later</small>
-        </span>
-        <span aria-disabled="true">
-          ▧<small>Memories</small>
-        </span>
+        <Link className={active === 'boxes' ? 'active' : ''} href="/boxes">
+          <span>◇</span>Boxes
+        </Link>
+        <Link
+          className="mobile-create"
+          href="/boxes/new"
+          aria-label="Create a Box"
+        >
+          ＋<small>Box</small>
+        </Link>
+        <Link className={active === 'friends' ? 'active' : ''} href="/friends">
+          <span>♧</span>Friends
+        </Link>
         <Link
           className={active === 'settings' ? 'active' : ''}
           href="/settings/account"

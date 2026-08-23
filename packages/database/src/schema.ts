@@ -3,6 +3,7 @@ import {
   check,
   index,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -28,6 +29,33 @@ export const mediaStatus = paldoraSchema.enum('media_status', [
   'pending',
   'ready',
   'failed',
+]);
+export const boxStatus = paldoraSchema.enum('box_status', [
+  'active',
+  'archived',
+]);
+export const boxRole = paldoraSchema.enum('box_role', [
+  'owner',
+  'admin',
+  'member',
+]);
+export const boxMembershipStatus = paldoraSchema.enum('box_membership_status', [
+  'active',
+  'left',
+  'removed',
+]);
+export const boxInvitationStatus = paldoraSchema.enum('box_invitation_status', [
+  'pending',
+  'accepted',
+  'declined',
+  'revoked',
+  'expired',
+]);
+export const friendshipStatus = paldoraSchema.enum('friendship_status', [
+  'pending',
+  'accepted',
+  'declined',
+  'blocked',
 ]);
 
 export const users = paldoraSchema.table(
@@ -134,6 +162,151 @@ export const profiles = paldoraSchema.table(
     check(
       'profiles_bio_length_check',
       sql`${table.bio} is null or char_length(${table.bio}) <= 500`,
+    ),
+  ],
+);
+
+export const boxes = paldoraSchema.table(
+  'boxes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    privacyMode: text('privacy_mode').notNull().default('private'),
+    status: boxStatus('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('boxes_slug_unique').on(table.slug),
+    index('boxes_owner_status_index').on(table.ownerUserId, table.status),
+    check(
+      'boxes_name_length_check',
+      sql`char_length(${table.name}) between 1 and 80`,
+    ),
+    check('boxes_private_check', sql`${table.privacyMode} = 'private'`),
+  ],
+);
+
+export const boxMemberships = paldoraSchema.table(
+  'box_memberships',
+  {
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => boxes.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: boxRole('role').notNull().default('member'),
+    status: boxMembershipStatus('status').notNull().default('active'),
+    joinedAt: timestamp('joined_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.boxId, table.userId] }),
+    uniqueIndex('box_memberships_one_owner_per_box')
+      .on(table.boxId)
+      .where(sql`${table.role} = 'owner' and ${table.status} = 'active'`),
+    index('box_memberships_user_status_index').on(table.userId, table.status),
+  ],
+);
+
+export const boxInvitations = paldoraSchema.table(
+  'box_invitations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => boxes.id, { onDelete: 'cascade' }),
+    inviterUserId: uuid('inviter_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    inviteeUserId: uuid('invitee_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: boxInvitationStatus('status').notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('box_invitations_pending_pair_unique')
+      .on(table.boxId, table.inviteeUserId)
+      .where(sql`${table.status} = 'pending'`),
+    index('box_invitations_invitee_status_index').on(
+      table.inviteeUserId,
+      table.status,
+    ),
+    check(
+      'box_invitations_distinct_users_check',
+      sql`${table.inviterUserId} <> ${table.inviteeUserId}`,
+    ),
+  ],
+);
+
+export const friendships = paldoraSchema.table(
+  'friendships',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userLowId: uuid('user_low_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    userHighId: uuid('user_high_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    initiatedByUserId: uuid('initiated_by_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    blockedByUserId: uuid('blocked_by_user_id').references(() => users.id, {
+      onDelete: 'cascade',
+    }),
+    status: friendshipStatus('status').notNull().default('pending'),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('friendships_pair_unique').on(
+      table.userLowId,
+      table.userHighId,
+    ),
+    index('friendships_low_status_index').on(table.userLowId, table.status),
+    index('friendships_high_status_index').on(table.userHighId, table.status),
+    check(
+      'friendships_canonical_pair_check',
+      sql`${table.userLowId}::text < ${table.userHighId}::text`,
+    ),
+    check(
+      'friendships_initiator_is_party_check',
+      sql`${table.initiatedByUserId} in (${table.userLowId}, ${table.userHighId})`,
+    ),
+    check(
+      'friendships_blocker_state_check',
+      sql`(${table.status} = 'blocked') = (${table.blockedByUserId} is not null)`,
+    ),
+    check(
+      'friendships_blocker_is_party_check',
+      sql`${table.blockedByUserId} is null or ${table.blockedByUserId} in (${table.userLowId}, ${table.userHighId})`,
     ),
   ],
 );
