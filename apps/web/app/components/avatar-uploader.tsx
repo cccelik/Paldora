@@ -58,7 +58,15 @@ export function AvatarUploader({
       setMessage('Profile photo saved.');
       if (onboarding) router.push('/home');
       else router.refresh();
-    } catch {
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(
+          'Avatar upload failed:',
+          error instanceof Error
+            ? `${error.name}: ${error.message}`
+            : 'Unknown error',
+        );
+      }
       setMessage('The photo could not be uploaded. Try again.');
     } finally {
       setBusy(false);

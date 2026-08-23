@@ -1,19 +1,14 @@
+import { existsSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
+import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 
-const apiOrigin = new URL(
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1',
-).origin;
-const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin
-  : 'https://*.supabase.co';
-const mediaOrigin =
-  process.env.NEXT_PUBLIC_MEDIA_ORIGIN ?? 'http://localhost:9000';
+const rootEnvironmentPath = fileURLToPath(
+  new URL('../../.env', import.meta.url),
+);
+if (existsSync(rootEnvironmentPath)) loadEnvFile(rootEnvironmentPath);
 
 const securityHeaders = [
-  {
-    key: 'Content-Security-Policy',
-    value: `default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: ${mediaOrigin}; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ${apiOrigin} ${supabaseOrigin} ${mediaOrigin}`,
-  },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
@@ -25,6 +20,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_MEDIA_ORIGIN: process.env.NEXT_PUBLIC_MEDIA_ORIGIN,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_WEB_URL: process.env.NEXT_PUBLIC_WEB_URL,
+  },
   poweredByHeader: false,
   typedRoutes: true,
   async headers() {

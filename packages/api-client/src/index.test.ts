@@ -50,4 +50,30 @@ describe('PaldoraApiClient', () => {
       }),
     );
   });
+
+  it('invokes the native fetch implementation with the global receiver', async () => {
+    const nativeFetch = vi.fn(function (this: unknown) {
+      if (this !== globalThis) throw new TypeError('Illegal invocation');
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            status: 'ok',
+            service: 'api',
+            version: '0.1.0',
+            timestamp: '',
+          }),
+        ),
+      );
+    });
+    vi.stubGlobal('fetch', nativeFetch);
+    try {
+      const client = new PaldoraApiClient({
+        baseUrl: 'https://api.example/api/v1',
+      });
+      await client.health();
+      expect(nativeFetch).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

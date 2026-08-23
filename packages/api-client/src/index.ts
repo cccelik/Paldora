@@ -33,7 +33,8 @@ export class PaldoraApiClient {
 
   public constructor(options: ApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
-    this.request = options.fetchImplementation ?? fetch;
+    this.request =
+      options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
     this.getAccessToken =
       options.getAccessToken ?? (() => Promise.resolve(null));
   }

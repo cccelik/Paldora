@@ -22,7 +22,14 @@ Keep controllers thin, business rules in domain/services, database access behind
 1. Set the hosted development Supabase URL, anonymous key, and service-role key in `.env`. Never use a production service-role key locally.
 2. Enable email/password in Supabase Auth, allow `http://localhost:3000/auth/callback`, and configure password-reset email redirects to that callback.
 3. Start PostgreSQL, Redis, and private MinIO with the Docker Compose command above. MinIO creates `paldora-private` and applies local browser-upload CORS.
-4. Run `pnpm db:migrate`, set a non-committed demo password, then run `pnpm seed:demo`.
+4. Run `pnpm db:migrate`, set a non-committed demo password and a real demo inbox, then run `pnpm seed:demo`.
 5. Run `pnpm dev` and sign in with the provisioned demo account. No registration screen exists.
+
+Supabase's built-in SMTP service only delivers to email addresses belonging to
+members of the project's organization and is limited to two messages per hour.
+Use your organization-member email for the hosted-development reset test, or
+configure custom SMTP under Authentication settings. If a placeholder demo was
+already seeded, provision a second account with the real email and a different
+`DEMO_USERNAME` to avoid colliding with the first profile.
 
 With the development web server running, `pnpm design:capture:phase1` refreshes the implementation-accurate auth/settings artboards.
