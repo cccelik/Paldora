@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -13,21 +14,25 @@ import type { BoxId, BoxInvitationId, UserId } from '@paldora/domain';
 import {
   createBoxInvitationSchema,
   createBoxSchema,
+  transferBoxOwnershipSchema,
   updateBoxMemberSchema,
   updateBoxSchema,
-  uuidSchema,
 } from '@paldora/validation';
 import {
   SupabaseAuthGuard,
   type AuthenticatedRequest,
 } from './auth.service.js';
 import { BoxService } from './box.service.js';
-import { parseRequest } from './request-validation.js';
+import { parseRequest, parseUuid } from './request-validation.js';
+import { RateLimitService } from './rate-limit.service.js';
 
 @Controller('boxes')
 @UseGuards(SupabaseAuthGuard)
 export class BoxController {
-  public constructor(@Inject(BoxService) private readonly boxes: BoxService) {}
+  public constructor(
+    @Inject(BoxService) private readonly boxes: BoxService,
+    @Inject(RateLimitService) private readonly rateLimits: RateLimitService,
+  ) {}
 
   @Get()
   public list(@Req() request: AuthenticatedRequest) {
@@ -45,7 +50,7 @@ export class BoxController {
     @Req() request: AuthenticatedRequest,
     @Param('boxId') rawBoxId: string,
   ) {
-    const boxId = parseRequest(uuidSchema, rawBoxId) as BoxId;
+    const boxId = parseUuid<BoxId>(rawBoxId);
     return this.boxes.get(request.principal.userId, boxId);
   }
 
@@ -55,9 +60,18 @@ export class BoxController {
     @Param('boxId') rawBoxId: string,
     @Body() body: unknown,
   ) {
-    const boxId = parseRequest(uuidSchema, rawBoxId) as BoxId;
+    const boxId = parseUuid<BoxId>(rawBoxId);
     const input = parseRequest(updateBoxSchema, body);
     return this.boxes.update(request.principal.userId, boxId, input);
+  }
+
+  @Delete(':boxId')
+  public deleteBox(
+    @Req() request: AuthenticatedRequest,
+    @Param('boxId') rawBoxId: string,
+  ) {
+    const boxId = parseUuid<BoxId>(rawBoxId);
+    return this.boxes.deleteBox(request.principal.userId, boxId);
   }
 
   @Get(':boxId/members')
@@ -65,19 +79,29 @@ export class BoxController {
     @Req() request: AuthenticatedRequest,
     @Param('boxId') rawBoxId: string,
   ) {
-    const boxId = parseRequest(uuidSchema, rawBoxId) as BoxId;
+    const boxId = parseUuid<BoxId>(rawBoxId);
     return this.boxes.members(request.principal.userId, boxId);
   }
 
   @Post(':boxId/invitations')
-  public invite(
+  public async invite(
     @Req() request: AuthenticatedRequest,
     @Param('boxId') rawBoxId: string,
     @Body() body: unknown,
   ) {
-    const boxId = parseRequest(uuidSchema, rawBoxId) as BoxId;
+    const boxId = parseUuid<BoxId>(rawBoxId);
     const input = parseRequest(createBoxInvitationSchema, body);
+    await this.rateLimits.assertBoxInvitationAllowed(request.principal.userId);
     return this.boxes.invite(request.principal.userId, boxId, input.username);
+  }
+
+  @Get(':boxId/invitations')
+  public pendingInvitations(
+    @Req() request: AuthenticatedRequest,
+    @Param('boxId') rawBoxId: string,
+  ) {
+    const boxId = parseUuid<BoxId>(rawBoxId);
+    return this.boxes.pendingInviteeIds(request.principal.userId, boxId);
   }
 
   @Patch(':boxId/members/:userId')
@@ -87,8 +111,8 @@ export class BoxController {
     @Param('userId') rawUserId: string,
     @Body() body: unknown,
   ) {
-    const boxId = parseRequest(uuidSchema, rawBoxId) as BoxId;
-    const userId = parseRequest(uuidSchema, rawUserId) as UserId;
+    const boxId = parseUuid<BoxId>(rawBoxId);
+    const userId = parseUuid<UserId>(rawUserId);
     const input = parseRequest(updateBoxMemberSchema, body);
     return this.boxes.updateMemberRole(
       request.principal.userId,
@@ -96,6 +120,45 @@ export class BoxController {
       userId,
       input.role,
     );
+  }
+
+  @Patch(':boxId/owner')
+  public transferOwnership(
+    @Req() request: AuthenticatedRequest,
+    @Param('boxId') rawBoxId: string,
+    @Body() body: unknown,
+  ) {
+    const boxId = parseUuid<BoxId>(rawBoxId);
+    const input = parseRequest(transferBoxOwnershipSchema, body);
+    return this.boxes.transferOwnership(
+      request.principal.userId,
+      boxId,
+      input.userId as UserId,
+    );
+  }
+
+  @Delete(':boxId/members/me')
+  public leave(
+    @Req() request: AuthenticatedRequest,
+    @Param('boxId') rawBoxId: string,
+  ) {
+    const boxId = parseUuid<BoxId>(rawBoxId);
+    return this.boxes.removeMember(
+      request.principal.userId,
+      boxId,
+      request.principal.userId,
+    );
+  }
+
+  @Delete(':boxId/members/:userId')
+  public removeMember(
+    @Req() request: AuthenticatedRequest,
+    @Param('boxId') rawBoxId: string,
+    @Param('userId') rawUserId: string,
+  ) {
+    const boxId = parseUuid<BoxId>(rawBoxId);
+    const userId = parseUuid<UserId>(rawUserId);
+    return this.boxes.removeMember(request.principal.userId, boxId, userId);
   }
 }
 
@@ -114,10 +177,7 @@ export class BoxInvitationController {
     @Req() request: AuthenticatedRequest,
     @Param('invitationId') rawInvitationId: string,
   ) {
-    const invitationId = parseRequest(
-      uuidSchema,
-      rawInvitationId,
-    ) as BoxInvitationId;
+    const invitationId = parseUuid<BoxInvitationId>(rawInvitationId);
     return this.boxes.respondToInvitation(
       request.principal.userId,
       invitationId,
@@ -130,10 +190,7 @@ export class BoxInvitationController {
     @Req() request: AuthenticatedRequest,
     @Param('invitationId') rawInvitationId: string,
   ) {
-    const invitationId = parseRequest(
-      uuidSchema,
-      rawInvitationId,
-    ) as BoxInvitationId;
+    const invitationId = parseUuid<BoxInvitationId>(rawInvitationId);
     return this.boxes.respondToInvitation(
       request.principal.userId,
       invitationId,

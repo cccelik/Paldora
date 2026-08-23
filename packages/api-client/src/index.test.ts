@@ -1,3 +1,4 @@
+import type { BoxId, UserId } from '@paldora/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { PaldoraApiClient } from './index.js';
 
@@ -89,7 +90,24 @@ describe('PaldoraApiClient', () => {
           }),
         ),
       )
-      .mockResolvedValueOnce(new Response(JSON.stringify([])));
+      .mockResolvedValueOnce(new Response(JSON.stringify([])))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ inviteeUserIds: [] })),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ownerUserId: '00000000-0000-4000-8000-000000000002',
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true, status: 'removed' })),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true, status: 'left' })),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
     const client = new PaldoraApiClient({
       baseUrl: 'https://api.example/api/v1',
       fetchImplementation: request,
@@ -97,6 +115,19 @@ describe('PaldoraApiClient', () => {
     });
     await client.createBox({ name: 'Close friends' });
     await client.friendRequests();
+    await client.pendingBoxInvitees(
+      '00000000-0000-4000-8000-000000000001' as BoxId,
+    );
+    await client.transferBoxOwnership(
+      '00000000-0000-4000-8000-000000000001' as BoxId,
+      '00000000-0000-4000-8000-000000000002' as UserId,
+    );
+    await client.removeBoxMember(
+      '00000000-0000-4000-8000-000000000001' as BoxId,
+      '00000000-0000-4000-8000-000000000002' as UserId,
+    );
+    await client.leaveBox('00000000-0000-4000-8000-000000000001' as BoxId);
+    await client.deleteBox('00000000-0000-4000-8000-000000000001' as BoxId);
     expect(request).toHaveBeenNthCalledWith(
       1,
       'https://api.example/api/v1/boxes',
@@ -109,6 +140,36 @@ describe('PaldoraApiClient', () => {
       2,
       'https://api.example/api/v1/friend-requests',
       expect.objectContaining({ method: 'GET' }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      3,
+      'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/invitations',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      4,
+      'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/owner',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          userId: '00000000-0000-4000-8000-000000000002',
+        }),
+      }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      5,
+      'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/members/00000000-0000-4000-8000-000000000002',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      6,
+      'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/members/me',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      7,
+      'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001',
+      expect.objectContaining({ method: 'DELETE' }),
     );
   });
 });

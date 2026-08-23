@@ -4,13 +4,24 @@ Paldora is private by default and authorization is deny-by-default. Authenticati
 
 Current controls include strict input/config parsing, bounded pagination primitives, exact-origin CORS, baseline HTTP security headers, CSP on web, request IDs, redacted structured logs, private-storage interfaces, and separate liveness/readiness probes. The application does not accept arbitrary HTML, CSS, or JavaScript.
 
+Phase 2 social mutations are rate limited per authenticated internal user in
+Redis. Friend requests allow 20 attempts per hour and Box invitations allow 60.
+If Redis cannot enforce a limit, these mutations fail closed with a stable 503
+error. Ownership transfer updates both membership roles and the canonical Box
+owner in one PostgreSQL transaction.
+
+Permanent Box deletion is restricted to the current owner and removes current
+membership and invitation records through foreign-key cascades. Destructive UI
+requires the exact Box name plus a second confirmation. Future private media
+cleanup must be queued before its Box-owned metadata is deleted.
+
 Security assumptions for this foundation:
 
 - TLS is terminated by the deployment edge and HTTPS is enforced there.
 - PostgreSQL and Redis are private-network services in deployed environments; local ports bind only to loopback.
 - Secrets are injected by a secret manager and never use `.env.example` defaults outside local development.
 - S3-compatible buckets are private and accessed with short-lived signed URLs.
-- Edge/proxy request limits complement API-level distributed rate limiting when product endpoints arrive.
+- Edge/proxy request limits complement API-level distributed rate limiting.
 - Dependency, container, and secret scanning are enabled by the hosting organization.
 - Future encrypted Boxes require established protocols, client key management, external review, and a separate threat model. No encryption claim is made now.
 

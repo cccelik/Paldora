@@ -32,3 +32,32 @@ All `/me` endpoints require a Supabase access token in `Authorization: Bearer <t
 | `DELETE` | `/api/v1/me/avatar`                      | Detach and queue avatar deletion      |
 
 Stable Phase 1 errors include `AUTHENTICATION_REQUIRED`, `ACCOUNT_NOT_PROVISIONED`, `ACCOUNT_BLOCKED`, `VALIDATION_FAILED`, `USERNAME_UNAVAILABLE`, `AVATAR_UPLOAD_NOT_FOUND`, `INVALID_AVATAR_UPLOAD`, and `STORAGE_UNAVAILABLE`.
+
+## Box membership endpoints
+
+| Method   | Path                                   | Purpose                    |
+| -------- | -------------------------------------- | -------------------------- |
+| `PATCH`  | `/api/v1/boxes/:boxId/members/:userId` | Promote or demote a member |
+| `DELETE` | `/api/v1/boxes/:boxId/members/:userId` | Remove a non-owner member  |
+| `DELETE` | `/api/v1/boxes/:boxId/members/me`      | Leave a Box                |
+| `GET`    | `/api/v1/boxes/:boxId/invitations`     | List pending invitee IDs   |
+| `PATCH`  | `/api/v1/boxes/:boxId/owner`           | Transfer Box ownership     |
+| `PATCH`  | `/api/v1/boxes/:boxId`                 | Rename/archive/restore Box |
+| `DELETE` | `/api/v1/boxes/:boxId`                 | Permanently delete Box     |
+
+Owners can promote or demote non-owner members. Admins can promote members and
+remove non-owner members, but cannot demote admins or alter the creator. The
+creator must transfer ownership before leaving. Ownership transfer is atomic:
+the selected active member becomes owner and the former owner becomes an admin.
+Only the current owner may permanently delete a Box. Deleting the Box removes
+all memberships and invitations through database cascades; future Box-owned
+posts and metadata must use the same cascade contract, while private objects
+must be queued for storage deletion before their metadata is removed.
+
+Owners and admins may invite any active, provisioned user by username; an
+accepted friendship is not required. Blocking still prevents invitations and
+acceptance.
+
+Friend requests are limited to 20 per user per hour and Box invitations to 60
+per user per hour. Limits are enforced through Redis and return `RATE_LIMITED`
+or `RATE_LIMIT_UNAVAILABLE` without weakening Box authorization.

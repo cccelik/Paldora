@@ -7,17 +7,9 @@ import {
   saveUsernameAction,
   type ProfileActionState,
 } from '../actions/profile';
+import { ActionFeedback, UsernameField } from './ui';
 
 const initialProfileState: ProfileActionState = { status: 'idle' };
-
-function ProfileNotice({ state }: { state: typeof initialProfileState }) {
-  if (state.status === 'idle') return null;
-  return (
-    <p className={`form-notice ${state.status}`} role="status">
-      {state.message}
-    </p>
-  );
-}
 
 export function UsernameForm({ username = '' }: { username?: string }) {
   const [state, action, pending] = useActionState(
@@ -26,23 +18,14 @@ export function UsernameForm({ username = '' }: { username?: string }) {
   );
   return (
     <form action={action} className="form-stack">
-      <label>
-        Username
-        <div className="username-input">
-          <span>@</span>
-          <input
-            defaultValue={username}
-            name="username"
-            minLength={3}
-            maxLength={30}
-            pattern="[\p{L}\p{N}_]+"
-            autoComplete="username"
-            required
-          />
-        </div>
-      </label>
+      <UsernameField
+        defaultValue={username}
+        autoComplete="username"
+        prefixed
+        required
+      />
       <p className="field-help">3–30 letters, numbers, or underscores.</p>
-      <ProfileNotice state={state} />
+      <ActionFeedback state={state} />
       <button className="button-primary" disabled={pending} type="submit">
         {pending ? 'Checking…' : 'Continue'}
       </button>
@@ -77,7 +60,7 @@ export function ProfileSetupForm({
         Bio <small>Optional</small>
         <textarea defaultValue={bio} name="bio" maxLength={500} rows={5} />
       </label>
-      <ProfileNotice state={state} />
+      <ActionFeedback state={state} />
       <button className="button-primary" disabled={pending} type="submit">
         {pending ? 'Saving…' : 'Continue'}
       </button>
@@ -110,21 +93,13 @@ export function SettingsForm({
             required
           />
         </label>
-        <label>
-          Username
-          <input
-            defaultValue={username}
-            name="username"
-            maxLength={30}
-            required
-          />
-        </label>
+        <UsernameField defaultValue={username} required />
       </div>
       <label>
         Bio
         <textarea defaultValue={bio} name="bio" maxLength={500} rows={5} />
       </label>
-      <ProfileNotice state={state} />
+      <ActionFeedback state={state} />
       <button
         className="button-primary settings-submit"
         disabled={pending}

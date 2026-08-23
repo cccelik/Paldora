@@ -112,6 +112,10 @@ export const updateBoxMemberSchema = z.object({
   role: z.enum(['admin', 'member']),
 });
 
+export const transferBoxOwnershipSchema = z.object({
+  userId: uuidSchema,
+});
+
 export const createFriendRequestSchema = z.object({
   username: usernameSchema,
 });
@@ -124,4 +128,5 @@ export type CreateBox = z.infer<typeof createBoxSchema>;
 export type UpdateBox = z.infer<typeof updateBoxSchema>;
 export type CreateBoxInvitation = z.infer<typeof createBoxInvitationSchema>;
 export type UpdateBoxMember = z.infer<typeof updateBoxMemberSchema>;
+export type TransferBoxOwnership = z.infer<typeof transferBoxOwnershipSchema>;
 export type CreateFriendRequest = z.infer<typeof createFriendRequestSchema>;

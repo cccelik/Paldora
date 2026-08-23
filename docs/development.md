@@ -46,8 +46,25 @@ Use two browser profiles (for example, a normal window and a private window):
 1. Sign in as the first account, open **Friends**, and request the second
    account by its exact username.
 2. Sign in as the second account and accept the request.
-3. Create a Box from either account and invite the accepted friend.
+3. Create a Box from either account and invite the accepted friend from the
+   quick list, or invite any provisioned account directly by username.
 4. Sign in as the invitee and accept the Box invitation.
+5. As the owner, rename and archive/restore the Box from **Box settings**.
+6. Transfer ownership from the member's `…` menu. Confirm the former owner is
+   now an admin and can leave while the new owner cannot leave without another
+   transfer.
+7. Verify only the current owner sees the permanent-delete control. It requires
+   the exact Box name and a second browser confirmation before deleting all
+   memberships, invitations, and Box-owned content.
 
 Boxes are private and deny access to non-members. Posts and Box feeds remain an
 honest empty state until the posts/feed phase.
+
+Redis enforces per-user mutation limits in local and deployed environments: 20
+friend requests and 60 Box invitations per hour. Flush only the dedicated
+`paldora:rate-limit:*` keys when intentionally resetting local test state.
+
+Run `pnpm test:e2e:hosted` for the hosted Supabase smoke gate. It loads the
+uncommitted `.env`, starts/reuses the API and web servers, and verifies every
+configured demo account can sign in, access Boxes/Friends, and sign out. The
+normal `pnpm test:e2e` suite remains credential-free.

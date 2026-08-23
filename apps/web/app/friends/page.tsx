@@ -1,13 +1,22 @@
-import { redirect } from 'next/navigation';
-import type { ReactNode } from 'react';
 import {
   blockUserAction,
+  removeFriendAction,
   respondToFriendRequestAction,
   sendFriendRequestAction,
   unblockUserAction,
 } from '../actions/social';
 import { AppShell } from '../components/app-shell';
-import { authenticatedApiClient, loadCurrentUser } from '../lib/api';
+import { ConfirmSubmitButton } from '../components/confirm-submit-button';
+import {
+  ListEmpty,
+  PageFeedback,
+  PageHeader,
+  PersonRow,
+  SectionHeading,
+  SurfaceCard,
+  UsernameField,
+} from '../components/ui';
+import { authenticatedApiClient, loadCompletedCurrentUser } from '../lib/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,9 +25,7 @@ export default async function FriendsPage({
 }: {
   searchParams: Promise<{ error?: string; notice?: string }>;
 }) {
-  const current = await loadCurrentUser();
-  if (current.profile.onboardingState !== 'complete')
-    redirect(`/onboarding/${current.profile.onboardingState}`);
+  const current = await loadCompletedCurrentUser();
   const notices = await searchParams;
   const api = await authenticatedApiClient();
   const [friends, requests, blocked] = await Promise.all([
@@ -31,31 +38,20 @@ export default async function FriendsPage({
 
   return (
     <AppShell current={current} active="friends">
-      <header className="app-page-header">
-        <div>
-          <p className="eyebrow">Your people</p>
-          <h1>Friends</h1>
-          <p>Friendship is mutual. Both people must choose it.</p>
-        </div>
-      </header>
-      {notices.error && (
-        <p className="form-message error page-notice" role="alert">
-          {notices.error}
-        </p>
-      )}
-      {notices.notice && (
-        <p className="form-message success page-notice" role="status">
-          {notices.notice}
-        </p>
-      )}
+      <PageHeader
+        eyebrow="Your people"
+        title="Friends"
+        description="Friendship is mutual. Both people must choose it."
+      />
+      <PageFeedback error={notices.error} notice={notices.notice} />
       <div className="friends-layout">
         <div>
           {incoming.length > 0 && (
             <section className="social-section first-section">
-              <div className="section-heading">
-                <h2>Requests for you</h2>
-                <span>{incoming.length}</span>
-              </div>
+              <SectionHeading
+                title="Requests for you"
+                count={incoming.length}
+              />
               <div className="social-list">
                 {incoming.map((request) => (
                   <PersonRow
@@ -104,37 +100,46 @@ export default async function FriendsPage({
             </section>
           )}
           <section className="social-section first-section">
-            <div className="section-heading">
-              <h2>Your friends</h2>
-              <span>{friends.length}</span>
-            </div>
+            <SectionHeading title="Your friends" count={friends.length} />
             {friends.length ? (
               <div className="social-list">
-                {friends.map((friend) => (
-                  <PersonRow
-                    key={friend.id}
-                    name={
-                      friend.user.displayName ??
-                      friend.user.username ??
-                      'Paldora friend'
-                    }
-                    username={friend.user.username ?? ''}
-                    detail="Accepted friend"
-                  />
-                ))}
+                {friends.map((friend) => {
+                  const name =
+                    friend.user.displayName ??
+                    friend.user.username ??
+                    'Paldora friend';
+                  return (
+                    <PersonRow
+                      key={friend.id}
+                      name={name}
+                      username={friend.user.username ?? ''}
+                      detail="Accepted friend"
+                      actions={
+                        <form
+                          action={removeFriendAction.bind(null, friend.user.id)}
+                        >
+                          <ConfirmSubmitButton
+                            className="button-quiet danger compact-button"
+                            confirmation={`Remove ${name} from your friends? Existing shared Box memberships will not change.`}
+                          >
+                            Remove
+                          </ConfirmSubmitButton>
+                        </form>
+                      }
+                    />
+                  );
+                })}
               </div>
             ) : (
-              <div className="list-empty">
-                <strong>No friends here yet.</strong>
-                <span>Send a request using their exact username.</span>
-              </div>
+              <ListEmpty
+                title="No friends here yet."
+                description="Send a request using their exact username."
+              />
             )}
           </section>
           {(outgoing.length > 0 || blocked.length > 0) && (
             <section className="social-section">
-              <div className="section-heading">
-                <h2>Other connections</h2>
-              </div>
+              <SectionHeading title="Other connections" />
               <div className="social-list">
                 {outgoing.map((request) => (
                   <PersonRow
@@ -174,7 +179,7 @@ export default async function FriendsPage({
             </section>
           )}
         </div>
-        <aside className="settings-card friend-add-card">
+        <SurfaceCard as="aside" className="friend-add-card">
           <p className="eyebrow">Add someone</p>
           <h2>Find by username</h2>
           <p>
@@ -182,16 +187,7 @@ export default async function FriendsPage({
             with you.
           </p>
           <form className="form-stack" action={sendFriendRequestAction}>
-            <label>
-              Username
-              <input
-                name="username"
-                required
-                minLength={3}
-                maxLength={30}
-                placeholder="close_friend"
-              />
-            </label>
+            <UsernameField required placeholder="close_friend" />
             <button className="button-primary full-width" type="submit">
               Send friend request
             </button>
@@ -199,44 +195,14 @@ export default async function FriendsPage({
           <details className="block-controls">
             <summary>Block a username</summary>
             <form className="form-stack" action={blockUserAction}>
-              <label>
-                Username to block
-                <input name="username" required minLength={3} maxLength={30} />
-              </label>
+              <UsernameField label="Username to block" required />
               <button className="button-secondary full-width" type="submit">
                 Block user
               </button>
             </form>
           </details>
-        </aside>
+        </SurfaceCard>
       </div>
     </AppShell>
-  );
-}
-
-function PersonRow({
-  name,
-  username,
-  detail = 'Friend request',
-  actions,
-}: {
-  name: string;
-  username: string;
-  detail?: string;
-  actions?: ReactNode;
-}) {
-  return (
-    <article className="social-row">
-      <div className="member-avatar" aria-hidden="true">
-        {name.slice(0, 1).toUpperCase()}
-      </div>
-      <div className="social-row-copy">
-        <strong>{name}</strong>
-        <span>
-          @{username} · {detail}
-        </span>
-      </div>
-      {actions && <div className="row-actions">{actions}</div>}
-    </article>
   );
 }

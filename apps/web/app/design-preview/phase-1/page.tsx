@@ -10,6 +10,12 @@ import {
   SettingsForm,
   UsernameForm,
 } from '../../components/profile-forms';
+import {
+  FeedbackMessage,
+  PageHeader,
+  SurfaceCard,
+  UsernameField,
+} from '../../components/ui';
 
 const previewUser: CurrentUser = {
   user: {
@@ -71,29 +77,28 @@ export default async function PhaseOneDesignPreview({
   if (screen === 'settings')
     return (
       <AppShell current={previewUser} active="settings">
-        <header className="app-page-header settings-heading">
-          <div>
-            <p className="eyebrow">Personal details</p>
-            <h1>Account settings</h1>
-            <p>Keep the identity your people see up to date.</p>
-          </div>
-        </header>
+        <PageHeader
+          className="settings-heading"
+          eyebrow="Personal details"
+          title="Account settings"
+          description="Keep the identity your people see up to date."
+        />
         <div className="settings-layout">
-          <section className="settings-card profile-settings-card">
-            <h2>Profile information</h2>
+          <SurfaceCard
+            className="profile-settings-card"
+            title="Profile information"
+          >
             <SettingsForm
               username="alice_moreno"
               displayName="Alice Moreno"
               bio={previewUser.profile.bio ?? ''}
             />
-          </section>
+          </SurfaceCard>
           <aside className="settings-side">
-            <section className="settings-card">
-              <h2>Profile photo</h2>
+            <SurfaceCard title="Profile photo">
               <AvatarUploader />
-            </section>
-            <section className="settings-card account-summary">
-              <h2>Account</h2>
+            </SurfaceCard>
+            <SurfaceCard className="account-summary" title="Account">
               <dl>
                 <div>
                   <dt>Email</dt>
@@ -104,7 +109,7 @@ export default async function PhaseOneDesignPreview({
                   <dd>Provisioned demo</dd>
                 </div>
               </dl>
-            </section>
+            </SurfaceCard>
           </aside>
         </div>
       </AppShell>
@@ -117,16 +122,10 @@ export default async function PhaseOneDesignPreview({
         description="This is how your people will find and recognize you."
       >
         <form className="form-stack">
-          <label>
-            Username
-            <div className="username-input">
-              <span>@</span>
-              <input defaultValue="paldora" readOnly />
-            </div>
-          </label>
-          <p className="form-notice error" role="status">
+          <UsernameField defaultValue="paldora" prefixed readOnly />
+          <FeedbackMessage variant="notice" tone="error">
             Username unavailable. Try another one.
-          </p>
+          </FeedbackMessage>
           <button className="button-primary" type="button">
             Continue
           </button>
@@ -141,31 +140,33 @@ export default async function PhaseOneDesignPreview({
         <div className="error-state-grid">
           <section>
             <h2>Invalid credentials</h2>
-            <p className="form-notice error">
+            <FeedbackMessage variant="notice" tone="error">
               Those credentials did not match a provisioned account.
-            </p>
+            </FeedbackMessage>
           </section>
           <section>
             <h2>Username unavailable</h2>
-            <p className="form-notice error">
+            <FeedbackMessage variant="notice" tone="error">
               Username unavailable. Try another one.
-            </p>
+            </FeedbackMessage>
           </section>
           <section>
             <h2>Expired link</h2>
-            <p className="form-notice error">
+            <FeedbackMessage variant="notice" tone="error">
               This reset link is invalid or has expired.
-            </p>
+            </FeedbackMessage>
           </section>
           <section>
             <h2>Network error</h2>
-            <p className="form-notice error">
+            <FeedbackMessage variant="notice" tone="error">
               Something went wrong. Try again.
-            </p>
+            </FeedbackMessage>
           </section>
           <section>
             <h2>Success</h2>
-            <p className="form-notice success">Changes saved.</p>
+            <FeedbackMessage variant="notice" tone="success">
+              Changes saved.
+            </FeedbackMessage>
           </section>
         </div>
       </main>

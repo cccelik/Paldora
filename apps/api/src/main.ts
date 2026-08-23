@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { randomUUID } from 'node:crypto';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { parseApiEnvironment } from '@paldora/config';
@@ -7,6 +6,7 @@ import { createLogger } from '@paldora/observability';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
+import { resolveRequestId } from './request-id.js';
 
 const logger = createLogger({
   service: 'api',
@@ -38,7 +38,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.use((request: Request, response: Response, next: NextFunction) => {
-    const requestId = request.header('x-request-id') ?? randomUUID();
+    const requestId = resolveRequestId(request.header('x-request-id'));
     response.setHeader('x-request-id', requestId);
     const startedAt = performance.now();
     response.on('finish', () => {
@@ -61,6 +61,6 @@ async function bootstrap(): Promise<void> {
 }
 
 void bootstrap().catch((error: unknown) => {
-  logger.fatal({ error }, 'Paldora API failed to start');
+  logger.fatal({ err: error }, 'Paldora API failed to start');
   process.exitCode = 1;
 });

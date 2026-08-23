@@ -1,12 +1,25 @@
-import { existsSync } from 'node:fs';
-import { loadEnvFile } from 'node:process';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 import type { NextConfig } from 'next';
 
 const rootEnvironmentPath = fileURLToPath(
   new URL('../../.env', import.meta.url),
 );
-if (existsSync(rootEnvironmentPath)) loadEnvFile(rootEnvironmentPath);
+const publicEnvironmentKeys = [
+  'NEXT_PUBLIC_API_URL',
+  'NEXT_PUBLIC_MEDIA_ORIGIN',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_WEB_URL',
+] as const;
+
+if (existsSync(rootEnvironmentPath)) {
+  const rootEnvironment = parseEnv(readFileSync(rootEnvironmentPath, 'utf8'));
+  for (const key of publicEnvironmentKeys) {
+    process.env[key] ??= rootEnvironment[key];
+  }
+}
 
 const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

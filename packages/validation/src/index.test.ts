@@ -7,6 +7,7 @@ import {
   cursorPageSchema,
   isReservedUsername,
   normalizeUsername,
+  transferBoxOwnershipSchema,
   updateProfileSchema,
   usernameSchema,
 } from './index.js';
@@ -79,6 +80,17 @@ describe('Boxes and social validation', () => {
     ).toBe(true);
     expect(
       createFriendRequestSchema.safeParse({ username: 'not.valid' }).success,
+    ).toBe(false);
+  });
+
+  it('requires a valid member ID for ownership transfer', () => {
+    expect(
+      transferBoxOwnershipSchema.safeParse({
+        userId: '00000000-0000-4000-8000-000000000001',
+      }).success,
+    ).toBe(true);
+    expect(
+      transferBoxOwnershipSchema.safeParse({ userId: 'not-a-user' }).success,
     ).toBe(false);
   });
 });

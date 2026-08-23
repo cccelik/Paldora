@@ -12,8 +12,10 @@ describe('parseApiEnvironment', () => {
       S3_BUCKET: 'paldora-private',
       S3_ACCESS_KEY_ID: 'test',
       S3_SECRET_ACCESS_KEY: 'test-secret',
+      S3_FORCE_PATH_STYLE: 'false',
     });
     expect(config.API_PORT).toBe(4100);
+    expect(config.S3_FORCE_PATH_STYLE).toBe(false);
   });
 
   it('fails closed when required configuration is missing', () => {

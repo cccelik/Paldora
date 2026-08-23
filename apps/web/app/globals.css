@@ -333,7 +333,8 @@ textarea:focus-visible {
   font-weight: 500;
 }
 .form-stack input,
-.form-stack textarea {
+.form-stack textarea,
+.form-stack select {
   width: 100%;
   min-height: 48px;
   padding: 12px 14px;
@@ -348,7 +349,8 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 .form-stack input:focus,
-.form-stack textarea:focus {
+.form-stack textarea:focus,
+.form-stack select:focus {
   border-color: #9e87d6;
   box-shadow: 0 0 0 4px rgb(188 168 232 / 20%);
 }
@@ -511,7 +513,8 @@ textarea:focus-visible {
 }
 .avatar-preview img,
 .mini-avatar img,
-.header-avatar img {
+.header-avatar img,
+.member-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -552,6 +555,7 @@ textarea:focus-visible {
   gap: 7px;
 }
 .app-sidebar nav a,
+.app-sidebar nav .nav-deferred,
 .sidebar-account > a {
   min-height: 48px;
   padding: 0 13px;
@@ -562,6 +566,10 @@ textarea:focus-visible {
   border-radius: 8px;
   text-decoration: none;
   font-size: 14px;
+}
+.app-sidebar nav .nav-deferred {
+  color: #746d63;
+  cursor: not-allowed;
 }
 .app-sidebar nav a.active,
 .sidebar-account > a.active {
@@ -884,6 +892,7 @@ textarea:focus-visible {
   height: 46px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   color: #1a140b;
   background: #dca72e;
   border-radius: 50%;
@@ -938,14 +947,128 @@ textarea:focus-visible {
   align-items: center;
   gap: 11px;
 }
-.member-row > div {
+.member-row-copy {
   min-width: 0;
   display: grid;
   gap: 3px;
+  flex: 1;
+}
+.member-row-copy > strong,
+.member-username {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.member-identity-line {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.member-role {
+  flex: none;
+  color: rgb(25 22 17 / 48%);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+.member-actions-menu {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+}
+.member-actions-trigger {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #5e428f;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+.member-actions-trigger[aria-expanded='true'],
+.member-actions-trigger:hover {
+  background: rgb(94 66 143 / 10%);
+}
+.member-actions-popover {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: calc(100% + 5px);
+  width: 160px;
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+  background: #fffdf7;
+  border: 1px solid rgb(25 22 17 / 14%);
+  border-radius: 9px;
+  box-shadow: 0 14px 34px rgb(25 22 17 / 18%);
+}
+.member-actions-popover form,
+.member-actions-popover button {
+  width: 100%;
+}
+.member-actions-popover button {
+  min-height: 38px;
+  padding: 0 10px;
+  color: #3f315a;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 11px;
+}
+.member-actions-popover button:hover {
+  background: rgb(94 66 143 / 8%);
+}
+.member-actions-popover button.danger {
+  color: #a43a2c;
 }
 .member-row small {
   color: rgb(25 22 17 / 56%);
   font-size: 11px;
+}
+.owner-membership-note {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  color: rgb(25 22 17 / 56%);
+  border-top: 1px solid rgb(25 22 17 / 10%);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.box-status-control {
+  margin-top: 22px;
+  padding-top: 18px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgb(25 22 17 / 10%);
+}
+.box-status-control p {
+  margin: 0 0 4px;
+  color: rgb(25 22 17 / 58%);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.box-delete-control {
+  margin-top: 22px;
+  padding-top: 18px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgb(164 58 44 / 22%);
+}
+.box-delete-control > strong {
+  color: #a43a2c;
+}
+.box-delete-control > p {
+  margin: 0 0 4px;
+  color: rgb(25 22 17 / 58%);
+  font-size: 12px;
+  line-height: 1.5;
 }
 .friend-add-card {
   position: sticky;
@@ -976,6 +1099,113 @@ textarea:focus-visible {
 }
 .block-controls .form-stack {
   margin-top: 12px;
+}
+.invite-picker-empty {
+  margin: 0;
+  color: rgb(25 22 17 / 62%);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.invite-picker-caption {
+  margin: 12px 0 0;
+  color: rgb(25 22 17 / 54%);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.invite-friend-list {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+  list-style: none;
+}
+.invite-friend-list li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.invite-friend-list .member-avatar {
+  width: 40px;
+  height: 40px;
+}
+.invite-friend-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.invite-friend-copy strong,
+.invite-friend-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.invite-friend-copy span {
+  color: rgb(25 22 17 / 56%);
+  font-size: 11px;
+}
+.invite-friend-list form {
+  margin-left: auto;
+}
+.invite-friend-list button:disabled {
+  cursor: default;
+}
+.show-all-friends {
+  width: 100%;
+  margin-top: 16px;
+}
+.friends-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(680px, calc(100vh - 48px));
+  padding: 0;
+  color: #191611;
+  background: #fbf6ec;
+  border: 1px solid rgb(89 64 28 / 22%);
+  border-radius: 12px;
+  box-shadow: 0 28px 90px rgb(19 14 8 / 35%);
+}
+.friends-dialog::backdrop {
+  background: rgb(16 13 9 / 68%);
+  backdrop-filter: blur(3px);
+}
+.friends-dialog-header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  background: #fbf6ec;
+  border-bottom: 1px solid rgb(25 22 17 / 10%);
+}
+.friends-dialog-header h2 {
+  margin: 5px 0 0;
+  font: 600 30px/1 var(--font-display);
+}
+.friends-dialog-close {
+  min-width: 44px;
+  padding: 0;
+  font-size: 28px;
+}
+.friends-dialog > .invite-friend-list {
+  max-height: calc(100vh - 180px);
+  padding: 20px 24px 26px;
+  overflow-y: auto;
+}
+.invite-fallback summary {
+  color: #654d22;
+}
+.component-preview-page {
+  min-height: 100vh;
+  padding: 32px 16px;
+  display: grid;
+  place-items: center;
+  background: #221c15;
+}
+.component-preview-page > .settings-card {
+  width: min(100%, 420px);
 }
 .list-empty {
   min-height: 150px;

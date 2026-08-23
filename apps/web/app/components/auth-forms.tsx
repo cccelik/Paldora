@@ -8,17 +8,9 @@ import {
   signInAction,
   type AuthActionState,
 } from '../actions/auth';
+import { ActionFeedback } from './ui';
 
 const initialAuthState: AuthActionState = { status: 'idle' };
-
-function Notice({ state }: { state: typeof initialAuthState }) {
-  if (state.status === 'idle') return null;
-  return (
-    <p className={`form-notice ${state.status}`} role="status">
-      {state.message}
-    </p>
-  );
-}
 
 export function SignInForm() {
   const [state, action, pending] = useActionState(
@@ -40,7 +32,7 @@ export function SignInForm() {
           required
         />
       </label>
-      <Notice state={state} />
+      <ActionFeedback state={state} />
       <button className="button-primary" disabled={pending} type="submit">
         {pending ? 'Signing in…' : 'Sign in'}
       </button>
@@ -62,7 +54,7 @@ export function ForgotPasswordForm() {
         Email
         <input name="email" type="email" autoComplete="email" required />
       </label>
-      <Notice state={state} />
+      <ActionFeedback state={state} />
       <button className="button-primary" disabled={pending} type="submit">
         {pending ? 'Sending…' : 'Send reset link'}
       </button>
@@ -98,7 +90,7 @@ export function ResetPasswordForm() {
           required
         />
       </label>
-      <Notice state={state} />
+      <ActionFeedback state={state} />
       <button className="button-primary" disabled={pending} type="submit">
         {pending ? 'Updating…' : 'Reset password'}
       </button>

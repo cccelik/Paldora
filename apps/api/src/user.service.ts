@@ -21,6 +21,7 @@ import {
 } from '@paldora/validation';
 import { and, eq, ne } from 'drizzle-orm';
 import { ApiError } from './api-error.js';
+import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
 
 @Injectable()
@@ -184,16 +185,7 @@ export class UserService {
         })
         .where(eq(profiles.userId, userId));
     } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        (('code' in error && error.code === '23505') ||
-          ('cause' in error &&
-            typeof error.cause === 'object' &&
-            error.cause !== null &&
-            'code' in error.cause &&
-            error.cause.code === '23505'))
-      ) {
+      if (isUniqueViolation(error)) {
         throw new ApiError(
           HttpStatus.CONFLICT,
           'USERNAME_UNAVAILABLE',

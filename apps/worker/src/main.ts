@@ -5,6 +5,7 @@ import { S3ObjectStorage } from '@paldora/storage';
 import { Worker } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
+import { parseMediaAssetId } from './job-payload.js';
 
 const environment = parseWorkerEnvironment(process.env);
 const logger = createLogger({
@@ -29,11 +30,17 @@ const worker = new Worker(
   'paldora-jobs',
   async (job) => {
     if (job.name === 'delete-media-object') {
-      const data = job.data as { mediaAssetId: string; objectKey: string };
-      await storage.deleteObject(data.objectKey);
+      const mediaAssetId = parseMediaAssetId(job.data);
+      const [asset] = await database.database
+        .select({ objectKey: mediaAssets.objectKey })
+        .from(mediaAssets)
+        .where(eq(mediaAssets.id, mediaAssetId))
+        .limit(1);
+      if (!asset) return;
+      await storage.deleteObject(asset.objectKey);
       await database.database
         .delete(mediaAssets)
-        .where(eq(mediaAssets.id, data.mediaAssetId));
+        .where(eq(mediaAssets.id, mediaAssetId));
       return;
     }
     logger.warn(
@@ -49,14 +56,29 @@ worker.on('completed', (job) =>
   logger.info({ jobId: job.id, jobName: job.name }, 'job completed'),
 );
 worker.on('failed', (job, error) =>
-  logger.error({ jobId: job?.id, jobName: job?.name, error }, 'job failed'),
+  logger.error(
+    { jobId: job?.id, jobName: job?.name, err: error },
+    'job failed',
+  ),
+);
+worker.on('error', (error) =>
+  logger.error({ err: error }, 'worker connection error'),
+);
+connection.on('error', (error) =>
+  logger.error({ err: error }, 'Redis connection error'),
 );
 
-async function shutdown(signal: string): Promise<void> {
+async function closeResources(signal: string): Promise<void> {
   logger.info({ signal }, 'worker shutting down');
   await worker.close();
   await connection.quit();
   await database.close();
+}
+
+let shutdownPromise: Promise<void> | undefined;
+function shutdown(signal: string): Promise<void> {
+  shutdownPromise ??= closeResources(signal);
+  return shutdownPromise;
 }
 
 process.once('SIGINT', () => void shutdown('SIGINT'));

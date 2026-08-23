@@ -5,6 +5,7 @@ import {
   boxes,
   friendships,
   profiles,
+  users,
   type PaldoraDatabase,
 } from '@paldora/database';
 import type {
@@ -17,9 +18,11 @@ import type {
   UserId,
 } from '@paldora/domain';
 import { normalizeUsername } from '@paldora/validation';
-import { and, count, eq, or, sql } from 'drizzle-orm';
+import { and, count, eq, gt, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { randomUUID } from 'node:crypto';
 import { ApiError } from './api-error.js';
+import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
 
 @Injectable()
@@ -33,20 +36,31 @@ export class BoxService {
   }
 
   public async list(userId: UserId): Promise<Box[]> {
+    const activeMembers = alias(boxMemberships, 'active_box_members');
     const rows = await this.database
-      .select({ box: boxes, membership: boxMemberships })
+      .select({
+        box: boxes,
+        role: boxMemberships.role,
+        memberCount: count(activeMembers.userId),
+      })
       .from(boxMemberships)
       .innerJoin(boxes, eq(boxes.id, boxMemberships.boxId))
+      .leftJoin(
+        activeMembers,
+        and(
+          eq(activeMembers.boxId, boxes.id),
+          eq(activeMembers.status, 'active'),
+        ),
+      )
       .where(
         and(
           eq(boxMemberships.userId, userId),
           eq(boxMemberships.status, 'active'),
         ),
-      );
-    return Promise.all(
-      rows.map(async ({ box, membership }) =>
-        this.mapBox(box, membership.role, await this.memberCount(box.id)),
-      ),
+      )
+      .groupBy(boxes.id, boxMemberships.role);
+    return rows.map(({ box, role, memberCount }) =>
+      this.mapBox(box, role, memberCount),
     );
   }
 
@@ -70,14 +84,33 @@ export class BoxService {
   }
 
   public async get(userId: UserId, boxId: BoxId): Promise<Box> {
-    const membership = await this.requireMembership(userId, boxId);
-    const [box] = await this.database
-      .select()
-      .from(boxes)
-      .where(eq(boxes.id, boxId))
+    const activeMembers = alias(boxMemberships, 'active_box_members');
+    const [row] = await this.database
+      .select({
+        box: boxes,
+        role: boxMemberships.role,
+        memberCount: count(activeMembers.userId),
+      })
+      .from(boxMemberships)
+      .innerJoin(boxes, eq(boxes.id, boxMemberships.boxId))
+      .leftJoin(
+        activeMembers,
+        and(
+          eq(activeMembers.boxId, boxes.id),
+          eq(activeMembers.status, 'active'),
+        ),
+      )
+      .where(
+        and(
+          eq(boxMemberships.boxId, boxId),
+          eq(boxMemberships.userId, userId),
+          eq(boxMemberships.status, 'active'),
+        ),
+      )
+      .groupBy(boxes.id, boxMemberships.role)
       .limit(1);
-    if (!box) this.notFound();
-    return this.mapBox(box, membership.role, await this.memberCount(boxId));
+    if (!row) this.notFound();
+    return this.mapBox(row.box, row.role, row.memberCount);
   }
 
   public async update(
@@ -101,7 +134,32 @@ export class BoxService {
       .where(eq(boxes.id, boxId))
       .returning();
     if (!box) this.notFound();
-    return this.mapBox(box, 'owner', await this.memberCount(boxId));
+    const [{ value: memberCount } = { value: 0 }] = await this.database
+      .select({ value: count() })
+      .from(boxMemberships)
+      .where(
+        and(
+          eq(boxMemberships.boxId, boxId),
+          eq(boxMemberships.status, 'active'),
+        ),
+      );
+    return this.mapBox(box, 'owner', memberCount);
+  }
+
+  public async deleteBox(
+    userId: UserId,
+    boxId: BoxId,
+  ): Promise<{ success: true }> {
+    const membership = await this.requireMembership(userId, boxId);
+    if (membership.role !== 'owner') {
+      this.forbidden('Only the Box owner can permanently delete this Box.');
+    }
+    const [deleted] = await this.database
+      .delete(boxes)
+      .where(and(eq(boxes.id, boxId), eq(boxes.ownerUserId, userId)))
+      .returning({ id: boxes.id });
+    if (!deleted) this.notFound();
+    return { success: true };
   }
 
   public async members(userId: UserId, boxId: BoxId): Promise<BoxMember[]> {
@@ -136,6 +194,19 @@ export class BoxService {
     if (!['owner', 'admin'].includes(membership.role)) {
       this.forbidden('Only Box owners and admins can invite members.');
     }
+    const [box] = await this.database
+      .select()
+      .from(boxes)
+      .where(eq(boxes.id, boxId))
+      .limit(1);
+    if (!box) this.notFound();
+    if (box.status !== 'active') {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'BOX_ARCHIVED',
+        'Archived Boxes cannot accept new invitations.',
+      );
+    }
     const invitee = await this.userByUsername(username);
     if (invitee.userId === userId) {
       throw new ApiError(
@@ -162,7 +233,7 @@ export class BoxService {
         'That person is already in this Box.',
       );
     }
-    await this.requireAcceptedFriendship(userId, invitee.userId);
+    await this.requireInteractionAllowed(userId, invitee.userId);
     await this.database
       .update(boxInvitations)
       .set({ status: 'expired', updatedAt: new Date() })
@@ -174,12 +245,6 @@ export class BoxService {
           sql`${boxInvitations.expiresAt} <= now()`,
         ),
       );
-    const [box] = await this.database
-      .select()
-      .from(boxes)
-      .where(eq(boxes.id, boxId))
-      .limit(1);
-    if (!box) this.notFound();
     try {
       const [invitation] = await this.database
         .insert(boxInvitations)
@@ -194,7 +259,7 @@ export class BoxService {
         throw new Error('Invitation insert did not return a row.');
       return this.mapInvitation(invitation, box.name);
     } catch (error) {
-      if (this.isUniqueViolation(error)) {
+      if (isUniqueViolation(error)) {
         throw new ApiError(
           HttpStatus.CONFLICT,
           'INVITATION_ALREADY_PENDING',
@@ -203,6 +268,31 @@ export class BoxService {
       }
       throw error;
     }
+  }
+
+  public async pendingInviteeIds(
+    userId: UserId,
+    boxId: BoxId,
+  ): Promise<{ inviteeUserIds: UserId[] }> {
+    const membership = await this.requireMembership(userId, boxId);
+    if (!['owner', 'admin'].includes(membership.role)) {
+      this.forbidden('Only Box owners and admins can view invitations.');
+    }
+    const invitations = await this.database
+      .select({ inviteeUserId: boxInvitations.inviteeUserId })
+      .from(boxInvitations)
+      .where(
+        and(
+          eq(boxInvitations.boxId, boxId),
+          eq(boxInvitations.status, 'pending'),
+          gt(boxInvitations.expiresAt, new Date()),
+        ),
+      );
+    return {
+      inviteeUserIds: invitations.map(
+        ({ inviteeUserId }) => inviteeUserId as UserId,
+      ),
+    };
   }
 
   public async invitations(userId: UserId): Promise<BoxInvitation[]> {
@@ -214,6 +304,8 @@ export class BoxService {
         and(
           eq(boxInvitations.inviteeUserId, userId),
           eq(boxInvitations.status, 'pending'),
+          gt(boxInvitations.expiresAt, new Date()),
+          eq(boxes.status, 'active'),
         ),
       );
     return rows.map(({ invitation, boxName }) =>
@@ -253,6 +345,24 @@ export class BoxService {
         HttpStatus.GONE,
         'INVITATION_EXPIRED',
         'That invitation has expired.',
+      );
+    }
+    if (response === 'accepted') {
+      const [box] = await this.database
+        .select({ status: boxes.status })
+        .from(boxes)
+        .where(eq(boxes.id, invitation.boxId))
+        .limit(1);
+      if (!box || box.status !== 'active') {
+        throw new ApiError(
+          HttpStatus.CONFLICT,
+          'BOX_ARCHIVED',
+          'That Box is not accepting members.',
+        );
+      }
+      await this.requireInteractionAllowed(
+        invitation.inviterUserId as UserId,
+        userId,
       );
     }
     await this.database.transaction(async (transaction) => {
@@ -306,8 +416,30 @@ export class BoxService {
     role: 'admin' | 'member',
   ): Promise<{ role: 'admin' | 'member' }> {
     const actor = await this.requireMembership(userId, boxId);
-    if (actor.role !== 'owner')
-      this.forbidden('Only the owner can change member roles.');
+    if (!['owner', 'admin'].includes(actor.role)) {
+      this.forbidden('Only Box owners and admins can promote members.');
+    }
+    const [target] = await this.database
+      .select({ role: boxMemberships.role })
+      .from(boxMemberships)
+      .where(
+        and(
+          eq(boxMemberships.boxId, boxId),
+          eq(boxMemberships.userId, memberUserId),
+          eq(boxMemberships.status, 'active'),
+        ),
+      )
+      .limit(1);
+    if (!target) this.memberNotFound();
+    if (target.role === 'owner') {
+      this.forbidden('The Box creator role cannot be changed.');
+    }
+    if (
+      actor.role === 'admin' &&
+      (role !== 'admin' || target.role !== 'member')
+    ) {
+      this.forbidden('Admins can promote members but cannot demote admins.');
+    }
     const [updated] = await this.database
       .update(boxMemberships)
       .set({ role, updatedAt: new Date() })
@@ -316,20 +448,132 @@ export class BoxService {
           eq(boxMemberships.boxId, boxId),
           eq(boxMemberships.userId, memberUserId),
           eq(boxMemberships.status, 'active'),
-          or(
-            eq(boxMemberships.role, 'admin'),
-            eq(boxMemberships.role, 'member'),
-          ),
+          eq(boxMemberships.role, target.role),
         ),
       )
       .returning({ role: boxMemberships.role });
-    if (!updated)
-      throw new ApiError(
-        HttpStatus.NOT_FOUND,
-        'BOX_MEMBER_NOT_FOUND',
-        'That member is unavailable.',
-      );
+    if (!updated) this.memberNotFound();
     return { role };
+  }
+
+  public async transferOwnership(
+    userId: UserId,
+    boxId: BoxId,
+    newOwnerUserId: UserId,
+  ): Promise<{ ownerUserId: UserId }> {
+    if (userId === newOwnerUserId) {
+      this.forbidden('You already own this Box.');
+    }
+    await this.database.transaction(async (transaction) => {
+      const [actor] = await transaction
+        .select({ role: boxMemberships.role })
+        .from(boxMemberships)
+        .where(
+          and(
+            eq(boxMemberships.boxId, boxId),
+            eq(boxMemberships.userId, userId),
+            eq(boxMemberships.status, 'active'),
+          ),
+        )
+        .limit(1);
+      if (actor?.role !== 'owner') {
+        this.forbidden('Only the Box owner can transfer ownership.');
+      }
+      const [target] = await transaction
+        .select({ role: boxMemberships.role })
+        .from(boxMemberships)
+        .where(
+          and(
+            eq(boxMemberships.boxId, boxId),
+            eq(boxMemberships.userId, newOwnerUserId),
+            eq(boxMemberships.status, 'active'),
+          ),
+        )
+        .limit(1);
+      if (!target || target.role === 'owner') this.memberNotFound();
+
+      const [formerOwner] = await transaction
+        .update(boxMemberships)
+        .set({ role: 'admin', updatedAt: new Date() })
+        .where(
+          and(
+            eq(boxMemberships.boxId, boxId),
+            eq(boxMemberships.userId, userId),
+            eq(boxMemberships.status, 'active'),
+            eq(boxMemberships.role, 'owner'),
+          ),
+        )
+        .returning({ userId: boxMemberships.userId });
+      if (!formerOwner) {
+        this.forbidden('Box ownership changed before this request completed.');
+      }
+      const [newOwner] = await transaction
+        .update(boxMemberships)
+        .set({ role: 'owner', updatedAt: new Date() })
+        .where(
+          and(
+            eq(boxMemberships.boxId, boxId),
+            eq(boxMemberships.userId, newOwnerUserId),
+            eq(boxMemberships.status, 'active'),
+            eq(boxMemberships.role, target.role),
+          ),
+        )
+        .returning({ userId: boxMemberships.userId });
+      if (!newOwner) this.memberNotFound();
+      const [box] = await transaction
+        .update(boxes)
+        .set({ ownerUserId: newOwnerUserId, updatedAt: new Date() })
+        .where(and(eq(boxes.id, boxId), eq(boxes.ownerUserId, userId)))
+        .returning({ id: boxes.id });
+      if (!box) this.notFound();
+    });
+    return { ownerUserId: newOwnerUserId };
+  }
+
+  public async removeMember(
+    userId: UserId,
+    boxId: BoxId,
+    memberUserId: UserId,
+  ): Promise<{ success: true; status: 'left' | 'removed' }> {
+    const actor = await this.requireMembership(userId, boxId);
+    const [target] = await this.database
+      .select({ role: boxMemberships.role })
+      .from(boxMemberships)
+      .where(
+        and(
+          eq(boxMemberships.boxId, boxId),
+          eq(boxMemberships.userId, memberUserId),
+          eq(boxMemberships.status, 'active'),
+        ),
+      )
+      .limit(1);
+    if (!target) this.memberNotFound();
+    const leaving = userId === memberUserId;
+    if (target.role === 'owner') {
+      this.forbidden(
+        leaving
+          ? 'Transfer ownership to another member before leaving this Box.'
+          : 'The Box creator cannot be removed.',
+      );
+    }
+    if (!leaving && !['owner', 'admin'].includes(actor.role)) {
+      this.forbidden('Only Box owners and admins can remove members.');
+    }
+    const status = leaving ? 'left' : 'removed';
+    const [updated] = await this.database
+      .update(boxMemberships)
+      .set({ status, role: 'member', updatedAt: new Date() })
+      .where(
+        and(
+          eq(boxMemberships.boxId, boxId),
+          eq(boxMemberships.userId, memberUserId),
+          eq(boxMemberships.status, 'active'),
+          eq(boxMemberships.role, target.role),
+        ),
+      )
+      .returning({ userId: boxMemberships.userId });
+    if (!updated) this.memberNotFound();
+    return { success: true, status };
   }
 
   private async requireMembership(userId: UserId, boxId: BoxId) {
@@ -348,7 +592,7 @@ export class BoxService {
     return membership;
   }
 
-  private async requireAcceptedFriendship(first: UserId, second: UserId) {
+  private async requireInteractionAllowed(first: UserId, second: UserId) {
     const low = first < second ? first : second;
     const high = first < second ? second : first;
     const [friendship] = await this.database
@@ -360,20 +604,19 @@ export class BoxService {
       .limit(1);
     if (friendship?.status === 'blocked')
       this.forbidden('This interaction is not available.');
-    if (friendship?.status !== 'accepted') {
-      throw new ApiError(
-        HttpStatus.CONFLICT,
-        'FRIENDSHIP_REQUIRED',
-        'Add this person as a friend before inviting them.',
-      );
-    }
   }
 
   private async userByUsername(username: string): Promise<{ userId: UserId }> {
     const [profile] = await this.database
       .select({ userId: profiles.userId })
       .from(profiles)
-      .where(eq(profiles.usernameNormalized, normalizeUsername(username)))
+      .innerJoin(users, eq(users.id, profiles.userId))
+      .where(
+        and(
+          eq(profiles.usernameNormalized, normalizeUsername(username)),
+          eq(users.status, 'active'),
+        ),
+      )
       .limit(1);
     if (!profile)
       throw new ApiError(
@@ -382,19 +625,6 @@ export class BoxService {
         'No person with that username was found.',
       );
     return { userId: profile.userId as UserId };
-  }
-
-  private async memberCount(boxId: string): Promise<number> {
-    const [result] = await this.database
-      .select({ value: count() })
-      .from(boxMemberships)
-      .where(
-        and(
-          eq(boxMemberships.boxId, boxId),
-          eq(boxMemberships.status, 'active'),
-        ),
-      );
-    return result?.value ?? 0;
   }
 
   private mapBox(
@@ -456,15 +686,11 @@ export class BoxService {
     throw new ApiError(HttpStatus.FORBIDDEN, 'BOX_ACCESS_DENIED', message);
   }
 
-  private isUniqueViolation(error: unknown): boolean {
-    if (typeof error !== 'object' || error === null) return false;
-    if ('code' in error && error.code === '23505') return true;
-    return (
-      'cause' in error &&
-      typeof error.cause === 'object' &&
-      error.cause !== null &&
-      'code' in error.cause &&
-      error.cause.code === '23505'
+  private memberNotFound(): never {
+    throw new ApiError(
+      HttpStatus.NOT_FOUND,
+      'BOX_MEMBER_NOT_FOUND',
+      'That member is unavailable.',
     );
   }
 }

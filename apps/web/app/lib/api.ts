@@ -1,4 +1,8 @@
+import 'server-only';
+
 import { PaldoraApiClient } from '@paldora/api-client';
+import type { CurrentUser, OnboardingState } from '@paldora/domain';
+import type { Route } from 'next';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from './supabase/server';
 
@@ -20,4 +24,18 @@ export async function authenticatedApiClient(): Promise<PaldoraApiClient> {
 
 export async function loadCurrentUser() {
   return (await authenticatedApiClient()).currentUser();
+}
+
+const onboardingRoutes: Record<Exclude<OnboardingState, 'complete'>, Route> = {
+  username: '/onboarding/username',
+  profile: '/onboarding/profile',
+  avatar: '/onboarding/avatar',
+};
+
+export async function loadCompletedCurrentUser(): Promise<CurrentUser> {
+  const current = await loadCurrentUser();
+  if (current.profile.onboardingState !== 'complete') {
+    redirect(onboardingRoutes[current.profile.onboardingState]);
+  }
+  return current;
 }

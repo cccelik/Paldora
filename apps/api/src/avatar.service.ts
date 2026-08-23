@@ -22,18 +22,7 @@ import { UserService } from './user.service.js';
 
 @Injectable()
 export class AvatarService implements OnApplicationShutdown {
-  private readonly redisUrl = new URL(
-    process.env.REDIS_URL ?? 'redis://localhost:6379',
-  );
-  private readonly queue = new Queue('paldora-jobs', {
-    connection: {
-      host: this.redisUrl.hostname,
-      port: Number(this.redisUrl.port || 6379),
-      ...(this.redisUrl.username ? { username: this.redisUrl.username } : {}),
-      ...(this.redisUrl.password ? { password: this.redisUrl.password } : {}),
-      ...(this.redisUrl.protocol === 'rediss:' ? { tls: {} } : {}),
-    },
-  });
+  private readonly queue: Queue;
 
   public constructor(
     @Inject(InfrastructureService)
@@ -41,7 +30,20 @@ export class AvatarService implements OnApplicationShutdown {
     @Inject(UserService)
     private readonly users: UserService,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
-  ) {}
+  ) {
+    const redisUrlValue = process.env.REDIS_URL;
+    if (!redisUrlValue) throw new Error('REDIS_URL is required');
+    const redisUrl = new URL(redisUrlValue);
+    this.queue = new Queue('paldora-jobs', {
+      connection: {
+        host: redisUrl.hostname,
+        port: Number(redisUrl.port || 6379),
+        ...(redisUrl.username ? { username: redisUrl.username } : {}),
+        ...(redisUrl.password ? { password: redisUrl.password } : {}),
+        ...(redisUrl.protocol === 'rediss:' ? { tls: {} } : {}),
+      },
+    });
+  }
 
   public async createUpload(
     userId: UserId,
@@ -124,36 +126,49 @@ export class AvatarService implements OnApplicationShutdown {
         'The uploaded profile photo did not match the signed request.',
       );
     }
-    const oldAsset = await this.infrastructure.databaseClient.transaction(
-      async (transaction) => {
-        const [profile] = await transaction
-          .select({ avatarMediaId: profiles.avatarMediaId })
-          .from(profiles)
-          .where(eq(profiles.userId, userId))
-          .limit(1);
-        await transaction
-          .update(mediaAssets)
-          .set({ status: 'ready', updatedAt: new Date() })
-          .where(eq(mediaAssets.id, asset.id));
-        await transaction
-          .update(profiles)
-          .set({ avatarMediaId: asset.id, updatedAt: new Date() })
-          .where(eq(profiles.userId, userId));
-        if (!profile?.avatarMediaId) return null;
-        const [old] = await transaction
-          .select({ id: mediaAssets.id, objectKey: mediaAssets.objectKey })
-          .from(mediaAssets)
-          .where(eq(mediaAssets.id, profile.avatarMediaId))
-          .limit(1);
-        return old ?? null;
-      },
-    );
-    if (oldAsset && oldAsset.id !== asset.id) {
-      await this.queue.add(
-        'delete-media-object',
-        { mediaAssetId: oldAsset.id, objectKey: oldAsset.objectKey },
-        { attempts: 5, backoff: { type: 'exponential', delay: 1_000 } },
+    const oldMediaAssetId =
+      await this.infrastructure.databaseClient.transaction(
+        async (transaction) => {
+          const [profile] = await transaction
+            .select({ avatarMediaId: profiles.avatarMediaId })
+            .from(profiles)
+            .where(eq(profiles.userId, userId))
+            .for('update')
+            .limit(1);
+          if (!profile) {
+            throw new ApiError(
+              HttpStatus.NOT_FOUND,
+              'PROFILE_NOT_FOUND',
+              'Profile not found.',
+            );
+          }
+          const [claimed] = await transaction
+            .update(mediaAssets)
+            .set({ status: 'ready', updatedAt: new Date() })
+            .where(
+              and(
+                eq(mediaAssets.id, asset.id),
+                eq(mediaAssets.ownerUserId, userId),
+                eq(mediaAssets.status, 'pending'),
+              ),
+            )
+            .returning({ id: mediaAssets.id });
+          if (!claimed) {
+            throw new ApiError(
+              HttpStatus.CONFLICT,
+              'AVATAR_UPLOAD_ALREADY_HANDLED',
+              'That profile photo upload was already handled.',
+            );
+          }
+          await transaction
+            .update(profiles)
+            .set({ avatarMediaId: asset.id, updatedAt: new Date() })
+            .where(eq(profiles.userId, userId));
+          return profile.avatarMediaId;
+        },
       );
+    if (oldMediaAssetId && oldMediaAssetId !== asset.id) {
+      await this.enqueueMediaDeletion(oldMediaAssetId);
     }
     return this.users.getCurrentUser(userId, this.storage);
   }
@@ -161,31 +176,40 @@ export class AvatarService implements OnApplicationShutdown {
   public async deleteAvatar(
     userId: UserId,
   ): Promise<ReturnType<UserService['getCurrentUser']>> {
-    const [profile] = await this.infrastructure.databaseClient
-      .select({ avatarMediaId: profiles.avatarMediaId })
-      .from(profiles)
-      .where(eq(profiles.userId, userId))
-      .limit(1);
-    if (profile?.avatarMediaId) {
-      const [asset] = await this.infrastructure.databaseClient
-        .select({ id: mediaAssets.id, objectKey: mediaAssets.objectKey })
-        .from(mediaAssets)
-        .where(eq(mediaAssets.id, profile.avatarMediaId))
-        .limit(1);
-      await this.infrastructure.databaseClient
-        .update(profiles)
-        .set({ avatarMediaId: null, updatedAt: new Date() })
-        .where(eq(profiles.userId, userId));
-      if (asset)
-        await this.queue.add('delete-media-object', {
-          mediaAssetId: asset.id,
-          objectKey: asset.objectKey,
-        });
-    }
+    const mediaAssetId = await this.infrastructure.databaseClient.transaction(
+      async (transaction) => {
+        const [profile] = await transaction
+          .select({ avatarMediaId: profiles.avatarMediaId })
+          .from(profiles)
+          .where(eq(profiles.userId, userId))
+          .for('update')
+          .limit(1);
+        if (!profile?.avatarMediaId) return null;
+        await transaction
+          .update(profiles)
+          .set({ avatarMediaId: null, updatedAt: new Date() })
+          .where(eq(profiles.userId, userId));
+        return profile.avatarMediaId;
+      },
+    );
+    if (mediaAssetId) await this.enqueueMediaDeletion(mediaAssetId);
     return this.users.getCurrentUser(userId, this.storage);
   }
 
   public async onApplicationShutdown(): Promise<void> {
     await this.queue.close();
+  }
+
+  private enqueueMediaDeletion(mediaAssetId: string): Promise<unknown> {
+    return this.queue.add(
+      'delete-media-object',
+      { mediaAssetId },
+      {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 1_000 },
+        removeOnComplete: 1_000,
+        removeOnFail: 5_000,
+      },
+    );
   }
 }

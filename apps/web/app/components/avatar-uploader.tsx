@@ -1,12 +1,18 @@
 'use client';
 
 import { PaldoraApiClient } from '@paldora/api-client';
+import type { MediaAsset } from '@paldora/domain';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '../lib/supabase/client';
 
 const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const maxBytes = 10 * 1024 * 1024;
+type AvatarContentType = MediaAsset['contentType'];
+
+function isAvatarContentType(value: string): value is AvatarContentType {
+  return allowedTypes.has(value);
+}
 
 export function AvatarUploader({
   currentUrl,
@@ -17,11 +23,19 @@ export function AvatarUploader({
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
+  const localPreviewUrl = useRef<string | null>(null);
   const [preview, setPreview] = useState(currentUrl ?? '');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function client(): Promise<PaldoraApiClient> {
+  useEffect(
+    () => () => {
+      if (localPreviewUrl.current) URL.revokeObjectURL(localPreviewUrl.current);
+    },
+    [],
+  );
+
+  function createApiClient(): PaldoraApiClient {
     const supabase = createSupabaseBrowserClient();
     return new PaldoraApiClient({
       baseUrl:
@@ -34,16 +48,20 @@ export function AvatarUploader({
   }
 
   async function upload(file: File) {
-    if (!allowedTypes.has(file.type) || file.size > maxBytes) {
+    if (
+      !isAvatarContentType(file.type) ||
+      file.size <= 0 ||
+      file.size > maxBytes
+    ) {
       setMessage('Choose a JPEG, PNG, or WebP image up to 10 MB.');
       return;
     }
     setBusy(true);
     setMessage('');
     try {
-      const api = await client();
+      const api = createApiClient();
       const signed = await api.createAvatarUpload({
-        contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+        contentType: file.type,
         contentLength: file.size,
       });
       const uploaded = await fetch(signed.upload.url, {
@@ -54,7 +72,16 @@ export function AvatarUploader({
       if (!uploaded.ok) throw new Error('upload');
       const current = await api.completeAvatarUpload(signed.mediaAsset.id);
       if (onboarding) await api.updateProfile({ onboardingState: 'complete' });
-      setPreview(current.profile.avatarUrl ?? URL.createObjectURL(file));
+      if (localPreviewUrl.current) {
+        URL.revokeObjectURL(localPreviewUrl.current);
+        localPreviewUrl.current = null;
+      }
+      if (current.profile.avatarUrl) {
+        setPreview(current.profile.avatarUrl);
+      } else {
+        localPreviewUrl.current = URL.createObjectURL(file);
+        setPreview(localPreviewUrl.current);
+      }
       setMessage('Profile photo saved.');
       if (onboarding) router.push('/home');
       else router.refresh();
@@ -76,7 +103,7 @@ export function AvatarUploader({
   async function skip() {
     setBusy(true);
     try {
-      await (await client()).updateProfile({ onboardingState: 'complete' });
+      await createApiClient().updateProfile({ onboardingState: 'complete' });
       router.push('/home');
     } catch {
       setMessage('Something went wrong. Try again.');
@@ -87,7 +114,11 @@ export function AvatarUploader({
   async function remove() {
     setBusy(true);
     try {
-      await (await client()).deleteAvatar();
+      await createApiClient().deleteAvatar();
+      if (localPreviewUrl.current) {
+        URL.revokeObjectURL(localPreviewUrl.current);
+        localPreviewUrl.current = null;
+      }
       setPreview('');
       setMessage('Profile photo removed.');
       router.refresh();
@@ -120,6 +151,7 @@ export function AvatarUploader({
         accept="image/jpeg,image/png,image/webp"
         onChange={(event) => {
           const file = event.target.files?.[0];
+          event.target.value = '';
           if (file) void upload(file);
         }}
       />
@@ -136,6 +168,7 @@ export function AvatarUploader({
           <button
             className="button-quiet danger"
             type="button"
+            disabled={busy}
             onClick={() => void remove()}
           >
             Remove

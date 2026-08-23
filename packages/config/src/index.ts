@@ -6,6 +6,11 @@ const optionalEnvironmentValue = <Schema extends z.ZodType>(schema: Schema) =>
     (value) => (value === '' ? undefined : value),
     schema.optional(),
   );
+const booleanEnvironmentValue = z.preprocess((value) => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+}, z.boolean());
 
 const baseEnvironmentSchema = z.object({
   NODE_ENV: nodeEnvironment.default('development'),
@@ -34,7 +39,7 @@ const objectStorageEnvironmentShape = {
   S3_BUCKET: z.string().min(1),
   S3_ACCESS_KEY_ID: z.string().min(1),
   S3_SECRET_ACCESS_KEY: z.string().min(1),
-  S3_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
+  S3_FORCE_PATH_STYLE: booleanEnvironmentValue.default(false),
 };
 
 const apiEnvironmentSchema = serviceEnvironmentSchema.extend({

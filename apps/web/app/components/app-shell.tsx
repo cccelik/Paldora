@@ -3,13 +3,14 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { signOutAction } from '../actions/auth';
 import { Wordmark } from './wordmark';
+import { InitialAvatar } from './ui';
 
 const navigation = [
-  ['Home', '/home', '⌂'],
-  ['Life Updates', '#later-life-updates', '♡'],
-  ['Boxes', '/boxes', '◇'],
-  ['Memories', '#later-memories', '▧'],
-  ['Friends', '/friends', '♧'],
+  { key: 'home', label: 'Home', href: '/home', icon: '⌂' },
+  { label: 'Life Updates', icon: '♡' },
+  { key: 'boxes', label: 'Boxes', href: '/boxes', icon: '◇' },
+  { label: 'Memories', icon: '▧' },
+  { key: 'friends', label: 'Friends', href: '/friends', icon: '♧' },
 ] as const;
 
 export function AppShell({
@@ -21,41 +22,40 @@ export function AppShell({
   active: 'home' | 'boxes' | 'friends' | 'settings';
   children: ReactNode;
 }) {
-  const initials = (current.profile.displayName ?? current.user.email)
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const accountName = current.profile.displayName ?? current.user.email;
   return (
     <main className="application-shell">
       <aside className="app-sidebar">
         <Wordmark compact />
         <nav aria-label="Primary navigation">
-          {navigation.map(([label, href, icon]) => (
-            <Link
-              aria-current={
-                active === label.toLocaleLowerCase() ? 'page' : undefined
-              }
-              className={active === label.toLocaleLowerCase() ? 'active' : ''}
-              href={href}
-              key={label}
-            >
-              <span aria-hidden="true">{icon}</span>
-              {label}
-              {href.startsWith('#') && <small>Soon</small>}
-            </Link>
-          ))}
+          {navigation.map((item) =>
+            'href' in item ? (
+              <Link
+                aria-current={active === item.key ? 'page' : undefined}
+                className={active === item.key ? 'active' : ''}
+                href={item.href}
+                key={item.label}
+              >
+                <span aria-hidden="true">{item.icon}</span>
+                {item.label}
+              </Link>
+            ) : (
+              <span className="nav-deferred" key={item.label}>
+                <span aria-hidden="true">{item.icon}</span>
+                {item.label}
+                <small>Soon</small>
+              </span>
+            ),
+          )}
         </nav>
         <div className="sidebar-account">
           <div className="mini-profile">
-            <div className="mini-avatar">
-              {current.profile.avatarUrl ? (
-                <img src={current.profile.avatarUrl} alt="" />
-              ) : (
-                initials
-              )}
-            </div>
+            <InitialAvatar
+              className="mini-avatar"
+              name={accountName}
+              imageUrl={current.profile.avatarUrl}
+              length={2}
+            />
             <div>
               <strong>{current.profile.displayName ?? 'Paldora friend'}</strong>
               <span>@{current.profile.username ?? 'setting-up'}</span>

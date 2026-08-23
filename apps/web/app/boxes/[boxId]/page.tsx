@@ -1,9 +1,16 @@
 import type { BoxId } from '@paldora/domain';
+import { ApiClientError } from '@paldora/api-client';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
-import { inviteToBoxAction } from '../../actions/social';
+import { notFound } from 'next/navigation';
 import { AppShell } from '../../components/app-shell';
-import { authenticatedApiClient, loadCurrentUser } from '../../lib/api';
+import { BoxInvitePanel } from '../../components/box-invite-panel';
+import { BoxMemberPanel } from '../../components/box-member-panel';
+import { BoxSettingsPanel } from '../../components/box-settings-panel';
+import { EmptyState, PageFeedback, PageHeader } from '../../components/ui';
+import {
+  authenticatedApiClient,
+  loadCompletedCurrentUser,
+} from '../../lib/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,105 +21,87 @@ export default async function BoxDetailPage({
   params: Promise<{ boxId: string }>;
   searchParams: Promise<{ error?: string; notice?: string }>;
 }) {
-  const current = await loadCurrentUser();
-  if (current.profile.onboardingState !== 'complete')
-    redirect(`/onboarding/${current.profile.onboardingState}`);
+  const current = await loadCompletedCurrentUser();
   const { boxId } = await params;
   const notices = await searchParams;
   const api = await authenticatedApiClient();
   let box;
   let members;
+  let friends;
+  let friendRequests;
+  let blockedUsers;
   try {
-    [box, members] = await Promise.all([
+    [box, members, friends, friendRequests, blockedUsers] = await Promise.all([
       api.box(boxId as BoxId),
       api.boxMembers(boxId as BoxId),
+      api.friends(),
+      api.friendRequests(),
+      api.blockedUsers(),
     ]);
-  } catch {
-    notFound();
+  } catch (error) {
+    if (
+      error instanceof ApiClientError &&
+      error.status === 404 &&
+      error.code === 'BOX_NOT_FOUND'
+    ) {
+      notFound();
+    }
+    throw error;
   }
   const canInvite =
-    box.currentUserRole === 'owner' || box.currentUserRole === 'admin';
+    box.status === 'active' &&
+    (box.currentUserRole === 'owner' || box.currentUserRole === 'admin');
+  const pendingInvitations = canInvite
+    ? await api.pendingBoxInvitees(box.id)
+    : { inviteeUserIds: [] };
+  const socialConnectionUserIds = [
+    ...friends,
+    ...friendRequests,
+    ...blockedUsers,
+  ].map((connection) => connection.user.id);
   return (
     <AppShell current={current} active="boxes">
-      <header className="app-page-header social-heading">
-        <div>
-          <p className="eyebrow">Private Box · {box.currentUserRole}</p>
-          <h1>{box.name}</h1>
-          <p>
+      <PageHeader
+        className="social-heading"
+        eyebrow={`Private Box · ${box.currentUserRole} · ${box.status}`}
+        title={box.name}
+        description={
+          <>
             {box.memberCount} {box.memberCount === 1 ? 'member' : 'members'} ·
             only members can see this space
-          </p>
-        </div>
-        <Link className="button-quiet" href="/boxes">
-          All Boxes
-        </Link>
-      </header>
-      {notices.error && (
-        <p className="form-message error page-notice" role="alert">
-          {notices.error}
-        </p>
-      )}
-      {notices.notice && (
-        <p className="form-message success page-notice" role="status">
-          {notices.notice}
-        </p>
-      )}
+          </>
+        }
+        trailing={
+          <Link className="button-quiet" href="/boxes">
+            All Boxes
+          </Link>
+        }
+      />
+      <PageFeedback error={notices.error} notice={notices.notice} />
       <div className="box-detail-layout">
-        <section className="empty-home box-feed-empty">
-          <div className="empty-box-art" aria-hidden="true">
-            <span>✦</span>
-            <div>□</div>
-          </div>
-          <p className="eyebrow">The Box is ready</p>
-          <h2>Stories come in the next phase.</h2>
-          <p>
-            Membership and privacy are live. Posts are intentionally not
-            simulated until the feed milestone.
-          </p>
-        </section>
+        <EmptyState
+          className="box-feed-empty"
+          eyebrow="The Box is ready"
+          title="Stories come in the next phase."
+          description="Membership and privacy are live. Posts are intentionally not simulated until the feed milestone."
+        />
         <aside className="settings-side">
           {canInvite && (
-            <section className="settings-card">
-              <h2>Invite a friend</h2>
-              <form
-                className="form-stack"
-                action={inviteToBoxAction.bind(null, box.id)}
-              >
-                <label>
-                  Username
-                  <input
-                    name="username"
-                    required
-                    minLength={3}
-                    maxLength={30}
-                    placeholder="their_username"
-                  />
-                  <small>They must already be an accepted friend.</small>
-                </label>
-                <button className="button-primary full-width" type="submit">
-                  Send invitation
-                </button>
-              </form>
-            </section>
+            <BoxInvitePanel
+              boxId={box.id}
+              friends={friends}
+              memberUserIds={members.map((member) => member.userId)}
+              pendingInviteeUserIds={pendingInvitations.inviteeUserIds}
+            />
           )}
-          <section className="settings-card">
-            <h2>Members</h2>
-            <div className="member-list">
-              {members.map((member) => (
-                <div className="member-row" key={member.userId}>
-                  <span className="member-avatar" aria-hidden="true">
-                    {member.displayName.slice(0, 1).toUpperCase()}
-                  </span>
-                  <div>
-                    <strong>{member.displayName}</strong>
-                    <small>
-                      @{member.username} · {member.role}
-                    </small>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          <BoxMemberPanel
+            boxId={box.id}
+            currentUserId={current.user.id}
+            currentUserRole={box.currentUserRole}
+            members={members}
+            socialConnectionUserIds={socialConnectionUserIds}
+          />
+          {box.currentUserRole === 'owner' && <BoxSettingsPanel box={box} />}
         </aside>
       </div>
     </AppShell>

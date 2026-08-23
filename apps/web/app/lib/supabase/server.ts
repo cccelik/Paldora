@@ -28,3 +28,4 @@ export async function createSupabaseServerClient() {
     },
   });
 }
+import 'server-only';

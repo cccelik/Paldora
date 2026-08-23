@@ -130,6 +130,13 @@ export class PaldoraApiClient {
     });
   }
 
+  public deleteBox(
+    id: BoxId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/boxes/${id}`, { method: 'DELETE', signal });
+  }
+
   public boxMembers(id: BoxId, signal?: AbortSignal): Promise<BoxMember[]> {
     return this.send(`/boxes/${id}/members`, { signal });
   }
@@ -144,6 +151,13 @@ export class PaldoraApiClient {
       body: input,
       signal,
     });
+  }
+
+  public pendingBoxInvitees(
+    boxId: BoxId,
+    signal?: AbortSignal,
+  ): Promise<{ inviteeUserIds: UserId[] }> {
+    return this.send(`/boxes/${boxId}/invitations`, { signal });
   }
 
   public boxInvitations(signal?: AbortSignal): Promise<BoxInvitation[]> {
@@ -170,6 +184,39 @@ export class PaldoraApiClient {
     return this.send(`/boxes/${boxId}/members/${userId}`, {
       method: 'PATCH',
       body: { role },
+      signal,
+    });
+  }
+
+  public transferBoxOwnership(
+    boxId: BoxId,
+    userId: UserId,
+    signal?: AbortSignal,
+  ): Promise<{ ownerUserId: UserId }> {
+    return this.send(`/boxes/${boxId}/owner`, {
+      method: 'PATCH',
+      body: { userId },
+      signal,
+    });
+  }
+
+  public removeBoxMember(
+    boxId: BoxId,
+    userId: UserId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true; status: 'left' | 'removed' }> {
+    return this.send(`/boxes/${boxId}/members/${userId}`, {
+      method: 'DELETE',
+      signal,
+    });
+  }
+
+  public leaveBox(
+    boxId: BoxId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true; status: 'left' }> {
+    return this.send(`/boxes/${boxId}/members/me`, {
+      method: 'DELETE',
       signal,
     });
   }

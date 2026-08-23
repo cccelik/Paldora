@@ -1,7 +1,8 @@
 'use server';
 
-import { headers } from 'next/headers';
+import { ApiClientError, PaldoraApiClient } from '@paldora/api-client';
 import { redirect } from 'next/navigation';
+import { configuredWebOrigin } from '../lib/public-url';
 import { createSupabaseServerClient } from '../lib/supabase/server';
 
 export interface AuthActionState {
@@ -18,12 +19,37 @@ export async function signInAction(
   if (!email || !password)
     return { status: 'error', message: 'Enter your email and password.' };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error)
     return {
       status: 'error',
       message: 'Those credentials did not match a provisioned account.',
     };
+  try {
+    await new PaldoraApiClient({
+      baseUrl:
+        process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1',
+      getAccessToken: () => Promise.resolve(data.session.access_token),
+    }).currentUser();
+  } catch (provisioningError) {
+    if (
+      provisioningError instanceof ApiClientError &&
+      provisioningError.code === 'ACCOUNT_NOT_PROVISIONED'
+    ) {
+      await supabase.auth.signOut();
+      return {
+        status: 'error',
+        message: 'This account has not been provisioned for Paldora.',
+      };
+    }
+    return {
+      status: 'error',
+      message: 'Paldora is temporarily unavailable. Try again shortly.',
+    };
+  }
   redirect('/home');
 }
 
@@ -33,10 +59,15 @@ export async function forgotPasswordAction(
 ): Promise<AuthActionState> {
   const email = String(formData.get('email') ?? '').trim();
   if (!email) return { status: 'error', message: 'Enter the account email.' };
-  const requestHeaders = await headers();
-  const origin =
-    process.env.NEXT_PUBLIC_WEB_URL ??
-    `${requestHeaders.get('x-forwarded-proto') ?? 'http'}://${requestHeaders.get('host') ?? 'localhost:3000'}`;
+  let origin: string;
+  try {
+    origin = configuredWebOrigin();
+  } catch {
+    return {
+      status: 'error',
+      message: 'Password reset is temporarily unavailable.',
+    };
+  }
   const supabase = await createSupabaseServerClient();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/callback?next=/reset-password`,

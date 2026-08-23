@@ -13,13 +13,13 @@ import type { FriendshipId, UserId } from '@paldora/domain';
 import {
   createBlockSchema,
   createFriendRequestSchema,
-  uuidSchema,
 } from '@paldora/validation';
 import {
   SupabaseAuthGuard,
   type AuthenticatedRequest,
 } from './auth.service.js';
-import { parseRequest } from './request-validation.js';
+import { parseRequest, parseUuid } from './request-validation.js';
+import { RateLimitService } from './rate-limit.service.js';
 import { SocialService } from './social.service.js';
 
 @Controller()
@@ -27,6 +27,7 @@ import { SocialService } from './social.service.js';
 export class SocialController {
   public constructor(
     @Inject(SocialService) private readonly social: SocialService,
+    @Inject(RateLimitService) private readonly rateLimits: RateLimitService,
   ) {}
 
   @Get('friends')
@@ -40,8 +41,12 @@ export class SocialController {
   }
 
   @Post('friend-requests')
-  public request(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+  public async request(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: unknown,
+  ) {
     const input = parseRequest(createFriendRequestSchema, body);
+    await this.rateLimits.assertFriendRequestAllowed(request.principal.userId);
     return this.social.request(request.principal.userId, input.username);
   }
 
@@ -50,10 +55,7 @@ export class SocialController {
     @Req() request: AuthenticatedRequest,
     @Param('friendshipId') rawFriendshipId: string,
   ) {
-    const friendshipId = parseRequest(
-      uuidSchema,
-      rawFriendshipId,
-    ) as FriendshipId;
+    const friendshipId = parseUuid<FriendshipId>(rawFriendshipId);
     return this.social.respond(
       request.principal.userId,
       friendshipId,
@@ -66,10 +68,7 @@ export class SocialController {
     @Req() request: AuthenticatedRequest,
     @Param('friendshipId') rawFriendshipId: string,
   ) {
-    const friendshipId = parseRequest(
-      uuidSchema,
-      rawFriendshipId,
-    ) as FriendshipId;
+    const friendshipId = parseUuid<FriendshipId>(rawFriendshipId);
     return this.social.respond(
       request.principal.userId,
       friendshipId,
@@ -82,7 +81,7 @@ export class SocialController {
     @Req() request: AuthenticatedRequest,
     @Param('userId') rawUserId: string,
   ) {
-    const userId = parseRequest(uuidSchema, rawUserId) as UserId;
+    const userId = parseUuid<UserId>(rawUserId);
     return this.social.remove(request.principal.userId, userId);
   }
 
@@ -102,7 +101,7 @@ export class SocialController {
     @Req() request: AuthenticatedRequest,
     @Param('userId') rawUserId: string,
   ) {
-    const userId = parseRequest(uuidSchema, rawUserId) as UserId;
+    const userId = parseUuid<UserId>(rawUserId);
     return this.social.unblock(request.principal.userId, userId);
   }
 }

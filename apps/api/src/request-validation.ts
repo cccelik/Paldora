@@ -1,5 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import { ZodError } from 'zod';
+import { uuidSchema } from '@paldora/validation';
 import { ApiError } from './api-error.js';
 
 export function parseRequest<Output>(
@@ -18,4 +19,10 @@ export function parseRequest<Output>(
     }
     throw error;
   }
+}
+
+export function parseUuid<Identifier extends string>(
+  value: string,
+): Identifier {
+  return parseRequest(uuidSchema, value) as Identifier;
 }

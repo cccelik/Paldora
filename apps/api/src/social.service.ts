@@ -1,9 +1,15 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { friendships, profiles, type PaldoraDatabase } from '@paldora/database';
+import {
+  friendships,
+  profiles,
+  users,
+  type PaldoraDatabase,
+} from '@paldora/database';
 import type { Friendship, FriendshipId, UserId } from '@paldora/domain';
 import { normalizeUsername } from '@paldora/validation';
-import { and, eq, ne, or } from 'drizzle-orm';
+import { and, eq, ne, or, sql } from 'drizzle-orm';
 import { ApiError } from './api-error.js';
+import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
 
 @Injectable()
@@ -84,7 +90,7 @@ export class SocialService {
             })
             .returning();
     } catch (error) {
-      if (this.isUniqueViolation(error)) {
+      if (isUniqueViolation(error)) {
         throw new ApiError(
           HttpStatus.CONFLICT,
           'FRIEND_REQUEST_ALREADY_PENDING',
@@ -230,12 +236,27 @@ export class SocialService {
     status: 'accepted' | 'pending' | 'blocked',
     onlyBlockedByUser = false,
   ): Promise<Friendship[]> {
+    const otherUserId = sql<string>`case
+      when ${friendships.userLowId} = ${userId}
+      then ${friendships.userHighId}
+      else ${friendships.userLowId}
+    end`;
     const rows = await this.database
-      .select()
+      .select({
+        friendship: friendships,
+        other: {
+          userId: profiles.userId,
+          username: profiles.username,
+          displayName: profiles.displayName,
+        },
+      })
       .from(friendships)
+      .innerJoin(profiles, eq(profiles.userId, otherUserId))
+      .innerJoin(users, eq(users.id, profiles.userId))
       .where(
         and(
           eq(friendships.status, status),
+          eq(users.status, 'active'),
           or(
             eq(friendships.userLowId, userId),
             eq(friendships.userHighId, userId),
@@ -245,12 +266,11 @@ export class SocialService {
             : []),
         ),
       );
-    return Promise.all(
-      rows.map(async (row) => {
-        const otherId = (
-          row.userLowId === userId ? row.userHighId : row.userLowId
-        ) as UserId;
-        return this.map(row, userId, await this.profileByUserId(otherId));
+    return rows.map(({ friendship, other }) =>
+      this.map(friendship, userId, {
+        userId: other.userId as UserId,
+        username: other.username,
+        displayName: other.displayName,
       }),
     );
   }
@@ -263,7 +283,13 @@ export class SocialService {
         displayName: profiles.displayName,
       })
       .from(profiles)
-      .where(eq(profiles.usernameNormalized, normalizeUsername(username)))
+      .innerJoin(users, eq(users.id, profiles.userId))
+      .where(
+        and(
+          eq(profiles.usernameNormalized, normalizeUsername(username)),
+          eq(users.status, 'active'),
+        ),
+      )
       .limit(1);
     if (!profile) this.userNotFound();
     return {
@@ -281,7 +307,8 @@ export class SocialService {
         displayName: profiles.displayName,
       })
       .from(profiles)
-      .where(eq(profiles.userId, userId))
+      .innerJoin(users, eq(users.id, profiles.userId))
+      .where(and(eq(profiles.userId, userId), eq(users.status, 'active')))
       .limit(1);
     if (!profile) this.userNotFound();
     return {
@@ -348,18 +375,6 @@ export class SocialService {
       HttpStatus.FORBIDDEN,
       'INTERACTION_NOT_AVAILABLE',
       'This interaction is not available.',
-    );
-  }
-
-  private isUniqueViolation(error: unknown): boolean {
-    if (typeof error !== 'object' || error === null) return false;
-    if ('code' in error && error.code === '23505') return true;
-    return (
-      'cause' in error &&
-      typeof error.cause === 'object' &&
-      error.cause !== null &&
-      'code' in error.cause &&
-      error.cause.code === '23505'
     );
   }
 }

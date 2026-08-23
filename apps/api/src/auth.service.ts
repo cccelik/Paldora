@@ -9,7 +9,7 @@ import type { AuthenticatedPrincipal, VerifiedIdentity } from '@paldora/auth';
 import { users } from '@paldora/database';
 import type { UserId } from '@paldora/domain';
 import type { Request } from 'express';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull, lt, or } from 'drizzle-orm';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { ApiError } from './api-error.js';
 import { InfrastructureService } from './infrastructure.service.js';
@@ -81,7 +81,11 @@ export class SupabaseAuthGuard implements CanActivate {
     }
     const identity = await this.verifier.verify(authorization.slice(7));
     const [user] = await this.infrastructure.databaseClient
-      .select({ id: users.id, status: users.status })
+      .select({
+        id: users.id,
+        status: users.status,
+        lastLoginAt: users.lastLoginAt,
+      })
       .from(users)
       .where(eq(users.authSubject, identity.subject))
       .limit(1);
@@ -104,10 +108,21 @@ export class SupabaseAuthGuard implements CanActivate {
       authSubject: identity.subject,
       sessionId: identity.sessionId,
     };
-    await this.infrastructure.databaseClient
-      .update(users)
-      .set({ lastLoginAt: new Date(), updatedAt: new Date() })
-      .where(eq(users.id, user.id));
+    const loginRefreshCutoff = new Date(Date.now() - 15 * 60 * 1_000);
+    if (!user.lastLoginAt || user.lastLoginAt < loginRefreshCutoff) {
+      await this.infrastructure.databaseClient
+        .update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(
+          and(
+            eq(users.id, user.id),
+            or(
+              isNull(users.lastLoginAt),
+              lt(users.lastLoginAt, loginRefreshCutoff),
+            ),
+          ),
+        );
+    }
     return true;
   }
 }

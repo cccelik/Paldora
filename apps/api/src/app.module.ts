@@ -10,6 +10,7 @@ import { BoxController, BoxInvitationController } from './box.controller.js';
 import { BoxService } from './box.service.js';
 import { SocialController } from './social.controller.js';
 import { SocialService } from './social.service.js';
+import { RateLimitService } from './rate-limit.service.js';
 
 @Module({
   controllers: [
@@ -27,6 +28,7 @@ import { SocialService } from './social.service.js';
     AvatarService,
     BoxService,
     SocialService,
+    RateLimitService,
     objectStorageProvider,
   ],
 })
