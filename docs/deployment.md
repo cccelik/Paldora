@@ -8,7 +8,12 @@ The platform must terminate TLS, enforce HTTPS, inject secrets, restrict infrast
 
 Required external credentials once deployed are PostgreSQL and Redis URLs, S3-compatible private-storage credentials, and later provider credentials for authentication, error tracking, email, push, and billing. None are required to build or run unit tests.
 
-Phase 1 also requires a dedicated Supabase project, a private S3-compatible bucket, bucket CORS for the deployed web origin, and `NEXT_PUBLIC_MEDIA_ORIGIN` for CSP. Apply database migrations before starting the new API. Provision demo accounts only from a trusted administration environment; `SUPABASE_SERVICE_ROLE_KEY` must never be present in the web deployment.
+Phase 1 also requires a dedicated Supabase project, a private S3-compatible
+bucket, a storage endpoint that accepts browser requests, and
+`NEXT_PUBLIC_MEDIA_ORIGIN` for CSP. Apply database migrations before starting
+the new API. Provision demo accounts only from a trusted administration
+environment; `SUPABASE_SERVICE_ROLE_KEY` must never be present in the web
+deployment.
 
 Rotate Supabase service-role and object-storage credentials through the deployment secret manager. Re-run the idempotent demo seed after rotation only when account details need reconciliation.
 
@@ -36,8 +41,10 @@ In the existing Supabase project:
 1. Create a private bucket named `paldora-private`.
 2. Open **Storage > S3 Connection** and generate server-side S3 access keys.
 3. Record the direct S3 endpoint, project region, access-key ID, and secret.
-4. Add the final Vercel origin to the bucket's allowed CORS origins for `PUT`,
-   `GET`, `HEAD`, and `DELETE` requests.
+4. During the hosted smoke test, verify a browser can `PUT`, `GET`, and `HEAD`
+   through signed URLs. Supabase's managed S3 compatibility does not expose the
+   S3 bucket-CORS API, so there is no bucket CORS rule to maintain in the
+   dashboard.
 
 S3 keys bypass Storage RLS and belong only in Render. Never add them to Vercel,
 client code, or a committed environment file.
@@ -136,5 +143,5 @@ tester credentials supplied only through the local environment.
 ### Teardown
 
 When testing ends, delete the Render Blueprint resources and Vercel project,
-remove their origins from Supabase Auth and Storage CORS, delete the Supabase S3
-access keys, and remove tester identities if they are no longer needed.
+remove their origins from Supabase Auth, delete the Supabase S3 access keys, and
+remove tester identities if they are no longer needed.
