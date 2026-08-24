@@ -9,9 +9,14 @@ import { AppRealtimeBridge } from './app-realtime-bridge';
 
 const navigation = [
   { key: 'home', label: 'Home', href: '/home', icon: '⌂' },
-  { label: 'Life Updates', icon: '♡' },
+  {
+    key: 'life-updates',
+    label: 'Life Updates',
+    href: '/life-updates',
+    icon: '♡',
+  },
   { key: 'boxes', label: 'Boxes', href: '/boxes', icon: '◇' },
-  { label: 'Memories', icon: '▧' },
+  { key: 'memories', label: 'Memories', href: '/memories', icon: '▧' },
   { key: 'friends', label: 'Friends', href: '/friends', icon: '♧' },
 ] as const;
 
@@ -21,7 +26,14 @@ export function AppShell({
   children,
 }: {
   current: CurrentUser;
-  active: 'home' | 'boxes' | 'friends' | 'notifications' | 'settings';
+  active:
+    | 'home'
+    | 'life-updates'
+    | 'boxes'
+    | 'memories'
+    | 'friends'
+    | 'notifications'
+    | 'settings';
   children: ReactNode;
 }) {
   const accountName = current.profile.displayName ?? current.user.email;
@@ -31,25 +43,17 @@ export function AppShell({
       <aside className="app-sidebar">
         <Wordmark compact />
         <nav aria-label="Primary navigation">
-          {navigation.map((item) =>
-            'href' in item ? (
-              <Link
-                aria-current={active === item.key ? 'page' : undefined}
-                className={active === item.key ? 'active' : ''}
-                href={item.href}
-                key={item.label}
-              >
-                <span aria-hidden="true">{item.icon}</span>
-                {item.label}
-              </Link>
-            ) : (
-              <span className="nav-deferred" key={item.label}>
-                <span aria-hidden="true">{item.icon}</span>
-                {item.label}
-                <small>Soon</small>
-              </span>
-            ),
-          )}
+          {navigation.map((item) => (
+            <Link
+              aria-current={active === item.key ? 'page' : undefined}
+              className={active === item.key ? 'active' : ''}
+              href={item.href}
+              key={item.label}
+            >
+              <span aria-hidden="true">{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
         </nav>
         <div className="sidebar-notifications">
           <NotificationNavLink active={active === 'notifications'} />

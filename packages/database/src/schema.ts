@@ -75,12 +75,22 @@ export const activityEventType = paldoraSchema.enum('activity_event_type', [
   'comment.deleted',
   'reaction.set',
   'comment.reaction.set',
+  'life_update.published',
 ]);
 export const notificationType = paldoraSchema.enum('notification_type', [
   'post.comment',
   'comment.reply',
   'post.reaction',
   'comment.reaction',
+  'life_update.published',
+]);
+export const lifeUpdateStatus = paldoraSchema.enum('life_update_status', [
+  'active',
+  'deleted',
+]);
+export const lifeUpdateAudience = paldoraSchema.enum('life_update_audience', [
+  'box',
+  'only_me',
 ]);
 
 export const users = paldoraSchema.table(
@@ -169,11 +179,11 @@ export const mediaAssets = paldoraSchema.table(
     index('media_assets_box_status_index').on(table.boxId, table.status),
     check(
       'media_assets_purpose_check',
-      sql`${table.purpose} in ('avatar', 'post_image', 'reaction_image')`,
+      sql`${table.purpose} in ('avatar', 'post_image', 'reaction_image', 'life_update_image')`,
     ),
     check(
       'media_assets_purpose_box_check',
-      sql`(${table.purpose} = 'avatar' and ${table.boxId} is null) or (${table.purpose} in ('post_image', 'reaction_image') and ${table.boxId} is not null)`,
+      sql`(${table.purpose} in ('avatar', 'life_update_image') and ${table.boxId} is null) or (${table.purpose} in ('post_image', 'reaction_image') and ${table.boxId} is not null)`,
     ),
     check(
       'media_assets_content_type_check',
@@ -302,6 +312,105 @@ export const boxMemberships = paldoraSchema.table(
   ],
 );
 
+export interface LifeUpdateSectionData {
+  lifeLately?: string;
+  workOrUniversity?: string;
+  travel?: string;
+  currentlyInto?: string;
+  listeningTo?: string;
+  watching?: string;
+  reading?: string;
+  excitedAbout?: string;
+  whatsNext?: string;
+}
+
+export const lifeUpdates = paldoraSchema.table(
+  'life_updates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    sections: jsonb('sections').$type<LifeUpdateSectionData>().notNull(),
+    status: lifeUpdateStatus('status').notNull().default('active'),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('life_updates_author_chronological_index').on(
+      table.authorUserId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    check(
+      'life_updates_deleted_at_state_check',
+      sql`(${table.status} = 'deleted') = (${table.deletedAt} is not null)`,
+    ),
+  ],
+);
+
+export const lifeUpdateDeliveries = paldoraSchema.table(
+  'life_update_deliveries',
+  {
+    postId: uuid('post_id')
+      .primaryKey()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    lifeUpdateId: uuid('life_update_id')
+      .notNull()
+      .references(() => lifeUpdates.id, { onDelete: 'cascade' }),
+    audience: lifeUpdateAudience('audience').notNull(),
+    boxId: uuid('box_id').references(() => boxes.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('life_update_deliveries_box_unique')
+      .on(table.lifeUpdateId, table.boxId)
+      .where(sql`${table.audience} = 'box'`),
+    uniqueIndex('life_update_deliveries_only_me_unique')
+      .on(table.lifeUpdateId)
+      .where(sql`${table.audience} = 'only_me'`),
+    index('life_update_deliveries_life_update_index').on(table.lifeUpdateId),
+    check(
+      'life_update_deliveries_audience_box_check',
+      sql`(${table.audience} = 'box' and ${table.boxId} is not null) or (${table.audience} = 'only_me' and ${table.boxId} is null)`,
+    ),
+  ],
+);
+
+export const lifeUpdateMedia = paldoraSchema.table(
+  'life_update_media',
+  {
+    mediaAssetId: uuid('media_asset_id')
+      .primaryKey()
+      .references(() => mediaAssets.id, { onDelete: 'cascade' }),
+    lifeUpdateId: uuid('life_update_id')
+      .notNull()
+      .references(() => lifeUpdates.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('life_update_media_position_unique').on(
+      table.lifeUpdateId,
+      table.position,
+    ),
+    index('life_update_media_life_update_index').on(table.lifeUpdateId),
+    check(
+      'life_update_media_position_check',
+      sql`${table.position} between 0 and 3`,
+    ),
+  ],
+);
+
 export const boxInvitations = paldoraSchema.table(
   'box_invitations',
   {
@@ -344,9 +453,7 @@ export const posts = paldoraSchema.table(
   'posts',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    boxId: uuid('box_id')
-      .notNull()
-      .references(() => boxes.id, { onDelete: 'cascade' }),
+    boxId: uuid('box_id').references(() => boxes.id, { onDelete: 'cascade' }),
     authorUserId: uuid('author_user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -527,12 +634,14 @@ export const commentReactions = paldoraSchema.table(
 );
 
 export interface ActivityEventPayload {
-  boxId: string;
-  postId: string;
+  boxId?: string;
+  postId?: string;
   commentId?: string;
   parentCommentId?: string;
-  recipientUserId: string;
+  recipientUserId?: string;
   reactionKind?: string;
+  lifeUpdateId?: string;
+  boxIds?: string[];
 }
 
 export const activityEvents = paldoraSchema.table(
@@ -587,6 +696,9 @@ export const notifications = paldoraSchema.table(
       .notNull()
       .references(() => posts.id, { onDelete: 'cascade' }),
     commentId: uuid('comment_id').references(() => comments.id, {
+      onDelete: 'cascade',
+    }),
+    lifeUpdateId: uuid('life_update_id').references(() => lifeUpdates.id, {
       onDelete: 'cascade',
     }),
     readAt: timestamp('read_at', { withTimezone: true }),

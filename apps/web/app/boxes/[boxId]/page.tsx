@@ -1,10 +1,11 @@
 import { ApiClientError, type PaldoraApiClient } from '@paldora/api-client';
 import type { BoxId } from '@paldora/domain';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { AppShell } from '../../components/app-shell';
 import { BoxDetailHeaderActions } from '../../components/box-detail-header-actions';
 import { PostComposer } from '../../components/post-composer';
-import { PostFeed } from '../../components/post-feed';
+import { UnifiedFeed } from '../../components/unified-feed';
 import { PageFeedback, PageHeader } from '../../components/ui';
 import {
   authenticatedApiClient,
@@ -30,8 +31,15 @@ export default async function BoxDetailPage({
   const { boxId } = await params;
   const notices = await searchParams;
   const api = await authenticatedApiClient();
-  const { box, members, friends, friendRequests, blockedUsers, postPage } =
-    await loadBoxDetail(api, boxId as BoxId, notices.cursor);
+  const {
+    box,
+    members,
+    friends,
+    friendRequests,
+    blockedUsers,
+    postPage,
+    lifeUpdates,
+  } = await loadBoxDetail(api, boxId as BoxId, notices.cursor);
   const canInvite =
     box.status === 'active' &&
     (box.currentUserRole === 'owner' || box.currentUserRole === 'admin');
@@ -68,6 +76,12 @@ export default async function BoxDetailPage({
         warning={notices.warning}
         notice={notices.notice}
       />
+      <Link
+        className="button-secondary compact-button box-memory-link"
+        href={`/boxes/${box.id}/memories`}
+      >
+        Browse Box memories
+      </Link>
       <div className="box-detail-layout box-feed-layout">
         <div className="box-post-column">
           {box.status === 'active' ? (
@@ -78,12 +92,15 @@ export default async function BoxDetailPage({
               but new posts are paused until the owner restores it.
             </p>
           )}
-          <PostFeed
+          <UnifiedFeed
             currentUserId={current.user.id}
+            emptyDescription="Share the first story when the moment feels right."
+            emptyTitle="No posts yet."
+            lifeUpdates={lifeUpdates.items}
             nextCursor={postPage.nextCursor}
             posts={postPage.items}
-            returnPath={`/boxes/${box.id}`}
             reactionPresets={current.profile.reactionPresets}
+            returnPath={`/boxes/${box.id}`}
           />
         </div>
       </div>
@@ -97,16 +114,32 @@ async function loadBoxDetail(
   cursor?: string,
 ) {
   try {
-    const [box, members, friends, friendRequests, blockedUsers, postPage] =
-      await Promise.all([
-        api.box(boxId),
-        api.boxMembers(boxId),
-        api.friends(),
-        api.friendRequests(),
-        api.blockedUsers(),
-        api.boxPosts(boxId, { ...(cursor ? { cursor } : {}), limit: 20 }),
-      ]);
-    return { box, members, friends, friendRequests, blockedUsers, postPage };
+    const [
+      box,
+      members,
+      friends,
+      friendRequests,
+      blockedUsers,
+      postPage,
+      lifeUpdates,
+    ] = await Promise.all([
+      api.box(boxId),
+      api.boxMembers(boxId),
+      api.friends(),
+      api.friendRequests(),
+      api.blockedUsers(),
+      api.boxPosts(boxId, { ...(cursor ? { cursor } : {}), limit: 20 }),
+      api.boxLifeUpdates(boxId, { limit: 20 }),
+    ]);
+    return {
+      box,
+      members,
+      friends,
+      friendRequests,
+      blockedUsers,
+      postPage,
+      lifeUpdates,
+    };
   } catch (error) {
     if (
       error instanceof ApiClientError &&

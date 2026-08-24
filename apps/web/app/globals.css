@@ -1819,6 +1819,257 @@ textarea:focus-visible {
   background: #fdf8ef;
   border-radius: 50%;
 }
+.life-update-feed {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.life-update-card {
+  padding: 22px;
+  color: #211b14;
+  background: linear-gradient(
+    145deg,
+    rgb(255 252 244 / 94%),
+    rgb(247 238 251 / 92%)
+  );
+  border: 1px solid rgb(113 75 151 / 18%);
+  border-radius: 28px;
+  box-shadow: 0 12px 34px rgb(63 38 79 / 8%);
+}
+.life-update-card > header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.life-update-card > header > div {
+  display: grid;
+  gap: 2px;
+}
+.life-update-header-actions {
+  display: flex !important;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px !important;
+}
+.life-update-audience-note {
+  margin: 0;
+  padding: 14px 16px;
+  color: #604180;
+  background: #f3e9ff;
+  border-radius: 16px;
+  line-height: 1.5;
+}
+.life-update-media-choice {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+}
+.life-update-media-choice input {
+  width: 20px;
+  height: 20px;
+}
+.life-update-card > header span {
+  color: rgb(31 25 18 / 60%);
+  font-size: 12px;
+}
+.life-update-card > header strong {
+  color: #211b14;
+}
+.life-update-author-link {
+  width: fit-content;
+  color: #211b14;
+  font-weight: 800;
+  text-decoration: none;
+}
+.life-update-author-link:hover {
+  color: #714999;
+  text-decoration: underline;
+}
+.life-update-kicker {
+  color: #714999 !important;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.life-update-sections {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+.life-update-sections section {
+  padding: 14px 16px;
+  background: rgb(255 255 255 / 58%);
+  border-radius: 18px;
+}
+.life-update-sections h3 {
+  margin: 0 0 6px;
+  color: #714999;
+  font-size: 13px;
+}
+.life-update-sections p {
+  margin: 0;
+  color: #211b14;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+.life-update-context-tabs {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.life-update-context-tabs > span {
+  color: rgb(31 25 18 / 55%);
+  font-size: 12px;
+  font-weight: 700;
+}
+.life-update-context-tabs button {
+  min-height: 38px;
+  padding: 7px 13px;
+  color: #604180;
+  background: #f3e9ff;
+  border: 1px solid #d7c0ee;
+  border-radius: 999px;
+  font-weight: 750;
+}
+.life-update-context-tabs button[aria-selected='true'] {
+  color: white;
+  background: #714999;
+  box-shadow: 0 0 0 3px rgb(170 126 214 / 20%);
+}
+.life-update-private {
+  margin: 16px 0 0;
+  color: #604180;
+  font-size: 13px;
+  font-weight: 750;
+}
+.life-update-composer {
+  max-width: 820px;
+  padding: 24px;
+  color: #211b14;
+  background: rgb(255 252 244 / 92%);
+  border: 1px solid rgb(113 75 151 / 16%);
+  border-radius: 28px;
+}
+.life-update-composer label,
+.life-update-composer legend {
+  color: #211b14;
+}
+.life-update-composer small {
+  color: rgb(31 25 18 / 68%);
+}
+.life-update-composer fieldset {
+  padding: 18px;
+  border: 1px solid rgb(113 75 151 / 22%);
+  border-radius: 20px;
+}
+.life-update-composer legend {
+  padding: 0 8px;
+  font-weight: 800;
+}
+.audience-choice {
+  display: flex !important;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+.life-update-box-picker {
+  max-height: 260px;
+  margin: 10px 0;
+  display: grid;
+  gap: 7px;
+  overflow-y: auto;
+}
+.life-update-box-picker label {
+  min-height: 48px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgb(255 255 255 / 68%);
+  border-radius: 14px;
+}
+.life-update-box-picker input,
+.audience-choice input {
+  width: 20px;
+  height: 20px;
+}
+.memory-years,
+.memory-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+.memory-year-card,
+.memory-month-card {
+  min-height: 150px;
+  padding: 22px;
+  display: grid;
+  align-content: end;
+  gap: 4px;
+  color: #211b14;
+  background: linear-gradient(145deg, #f4e8ff, #fff4d8);
+  border: 1px solid rgb(113 75 151 / 20%);
+  border-radius: 26px;
+  text-decoration: none;
+}
+.memory-year-card strong {
+  color: #714999;
+  font-family: Georgia, serif;
+  font-size: 42px;
+}
+.memory-year-card span,
+.memory-month-card span {
+  color: rgb(31 25 18 / 58%);
+}
+.memory-timeline {
+  display: grid;
+  gap: 26px;
+}
+.box-memory-link {
+  width: fit-content;
+  margin: 0 0 18px;
+}
+.memory-entry {
+  position: relative;
+  padding-left: 78px;
+}
+.memory-entry > time {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  width: 66px;
+  color: #714999;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+.memory-entry > .post-feed {
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .life-update-card,
+  .life-update-composer {
+    padding: 16px;
+    border-radius: 22px;
+  }
+  .life-update-card > header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .life-update-card > header > .life-update-header-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  .memory-entry {
+    padding-left: 0;
+    padding-top: 30px;
+  }
+  .memory-entry > time {
+    top: 0;
+    width: auto;
+  }
+}
 .comment-panel {
   margin-top: 12px;
   padding-top: 14px;

@@ -1,4 +1,6 @@
 import {
+  lifeUpdateDeliveries,
+  lifeUpdateMedia,
   mediaAssets,
   postMedia,
   postReactions,
@@ -91,7 +93,11 @@ async function processMediaObject(
     .where(
       and(
         eq(mediaAssets.id, mediaAssetId),
-        inArray(mediaAssets.purpose, ['post_image', 'reaction_image']),
+        inArray(mediaAssets.purpose, [
+          'post_image',
+          'reaction_image',
+          'life_update_image',
+        ]),
         eq(mediaAssets.status, 'processing'),
       ),
     )
@@ -151,16 +157,37 @@ async function publishMediaUpdate(
         .innerJoin(posts, eq(posts.id, postReactions.postId))
         .where(eq(postReactions.mediaAssetId, mediaAssetId))
         .limit(1);
-  const attached = postAttachment ?? reactionAttachment;
-  if (!attached) return;
-  await eventPublisher.publish(
-    POST_EVENT_CHANNEL,
-    JSON.stringify({
-      id: randomUUID(),
-      action: 'updated',
-      boxId: attached.boxId,
-      postId: attached.postId,
-      occurredAt: new Date().toISOString(),
-    }),
+  const ordinaryAttachment = postAttachment ?? reactionAttachment;
+  const lifeUpdateAttachments = ordinaryAttachment
+    ? []
+    : await database
+        .select({
+          postId: lifeUpdateDeliveries.postId,
+          boxId: lifeUpdateDeliveries.boxId,
+        })
+        .from(lifeUpdateMedia)
+        .innerJoin(
+          lifeUpdateDeliveries,
+          eq(lifeUpdateDeliveries.lifeUpdateId, lifeUpdateMedia.lifeUpdateId),
+        )
+        .where(eq(lifeUpdateMedia.mediaAssetId, mediaAssetId));
+  const attachments = ordinaryAttachment
+    ? [ordinaryAttachment]
+    : lifeUpdateAttachments.filter(
+        (item): item is typeof item & { boxId: string } => Boolean(item.boxId),
+      );
+  await Promise.all(
+    attachments.map((attached) =>
+      eventPublisher.publish(
+        POST_EVENT_CHANNEL,
+        JSON.stringify({
+          id: randomUUID(),
+          action: 'updated',
+          boxId: attached.boxId,
+          postId: attached.postId,
+          occurredAt: new Date().toISOString(),
+        }),
+      ),
+    ),
   );
 }

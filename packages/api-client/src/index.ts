@@ -14,6 +14,9 @@ import type {
   CreateBoxInput,
   CreateBoxInvitationInput,
   CreateFriendRequestInput,
+  CreateLifeUpdateInput,
+  CreateLifeUpdateMediaUploadInput,
+  CreateLifeUpdateMediaUploadResult,
   CreateAvatarUploadInput,
   CreateAvatarUploadResult,
   CreatePostInput,
@@ -28,6 +31,11 @@ import type {
   FriendshipId,
   MediaAsset,
   MediaAssetId,
+  LifeUpdate,
+  LifeUpdateId,
+  LifeUpdatePage,
+  MemoryPage,
+  MemoryYear,
   NotificationId,
   NotificationPage,
   Post,
@@ -39,6 +47,7 @@ import type {
   UpdateCommentInput,
   UpdatePostInput,
   UpdateProfileInput,
+  UpdateLifeUpdateInput,
   UsernameAvailability,
   UserId,
 } from '@paldora/domain';
@@ -315,6 +324,134 @@ export class PaldoraApiClient {
       body: input,
       signal,
     });
+  }
+
+  public createLifeUpdate(
+    input: CreateLifeUpdateInput,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdate> {
+    return this.send('/me/life-updates', {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public lifeUpdates(
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdatePage> {
+    return this.send(pagePath('/me/life-updates', page), { signal });
+  }
+
+  public feedLifeUpdates(
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdatePage> {
+    return this.send(pagePath('/me/feed/life-updates', page), { signal });
+  }
+
+  public boxLifeUpdates(
+    boxId: BoxId,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdatePage> {
+    return this.send(pagePath(`/boxes/${boxId}/life-updates`, page), {
+      signal,
+    });
+  }
+
+  public userLifeUpdates(
+    username: string,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdatePage> {
+    return this.send(
+      pagePath(`/users/${encodeURIComponent(username)}/life-updates`, page),
+      { signal },
+    );
+  }
+
+  public lifeUpdate(
+    id: LifeUpdateId,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdate> {
+    return this.send(`/life-updates/${id}`, { signal });
+  }
+
+  public updateLifeUpdate(
+    id: LifeUpdateId,
+    input: UpdateLifeUpdateInput,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdate> {
+    return this.send(`/life-updates/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+    });
+  }
+
+  public deleteLifeUpdate(
+    id: LifeUpdateId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/life-updates/${id}`, { method: 'DELETE', signal });
+  }
+
+  public createLifeUpdateMediaUpload(
+    input: CreateLifeUpdateMediaUploadInput,
+    signal?: AbortSignal,
+  ): Promise<CreateLifeUpdateMediaUploadResult> {
+    return this.send('/life-update-media/uploads', {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public completeLifeUpdateMediaUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<MediaAsset> {
+    return this.send(`/life-update-media/uploads/${id}/complete`, {
+      method: 'POST',
+      signal,
+    });
+  }
+
+  public cancelLifeUpdateMediaUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/life-update-media/uploads/${id}`, {
+      method: 'DELETE',
+      signal,
+    });
+  }
+
+  public memoryYears(
+    boxId?: BoxId,
+    signal?: AbortSignal,
+  ): Promise<MemoryYear[]> {
+    return this.send(
+      boxId ? `/boxes/${boxId}/memories/years` : '/me/memories/years',
+      { signal },
+    );
+  }
+
+  public memories(
+    input: { year: number; month?: number; cursor?: string; limit?: number },
+    boxId?: BoxId,
+    signal?: AbortSignal,
+  ): Promise<MemoryPage> {
+    const search = new URLSearchParams({
+      year: String(input.year),
+      limit: String(input.limit ?? 20),
+    });
+    if (input.month) search.set('month', String(input.month));
+    if (input.cursor) search.set('cursor', input.cursor);
+    const base = boxId ? `/boxes/${boxId}/memories` : '/me/memories';
+    return this.send(`${base}?${search.toString()}`, { signal });
   }
 
   public createPostMediaUpload(

@@ -29,6 +29,11 @@ import { ProfileAvatarService } from './profile-avatar.service.js';
 import { PostInteractionQueryService } from './post-interaction-query.js';
 import { ReactionMediaService } from './reaction-media.service.js';
 import { ReactionMediaController } from './reaction-media.controller.js';
+import { LifeUpdateController } from './life-update.controller.js';
+import { LifeUpdateService } from './life-update.service.js';
+import { LifeUpdateMediaService } from './life-update-media.service.js';
+import { MemoryController } from './memory.controller.js';
+import { MemoryService } from './memory.service.js';
 import {
   POST_EVENT_PUBLISHER,
   PostEventService,
@@ -44,6 +49,8 @@ import {
     PostController,
     InteractionController,
     ReactionMediaController,
+    LifeUpdateController,
+    MemoryController,
   ],
   providers: [
     InfrastructureService,
@@ -71,6 +78,9 @@ import {
     InteractionAuthorizationPolicy,
     InteractionService,
     NotificationService,
+    LifeUpdateService,
+    LifeUpdateMediaService,
+    MemoryService,
     objectStorageProvider,
   ],
 })

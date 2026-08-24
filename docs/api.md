@@ -139,3 +139,32 @@ publishes identifier-only realtime invalidations. HTTP handlers never create
 notifications directly. Post/feed streams additionally emit `comment.created`,
 `comment.updated`, `comment.deleted`, and `reaction.set` events after rechecking
 Box access.
+
+# Phase 6 Life Updates and Memories
+
+Life Update creation accepts either `{ "type": "only_me" }` or
+`{ "type": "boxes", "boxIds": [...] }`. Box audiences require 1–20 distinct
+active Boxes and are immutable after publication. Each optional structured
+section is limited to 2,000 characters, all sections together to 10,000, and an
+update may contain at most four private JPEG, PNG, or WebP assets.
+
+- `POST /api/v1/me/life-updates`
+- `GET /api/v1/me/life-updates`
+- `GET /api/v1/me/feed/life-updates`
+- `GET /api/v1/life-updates/:lifeUpdateId`
+- `PATCH /api/v1/life-updates/:lifeUpdateId`
+- `DELETE /api/v1/life-updates/:lifeUpdateId`
+- `GET /api/v1/users/:username/life-updates`
+- `GET /api/v1/boxes/:boxId/life-updates`
+- `POST /api/v1/life-update-media/uploads`
+- `POST /api/v1/life-update-media/uploads/:mediaAssetId/complete`
+- `DELETE /api/v1/life-update-media/uploads/:mediaAssetId`
+- `GET /api/v1/me/memories/years`
+- `GET /api/v1/me/memories?year=&month=&cursor=&limit=`
+- `GET /api/v1/boxes/:boxId/memories/years`
+- `GET /api/v1/boxes/:boxId/memories?year=&month=&cursor=&limit=`
+
+The authored history and accessible Home feed are deliberately separate. Life
+Update responses contain shared content once plus only the delivery contexts
+the requester can currently access. Each context contains its backing post ID,
+Box identity, and isolated interaction summary.

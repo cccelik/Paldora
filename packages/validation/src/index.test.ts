@@ -4,6 +4,7 @@ import {
   createBoxSchema,
   createAvatarUploadSchema,
   createFriendRequestSchema,
+  createLifeUpdateSchema,
   createPostSchema,
   createCommentSchema,
   cursorPageSchema,
@@ -14,6 +15,7 @@ import {
   setCommentReactionSchema,
   transferBoxOwnershipSchema,
   updateProfileSchema,
+  updateLifeUpdateSchema,
   usernameSchema,
 } from './index.js';
 
@@ -21,6 +23,81 @@ describe('cursorPageSchema', () => {
   it('applies a bounded default page size', () => {
     expect(cursorPageSchema.parse({})).toEqual({ limit: 20 });
     expect(() => cursorPageSchema.parse({ limit: 51 })).toThrow();
+  });
+});
+
+describe('Phase 6 Life Update validation', () => {
+  const boxId = (suffix: number) =>
+    `00000000-0000-4000-8000-${String(suffix).padStart(12, '0')}`;
+
+  it('requires content and keeps Only Me exclusive from Box audiences', () => {
+    expect(
+      createLifeUpdateSchema.safeParse({
+        audience: { type: 'only_me' },
+        sections: { lifeLately: 'A quiet week.' },
+      }).success,
+    ).toBe(true);
+    expect(
+      createLifeUpdateSchema.safeParse({
+        audience: { type: 'only_me', boxIds: [boxId(1)] },
+        sections: {},
+      }).success,
+    ).toBe(false);
+    expect(
+      createLifeUpdateSchema.safeParse({
+        audience: { type: 'boxes', boxIds: [boxId(1)] },
+        sections: {},
+      }).success,
+    ).toBe(false);
+  });
+
+  it('deduplicates Boxes and enforces the 20-Box limit', () => {
+    const sections = { travel: 'Somewhere new.' };
+    expect(
+      createLifeUpdateSchema.safeParse({
+        audience: { type: 'boxes', boxIds: [boxId(1), boxId(1)] },
+        sections,
+      }).success,
+    ).toBe(false);
+    expect(
+      createLifeUpdateSchema.safeParse({
+        audience: {
+          type: 'boxes',
+          boxIds: Array.from({ length: 21 }, (_, index) => boxId(index + 1)),
+        },
+        sections,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('enforces section, aggregate, photo, and edit bounds', () => {
+    expect(
+      createLifeUpdateSchema.safeParse({
+        audience: { type: 'only_me' },
+        sections: { reading: 'x'.repeat(2_001) },
+      }).success,
+    ).toBe(false);
+    expect(
+      createLifeUpdateSchema.safeParse({
+        audience: { type: 'only_me' },
+        sections: {
+          lifeLately: 'x'.repeat(2_000),
+          workOrUniversity: 'x'.repeat(2_000),
+          travel: 'x'.repeat(2_000),
+          listeningTo: 'x'.repeat(2_000),
+          watching: 'x'.repeat(2_000),
+          reading: 'x',
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      updateLifeUpdateSchema.safeParse({
+        sections: {},
+        mediaAssetIds: Array.from({ length: 5 }, (_, index) =>
+          boxId(index + 1),
+        ),
+      }).success,
+    ).toBe(false);
   });
 });
 

@@ -317,6 +317,137 @@ test('Box and Home feeds receive another member post without a reload', async ({
   }
 });
 
+test('two hosted accounts share one Life Update across private Box threads', async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  test.skip(
+    accounts.length < 2 || !process.env.DEMO_FRIEND_USERNAME,
+    'Two provisioned demo accounts and DEMO_FRIEND_USERNAME are required.',
+  );
+  const [primary, friend] = accounts;
+  if (!primary || !friend || !process.env.DEMO_FRIEND_USERNAME) return;
+  const primaryContext = await browser.newContext();
+  const friendContext = await browser.newContext();
+  const primaryPage = await primaryContext.newPage();
+  const friendPage = await friendContext.newPage();
+  const marker = Date.now();
+  const firstName = `Life Alpha ${marker}`;
+  const secondName = `Life Beta ${marker}`;
+  const originalText = `Life Update ${marker}`;
+  const editedText = `${originalText} edited`;
+  const createdBoxes: { name: string; url: string }[] = [];
+  try {
+    await signIn(primaryPage, primary);
+    await signIn(friendPage, friend);
+    createdBoxes.push(
+      await createBoxAndInvite(
+        primaryPage,
+        firstName,
+        process.env.DEMO_FRIEND_USERNAME,
+      ),
+      await createBoxAndInvite(
+        primaryPage,
+        secondName,
+        process.env.DEMO_FRIEND_USERNAME,
+      ),
+    );
+    await friendPage.goto('/boxes');
+    await friendPage
+      .locator('.social-row', { hasText: firstName })
+      .getByRole('button', { name: 'Accept' })
+      .click();
+    await friendPage
+      .locator('.social-row', { hasText: secondName })
+      .getByRole('button', { name: 'Accept' })
+      .click();
+
+    await primaryPage.goto('/life-updates/new');
+    await primaryPage.getByLabel(firstName).check();
+    await primaryPage.getByLabel(secondName).check();
+    await primaryPage.getByLabel('Life lately').fill(originalText);
+    await primaryPage.locator('input[type="file"]').setInputFiles({
+      name: 'life-update.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    });
+    await primaryPage
+      .getByRole('button', { name: 'Publish Life Update' })
+      .click();
+    await expect(primaryPage).toHaveURL(/\/life-updates\/[0-9a-f-]+$/);
+    await expect(primaryPage.getByRole('tab')).toHaveCount(2);
+    await expect(
+      primaryPage.getByRole('img', { name: /Photo 1 shared by/ }),
+    ).toBeVisible({ timeout: 20_000 });
+
+    await friendPage.goto('/home');
+    const groupedCard = friendPage.locator('.life-update-card', {
+      hasText: originalText,
+    });
+    await expect(groupedCard).toHaveCount(1);
+    await expect(groupedCard.getByRole('tab')).toHaveCount(2);
+    await groupedCard.getByRole('button', { name: '0 comments' }).click();
+    await groupedCard
+      .getByLabel('Write a comment…')
+      .fill(`Private Alpha comment ${marker}`);
+    await groupedCard
+      .getByRole('button', { name: 'Comment', exact: true })
+      .click();
+    await expect(
+      groupedCard.getByRole('button', { name: '1 comment' }),
+    ).toBeVisible();
+    await groupedCard.getByRole('tab', { name: secondName }).click();
+    await expect(
+      groupedCard.getByRole('button', { name: '0 comments' }),
+    ).toBeVisible();
+
+    await friendPage.goto('/notifications');
+    await expect(
+      friendPage
+        .getByText('shared a Life Update with you.', { exact: true })
+        .first(),
+    ).toBeVisible({ timeout: 10_000 });
+
+    await primaryPage
+      .getByRole('button', { name: 'Manage Life Update' })
+      .click();
+    await primaryPage.getByRole('link', { name: 'Edit update' }).click();
+    await primaryPage.getByLabel('Life lately').fill(editedText);
+    await primaryPage.getByRole('button', { name: 'Save Life Update' }).click();
+    await expect(
+      primaryPage.getByText(editedText, { exact: true }),
+    ).toBeVisible();
+    await friendPage.goto('/home');
+    await expect(
+      friendPage.getByText(editedText, { exact: true }),
+    ).toBeVisible();
+    await friendPage.goto('/memories');
+    await expect(friendPage.getByRole('link', { name: /2026/ })).toBeVisible();
+
+    await primaryPage.goto('/life-updates/new');
+    await primaryPage.getByLabel('Only Me').check();
+    await primaryPage.getByLabel('Reading').fill(`Private note ${marker}`);
+    await primaryPage
+      .getByRole('button', { name: 'Publish Life Update' })
+      .click();
+    await expect(
+      primaryPage.getByText('Only Me', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      primaryPage.getByRole('button', { name: 'React', exact: true }),
+    ).toHaveCount(0);
+  } finally {
+    await createdBoxes.reduce(async (previous, box) => {
+      await previous;
+      await deleteHostedBox(primaryPage, box).catch(() => undefined);
+    }, Promise.resolve());
+    await Promise.all([primaryContext.close(), friendContext.close()]);
+  }
+});
+
 async function signIn(
   page: Page,
   account: { email: string; password: string },
@@ -326,4 +457,37 @@ async function signIn(
   await page.getByLabel('Password').fill(account.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/home$/);
+}
+
+async function createBoxAndInvite(
+  page: Page,
+  name: string,
+  username: string,
+): Promise<{ name: string; url: string }> {
+  await page.goto('/boxes/new');
+  await page.getByLabel('Box name').fill(name);
+  await page.getByRole('button', { name: 'Create private Box' }).click();
+  await expect(page).toHaveURL(/\/boxes\/[0-9a-f-]+/);
+  const url = page.url();
+  await page.getByRole('button', { name: 'Manage Box' }).click();
+  await page.getByText('Invite anyone by username', { exact: true }).click();
+  const invitePanel = page.locator('.invite-fallback');
+  await invitePanel.getByLabel('Username').fill(username);
+  await invitePanel.getByRole('button', { name: 'Invite by username' }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Invitation sent.' }),
+  ).toBeVisible();
+  return { name, url };
+}
+
+async function deleteHostedBox(
+  page: Page,
+  box: { name: string; url: string },
+): Promise<void> {
+  await page.goto(box.url);
+  await page.getByRole('button', { name: 'Manage Box' }).click();
+  const confirmation = page.getByLabel(`Type “${box.name}” to confirm`);
+  await confirmation.fill(box.name);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Delete Box permanently' }).click();
 }

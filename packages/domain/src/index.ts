@@ -13,11 +13,13 @@ export type FriendshipId = Brand<string, 'FriendshipId'>;
 export type PostId = Brand<string, 'PostId'>;
 export type CommentId = Brand<string, 'CommentId'>;
 export type NotificationId = Brand<string, 'NotificationId'>;
+export type LifeUpdateId = Brand<string, 'LifeUpdateId'>;
 
 export type UserStatus = 'active' | 'suspended' | 'deleted';
 export type OnboardingState = 'username' | 'profile' | 'avatar' | 'complete';
 export type MediaAssetStatus = 'pending' | 'processing' | 'ready' | 'failed';
-export type MediaAssetPurpose = 'avatar' | 'post_image' | 'reaction_image';
+export type MediaAssetPurpose =
+  'avatar' | 'post_image' | 'reaction_image' | 'life_update_image';
 export type BoxRole = 'owner' | 'admin' | 'member';
 export type BoxStatus = 'active' | 'archived';
 export type BoxMembershipStatus = 'active' | 'left' | 'removed';
@@ -261,7 +263,11 @@ export interface NotificationActor {
 }
 
 export type NotificationType =
-  'post.comment' | 'comment.reply' | 'post.reaction' | 'comment.reaction';
+  | 'post.comment'
+  | 'comment.reply'
+  | 'post.reaction'
+  | 'comment.reaction'
+  | 'life_update.published';
 
 export interface Notification {
   id: NotificationId;
@@ -269,6 +275,7 @@ export interface Notification {
   actor: NotificationActor;
   postId: PostId;
   commentId: CommentId | null;
+  lifeUpdateId: LifeUpdateId | null;
   read: boolean;
   createdAt: string;
 }
@@ -322,6 +329,87 @@ export interface UpdateBoxInput {
 
 export interface CreateBoxInvitationInput {
   username: string;
+}
+
+export const LIFE_UPDATE_SECTION_KEYS = [
+  'lifeLately',
+  'workOrUniversity',
+  'travel',
+  'currentlyInto',
+  'listeningTo',
+  'watching',
+  'reading',
+  'excitedAbout',
+  'whatsNext',
+] as const;
+export type LifeUpdateSectionKey = (typeof LIFE_UPDATE_SECTION_KEYS)[number];
+export type LifeUpdateSections = Partial<Record<LifeUpdateSectionKey, string>>;
+export type LifeUpdateAudience =
+  { type: 'only_me' } | { type: 'boxes'; boxIds: BoxId[] };
+
+export interface LifeUpdateContext {
+  postId: PostId;
+  audience: 'box' | 'only_me';
+  boxId: BoxId | null;
+  boxName: string | null;
+  interactions: PostInteractions;
+}
+
+export interface LifeUpdate {
+  id: LifeUpdateId;
+  author: Post['author'];
+  sections: LifeUpdateSections;
+  media: PostMedia[];
+  contexts: LifeUpdateContext[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLifeUpdateInput {
+  audience: LifeUpdateAudience;
+  sections: LifeUpdateSections;
+  mediaAssetIds?: MediaAssetId[] | undefined;
+}
+
+export interface UpdateLifeUpdateInput {
+  sections: LifeUpdateSections;
+  mediaAssetIds?: MediaAssetId[] | undefined;
+}
+
+export interface LifeUpdatePage {
+  items: LifeUpdate[];
+  nextCursor: string | null;
+}
+
+export interface StandardFeedItem {
+  type: 'standard';
+  occurredAt: string;
+  post: Post;
+}
+
+export interface LifeUpdateFeedItem {
+  type: 'life_update';
+  occurredAt: string;
+  lifeUpdate: LifeUpdate;
+}
+
+export type FeedItem = StandardFeedItem | LifeUpdateFeedItem;
+
+export type CreateLifeUpdateMediaUploadInput = CreateAvatarUploadInput;
+export type CreateLifeUpdateMediaUploadResult = CreateAvatarUploadResult;
+
+export interface MemoryYear {
+  year: number;
+  count: number;
+}
+
+export type MemoryItem =
+  | { type: 'post'; occurredAt: string; post: Post }
+  | { type: 'life_update'; occurredAt: string; lifeUpdate: LifeUpdate };
+
+export interface MemoryPage {
+  items: MemoryItem[];
+  nextCursor: string | null;
 }
 
 export interface CreateFriendRequestInput {

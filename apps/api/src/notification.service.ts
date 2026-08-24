@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   boxMemberships,
+  lifeUpdateDeliveries,
   notifications,
   posts,
   profiles,
@@ -52,7 +53,11 @@ export class NotificationService {
     const visibility = notificationVisibility(userId);
     const [rows, [unread]] = await Promise.all([
       this.database
-        .select({ notification: notifications, profile: profiles })
+        .select({
+          notification: notifications,
+          profile: profiles,
+          deliveryLifeUpdateId: lifeUpdateDeliveries.lifeUpdateId,
+        })
         .from(notifications)
         .innerJoin(posts, eq(posts.id, notifications.postId))
         .innerJoin(
@@ -64,6 +69,10 @@ export class NotificationService {
           ),
         )
         .innerJoin(profiles, eq(profiles.userId, notifications.actorUserId))
+        .leftJoin(
+          lifeUpdateDeliveries,
+          eq(lifeUpdateDeliveries.postId, notifications.postId),
+        )
         .where(and(visibility, cursorCondition))
         .orderBy(desc(notifications.createdAt), desc(notifications.id))
         .limit(input.limit + 1),
@@ -86,21 +95,25 @@ export class NotificationService {
     const avatarUrls = await this.avatars.forUsers(
       pageRows.map(({ notification }) => notification.actorUserId as UserId),
     );
-    const items = pageRows.map(({ notification, profile }) => ({
-      id: notification.id as NotificationId,
-      type: notification.type,
-      actor: {
-        userId: notification.actorUserId as UserId,
-        username: profile.username ?? '',
-        displayName:
-          profile.displayName ?? profile.username ?? 'Paldora member',
-        avatarUrl: avatarUrls.get(notification.actorUserId as UserId) ?? null,
-      },
-      postId: notification.postId as PostId,
-      commentId: notification.commentId as Notification['commentId'],
-      read: Boolean(notification.readAt),
-      createdAt: notification.createdAt.toISOString(),
-    }));
+    const items = pageRows.map(
+      ({ notification, profile, deliveryLifeUpdateId }) => ({
+        id: notification.id as NotificationId,
+        type: notification.type,
+        actor: {
+          userId: notification.actorUserId as UserId,
+          username: profile.username ?? '',
+          displayName:
+            profile.displayName ?? profile.username ?? 'Paldora member',
+          avatarUrl: avatarUrls.get(notification.actorUserId as UserId) ?? null,
+        },
+        postId: notification.postId as PostId,
+        commentId: notification.commentId as Notification['commentId'],
+        lifeUpdateId: (notification.lifeUpdateId ??
+          deliveryLifeUpdateId) as Notification['lifeUpdateId'],
+        read: Boolean(notification.readAt),
+        createdAt: notification.createdAt.toISOString(),
+      }),
+    );
     const last = items.at(-1);
     return {
       items,

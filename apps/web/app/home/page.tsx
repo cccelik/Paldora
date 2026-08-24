@@ -1,5 +1,5 @@
 import { AppShell } from '../components/app-shell';
-import { PostFeed } from '../components/post-feed';
+import { UnifiedFeed } from '../components/unified-feed';
 import { InitialAvatar, PageFeedback, PageHeader } from '../components/ui';
 import { authenticatedApiClient, loadCompletedCurrentUser } from '../lib/api';
 
@@ -17,12 +17,14 @@ export default async function HomePage({
 }) {
   const current = await loadCompletedCurrentUser();
   const query = await searchParams;
-  const feed = await (
-    await authenticatedApiClient()
-  ).feed({
-    ...(query.cursor ? { cursor: query.cursor } : {}),
-    limit: 20,
-  });
+  const api = await authenticatedApiClient();
+  const [feed, lifeUpdates] = await Promise.all([
+    api.feed({
+      ...(query.cursor ? { cursor: query.cursor } : {}),
+      limit: 20,
+    }),
+    api.feedLifeUpdates({ limit: 20 }),
+  ]);
   return (
     <AppShell current={current} active="home">
       <PageHeader
@@ -42,14 +44,15 @@ export default async function HomePage({
         warning={query.warning}
         notice={query.notice}
       />
-      <PostFeed
+      <UnifiedFeed
         currentUserId={current.user.id}
         emptyDescription="Join or create a Box, then share the first story with your people."
         emptyTitle="Your chronological feed is quiet."
+        lifeUpdates={lifeUpdates.items}
         nextCursor={feed.nextCursor}
         posts={feed.items}
-        returnPath="/home"
         reactionPresets={current.profile.reactionPresets}
+        returnPath="/home"
       />
     </AppShell>
   );

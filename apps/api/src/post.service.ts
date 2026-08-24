@@ -2,6 +2,7 @@ import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
   boxMemberships,
   boxes,
+  lifeUpdateDeliveries,
   mediaJobOutbox,
   mediaAssets,
   postMedia,
@@ -19,7 +20,7 @@ import type {
   UserId,
 } from '@paldora/domain';
 import type { ObjectStorage } from '@paldora/storage';
-import { and, desc, eq, exists, inArray, lt, or } from 'drizzle-orm';
+import { and, desc, eq, exists, inArray, lt, notExists, or } from 'drizzle-orm';
 import { ApiError } from './api-error.js';
 import { InfrastructureService } from './infrastructure.service.js';
 import { mediaDeletionOutboxEntry } from './media-job-outbox.js';
@@ -199,6 +200,7 @@ export class PostService {
       and(
         eq(posts.id, postId),
         eq(posts.status, 'active'),
+        this.isStandardPost(),
         exists(
           this.database
             .select({ userId: boxMemberships.userId })
@@ -306,7 +308,16 @@ export class PostService {
       : undefined;
     const rows = await this.selectPosts(
       userId,
-      and(baseCondition, cursorCondition),
+      and(
+        baseCondition,
+        cursorCondition,
+        notExists(
+          this.database
+            .select({ postId: lifeUpdateDeliveries.postId })
+            .from(lifeUpdateDeliveries)
+            .where(eq(lifeUpdateDeliveries.postId, posts.id)),
+        ),
+      ),
       input.limit + 1,
     );
     const hasMore = rows.length > input.limit;
@@ -423,6 +434,7 @@ export class PostService {
       eq(posts.id, postId),
       eq(posts.authorUserId, userId),
       eq(posts.status, 'active'),
+      this.isStandardPost(),
       exists(
         this.database
           .select({ userId: boxMemberships.userId })
@@ -435,6 +447,15 @@ export class PostService {
             ),
           ),
       ),
+    );
+  }
+
+  private isStandardPost() {
+    return notExists(
+      this.database
+        .select({ postId: lifeUpdateDeliveries.postId })
+        .from(lifeUpdateDeliveries)
+        .where(eq(lifeUpdateDeliveries.postId, posts.id)),
     );
   }
 

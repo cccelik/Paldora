@@ -63,7 +63,7 @@ export function PostFeed({
   );
 }
 
-function PostCard({
+export function PostCard({
   post,
   currentUserId,
   returnPath,

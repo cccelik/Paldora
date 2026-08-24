@@ -19,6 +19,9 @@ export const POST_CONTENT_MAX_LENGTH = 5_000;
 export const POST_MEDIA_MAX_ITEMS = 4;
 export const COMMENT_CONTENT_MAX_LENGTH = 2_000;
 export const REACTION_EMOJI_MAX_LENGTH = 64;
+export const LIFE_UPDATE_SECTION_MAX_LENGTH = 2_000;
+export const LIFE_UPDATE_TOTAL_MAX_LENGTH = 10_000;
+export const LIFE_UPDATE_MAX_BOXES = 20;
 
 const emojiSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
 const emojiCodePoint =
@@ -215,6 +218,88 @@ export const setCommentReactionSchema = z.object({
 });
 export const createReactionPhotoUploadSchema = createAvatarUploadSchema;
 
+const lifeUpdateSectionSchema = z
+  .string()
+  .trim()
+  .max(
+    LIFE_UPDATE_SECTION_MAX_LENGTH,
+    `Each Life Update section must be ${LIFE_UPDATE_SECTION_MAX_LENGTH.toLocaleString('en-US')} characters or fewer.`,
+  );
+export const lifeUpdateSectionsSchema = z
+  .object({
+    lifeLately: lifeUpdateSectionSchema.optional(),
+    workOrUniversity: lifeUpdateSectionSchema.optional(),
+    travel: lifeUpdateSectionSchema.optional(),
+    currentlyInto: lifeUpdateSectionSchema.optional(),
+    listeningTo: lifeUpdateSectionSchema.optional(),
+    watching: lifeUpdateSectionSchema.optional(),
+    reading: lifeUpdateSectionSchema.optional(),
+    excitedAbout: lifeUpdateSectionSchema.optional(),
+    whatsNext: lifeUpdateSectionSchema.optional(),
+  })
+  .transform((sections) =>
+    Object.fromEntries(
+      Object.entries(sections).filter(([, value]) => Boolean(value)),
+    ),
+  )
+  .refine(
+    (sections) =>
+      Object.values(sections).reduce(
+        (total, value) => total + (value?.length ?? 0),
+        0,
+      ) <= LIFE_UPDATE_TOTAL_MAX_LENGTH,
+    'Life Update text must be 10,000 characters or fewer in total.',
+  );
+
+const lifeUpdateMediaIdsSchema = z
+  .array(uuidSchema)
+  .max(POST_MEDIA_MAX_ITEMS)
+  .refine((ids) => new Set(ids).size === ids.length, {
+    message: 'Each photo can only be attached once.',
+  })
+  .default([]);
+
+export const createLifeUpdateSchema = z
+  .object({
+    audience: z.discriminatedUnion('type', [
+      z.object({ type: z.literal('only_me') }),
+      z.object({
+        type: z.literal('boxes'),
+        boxIds: z
+          .array(uuidSchema)
+          .min(1)
+          .max(LIFE_UPDATE_MAX_BOXES)
+          .refine((ids) => new Set(ids).size === ids.length, {
+            message: 'Choose each Box only once.',
+          }),
+      }),
+    ]),
+    sections: lifeUpdateSectionsSchema,
+    mediaAssetIds: lifeUpdateMediaIdsSchema,
+  })
+  .refine(
+    ({ sections, mediaAssetIds }) =>
+      Object.keys(sections).length > 0 || mediaAssetIds.length > 0,
+    'Add at least one Life Update section or photo.',
+  );
+
+export const updateLifeUpdateSchema = z
+  .object({
+    sections: lifeUpdateSectionsSchema,
+    mediaAssetIds: lifeUpdateMediaIdsSchema,
+  })
+  .refine(
+    ({ sections, mediaAssetIds }) =>
+      Object.keys(sections).length > 0 || mediaAssetIds.length > 0,
+    'Add at least one Life Update section or photo.',
+  );
+
+export const memoryQuerySchema = cursorPageSchema.extend({
+  year: z.coerce.number().int().min(1970).max(9999),
+  month: z.coerce.number().int().min(1).max(12).optional(),
+});
+export const createLifeUpdateMediaUploadSchema = createAvatarUploadSchema;
+
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type CreateAvatarUpload = z.infer<typeof createAvatarUploadSchema>;
 export type CreateBox = z.infer<typeof createBoxSchema>;
@@ -228,6 +313,9 @@ export type UpdatePost = z.infer<typeof updatePostSchema>;
 export type CreatePostMediaUpload = z.infer<typeof createPostMediaUploadSchema>;
 export type CreateComment = z.infer<typeof createCommentSchema>;
 export type UpdateComment = z.infer<typeof updateCommentSchema>;
+export type CreateLifeUpdate = z.infer<typeof createLifeUpdateSchema>;
+export type UpdateLifeUpdate = z.infer<typeof updateLifeUpdateSchema>;
+export type MemoryQuery = z.infer<typeof memoryQuerySchema>;
 export type SetPostReaction = z.infer<typeof setPostReactionSchema>;
 export type SetCommentReaction = z.infer<typeof setCommentReactionSchema>;
 export type CreateReactionPhotoUpload = z.infer<

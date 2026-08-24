@@ -8,7 +8,9 @@ import {
 import {
   activityEvents,
   boxMemberships,
+  boxes,
   friendships,
+  lifeUpdateDeliveries,
   notifications,
   posts,
   type PaldoraDatabase,
@@ -105,10 +107,20 @@ export class ActivityEventDispatcher
   private async project(event: typeof activityEvents.$inferSelect) {
     const database = this.infrastructure.databaseClient;
     try {
+      if (event.type === 'life_update.published') {
+        await this.projectLifeUpdatePublication(event);
+        return;
+      }
+      const recipient = event.payload.recipientUserId;
+      const postId = event.payload.postId;
+      const boxId = event.payload.boxId;
+      if (!recipient || !postId || !boxId) {
+        throw new Error('Interaction activity event payload is incomplete.');
+      }
+      const recipientUserId = recipient as UserId;
       let notificationCreated = false;
       await database.transaction(async (transaction) => {
         const notificationType = notificationTypeFor(event);
-        const recipientUserId = event.payload.recipientUserId as UserId;
         if (
           notificationType &&
           recipientUserId !== (event.actorUserId as UserId) &&
@@ -116,7 +128,7 @@ export class ActivityEventDispatcher
             transaction,
             recipientUserId,
             event.actorUserId as UserId,
-            event.payload.postId as PostId,
+            postId as PostId,
           ))
         ) {
           const inserted = await transaction
@@ -127,7 +139,7 @@ export class ActivityEventDispatcher
               activityEventId: event.id,
               dedupeKey: notificationDedupeKey(event, notificationType),
               type: notificationType,
-              postId: event.payload.postId,
+              postId,
               commentId: event.payload.commentId,
             })
             .onConflictDoNothing({ target: notifications.dedupeKey })
@@ -148,10 +160,10 @@ export class ActivityEventDispatcher
       const base: InteractionEvent = {
         id: event.id,
         action: event.type,
-        boxId: event.payload.boxId as BoxId,
-        postId: event.payload.postId as PostId,
+        boxId: boxId as BoxId,
+        postId: postId as PostId,
         actorUserId: event.actorUserId as UserId,
-        recipientUserId: event.payload.recipientUserId as UserId,
+        recipientUserId: recipientUserId,
         ...(event.payload.commentId
           ? { commentId: event.payload.commentId as CommentId }
           : {}),
@@ -182,6 +194,125 @@ export class ActivityEventDispatcher
         })
         .where(eq(activityEvents.id, event.id));
     }
+  }
+
+  private async projectLifeUpdatePublication(
+    event: typeof activityEvents.$inferSelect,
+  ): Promise<void> {
+    const lifeUpdateId = event.payload.lifeUpdateId;
+    const boxIds = event.payload.boxIds ?? [];
+    if (!lifeUpdateId) {
+      throw new Error('Life Update publication event payload is incomplete.');
+    }
+    const database = this.infrastructure.databaseClient;
+    const created = await database.transaction(async (transaction) => {
+      const candidates =
+        boxIds.length === 0
+          ? []
+          : await transaction
+              .select({
+                recipientUserId: boxMemberships.userId,
+                postId: lifeUpdateDeliveries.postId,
+                boxId: lifeUpdateDeliveries.boxId,
+              })
+              .from(lifeUpdateDeliveries)
+              .innerJoin(boxes, eq(boxes.id, lifeUpdateDeliveries.boxId))
+              .innerJoin(
+                boxMemberships,
+                and(
+                  eq(boxMemberships.boxId, lifeUpdateDeliveries.boxId),
+                  eq(boxMemberships.status, 'active'),
+                ),
+              )
+              .where(
+                and(
+                  eq(lifeUpdateDeliveries.lifeUpdateId, lifeUpdateId),
+                  inArray(lifeUpdateDeliveries.boxId, boxIds),
+                ),
+              )
+              .orderBy(asc(boxes.name), asc(lifeUpdateDeliveries.boxId));
+      const firstContextByRecipient = new Map<
+        string,
+        (typeof candidates)[number]
+      >();
+      for (const candidate of candidates) {
+        if (
+          candidate.recipientUserId !== event.actorUserId &&
+          !firstContextByRecipient.has(candidate.recipientUserId)
+        ) {
+          firstContextByRecipient.set(candidate.recipientUserId, candidate);
+        }
+      }
+      const visible = (
+        await Promise.all(
+          [...firstContextByRecipient.values()].map(async (candidate) =>
+            candidate.boxId &&
+            (await notificationIsVisible(
+              transaction,
+              candidate.recipientUserId as UserId,
+              event.actorUserId as UserId,
+              candidate.postId as PostId,
+            ))
+              ? candidate
+              : null,
+          ),
+        )
+      ).filter((candidate) => candidate !== null);
+      const inserted =
+        visible.length === 0
+          ? []
+          : await transaction
+              .insert(notifications)
+              .values(
+                visible.map((candidate) => ({
+                  recipientUserId: candidate.recipientUserId,
+                  actorUserId: event.actorUserId,
+                  activityEventId: event.id,
+                  dedupeKey: `life-update:${lifeUpdateId}:recipient:${candidate.recipientUserId}`,
+                  type: 'life_update.published' as const,
+                  postId: candidate.postId,
+                  lifeUpdateId,
+                })),
+              )
+              .onConflictDoNothing({ target: notifications.dedupeKey })
+              .returning({
+                recipientUserId: notifications.recipientUserId,
+                postId: notifications.postId,
+              });
+      await transaction
+        .update(activityEvents)
+        .set({
+          attempts: event.attempts + 1,
+          processedAt: new Date(),
+          lockedAt: null,
+          lastError: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(activityEvents.id, event.id));
+      return inserted.map((item) => ({
+        ...item,
+        boxId:
+          visible.find((candidate) => candidate.postId === item.postId)
+            ?.boxId ?? null,
+      }));
+    });
+    await Promise.all(
+      created.flatMap((notification) =>
+        notification.boxId
+          ? [
+              this.realtime.publishInteraction({
+                id: `${event.id}:notification:${notification.recipientUserId}`,
+                action: 'notification.created',
+                boxId: notification.boxId as BoxId,
+                postId: notification.postId as PostId,
+                actorUserId: event.actorUserId as UserId,
+                recipientUserId: notification.recipientUserId as UserId,
+                occurredAt: event.createdAt.toISOString(),
+              }),
+            ]
+          : [],
+      ),
+    );
   }
 }
 

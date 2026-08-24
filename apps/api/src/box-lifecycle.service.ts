@@ -2,12 +2,15 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   boxMemberships,
   boxes,
+  lifeUpdateDeliveries,
+  lifeUpdateMedia,
+  lifeUpdates,
   mediaAssets,
   mediaJobOutbox,
   type PaldoraDatabase,
 } from '@paldora/database';
 import type { Box, BoxId, UserId } from '@paldora/domain';
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { BoxAuthorizationPolicy } from './box-authorization-policy.service.js';
 import { mapBox } from './box-mappers.js';
@@ -90,6 +93,10 @@ export class BoxLifecycleService {
       );
     }
     const deleted = await this.database.transaction(async (transaction) => {
+      const affectedLifeUpdates = await transaction
+        .select({ id: lifeUpdateDeliveries.lifeUpdateId })
+        .from(lifeUpdateDeliveries)
+        .where(eq(lifeUpdateDeliveries.boxId, boxId));
       const linkedMedia = await transaction
         .select({
           id: mediaAssets.id,
@@ -109,6 +116,43 @@ export class BoxLifecycleService {
         .delete(boxes)
         .where(and(eq(boxes.id, boxId), eq(boxes.ownerUserId, userId)))
         .returning({ id: boxes.id });
+      if (removed && affectedLifeUpdates.length > 0) {
+        const affectedIds = affectedLifeUpdates.map(({ id }) => id);
+        const surviving = await transaction
+          .select({ id: lifeUpdateDeliveries.lifeUpdateId })
+          .from(lifeUpdateDeliveries)
+          .where(inArray(lifeUpdateDeliveries.lifeUpdateId, affectedIds));
+        const survivingIds = new Set(surviving.map(({ id }) => id));
+        const orphanIds = affectedIds.filter((id) => !survivingIds.has(id));
+        if (orphanIds.length > 0) {
+          const orphanMedia = await transaction
+            .select({ asset: mediaAssets })
+            .from(lifeUpdateMedia)
+            .innerJoin(
+              mediaAssets,
+              eq(mediaAssets.id, lifeUpdateMedia.mediaAssetId),
+            )
+            .where(inArray(lifeUpdateMedia.lifeUpdateId, orphanIds));
+          if (orphanMedia.length > 0) {
+            await transaction
+              .insert(mediaJobOutbox)
+              .values(
+                orphanMedia.map(({ asset }) => mediaDeletionOutboxEntry(asset)),
+              );
+          }
+          await transaction
+            .delete(lifeUpdateMedia)
+            .where(inArray(lifeUpdateMedia.lifeUpdateId, orphanIds));
+          await transaction
+            .update(lifeUpdates)
+            .set({
+              status: 'deleted',
+              deletedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(inArray(lifeUpdates.id, orphanIds));
+        }
+      }
       return removed;
     });
     if (!deleted) this.policy.notFound();

@@ -77,3 +77,12 @@ upload originals directly through short-lived signed requests; the worker
 creates metadata-stripped display and thumbnail WebP variants, and realtime
 feed invalidation reveals completed images without a manual refresh. Photos
 open in an accessible fullscreen viewer with download and private-post sharing.
+
+Phase 5 adds one-level comment threads, emoji and camera reactions, configurable
+reaction presets, durable notifications, and realtime interaction refreshes.
+
+Phase 6 adds structured Life Updates shared once to as many as 20 private Boxes.
+Each Box receives an isolated interaction thread while Home deduplicates the
+shared story into one tabbed card. `Only Me` updates disable interactions.
+Personal and Box Memories are derived from content the requester can still see;
+they use UTC year/month archives and never copy content into a second table.

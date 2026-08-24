@@ -79,49 +79,49 @@ This is the source of truth for Paldora design generation. Each asset is generat
 
 ## Posts and Life Updates
 
-| ID      | Screen                                  | Platform        | Appearance | Dimensions | Filename                                           | Status | Dependencies     |
-| ------- | --------------------------------------- | --------------- | ---------- | ---------- | -------------------------------------------------- | ------ | ---------------- |
-| PAL-052 | Post type library in feed               | Design board    | Mixed      | 2048×2400  | `06-posts/post-types-feed.png`                     | TODO   | PAL-003, PAL-005 |
-| PAL-053 | Text post detail                        | Desktop         | Light      | 1440×1024  | `06-posts/text-post-detail.png`                    | TODO   | PAL-052          |
-| PAL-054 | Photo post detail                       | Desktop         | Dark       | 1440×1024  | `06-posts/photo-post-detail.png`                   | TODO   | PAL-052          |
-| PAL-055 | Gallery post detail                     | Desktop         | Light      | 1440×1024  | `06-posts/gallery-post-detail.png`                 | TODO   | PAL-052          |
-| PAL-056 | Quote post detail                       | Desktop         | Dark       | 1440×1024  | `06-posts/quote-post-detail.png`                   | TODO   | PAL-052          |
-| PAL-057 | Link post detail                        | Desktop         | Light      | 1440×1024  | `06-posts/link-post-detail.png`                    | TODO   | PAL-052          |
-| PAL-058 | Life Update detail                      | Desktop         | Light      | 1440×1024  | `06-posts/life-update-post-detail.png`             | TODO   | PAL-063          |
-| PAL-059 | Music post detail                       | Desktop         | Dark       | 1440×1024  | `06-posts/music-post-detail.png`                   | TODO   | PAL-052          |
-| PAL-060 | Poll post detail                        | Desktop         | Light      | 1440×1024  | `06-posts/poll-post-detail.png`                    | TODO   | PAL-052          |
-| PAL-061 | Milestone post detail                   | Desktop         | Light      | 1440×1024  | `06-posts/milestone-post-detail.png`               | TODO   | PAL-052          |
-| PAL-062 | Create post modal and audience selector | Desktop         | Dark       | 1440×1024  | `06-posts/create-post-modal-desktop.png`           | TODO   | PAL-003          |
-| PAL-063 | Life Update composer                    | Desktop         | Light      | 1440×1024  | `07-life-updates/life-update-composer-desktop.png` | TODO   | PAL-062          |
-| PAL-064 | Life Update composer                    | Mobile          | Light      | 390×844    | `07-life-updates/life-update-composer-mobile.png`  | TODO   | PAL-063          |
-| PAL-065 | Life Update feed card                   | Component board | Mixed      | 1440×1024  | `07-life-updates/life-update-feed-card.png`        | TODO   | PAL-063          |
-| PAL-066 | Life Update full page                   | Desktop         | Light      | 1440×1024  | `07-life-updates/life-update-full-page.png`        | TODO   | PAL-063          |
-| PAL-067 | Friend Life Update history              | Desktop         | Light      | 1440×1024  | `07-life-updates/friend-life-update-history.png`   | TODO   | PAL-066          |
-| PAL-068 | Monthly Life Update overview            | Desktop         | Dark       | 1440×1024  | `07-life-updates/monthly-life-update-overview.png` | TODO   | PAL-066          |
+| ID      | Screen                                  | Platform        | Appearance | Dimensions | Filename                                           | Status   | Dependencies     |
+| ------- | --------------------------------------- | --------------- | ---------- | ---------- | -------------------------------------------------- | -------- | ---------------- |
+| PAL-052 | Post type library in feed               | Design board    | Mixed      | 2048×2400  | `06-posts/post-types-feed.png`                     | TODO     | PAL-003, PAL-005 |
+| PAL-053 | Text post detail                        | Desktop         | Light      | 1440×1024  | `06-posts/text-post-detail.png`                    | TODO     | PAL-052          |
+| PAL-054 | Photo post detail                       | Desktop         | Dark       | 1440×1024  | `06-posts/photo-post-detail.png`                   | TODO     | PAL-052          |
+| PAL-055 | Gallery post detail                     | Desktop         | Light      | 1440×1024  | `06-posts/gallery-post-detail.png`                 | TODO     | PAL-052          |
+| PAL-056 | Quote post detail                       | Desktop         | Dark       | 1440×1024  | `06-posts/quote-post-detail.png`                   | TODO     | PAL-052          |
+| PAL-057 | Link post detail                        | Desktop         | Light      | 1440×1024  | `06-posts/link-post-detail.png`                    | TODO     | PAL-052          |
+| PAL-058 | Life Update detail                      | Desktop         | Light      | 1440×1024  | `06-posts/life-update-post-detail.png`             | COMPLETE | PAL-063          |
+| PAL-059 | Music post detail                       | Desktop         | Dark       | 1440×1024  | `06-posts/music-post-detail.png`                   | TODO     | PAL-052          |
+| PAL-060 | Poll post detail                        | Desktop         | Light      | 1440×1024  | `06-posts/poll-post-detail.png`                    | TODO     | PAL-052          |
+| PAL-061 | Milestone post detail                   | Desktop         | Light      | 1440×1024  | `06-posts/milestone-post-detail.png`               | TODO     | PAL-052          |
+| PAL-062 | Create post modal and audience selector | Desktop         | Dark       | 1440×1024  | `06-posts/create-post-modal-desktop.png`           | TODO     | PAL-003          |
+| PAL-063 | Life Update composer                    | Desktop         | Light      | 1440×1024  | `07-life-updates/life-update-composer-desktop.png` | COMPLETE | PAL-062          |
+| PAL-064 | Life Update composer                    | Mobile          | Light      | 390×844    | `07-life-updates/life-update-composer-mobile.png`  | COMPLETE | PAL-063          |
+| PAL-065 | Life Update feed card                   | Component board | Mixed      | 1440×1024  | `07-life-updates/life-update-feed-card.png`        | COMPLETE | PAL-063          |
+| PAL-066 | Life Update full page                   | Desktop         | Light      | 1440×1024  | `07-life-updates/life-update-full-page.png`        | COMPLETE | PAL-063          |
+| PAL-067 | Friend Life Update history              | Desktop         | Light      | 1440×1024  | `07-life-updates/friend-life-update-history.png`   | COMPLETE | PAL-066          |
+| PAL-068 | Monthly Life Update overview            | Desktop         | Dark       | 1440×1024  | `07-life-updates/monthly-life-update-overview.png` | COMPLETE | PAL-066          |
 
 ## Boxes, invites, and friends
 
-| ID      | Screen                     | Platform      | Appearance | Dimensions | Filename                            | Status | Dependencies |
-| ------- | -------------------------- | ------------- | ---------- | ---------- | ----------------------------------- | ------ | ------------ |
-| PAL-069 | Boxes overview             | Desktop       | Dark       | 1440×1024  | `08-boxes/boxes-overview.png`       | TODO   | PAL-004      |
-| PAL-070 | Create Box                 | Desktop modal | Light      | 1440×1024  | `08-boxes/create-box.png`           | TODO   | PAL-069      |
-| PAL-071 | Box detail                 | Desktop       | Dark       | 1440×1024  | `08-boxes/box-detail.png`           | TODO   | PAL-069      |
-| PAL-072 | Box feed                   | Desktop       | Light      | 1440×1024  | `08-boxes/box-feed.png`             | TODO   | PAL-071      |
-| PAL-073 | Box members and roles      | Desktop       | Light      | 1440×1024  | `08-boxes/box-members-roles.png`    | TODO   | PAL-071      |
-| PAL-074 | Invite members             | Desktop modal | Dark       | 1440×1024  | `08-boxes/invite-members.png`       | TODO   | PAL-073      |
-| PAL-075 | Box settings               | Desktop       | Light      | 1440×1024  | `08-boxes/box-settings.png`         | TODO   | PAL-071      |
-| PAL-076 | Box media                  | Desktop       | Dark       | 1440×1024  | `08-boxes/box-media.png`            | TODO   | PAL-071      |
-| PAL-077 | Box memories               | Desktop       | Light      | 1440×1024  | `08-boxes/box-memories.png`         | TODO   | PAL-071      |
-| PAL-078 | Box Life Updates           | Desktop       | Light      | 1440×1024  | `08-boxes/box-life-updates.png`     | TODO   | PAL-071      |
-| PAL-079 | Invite states              | Design board  | Mixed      | 2048×1536  | `08-boxes/invite-states.png`        | TODO   | PAL-074      |
-| PAL-080 | Invite received / Join Box | Mobile        | Light      | 390×844    | `08-boxes/join-box-mobile.png`      | TODO   | PAL-079      |
-| PAL-081 | Expired and invalid invite | Mobile        | Light      | 390×844    | `08-boxes/invite-errors-mobile.png` | TODO   | PAL-079      |
-| PAL-082 | Friends list               | Desktop       | Light      | 1440×1024  | `09-friends/friends-list.png`       | TODO   | PAL-004      |
-| PAL-083 | Friend requests            | Desktop       | Light      | 1440×1024  | `09-friends/friend-requests.png`    | TODO   | PAL-082      |
-| PAL-084 | Suggested friends          | Desktop       | Light      | 1440×1024  | `09-friends/suggested-friends.png`  | TODO   | PAL-082      |
-| PAL-085 | Find friends / User search | Desktop       | Dark       | 1440×1024  | `09-friends/find-friends.png`       | TODO   | PAL-082      |
-| PAL-086 | Blocked users              | Desktop       | Light      | 1440×1024  | `09-friends/blocked-users.png`      | TODO   | PAL-082      |
-| PAL-087 | Top Friends editor         | Desktop       | Light      | 1440×1024  | `09-friends/top-friends-editor.png` | TODO   | PAL-009      |
+| ID      | Screen                     | Platform      | Appearance | Dimensions | Filename                            | Status   | Dependencies |
+| ------- | -------------------------- | ------------- | ---------- | ---------- | ----------------------------------- | -------- | ------------ |
+| PAL-069 | Boxes overview             | Desktop       | Dark       | 1440×1024  | `08-boxes/boxes-overview.png`       | TODO     | PAL-004      |
+| PAL-070 | Create Box                 | Desktop modal | Light      | 1440×1024  | `08-boxes/create-box.png`           | TODO     | PAL-069      |
+| PAL-071 | Box detail                 | Desktop       | Dark       | 1440×1024  | `08-boxes/box-detail.png`           | TODO     | PAL-069      |
+| PAL-072 | Box feed                   | Desktop       | Light      | 1440×1024  | `08-boxes/box-feed.png`             | TODO     | PAL-071      |
+| PAL-073 | Box members and roles      | Desktop       | Light      | 1440×1024  | `08-boxes/box-members-roles.png`    | TODO     | PAL-071      |
+| PAL-074 | Invite members             | Desktop modal | Dark       | 1440×1024  | `08-boxes/invite-members.png`       | TODO     | PAL-073      |
+| PAL-075 | Box settings               | Desktop       | Light      | 1440×1024  | `08-boxes/box-settings.png`         | TODO     | PAL-071      |
+| PAL-076 | Box media                  | Desktop       | Dark       | 1440×1024  | `08-boxes/box-media.png`            | TODO     | PAL-071      |
+| PAL-077 | Box memories               | Desktop       | Light      | 1440×1024  | `08-boxes/box-memories.png`         | COMPLETE | PAL-071      |
+| PAL-078 | Box Life Updates           | Desktop       | Light      | 1440×1024  | `08-boxes/box-life-updates.png`     | COMPLETE | PAL-071      |
+| PAL-079 | Invite states              | Design board  | Mixed      | 2048×1536  | `08-boxes/invite-states.png`        | TODO     | PAL-074      |
+| PAL-080 | Invite received / Join Box | Mobile        | Light      | 390×844    | `08-boxes/join-box-mobile.png`      | TODO     | PAL-079      |
+| PAL-081 | Expired and invalid invite | Mobile        | Light      | 390×844    | `08-boxes/invite-errors-mobile.png` | TODO     | PAL-079      |
+| PAL-082 | Friends list               | Desktop       | Light      | 1440×1024  | `09-friends/friends-list.png`       | TODO     | PAL-004      |
+| PAL-083 | Friend requests            | Desktop       | Light      | 1440×1024  | `09-friends/friend-requests.png`    | TODO     | PAL-082      |
+| PAL-084 | Suggested friends          | Desktop       | Light      | 1440×1024  | `09-friends/suggested-friends.png`  | TODO     | PAL-082      |
+| PAL-085 | Find friends / User search | Desktop       | Dark       | 1440×1024  | `09-friends/find-friends.png`       | TODO     | PAL-082      |
+| PAL-086 | Blocked users              | Desktop       | Light      | 1440×1024  | `09-friends/blocked-users.png`      | TODO     | PAL-082      |
+| PAL-087 | Top Friends editor         | Desktop       | Light      | 1440×1024  | `09-friends/top-friends-editor.png` | TODO     | PAL-009      |
 
 ## Rooms, themes, and customization
 
@@ -147,31 +147,31 @@ This is the source of truth for Paldora design generation. Each asset is generat
 
 ## Memories, collections, gallery, and discovery
 
-| ID      | Screen                                | Platform      | Appearance | Dimensions | Filename                                      | Status | Dependencies |
-| ------- | ------------------------------------- | ------------- | ---------- | ---------- | --------------------------------------------- | ------ | ------------ |
-| PAL-105 | Memory home                           | Desktop       | Dark       | 1440×1024  | `13-memories/memory-home.png`                 | TODO   | PAL-004      |
-| PAL-106 | Year timeline                         | Desktop       | Light      | 1440×1024  | `13-memories/year-timeline.png`               | TODO   | PAL-105      |
-| PAL-107 | Month timeline                        | Desktop       | Light      | 1440×1024  | `13-memories/month-timeline.png`              | TODO   | PAL-106      |
-| PAL-108 | On This Day                           | Desktop       | Dark       | 1440×1024  | `13-memories/on-this-day.png`                 | TODO   | PAL-105      |
-| PAL-109 | Friendship timeline                   | Desktop       | Light      | 1440×1024  | `13-memories/friendship-timeline.png`         | TODO   | PAL-105      |
-| PAL-110 | Box timeline                          | Desktop       | Light      | 1440×1024  | `13-memories/box-timeline.png`                | TODO   | PAL-105      |
-| PAL-111 | Memory detail                         | Desktop       | Dark       | 1440×1024  | `13-memories/memory-detail.png`               | TODO   | PAL-105      |
-| PAL-112 | Yearly recap                          | Mobile story  | Dark       | 1080×1920  | `13-memories/yearly-recap-01.png`             | TODO   | PAL-105      |
-| PAL-113 | Yearly recap statistics               | Mobile story  | Light      | 1080×1920  | `13-memories/yearly-recap-02.png`             | TODO   | PAL-112      |
-| PAL-114 | Collections home                      | Desktop       | Light      | 1440×1024  | `14-collections/collections-home.png`         | TODO   | PAL-004      |
-| PAL-115 | Collection detail                     | Desktop       | Light      | 1440×1024  | `14-collections/collection-detail.png`        | TODO   | PAL-114      |
-| PAL-116 | Create Collection                     | Desktop modal | Light      | 1440×1024  | `14-collections/create-collection.png`        | TODO   | PAL-114      |
-| PAL-117 | Add to Collection                     | Mobile sheet  | Light      | 390×844    | `14-collections/add-to-collection-mobile.png` | TODO   | PAL-114      |
-| PAL-118 | Profile gallery                       | Desktop       | Light      | 1440×1024  | `15-gallery/profile-gallery.png`              | TODO   | PAL-009      |
-| PAL-119 | Box gallery                           | Desktop       | Dark       | 1440×1024  | `15-gallery/box-gallery.png`                  | TODO   | PAL-071      |
-| PAL-120 | Album                                 | Desktop       | Light      | 1440×1024  | `15-gallery/album.png`                        | TODO   | PAL-118      |
-| PAL-121 | Photo viewer                          | Desktop       | Dark       | 1440×1024  | `15-gallery/photo-viewer.png`                 | TODO   | PAL-120      |
-| PAL-122 | Upload gallery                        | Desktop modal | Light      | 1440×1024  | `15-gallery/upload-gallery.png`               | TODO   | PAL-118      |
-| PAL-123 | Photo detail                          | Mobile        | Dark       | 390×844    | `15-gallery/photo-detail-mobile.png`          | TODO   | PAL-121      |
-| PAL-124 | Global search                         | Desktop       | Dark       | 1440×1024  | `16-search/global-search.png`                 | TODO   | PAL-004      |
-| PAL-125 | Search results and privacy boundaries | Desktop       | Light      | 1440×1024  | `16-search/search-results.png`                | TODO   | PAL-124      |
-| PAL-126 | Notification center                   | Desktop       | Dark       | 1440×1024  | `17-notifications/notification-center.png`    | TODO   | PAL-004      |
-| PAL-127 | Notifications empty                   | Desktop       | Light      | 1440×1024  | `17-notifications/notifications-empty.png`    | TODO   | PAL-126      |
+| ID      | Screen                                | Platform      | Appearance | Dimensions | Filename                                      | Status   | Dependencies |
+| ------- | ------------------------------------- | ------------- | ---------- | ---------- | --------------------------------------------- | -------- | ------------ |
+| PAL-105 | Memory home                           | Desktop       | Dark       | 1440×1024  | `13-memories/memory-home.png`                 | COMPLETE | PAL-004      |
+| PAL-106 | Year timeline                         | Desktop       | Light      | 1440×1024  | `13-memories/year-timeline.png`               | COMPLETE | PAL-105      |
+| PAL-107 | Month timeline                        | Desktop       | Light      | 1440×1024  | `13-memories/month-timeline.png`              | COMPLETE | PAL-106      |
+| PAL-108 | On This Day                           | Desktop       | Dark       | 1440×1024  | `13-memories/on-this-day.png`                 | TODO     | PAL-105      |
+| PAL-109 | Friendship timeline                   | Desktop       | Light      | 1440×1024  | `13-memories/friendship-timeline.png`         | TODO     | PAL-105      |
+| PAL-110 | Box timeline                          | Desktop       | Light      | 1440×1024  | `13-memories/box-timeline.png`                | COMPLETE | PAL-105      |
+| PAL-111 | Memory detail                         | Desktop       | Dark       | 1440×1024  | `13-memories/memory-detail.png`               | COMPLETE | PAL-105      |
+| PAL-112 | Yearly recap                          | Mobile story  | Dark       | 1080×1920  | `13-memories/yearly-recap-01.png`             | TODO     | PAL-105      |
+| PAL-113 | Yearly recap statistics               | Mobile story  | Light      | 1080×1920  | `13-memories/yearly-recap-02.png`             | TODO     | PAL-112      |
+| PAL-114 | Collections home                      | Desktop       | Light      | 1440×1024  | `14-collections/collections-home.png`         | TODO     | PAL-004      |
+| PAL-115 | Collection detail                     | Desktop       | Light      | 1440×1024  | `14-collections/collection-detail.png`        | TODO     | PAL-114      |
+| PAL-116 | Create Collection                     | Desktop modal | Light      | 1440×1024  | `14-collections/create-collection.png`        | TODO     | PAL-114      |
+| PAL-117 | Add to Collection                     | Mobile sheet  | Light      | 390×844    | `14-collections/add-to-collection-mobile.png` | TODO     | PAL-114      |
+| PAL-118 | Profile gallery                       | Desktop       | Light      | 1440×1024  | `15-gallery/profile-gallery.png`              | TODO     | PAL-009      |
+| PAL-119 | Box gallery                           | Desktop       | Dark       | 1440×1024  | `15-gallery/box-gallery.png`                  | TODO     | PAL-071      |
+| PAL-120 | Album                                 | Desktop       | Light      | 1440×1024  | `15-gallery/album.png`                        | TODO     | PAL-118      |
+| PAL-121 | Photo viewer                          | Desktop       | Dark       | 1440×1024  | `15-gallery/photo-viewer.png`                 | TODO     | PAL-120      |
+| PAL-122 | Upload gallery                        | Desktop modal | Light      | 1440×1024  | `15-gallery/upload-gallery.png`               | TODO     | PAL-118      |
+| PAL-123 | Photo detail                          | Mobile        | Dark       | 390×844    | `15-gallery/photo-detail-mobile.png`          | TODO     | PAL-121      |
+| PAL-124 | Global search                         | Desktop       | Dark       | 1440×1024  | `16-search/global-search.png`                 | TODO     | PAL-004      |
+| PAL-125 | Search results and privacy boundaries | Desktop       | Light      | 1440×1024  | `16-search/search-results.png`                | TODO     | PAL-124      |
+| PAL-126 | Notification center                   | Desktop       | Dark       | 1440×1024  | `17-notifications/notification-center.png`    | TODO     | PAL-004      |
+| PAL-127 | Notifications empty                   | Desktop       | Light      | 1440×1024  | `17-notifications/notifications-empty.png`    | TODO     | PAL-126      |
 
 ## Settings, security, premium, and trust
 
@@ -213,24 +213,24 @@ This is the source of truth for Paldora design generation. Each asset is generat
 
 ## Mobile product and system states
 
-| ID      | Screen               | Platform     | Appearance | Dimensions | Filename                          | Status | Dependencies     |
-| ------- | -------------------- | ------------ | ---------- | ---------- | --------------------------------- | ------ | ---------------- |
-| PAL-161 | Create post          | Mobile       | Dark       | 390×844    | `23-mobile/create-post.png`       | TODO   | PAL-007, PAL-062 |
-| PAL-162 | Box detail           | Mobile       | Dark       | 390×844    | `23-mobile/box-detail.png`        | TODO   | PAL-071          |
-| PAL-163 | Memories             | Mobile       | Light      | 390×844    | `23-mobile/memories.png`          | TODO   | PAL-105          |
-| PAL-164 | Room                 | Mobile       | Custom     | 390×844    | `23-mobile/room.png`              | TODO   | PAL-009          |
-| PAL-165 | Friends              | Mobile       | Light      | 390×844    | `23-mobile/friends.png`           | TODO   | PAL-082          |
-| PAL-166 | Notifications        | Mobile       | Dark       | 390×844    | `23-mobile/notifications.png`     | TODO   | PAL-126          |
-| PAL-167 | Search               | Mobile       | Light      | 390×844    | `23-mobile/search.png`            | TODO   | PAL-124          |
-| PAL-168 | Settings             | Mobile       | Light      | 390×844    | `23-mobile/settings.png`          | TODO   | PAL-128          |
-| PAL-169 | Gallery              | Mobile       | Light      | 390×844    | `23-mobile/gallery.png`           | TODO   | PAL-118          |
-| PAL-170 | Photo viewer         | Mobile       | Dark       | 390×844    | `23-mobile/photo-viewer.png`      | TODO   | PAL-121          |
-| PAL-171 | Empty states library | Design board | Mixed      | 2048×2400  | `24-states/empty-states.png`      | TODO   | PAL-003          |
-| PAL-172 | Error states library | Design board | Mixed      | 2048×2400  | `24-states/error-states.png`      | TODO   | PAL-003          |
-| PAL-173 | Loading skeletons    | Design board | Mixed      | 2048×1800  | `24-states/loading-states.png`    | TODO   | PAL-003          |
-| PAL-174 | 404                  | Desktop      | Light      | 1440×1024  | `24-states/404.png`               | TODO   | PAL-003          |
-| PAL-175 | 500                  | Desktop      | Dark       | 1440×1024  | `24-states/500.png`               | TODO   | PAL-003          |
-| PAL-176 | Offline              | Mobile       | Light      | 390×844    | `24-states/offline-mobile.png`    | TODO   | PAL-003          |
-| PAL-177 | Permission denied    | Desktop      | Light      | 1440×1024  | `24-states/permission-denied.png` | TODO   | PAL-003          |
-| PAL-178 | Content removed      | Desktop      | Light      | 1440×1024  | `24-states/content-removed.png`   | TODO   | PAL-003          |
-| PAL-179 | Account suspended    | Desktop      | Dark       | 1440×1024  | `24-states/account-suspended.png` | TODO   | PAL-003          |
+| ID      | Screen               | Platform     | Appearance | Dimensions | Filename                          | Status   | Dependencies     |
+| ------- | -------------------- | ------------ | ---------- | ---------- | --------------------------------- | -------- | ---------------- |
+| PAL-161 | Create post          | Mobile       | Dark       | 390×844    | `23-mobile/create-post.png`       | TODO     | PAL-007, PAL-062 |
+| PAL-162 | Box detail           | Mobile       | Dark       | 390×844    | `23-mobile/box-detail.png`        | TODO     | PAL-071          |
+| PAL-163 | Memories             | Mobile       | Light      | 390×844    | `23-mobile/memories.png`          | COMPLETE | PAL-105          |
+| PAL-164 | Room                 | Mobile       | Custom     | 390×844    | `23-mobile/room.png`              | TODO     | PAL-009          |
+| PAL-165 | Friends              | Mobile       | Light      | 390×844    | `23-mobile/friends.png`           | TODO     | PAL-082          |
+| PAL-166 | Notifications        | Mobile       | Dark       | 390×844    | `23-mobile/notifications.png`     | TODO     | PAL-126          |
+| PAL-167 | Search               | Mobile       | Light      | 390×844    | `23-mobile/search.png`            | TODO     | PAL-124          |
+| PAL-168 | Settings             | Mobile       | Light      | 390×844    | `23-mobile/settings.png`          | TODO     | PAL-128          |
+| PAL-169 | Gallery              | Mobile       | Light      | 390×844    | `23-mobile/gallery.png`           | TODO     | PAL-118          |
+| PAL-170 | Photo viewer         | Mobile       | Dark       | 390×844    | `23-mobile/photo-viewer.png`      | TODO     | PAL-121          |
+| PAL-171 | Empty states library | Design board | Mixed      | 2048×2400  | `24-states/empty-states.png`      | TODO     | PAL-003          |
+| PAL-172 | Error states library | Design board | Mixed      | 2048×2400  | `24-states/error-states.png`      | TODO     | PAL-003          |
+| PAL-173 | Loading skeletons    | Design board | Mixed      | 2048×1800  | `24-states/loading-states.png`    | TODO     | PAL-003          |
+| PAL-174 | 404                  | Desktop      | Light      | 1440×1024  | `24-states/404.png`               | TODO     | PAL-003          |
+| PAL-175 | 500                  | Desktop      | Dark       | 1440×1024  | `24-states/500.png`               | TODO     | PAL-003          |
+| PAL-176 | Offline              | Mobile       | Light      | 390×844    | `24-states/offline-mobile.png`    | TODO     | PAL-003          |
+| PAL-177 | Permission denied    | Desktop      | Light      | 1440×1024  | `24-states/permission-denied.png` | TODO     | PAL-003          |
+| PAL-178 | Content removed      | Desktop      | Light      | 1440×1024  | `24-states/content-removed.png`   | TODO     | PAL-003          |
+| PAL-179 | Account suspended    | Desktop      | Dark       | 1440×1024  | `24-states/account-suspended.png` | TODO     | PAL-003          |

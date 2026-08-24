@@ -33,7 +33,11 @@ export function NotificationRow({
       <div className="notification-row-actions">
         <Link
           className="button-secondary compact-button"
-          href={`/posts/${notification.postId}`}
+          href={
+            notification.lifeUpdateId
+              ? `/life-updates/${notification.lifeUpdateId}?post=${notification.postId}`
+              : `/posts/${notification.postId}`
+          }
         >
           View
         </Link>
@@ -50,6 +54,7 @@ export function NotificationRow({
 }
 
 function notificationMessage(type: Notification['type']): string {
+  if (type === 'life_update.published') return 'shared a Life Update with you.';
   if (type === 'comment.reply') return 'replied to your comment.';
   if (type === 'post.reaction') return 'reacted to your post.';
   if (type === 'comment.reaction') return 'reacted to your comment.';
