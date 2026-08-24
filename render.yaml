@@ -5,7 +5,7 @@ services:
     plan: free
     region: frankfurt
     buildCommand: >-
-      corepack enable && pnpm install --frozen-lockfile &&
+      pnpm install --frozen-lockfile &&
       pnpm --filter @paldora/api... --filter @paldora/worker... build
     startCommand: node scripts/start-deployed-services.mjs
     healthCheckPath: /api/v1/health/ready
