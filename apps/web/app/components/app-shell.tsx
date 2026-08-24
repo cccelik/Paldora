@@ -22,6 +22,12 @@ const navigation = [
   { key: 'friends', label: 'Friends', href: '/friends', icon: '♧' },
 ] as const;
 
+function currentRoomPath(current: CurrentUser) {
+  return current.profile.username
+    ? roomPath(current.profile.username)
+    : '/settings/account';
+}
+
 export function AppShell({
   current,
   active,
@@ -40,6 +46,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const accountName = current.profile.displayName ?? current.user.email;
+  const mobileRoomHref = currentRoomPath(current);
   return (
     <main className="application-shell">
       <AppRealtimeBridge />
@@ -114,11 +121,13 @@ export function AppShell({
           <span>◇</span>Boxes
         </Link>
         <Link
-          className="mobile-create"
-          href="/boxes/new"
-          aria-label="Create a Box"
+          aria-current={active === 'room' ? 'page' : undefined}
+          aria-label="Open My Room"
+          className={`mobile-create${active === 'room' ? ' active' : ''}`}
+          href={mobileRoomHref}
         >
-          ＋<small>Box</small>
+          <span aria-hidden="true">✦</span>
+          <small>Room</small>
         </Link>
         <Link className={active === 'friends' ? 'active' : ''} href="/friends">
           <span>♧</span>Friends

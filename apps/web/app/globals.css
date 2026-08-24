@@ -2997,6 +2997,12 @@ textarea:focus-visible {
     background: #dda52d;
     border-radius: 50%;
   }
+  .mobile-nav .mobile-create.active {
+    color: #1c160c;
+    box-shadow:
+      0 0 0 3px #1c160c,
+      0 0 0 5px #e9c56f;
+  }
 }
 @media (max-width: 560px) {
   .onboarding-page {
