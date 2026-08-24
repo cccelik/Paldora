@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: paldora-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: >-
+      corepack enable && pnpm install --frozen-lockfile &&
+      pnpm --filter @paldora/api... --filter @paldora/worker... build
+    startCommand: node scripts/start-deployed-services.mjs
+    healthCheckPath: /api/v1/health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: API_PORT
+        value: 10000
+      - key: WEB_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: paldora-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: paldora-redis
+          property: connectionString
+      - key: MEDIA_JOB_QUEUE_NAME
+        value: paldora-jobs
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_AUDIENCE
+        value: authenticated
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_FORCE_PATH_STYLE
+        value: true
+
+  - type: keyvalue
+    name: paldora-redis
+    plan: free
+    region: frankfurt
+    ipAllowList: []
+
+databases:
+  - name: paldora-postgres
+    plan: free
+    region: frankfurt
+    databaseName: paldora
+    user: paldora
+    ipAllowList: []
