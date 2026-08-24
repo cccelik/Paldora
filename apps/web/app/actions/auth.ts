@@ -92,13 +92,39 @@ export async function resetPasswordAction(
   if (password !== confirmation)
     return { status: 'error', message: 'The passwords do not match.' };
   const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: sessionError,
+  } = await supabase.auth.getUser();
+  if (sessionError || !user) {
+    return {
+      status: 'error',
+      message:
+        'This reset session is invalid or has expired. Request a new link.',
+    };
+  }
   const { error } = await supabase.auth.updateUser({ password });
   if (error)
     return {
       status: 'error',
-      message: 'This reset link is invalid or has expired.',
+      message: resetPasswordErrorMessage(error.message),
     };
   return { status: 'success', message: 'Password updated. You can continue.' };
+}
+
+function resetPasswordErrorMessage(message: string): string {
+  if (/same password|different from the old password/i.test(message)) {
+    return 'Choose a password different from your current password.';
+  }
+  if (
+    /password|weak|characters|uppercase|lowercase|digit|symbol/i.test(message)
+  ) {
+    return 'That password does not meet the account security requirements. Try a longer password with a mix of characters.';
+  }
+  if (/session|expired|jwt|token/i.test(message)) {
+    return 'This reset session is invalid or has expired. Request a new link.';
+  }
+  return 'The password could not be updated. Try again or request a new reset link.';
 }
 
 export async function signOutAction(): Promise<void> {

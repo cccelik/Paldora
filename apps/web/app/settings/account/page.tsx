@@ -2,6 +2,7 @@ import { signOutAction } from '../../actions/auth';
 import { AppShell } from '../../components/app-shell';
 import { AvatarUploader } from '../../components/avatar-uploader';
 import { SettingsForm } from '../../components/profile-forms';
+import { ReactionPresetEditor } from '../../components/reaction-preset-editor';
 import { PageHeader, SurfaceCard } from '../../components/ui';
 import { loadCurrentUser } from '../../lib/api';
 
@@ -18,16 +19,21 @@ export default async function AccountSettingsPage() {
         description="Keep the identity your people see up to date."
       />
       <div className="settings-layout">
-        <SurfaceCard
-          className="profile-settings-card"
-          title="Profile information"
-        >
-          <SettingsForm
-            username={current.profile.username ?? ''}
-            displayName={current.profile.displayName ?? ''}
-            bio={current.profile.bio ?? ''}
-          />
-        </SurfaceCard>
+        <div className="settings-main">
+          <SurfaceCard
+            className="profile-settings-card"
+            title="Profile information"
+          >
+            <SettingsForm
+              username={current.profile.username ?? ''}
+              displayName={current.profile.displayName ?? ''}
+              bio={current.profile.bio ?? ''}
+            />
+          </SurfaceCard>
+          <SurfaceCard title="Reaction shortcuts">
+            <ReactionPresetEditor presets={current.profile.reactionPresets} />
+          </SurfaceCard>
+        </div>
         <aside className="settings-side">
           <SurfaceCard title="Profile photo">
             <AvatarUploader currentUrl={current.profile.avatarUrl} />

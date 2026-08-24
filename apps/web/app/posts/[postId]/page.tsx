@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell } from '../../components/app-shell';
 import { PostFeed } from '../../components/post-feed';
-import { PostRealtimeRefresh } from '../../components/post-realtime-refresh';
 import { PageHeader } from '../../components/ui';
 import {
   authenticatedApiClient,
@@ -35,7 +34,6 @@ export default async function PostPage({
   }
   return (
     <AppShell current={current} active="boxes">
-      <PostRealtimeRefresh boxId={post.boxId} />
       <PageHeader
         eyebrow="Private Box post"
         title={post.boxName}
@@ -51,6 +49,7 @@ export default async function PostPage({
         nextCursor={null}
         posts={[post]}
         returnPath={`/posts/${post.id}`}
+        reactionPresets={current.profile.reactionPresets}
       />
     </AppShell>
   );

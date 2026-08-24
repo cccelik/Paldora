@@ -1,6 +1,5 @@
 import { AppShell } from '../components/app-shell';
 import { PostFeed } from '../components/post-feed';
-import { PostRealtimeRefresh } from '../components/post-realtime-refresh';
 import { InitialAvatar, PageFeedback, PageHeader } from '../components/ui';
 import { authenticatedApiClient, loadCompletedCurrentUser } from '../lib/api';
 
@@ -26,7 +25,6 @@ export default async function HomePage({
   });
   return (
     <AppShell current={current} active="home">
-      <PostRealtimeRefresh />
       <PageHeader
         eyebrow="Your private corner"
         title="Home"
@@ -51,6 +49,7 @@ export default async function HomePage({
         nextCursor={feed.nextCursor}
         posts={feed.items}
         returnPath="/home"
+        reactionPresets={current.profile.reactionPresets}
       />
     </AppShell>
   );

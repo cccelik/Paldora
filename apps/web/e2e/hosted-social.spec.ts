@@ -66,6 +66,7 @@ test('Box and Home feeds receive another member post without a reload', async ({
   const boxName = `Realtime test ${marker}`;
   const postText = `Live post ${marker}`;
   const editedText = `${postText} edited`;
+  const commentText = `Realtime comment ${marker}`;
   const photoText = `Photo post ${marker}`;
   let boxUrl: string | null = null;
   try {
@@ -120,6 +121,86 @@ test('Box and Home feeds receive another member post without a reload', async ({
     await expect(
       friendHomePage.getByText(postText, { exact: true }),
     ).toBeVisible({ timeout: 10_000 });
+
+    const friendCreatedPost = friendPage.getByRole('article').filter({
+      hasText: postText,
+    });
+    await friendCreatedPost
+      .getByRole('button', { name: 'React', exact: true })
+      .click();
+    const friendLoveButton = friendCreatedPost.getByRole('menuitemradio', {
+      name: 'React with ❤️',
+    });
+    await friendLoveButton.click();
+    await expect(
+      friendCreatedPost.getByRole('button', {
+        name: 'Change your reaction from ❤️',
+      }),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(
+      primaryPage
+        .getByRole('article')
+        .filter({ hasText: postText })
+        .getByRole('button', { name: '❤️, 1 reaction' }),
+    ).toBeVisible({ timeout: 10_000 });
+    await friendCreatedPost.getByRole('button', { name: '0 comments' }).click();
+    await friendCreatedPost.getByLabel('Write a comment…').fill(commentText);
+    await friendCreatedPost
+      .getByRole('button', { name: 'Comment', exact: true })
+      .click();
+    const primaryCreatedPost = primaryPage.getByRole('article').filter({
+      hasText: postText,
+    });
+    await expect(
+      primaryCreatedPost.getByRole('button', { name: '1 comment' }),
+    ).toBeVisible({ timeout: 10_000 });
+    await primaryCreatedPost.getByRole('button', { name: '1 comment' }).click();
+    await expect(
+      primaryCreatedPost.getByText(commentText, { exact: true }),
+    ).toBeVisible({ timeout: 10_000 });
+    const primaryComment = primaryCreatedPost
+      .locator('.comment-item')
+      .filter({ hasText: commentText })
+      .first();
+    await primaryComment
+      .getByRole('button', { name: /React to .*'s comment/ })
+      .click();
+    await primaryComment
+      .getByRole('menuitemradio', { name: 'React with ❤️' })
+      .click();
+    await expect(
+      primaryComment.getByRole('button', {
+        name: /Change your reaction to .*'s comment from ❤️/,
+      }),
+    ).toBeVisible();
+    const friendComment = friendCreatedPost
+      .locator('.comment-item')
+      .filter({ hasText: commentText })
+      .first();
+    await expect(
+      friendComment.getByRole('button', { name: '❤️, 1 reaction' }),
+    ).toBeVisible({ timeout: 10_000 });
+    const friendNotificationPage = await friendContext.newPage();
+    await friendNotificationPage.goto('/notifications');
+    await expect(
+      friendNotificationPage
+        .getByText('reacted to your comment.', { exact: true })
+        .first(),
+    ).toBeVisible({ timeout: 10_000 });
+    await friendNotificationPage.close();
+    const notificationPage = await primaryContext.newPage();
+    await notificationPage.goto('/notifications');
+    await expect(
+      notificationPage
+        .getByText('reacted to your post.', { exact: true })
+        .first(),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(
+      notificationPage
+        .getByText('commented on your post.', { exact: true })
+        .first(),
+    ).toBeVisible({ timeout: 10_000 });
+    await notificationPage.close();
 
     const createdPost = primaryPage.getByRole('article').filter({
       hasText: postText,

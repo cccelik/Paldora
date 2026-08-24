@@ -20,7 +20,15 @@ import { PostController } from './post.controller.js';
 import { PostService } from './post.service.js';
 import { PostMediaService } from './post-media.service.js';
 import { MediaJobOutboxDispatcher } from './media-job-outbox-dispatcher.service.js';
+import { ActivityEventDispatcher } from './activity-event-dispatcher.service.js';
+import { InteractionAuthorizationPolicy } from './interaction-authorization-policy.service.js';
+import { InteractionController } from './interaction.controller.js';
+import { InteractionService } from './interaction.service.js';
+import { NotificationService } from './notification.service.js';
 import { ProfileAvatarService } from './profile-avatar.service.js';
+import { PostInteractionQueryService } from './post-interaction-query.js';
+import { ReactionMediaService } from './reaction-media.service.js';
+import { ReactionMediaController } from './reaction-media.controller.js';
 import {
   POST_EVENT_PUBLISHER,
   PostEventService,
@@ -34,6 +42,8 @@ import {
     BoxInvitationController,
     SocialController,
     PostController,
+    InteractionController,
+    ReactionMediaController,
   ],
   providers: [
     InfrastructureService,
@@ -42,6 +52,7 @@ import {
     UserService,
     AvatarService,
     MediaJobOutboxDispatcher,
+    ActivityEventDispatcher,
     BoxAuthorizationPolicy,
     BoxQueryService,
     BoxLifecycleService,
@@ -55,6 +66,11 @@ import {
     { provide: POST_EVENT_PUBLISHER, useExisting: PostEventService },
     PostService,
     PostMediaService,
+    PostInteractionQueryService,
+    ReactionMediaService,
+    InteractionAuthorizationPolicy,
+    InteractionService,
+    NotificationService,
     objectStorageProvider,
   ],
 })

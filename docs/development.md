@@ -27,7 +27,22 @@ compose reusable sections rather than own repeated product markup.
 ## Phase 1 local setup
 
 1. Set the hosted development Supabase URL, anonymous key, and service-role key in `.env`. Never use a production service-role key locally.
-2. Enable email/password in Supabase Auth, allow `http://localhost:3000/auth/callback`, and configure password-reset email redirects to that callback.
+2. Enable email/password in Supabase Auth, set the Site URL to
+   `http://localhost:3000`, and add
+   `http://localhost:3000/auth/callback**` to the redirect allow list. For a
+   recovery link that works even when the email is opened in another browser,
+   set the Recovery email template link to:
+
+   ```html
+   <a
+     href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password"
+     >Reset password</a
+   >
+   ```
+
+   Paldora continues to accept Supabase's existing PKCE `code` callback links,
+   but those depend on the browser cookie created when the reset was requested.
+
 3. Start PostgreSQL, Redis, and private MinIO with the Docker Compose command above. MinIO creates `paldora-private` and applies local browser-upload CORS.
 4. Run `pnpm db:migrate`, set a non-committed demo password and a real demo inbox, then run `pnpm seed:demo`.
 5. Run `pnpm dev` and sign in with the provisioned demo account. No registration screen exists.
@@ -134,3 +149,20 @@ or delete media, and confirm a pending row exists in
 publish the row, the worker should process it, and `published_at` should become
 non-null. Permanent Box deletion snapshots object keys in the outbox before
 the `media_assets.box_id` cascade removes the metadata.
+
+## Phase 5 interaction testing
+
+Apply migrations through `0007`, then open one shared Box in two browser
+profiles. Add a comment, reply once, edit/delete your own comment, and set,
+change, and remove each reaction. Both Box and Home summaries should update
+without a manual refresh. Replies to replies must be rejected. Remove one
+member, delete a post, and block the other account to confirm interaction and
+notification access is revoked without leaking identifiers.
+
+The notification center must update its unread badge and rows in realtime. Stop
+Redis, create an interaction, then restart Redis and the API: the durable
+activity row must project once and reconnecting browsers must reconcile from the
+authorized API. Run `node --env-file=.env
+apps/api/node_modules/vitest/vitest.mjs run
+apps/api/test/interaction-flow.integration.test.ts` for concurrent reaction,
+notification dedupe, block, membership, deletion, and cursor coverage.

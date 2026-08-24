@@ -1,13 +1,14 @@
 import {
   mediaAssets,
   postMedia,
+  postReactions,
   posts,
   type PaldoraDatabase,
 } from '@paldora/database';
 import { POST_EVENT_CHANNEL, type MediaAssetId } from '@paldora/domain';
 import type { ObjectStorage } from '@paldora/storage';
 import type { Job } from 'bullmq';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { processPostImage } from './image-processor.js';
 import { parseMediaJobPayload, type MediaJobPayload } from './job-payload.js';
@@ -90,7 +91,7 @@ async function processMediaObject(
     .where(
       and(
         eq(mediaAssets.id, mediaAssetId),
-        eq(mediaAssets.purpose, 'post_image'),
+        inArray(mediaAssets.purpose, ['post_image', 'reaction_image']),
         eq(mediaAssets.status, 'processing'),
       ),
     )
@@ -136,12 +137,21 @@ async function publishMediaUpdate(
   mediaAssetId: MediaAssetId,
   { database, eventPublisher }: MediaJobDependencies,
 ): Promise<void> {
-  const [attached] = await database
+  const [postAttachment] = await database
     .select({ postId: posts.id, boxId: posts.boxId })
     .from(postMedia)
     .innerJoin(posts, eq(posts.id, postMedia.postId))
     .where(eq(postMedia.mediaAssetId, mediaAssetId))
     .limit(1);
+  const [reactionAttachment] = postAttachment
+    ? []
+    : await database
+        .select({ postId: posts.id, boxId: posts.boxId })
+        .from(postReactions)
+        .innerJoin(posts, eq(posts.id, postReactions.postId))
+        .where(eq(postReactions.mediaAssetId, mediaAssetId))
+        .limit(1);
+  const attached = postAttachment ?? reactionAttachment;
   if (!attached) return;
   await eventPublisher.publish(
     POST_EVENT_CHANNEL,

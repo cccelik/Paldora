@@ -39,6 +39,18 @@ short-lived signed derivative URLs, never bucket credentials or object keys.
 The viewer shares a protected `/posts/:id` application permalink rather than a
 signed object URL, so recipients must authenticate and retain Box membership.
 
+Phase 5 comments, reactions, notification lists, unread counts, and realtime
+delivery all inherit current post and Box visibility. Removed members and
+deleted posts disappear from reads even when durable activity exists. Blocks
+reject new interactions and suppress related notification visibility. Comment
+bodies never enter Redis events; streams carry identifiers only. Comment and
+reaction mutation limits fail closed when Redis rate limiting is unavailable.
+Camera reactions never accept public URLs or client-provided object keys. They
+use short-lived signed uploads, exact server-side MIME/size verification,
+private processed derivatives, signed downloads, active membership checks, and
+owner-bound attachment. The web flow captures through `getUserMedia` and has no
+photo-library input, preserving the realtime-capture behavior.
+
 Security assumptions for this foundation:
 
 - TLS is terminated by the deployment edge and HTTPS is enforced there.

@@ -130,6 +130,15 @@ const previewPosts: Post[] = [
         height: 1_200,
       },
     ],
+    interactions: {
+      commentCount: 3,
+      reactions: [
+        { kind: '❤️', count: 4 },
+        { kind: '🙏', count: 2 },
+      ],
+      currentUserReaction: '❤️',
+      realReactions: [],
+    },
     status: 'active',
     editedAt: null,
     createdAt: '2026-08-23T12:00:00.000Z',
@@ -147,6 +156,12 @@ const previewPosts: Post[] = [
     },
     content: 'I left three possible books for September in the Box chat.',
     media: [],
+    interactions: {
+      commentCount: 0,
+      reactions: [],
+      currentUserReaction: null,
+      realReactions: [],
+    },
     status: 'active',
     editedAt: null,
     createdAt: '2026-08-22T18:30:00.000Z',
@@ -165,6 +180,7 @@ export default function ComponentDesignPreview() {
           nextCursor="preview-cursor"
           posts={previewPosts}
           returnPath="/design-preview/components"
+          reactionPresets={['👍', '❤️', '😂', '😮', '😢']}
         />
       </section>
       <BoxManagementMenu>

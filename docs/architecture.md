@@ -13,6 +13,13 @@ Expo mobile ─┘                                 ├─> Redis
 
 The API owns authorization and orchestration. PostgreSQL is canonical. Redis is disposable infrastructure for queue delivery, distributed rate limits, and carefully selected caches. Durable media-job intent lives in PostgreSQL's transactional outbox and is relayed to BullMQ, so a temporary Redis failure cannot lose processing or deletion work. Large media belongs in private S3-compatible object storage. The worker owns expensive or retryable operations.
 
+Phase 5 social activity uses the same durable principle. HTTP services commit
+interaction state and an `activity_events` row together. An API-hosted projector
+creates deduplicated notifications and publishes ephemeral Redis invalidations;
+HTTP handlers do not create notifications directly. PostgreSQL remains
+authoritative during Redis outages, and reconnecting clients re-fetch through
+the normal authorization policy.
+
 Shared packages are intentionally narrow. `domain` has no framework dependency, `validation` owns transport-neutral schemas, `api-client` owns request behavior, and infrastructure packages expose interfaces or factories. React web and React Native do not share view components; only tokens and portable contracts cross that boundary.
 
 Initial feeds will use keyset pagination and fan-out-on-read. Product modules remain inside the NestJS deployment until measured scale or ownership constraints justify extracting a service.

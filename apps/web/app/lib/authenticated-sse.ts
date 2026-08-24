@@ -1,57 +1,29 @@
 'use client';
 
-import type { BoxId } from '@paldora/domain';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { createSupabaseBrowserClient } from '../lib/supabase/client';
-import { parseServerSentEvents } from '../lib/sse';
+import { createSupabaseBrowserClient } from './supabase/client';
+import { parseServerSentEvents, type ServerSentEvent } from './sse';
 
-const POST_EVENT_TYPES = new Set([
-  'post.created',
-  'post.updated',
-  'post.deleted',
-]);
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1'
 ).replace(/\/$/, '');
 const INITIAL_RETRY_MILLISECONDS = 1_000;
 const MAX_RETRY_MILLISECONDS = 30_000;
 
-export function PostRealtimeRefresh({ boxId }: { boxId?: BoxId }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const scheduleRefresh = () => {
-      clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => router.refresh(), 80);
-    };
-
-    void runPostEventLoop(boxId, abortController.signal, scheduleRefresh);
-    return () => {
-      clearTimeout(refreshTimer);
-      abortController.abort();
-    };
-  }, [boxId, router]);
-
-  return null;
-}
-
-async function runPostEventLoop(
-  boxId: BoxId | undefined,
+export async function runAuthenticatedEventLoop(
+  path: string,
+  eventTypes: ReadonlySet<string>,
   signal: AbortSignal,
-  onPostEvent: () => void,
+  onEvent: (event: ServerSentEvent) => void,
 ): Promise<void> {
   let retryMilliseconds = INITIAL_RETRY_MILLISECONDS;
   while (!signal.aborted) {
-    // Connections must be retried sequentially so only one authenticated stream exists.
+    // Connections are sequential so one component owns one authenticated stream.
     // eslint-disable-next-line no-await-in-loop
-    const outcome = await consumePostEventConnection(
-      boxId,
+    const outcome = await consumeConnection(
+      path,
+      eventTypes,
       signal,
-      onPostEvent,
+      onEvent,
     ).catch(() => 'retry' as const);
     if (signal.aborted || outcome === 'stop') return;
     retryMilliseconds =
@@ -62,20 +34,18 @@ async function runPostEventLoop(
   }
 }
 
-async function consumePostEventConnection(
-  boxId: BoxId | undefined,
+async function consumeConnection(
+  path: string,
+  eventTypes: ReadonlySet<string>,
   signal: AbortSignal,
-  onPostEvent: () => void,
+  onEvent: (event: ServerSentEvent) => void,
 ): Promise<'connected' | 'retry' | 'stop'> {
   const supabase = createSupabaseBrowserClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) return 'stop';
-  const eventPath = boxId
-    ? `/boxes/${encodeURIComponent(boxId)}/posts/events`
-    : '/me/feed/events';
-  const response = await fetch(`${API_BASE_URL}${eventPath}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: 'no-store',
     headers: {
       accept: 'text/event-stream',
@@ -89,30 +59,31 @@ async function consumePostEventConnection(
   }
   if (response.status === 403 || response.status === 404) return 'stop';
   if (!response.ok || !response.body) {
-    throw new Error(`Post event stream returned ${response.status}.`);
+    throw new Error(`Event stream returned ${response.status}.`);
   }
-  await consumePostEventStream(response.body, signal, onPostEvent);
+  await consumeStream(response.body, eventTypes, signal, onEvent);
   return 'connected';
 }
 
-async function consumePostEventStream(
+async function consumeStream(
   body: ReadableStream<Uint8Array>,
+  eventTypes: ReadonlySet<string>,
   signal: AbortSignal,
-  onPostEvent: () => void,
+  onEvent: (event: ServerSentEvent) => void,
 ): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   while (!signal.aborted) {
-    // A ReadableStream reader is inherently sequential; concurrent reads are invalid.
+    // A ReadableStream reader is inherently sequential.
     // eslint-disable-next-line no-await-in-loop
     const { done, value } = await reader.read();
     if (done) return;
     buffer += decoder.decode(value, { stream: true });
     const parsed = parseServerSentEvents(buffer);
     buffer = parsed.remainder;
-    if (parsed.events.some((event) => POST_EVENT_TYPES.has(event.type))) {
-      onPostEvent();
+    for (const event of parsed.events) {
+      if (eventTypes.has(event.type)) onEvent(event);
     }
   }
 }

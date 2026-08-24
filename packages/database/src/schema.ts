@@ -10,6 +10,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -63,6 +64,23 @@ export const friendshipStatus = paldoraSchema.enum('friendship_status', [
 export const postStatus = paldoraSchema.enum('post_status', [
   'active',
   'deleted',
+]);
+export const commentStatus = paldoraSchema.enum('comment_status', [
+  'active',
+  'deleted',
+]);
+export const activityEventType = paldoraSchema.enum('activity_event_type', [
+  'comment.created',
+  'comment.updated',
+  'comment.deleted',
+  'reaction.set',
+  'comment.reaction.set',
+]);
+export const notificationType = paldoraSchema.enum('notification_type', [
+  'post.comment',
+  'comment.reply',
+  'post.reaction',
+  'comment.reaction',
 ]);
 
 export const users = paldoraSchema.table(
@@ -151,11 +169,11 @@ export const mediaAssets = paldoraSchema.table(
     index('media_assets_box_status_index').on(table.boxId, table.status),
     check(
       'media_assets_purpose_check',
-      sql`${table.purpose} in ('avatar', 'post_image')`,
+      sql`${table.purpose} in ('avatar', 'post_image', 'reaction_image')`,
     ),
     check(
       'media_assets_purpose_box_check',
-      sql`(${table.purpose} = 'avatar' and ${table.boxId} is null) or (${table.purpose} = 'post_image' and ${table.boxId} is not null)`,
+      sql`(${table.purpose} = 'avatar' and ${table.boxId} is null) or (${table.purpose} in ('post_image', 'reaction_image') and ${table.boxId} is not null)`,
     ),
     check(
       'media_assets_content_type_check',
@@ -220,6 +238,10 @@ export const profiles = paldoraSchema.table(
     avatarMediaId: uuid('avatar_media_id').references(() => mediaAssets.id, {
       onDelete: 'set null',
     }),
+    reactionPresets: jsonb('reaction_presets')
+      .$type<readonly [string, string, string, string, string]>()
+      .notNull()
+      .default(['👍', '❤️', '😂', '😮', '😢']),
     onboardingState: onboardingState('onboarding_state')
       .notNull()
       .default('username'),
@@ -378,6 +400,218 @@ export const postMedia = paldoraSchema.table(
     ),
     index('post_media_post_index').on(table.postId),
     check('post_media_position_check', sql`${table.position} between 0 and 3`),
+  ],
+);
+
+export const comments = paldoraSchema.table(
+  'comments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    parentCommentId: uuid('parent_comment_id').references(
+      (): AnyPgColumn => comments.id,
+      { onDelete: 'cascade' },
+    ),
+    content: text('content').notNull(),
+    status: commentStatus('status').notNull().default('active'),
+    editedAt: timestamp('edited_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('comments_post_root_chronological_index').on(
+      table.postId,
+      table.parentCommentId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    index('comments_parent_chronological_index').on(
+      table.parentCommentId,
+      table.createdAt,
+      table.id,
+    ),
+    index('comments_author_status_index').on(table.authorUserId, table.status),
+    check(
+      'comments_content_state_check',
+      sql`(${table.status} = 'active' and char_length(${table.content}) between 1 and 2000) or (${table.status} = 'deleted' and ${table.content} = '')`,
+    ),
+    check(
+      'comments_deleted_at_state_check',
+      sql`(${table.status} = 'deleted') = (${table.deletedAt} is not null)`,
+    ),
+    check(
+      'comments_not_own_parent_check',
+      sql`${table.parentCommentId} is null or ${table.parentCommentId} <> ${table.id}`,
+    ),
+  ],
+);
+
+export const postReactions = paldoraSchema.table(
+  'post_reactions',
+  {
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    mediaAssetId: uuid('media_asset_id').references(() => mediaAssets.id, {
+      onDelete: 'restrict',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.postId, table.userId] }),
+    index('post_reactions_post_kind_index').on(table.postId, table.kind),
+    index('post_reactions_user_index').on(table.userId, table.updatedAt.desc()),
+    uniqueIndex('post_reactions_media_asset_unique').on(table.mediaAssetId),
+    check(
+      'post_reactions_real_media_check',
+      sql`(${table.kind} = 'real') = (${table.mediaAssetId} is not null)`,
+    ),
+    check(
+      'post_reactions_kind_length_check',
+      sql`char_length(${table.kind}) between 1 and 64`,
+    ),
+  ],
+);
+
+export const commentReactions = paldoraSchema.table(
+  'comment_reactions',
+  {
+    commentId: uuid('comment_id')
+      .notNull()
+      .references(() => comments.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.commentId, table.userId] }),
+    index('comment_reactions_comment_kind_index').on(
+      table.commentId,
+      table.kind,
+    ),
+    index('comment_reactions_user_index').on(
+      table.userId,
+      table.updatedAt.desc(),
+    ),
+    check(
+      'comment_reactions_kind_length_check',
+      sql`char_length(${table.kind}) between 1 and 64`,
+    ),
+  ],
+);
+
+export interface ActivityEventPayload {
+  boxId: string;
+  postId: string;
+  commentId?: string;
+  parentCommentId?: string;
+  recipientUserId: string;
+  reactionKind?: string;
+}
+
+export const activityEvents = paldoraSchema.table(
+  'activity_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    type: activityEventType('type').notNull(),
+    actorUserId: uuid('actor_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    dedupeKey: text('dedupe_key').notNull(),
+    payload: jsonb('payload').$type<ActivityEventPayload>().notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    availableAt: timestamp('available_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lockedAt: timestamp('locked_at', { withTimezone: true }),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('activity_events_dedupe_key_unique').on(table.dedupeKey),
+    index('activity_events_pending_index')
+      .on(table.availableAt, table.createdAt)
+      .where(sql`${table.processedAt} is null`),
+    check('activity_events_attempts_check', sql`${table.attempts} >= 0`),
+  ],
+);
+
+export const notifications = paldoraSchema.table(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    actorUserId: uuid('actor_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    activityEventId: uuid('activity_event_id')
+      .notNull()
+      .references(() => activityEvents.id, { onDelete: 'cascade' }),
+    dedupeKey: text('dedupe_key').notNull(),
+    type: notificationType('type').notNull(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    commentId: uuid('comment_id').references(() => comments.id, {
+      onDelete: 'cascade',
+    }),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('notifications_activity_recipient_unique').on(
+      table.activityEventId,
+      table.recipientUserId,
+    ),
+    uniqueIndex('notifications_dedupe_key_unique').on(table.dedupeKey),
+    index('notifications_recipient_chronological_index').on(
+      table.recipientUserId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    index('notifications_recipient_unread_index')
+      .on(table.recipientUserId, table.createdAt.desc())
+      .where(sql`${table.readAt} is null`),
+    check(
+      'notifications_distinct_users_check',
+      sql`${table.actorUserId} <> ${table.recipientUserId}`,
+    ),
   ],
 );
 

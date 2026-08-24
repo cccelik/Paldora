@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import type { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 function publicSupabaseEnvironment(): { url: string; anonKey: string } {
@@ -24,6 +25,23 @@ export async function createSupabaseServerClient() {
         } catch {
           // Server Components cannot write cookies; proxy refreshes the session.
         }
+      },
+    },
+  });
+}
+
+export function createSupabaseRouteClient(
+  request: NextRequest,
+  response: NextResponse,
+) {
+  const { url, anonKey } = publicSupabaseEnvironment();
+  return createServerClient(url, anonKey, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (items) => {
+        items.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options),
+        );
       },
     },
   });

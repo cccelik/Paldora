@@ -12,6 +12,10 @@ test('shared settings components compose at responsive widths', async ({
   ).toBeVisible();
   await expect(page.getByLabel('Username')).toHaveAttribute('minlength', '3');
   await expect(page.getByLabel('Username')).toHaveAttribute('maxlength', '30');
+  await expect(
+    page.getByRole('heading', { name: 'Reaction shortcuts' }),
+  ).toBeVisible();
+  await expect(page.locator('.preset-buttons button')).toHaveCount(5);
 
   const viewport = page.viewportSize();
   if (viewport && viewport.width > 820) {
@@ -53,6 +57,129 @@ test('shared feedback exposes an accessible error role', async ({ page }) => {
   );
 });
 
+test('double-click and double-tap apply the thumbs-up reaction', async ({
+  page,
+}) => {
+  let reactionBody: { kind?: string } | null = null;
+  await page.route('**/api/v1/posts/*/reaction', async (route) => {
+    reactionBody = route.request().postDataJSON() as { kind?: string };
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        commentCount: 3,
+        reactions: [{ kind: '👍', count: 1 }],
+        currentUserReaction: '👍',
+        realReactions: [],
+      }),
+    });
+  });
+  await page.goto('/design-preview/components');
+  const postContent = page
+    .getByRole('region', { name: 'Posts' })
+    .getByRole('article')
+    .first()
+    .locator('.post-content');
+  await postContent.dblclick();
+  await expect.poll(() => reactionBody?.kind).toBe('👍');
+  const reactedPost = page
+    .getByRole('region', { name: 'Posts' })
+    .getByRole('article')
+    .first();
+  await expect(
+    reactedPost.getByRole('button', { name: 'React', exact: true }),
+  ).toHaveCount(0);
+  await reactedPost
+    .getByRole('button', { name: 'Change your reaction from 👍' })
+    .click();
+  await expect(reactedPost.getByRole('menu')).toBeVisible();
+
+  reactionBody = null;
+  await page.reload();
+  const touchTarget = page
+    .getByRole('region', { name: 'Posts' })
+    .getByRole('article')
+    .first()
+    .locator('.post-content');
+  await touchTarget.dispatchEvent('pointerup', { pointerType: 'touch' });
+  await touchTarget.dispatchEvent('pointerup', { pointerType: 'touch' });
+  await expect.poll(() => reactionBody?.kind).toBe('👍');
+});
+
+test('comments and replies use the shared emoji reaction picker', async ({
+  page,
+}) => {
+  let reactionBody: { kind?: string } | null = null;
+  await page.route('**/api/v1/posts/*/comments?*', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            id: '70000000-0000-4000-8000-000000000001',
+            postId: '40000000-0000-4000-8000-000000000001',
+            parentCommentId: null,
+            author: {
+              userId: '20000000-0000-4000-8000-000000000001',
+              username: 'maya_chen',
+              displayName: 'Maya Chen',
+              avatarUrl: null,
+            },
+            content: 'This ending surprised me too.',
+            deleted: false,
+            editedAt: null,
+            createdAt: '2026-08-23T13:00:00.000Z',
+            updatedAt: '2026-08-23T13:00:00.000Z',
+            interactions: { reactions: [], currentUserReaction: null },
+            replies: [],
+          },
+        ],
+        nextCursor: null,
+      }),
+    }),
+  );
+  await page.route('**/api/v1/comments/*/reaction', async (route) => {
+    reactionBody = route.request().postDataJSON() as { kind?: string };
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        reactions: [{ kind: '🥳', count: 1 }],
+        currentUserReaction: '🥳',
+      }),
+    });
+  });
+  await page.goto('/design-preview/components');
+  const post = page
+    .getByRole('region', { name: 'Posts' })
+    .getByRole('article')
+    .first();
+  await post.getByRole('button', { name: '3 comments' }).click();
+  const comment = post.locator('.comment-item').filter({
+    hasText: 'This ending surprised me too.',
+  });
+  await comment
+    .getByRole('button', { name: "React to Maya Chen's comment" })
+    .click();
+  await expect(comment.locator('.reaction-picker > button')).toHaveCount(6);
+  await comment.getByRole('menuitem', { name: 'Choose any emoji' }).click();
+  await comment.getByRole('textbox', { name: 'Any emoji' }).fill('🥳');
+  await comment.getByRole('button', { name: 'Choose', exact: true }).click();
+  await expect.poll(() => reactionBody?.kind).toBe('🥳');
+  await expect(
+    comment.getByRole('button', {
+      name: "Change your reaction to Maya Chen's comment from 🥳",
+    }),
+  ).toBeVisible();
+  await expect(
+    comment.getByRole('button', { name: "React to Maya Chen's comment" }),
+  ).toHaveCount(0);
+  await comment
+    .getByRole('button', {
+      name: "Change your reaction to Maya Chen's comment from 🥳",
+    })
+    .click();
+  await expect(comment.getByRole('menu')).toBeVisible();
+});
+
 test('text posts compose into a responsive chronological feed', async ({
   page,
 }) => {
@@ -63,6 +190,14 @@ test('text posts compose into a responsive chronological feed', async ({
         (
           window as typeof window & { paldoraSharedUrl?: string }
         ).paldoraSharedUrl = String(data.url);
+      },
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async () => {
+          throw new DOMException('Permission denied', 'NotAllowedError');
+        },
       },
     });
   });
@@ -79,6 +214,49 @@ test('text posts compose into a responsive chronological feed', async ({
   await expect(page.getByRole('button', { name: 'Add photos' })).toBeVisible();
   const feed = page.getByRole('region', { name: 'Posts' });
   await expect(feed.getByRole('article')).toHaveCount(2);
+  const firstPost = feed.getByRole('article').first();
+  await expect(
+    firstPost.getByRole('button', { name: /3 comments/ }),
+  ).toBeVisible();
+  await firstPost.locator('.reaction-picker-wrap > button').first().click();
+  await expect(firstPost.locator('.reaction-picker > button')).toHaveCount(7);
+  for (const interactionButton of await firstPost
+    .locator('.reaction-picker > button')
+    .all()) {
+    const bounds = await interactionButton.boundingBox();
+    expect(bounds?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+  await firstPost.getByRole('menuitem', { name: 'Choose any emoji' }).click();
+  const customEmoji = firstPost.getByRole('textbox', { name: 'Any emoji' });
+  await expect(customEmoji).toBeVisible();
+  await customEmoji.fill('🥳');
+  await expect(
+    firstPost.getByRole('button', { name: 'Choose', exact: true }),
+  ).toBeEnabled();
+  const cameraReaction = firstPost.getByRole('menuitem', {
+    name: 'Take a camera reaction',
+  });
+  await expect(cameraReaction).toBeVisible();
+  await cameraReaction.click();
+  const cameraDialog = page.getByRole('dialog', {
+    name: 'Take a camera reaction',
+  });
+  await expect(cameraDialog).toBeVisible();
+  await expect(
+    cameraDialog.getByText('Captured now—not selected from your library.'),
+  ).toBeVisible();
+  await expect(
+    cameraDialog.getByRole('button', { name: 'Enable camera' }),
+  ).toBeVisible();
+  await cameraDialog.getByRole('button', { name: 'Enable camera' }).click();
+  await expect(cameraDialog.getByRole('alert')).toContainText(
+    'Camera access was blocked',
+  );
+  await expect(
+    cameraDialog.getByRole('button', { name: 'Enable camera' }),
+  ).toBeEnabled();
+  await cameraDialog.getByRole('button', { name: 'Close camera' }).click();
+  await expect(cameraDialog).not.toBeVisible();
   await expect(
     feed.getByRole('img', { name: 'Photo 1 shared by Alice Moreno' }),
   ).toBeVisible();

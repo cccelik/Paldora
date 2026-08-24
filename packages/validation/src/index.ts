@@ -17,6 +17,26 @@ export const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
 export const BOX_NAME_MAX_LENGTH = 80;
 export const POST_CONTENT_MAX_LENGTH = 5_000;
 export const POST_MEDIA_MAX_ITEMS = 4;
+export const COMMENT_CONTENT_MAX_LENGTH = 2_000;
+export const REACTION_EMOJI_MAX_LENGTH = 64;
+
+const emojiSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+const emojiCodePoint =
+  /\p{Extended_Pictographic}|\p{Regional_Indicator}|[#*0-9]\uFE0F?\u20E3/u;
+
+export function isSingleEmoji(value: string): boolean {
+  return (
+    value.length > 0 &&
+    value.length <= REACTION_EMOJI_MAX_LENGTH &&
+    value.trim() === value &&
+    value !== 'real' &&
+    emojiCodePoint.test(value) &&
+    Array.from(emojiSegmenter.segment(value)).length === 1
+  );
+}
+export const reactionEmojiSchema = z
+  .string()
+  .refine(isSingleEmoji, 'Choose one emoji.');
 
 const reservedUsernames = new Set([
   'account',
@@ -72,6 +92,18 @@ export const updateProfileSchema = z
     bio: z.string().trim().max(BIO_MAX_LENGTH).nullable().optional(),
     onboardingState: z
       .enum(['username', 'profile', 'avatar', 'complete'])
+      .optional(),
+    reactionPresets: z
+      .tuple([
+        reactionEmojiSchema,
+        reactionEmojiSchema,
+        reactionEmojiSchema,
+        reactionEmojiSchema,
+        reactionEmojiSchema,
+      ])
+      .refine((items) => new Set(items).size === items.length, {
+        message: 'Each preset reaction must be different.',
+      })
       .optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
@@ -150,6 +182,39 @@ export const updatePostSchema = z.object({
 });
 export const createPostMediaUploadSchema = createAvatarUploadSchema;
 
+export const commentContentSchema = z
+  .string()
+  .trim()
+  .min(1, 'Comments cannot be empty.')
+  .max(
+    COMMENT_CONTENT_MAX_LENGTH,
+    `Comments must be ${COMMENT_CONTENT_MAX_LENGTH.toLocaleString('en-US')} characters or fewer.`,
+  );
+export const createCommentSchema = z.object({
+  content: commentContentSchema,
+  parentCommentId: uuidSchema.optional(),
+});
+export const updateCommentSchema = z.object({ content: commentContentSchema });
+
+export const setPostReactionSchema = z
+  .object({
+    kind: z.union([reactionEmojiSchema, z.literal('real')]).nullable(),
+    mediaAssetId: uuidSchema.optional(),
+  })
+  .superRefine(({ kind, mediaAssetId }, context) => {
+    if ((kind === 'real') !== Boolean(mediaAssetId)) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Camera reactions require exactly one captured photo.',
+        path: ['mediaAssetId'],
+      });
+    }
+  });
+export const setCommentReactionSchema = z.object({
+  kind: reactionEmojiSchema.nullable(),
+});
+export const createReactionPhotoUploadSchema = createAvatarUploadSchema;
+
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type CreateAvatarUpload = z.infer<typeof createAvatarUploadSchema>;
 export type CreateBox = z.infer<typeof createBoxSchema>;
@@ -161,3 +226,10 @@ export type CreateFriendRequest = z.infer<typeof createFriendRequestSchema>;
 export type CreatePost = z.infer<typeof createPostSchema>;
 export type UpdatePost = z.infer<typeof updatePostSchema>;
 export type CreatePostMediaUpload = z.infer<typeof createPostMediaUploadSchema>;
+export type CreateComment = z.infer<typeof createCommentSchema>;
+export type UpdateComment = z.infer<typeof updateCommentSchema>;
+export type SetPostReaction = z.infer<typeof setPostReactionSchema>;
+export type SetCommentReaction = z.infer<typeof setCommentReactionSchema>;
+export type CreateReactionPhotoUpload = z.infer<
+  typeof createReactionPhotoUploadSchema
+>;

@@ -28,6 +28,23 @@ export class RateLimitService {
     return this.assertAllowed('post-media-upload', userId, 480, oneHourSeconds);
   }
 
+  public assertCommentAllowed(userId: UserId): Promise<void> {
+    return this.assertAllowed('comment', userId, 300, oneHourSeconds);
+  }
+
+  public assertReactionAllowed(userId: UserId): Promise<void> {
+    return this.assertAllowed('reaction', userId, 1_000, oneHourSeconds);
+  }
+
+  public assertReactionMediaUploadAllowed(userId: UserId): Promise<void> {
+    return this.assertAllowed(
+      'reaction-media-upload',
+      userId,
+      120,
+      oneHourSeconds,
+    );
+  }
+
   private async assertAllowed(
     scope: string,
     userId: UserId,

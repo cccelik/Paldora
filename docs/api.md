@@ -22,14 +22,14 @@ Resource absence and forbidden access may intentionally share a response to prev
 
 All `/me` endpoints require a Supabase access token in `Authorization: Bearer <token>`. The API validates issuer, audience, signature, and expiry, then resolves the token subject to a provisioned application user. A valid Supabase identity without an application row receives `ACCOUNT_NOT_PROVISIONED`.
 
-| Method   | Path                                     | Purpose                               |
-| -------- | ---------------------------------------- | ------------------------------------- |
-| `GET`    | `/api/v1/me`                             | Current account and profile           |
-| `POST`   | `/api/v1/me/username/availability`       | Advisory normalized username check    |
-| `PATCH`  | `/api/v1/me/profile`                     | Partial profile/onboarding update     |
-| `POST`   | `/api/v1/me/avatar/uploads`              | Create a five-minute signed upload    |
-| `POST`   | `/api/v1/me/avatar/uploads/:id/complete` | Verify and attach the uploaded avatar |
-| `DELETE` | `/api/v1/me/avatar`                      | Detach and queue avatar deletion      |
+| Method   | Path                                     | Purpose                                        |
+| -------- | ---------------------------------------- | ---------------------------------------------- |
+| `GET`    | `/api/v1/me`                             | Current account and profile                    |
+| `POST`   | `/api/v1/me/username/availability`       | Advisory normalized username check             |
+| `PATCH`  | `/api/v1/me/profile`                     | Partial profile, presets, or onboarding update |
+| `POST`   | `/api/v1/me/avatar/uploads`              | Create a five-minute signed upload             |
+| `POST`   | `/api/v1/me/avatar/uploads/:id/complete` | Verify and attach the uploaded avatar          |
+| `DELETE` | `/api/v1/me/avatar`                      | Detach and queue avatar deletion               |
 
 Stable Phase 1 errors include `AUTHENTICATION_REQUIRED`, `ACCOUNT_NOT_PROVISIONED`, `ACCOUNT_BLOCKED`, `VALIDATION_FAILED`, `USERNAME_UNAVAILABLE`, `AVATAR_UPLOAD_NOT_FOUND`, `INVALID_AVATAR_UPLOAD`, and `STORAGE_UNAVAILABLE`.
 
@@ -97,3 +97,45 @@ Post creation accepts zero to four `mediaAssetIds`. A post must contain text or
 at least one verified image. Each image is owned by its uploader, scoped to its
 destination Box, and can be attached once. Completion verifies the stored MIME
 type and exact byte count before the worker is allowed to decode it.
+
+## Phase 5 interaction endpoints
+
+| Method   | Path                                            | Purpose                              |
+| -------- | ----------------------------------------------- | ------------------------------------ |
+| `GET`    | `/api/v1/posts/:postId/comments`                | Page root comments and their replies |
+| `POST`   | `/api/v1/posts/:postId/comments`                | Add a comment or one-level reply     |
+| `PATCH`  | `/api/v1/comments/:commentId`                   | Edit an authored comment             |
+| `DELETE` | `/api/v1/comments/:commentId`                   | Soft-delete an authored comment      |
+| `PUT`    | `/api/v1/comments/:commentId/reaction`          | Set or remove a comment reaction     |
+| `PUT`    | `/api/v1/posts/:postId/reaction`                | Set or remove the caller's reaction  |
+| `POST`   | `/api/v1/posts/:postId/reaction-media/uploads`  | Prepare a private camera upload      |
+| `POST`   | `/api/v1/reaction-media/uploads/:id/complete`   | Verify and process a camera capture  |
+| `DELETE` | `/api/v1/reaction-media/uploads/:id`            | Cancel an unattached camera upload   |
+| `GET`    | `/api/v1/me/notifications`                      | Page visible notifications           |
+| `GET`    | `/api/v1/me/notifications/unread-count`         | Read the visible unread count        |
+| `PATCH`  | `/api/v1/me/notifications/read`                 | Mark all notifications read          |
+| `PATCH`  | `/api/v1/me/notifications/:notificationId/read` | Mark one notification read           |
+| `GET`    | `/api/v1/me/notifications/events`               | Stream notification invalidations    |
+
+Comments are limited to 2,000 characters. Replies may target root comments but
+cannot target another reply. Reaction state is explicit and idempotent: clients
+send one Unicode emoji grapheme, or `null` to remove their reaction. Profiles
+store exactly five distinct, server-validated preset emoji; presets only affect
+the shortcut UI and do not limit which emoji a user may send. A `real` reaction also requires a completed private
+`mediaAssetId` from the camera-upload lifecycle. The database permits only one
+reaction per user and post, so a new emoji or capture replaces the old state.
+Comments and replies use the same Unicode emoji and preset system, with one
+reaction per user and comment. Camera reactions remain post-only.
+
+Every interaction inherits the post's private Box visibility. Active membership
+is checked for reads and mutations; archived Boxes reject new interactions;
+deleted posts, removed members, and inaccessible identifiers use non-leaking
+not-found responses. A block between the actor and target rejects new activity
+and suppresses existing notification visibility.
+
+Comment and reaction mutations record durable activity events in the same
+transaction. The activity projector creates deduplicated notifications and
+publishes identifier-only realtime invalidations. HTTP handlers never create
+notifications directly. Post/feed streams additionally emit `comment.created`,
+`comment.updated`, `comment.deleted`, and `reaction.set` events after rechecking
+Box access.

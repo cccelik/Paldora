@@ -1,4 +1,11 @@
-import type { BoxId, MediaAssetId, PostId, UserId } from '@paldora/domain';
+import type {
+  BoxId,
+  CommentId,
+  MediaAssetId,
+  NotificationId,
+  PostId,
+  UserId,
+} from '@paldora/domain';
 import { expect, it, vi } from 'vitest';
 import { PaldoraApiClient } from './index.js';
 
@@ -47,6 +54,7 @@ it('attaches a fresh bearer token to authenticated requests', async () => {
       headers: expect.objectContaining({
         authorization: 'Bearer fresh-token',
       }),
+      cache: 'no-store',
     }),
   );
 });
@@ -262,5 +270,107 @@ it('uses the private post-media upload lifecycle', async () => {
     3,
     `https://api.example/api/v1/post-media/uploads/${mediaAssetId}`,
     expect.objectContaining({ method: 'DELETE' }),
+  );
+});
+
+it('uses the private camera-reaction upload lifecycle', async () => {
+  const mediaAssetId = '00000000-0000-4000-8000-000000000004' as MediaAssetId;
+  const request = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          mediaAsset: { id: mediaAssetId },
+          upload: { url: 'https://storage.example/reaction', headers: {} },
+        }),
+      ),
+    )
+    .mockResolvedValueOnce(new Response(JSON.stringify({ id: mediaAssetId })))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
+  const client = new PaldoraApiClient({
+    baseUrl: 'https://api.example/api/v1',
+    fetchImplementation: request,
+    getAccessToken: () => Promise.resolve('token'),
+  });
+  const postId = '00000000-0000-4000-8000-000000000005' as PostId;
+  await client.createReactionPhotoUpload(postId, {
+    contentType: 'image/jpeg',
+    contentLength: 123,
+  });
+  await client.completeReactionPhotoUpload(mediaAssetId);
+  await client.cancelReactionPhotoUpload(mediaAssetId);
+  expect(request).toHaveBeenNthCalledWith(
+    1,
+    `https://api.example/api/v1/posts/${postId}/reaction-media/uploads`,
+    expect.objectContaining({ method: 'POST' }),
+  );
+  expect(request).toHaveBeenNthCalledWith(
+    2,
+    `https://api.example/api/v1/reaction-media/uploads/${mediaAssetId}/complete`,
+    expect.objectContaining({ method: 'POST' }),
+  );
+  expect(request).toHaveBeenNthCalledWith(
+    3,
+    `https://api.example/api/v1/reaction-media/uploads/${mediaAssetId}`,
+    expect.objectContaining({ method: 'DELETE' }),
+  );
+});
+
+it('uses idempotent interaction and notification contracts', async () => {
+  const request = vi
+    .fn<typeof fetch>()
+    .mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ success: true }))),
+    );
+  const client = new PaldoraApiClient({
+    baseUrl: 'https://api.example/api/v1',
+    fetchImplementation: request,
+    getAccessToken: () => Promise.resolve('token'),
+  });
+  const postId = '00000000-0000-4000-8000-000000000001' as PostId;
+  const commentId = '00000000-0000-4000-8000-000000000002' as CommentId;
+  const notificationId =
+    '00000000-0000-4000-8000-000000000003' as NotificationId;
+  await client.postComments(postId, { cursor: 'older', limit: 10 });
+  await client.createComment(postId, { content: 'Hello' });
+  await client.updateComment(commentId, { content: 'Edited' });
+  await client.deleteComment(commentId);
+  await client.setPostReaction(postId, { kind: '❤️' });
+  await client.setCommentReaction(commentId, { kind: '🥳' });
+  await client.notifications({ limit: 20 });
+  await client.unreadNotificationCount();
+  await client.markNotificationRead(notificationId);
+  await client.markAllNotificationsRead();
+
+  expect(request).toHaveBeenNthCalledWith(
+    1,
+    `https://api.example/api/v1/posts/${postId}/comments?cursor=older&limit=10`,
+    expect.objectContaining({ method: 'GET' }),
+  );
+  expect(request).toHaveBeenNthCalledWith(
+    2,
+    `https://api.example/api/v1/posts/${postId}/comments`,
+    expect.objectContaining({ method: 'POST' }),
+  );
+  expect(request).toHaveBeenNthCalledWith(
+    5,
+    `https://api.example/api/v1/posts/${postId}/reaction`,
+    expect.objectContaining({
+      method: 'PUT',
+      body: JSON.stringify({ kind: '❤️' }),
+    }),
+  );
+  expect(request).toHaveBeenNthCalledWith(
+    6,
+    `https://api.example/api/v1/comments/${commentId}/reaction`,
+    expect.objectContaining({
+      method: 'PUT',
+      body: JSON.stringify({ kind: '🥳' }),
+    }),
+  );
+  expect(request).toHaveBeenNthCalledWith(
+    9,
+    `https://api.example/api/v1/me/notifications/${notificationId}/read`,
+    expect.objectContaining({ method: 'PATCH' }),
   );
 });

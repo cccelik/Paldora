@@ -5,6 +5,7 @@ import {
   mediaJobOutbox,
   mediaAssets,
   postMedia,
+  postReactions,
   posts,
   profiles,
   type PaldoraDatabase,
@@ -24,6 +25,10 @@ import { InfrastructureService } from './infrastructure.service.js';
 import { mediaDeletionOutboxEntry } from './media-job-outbox.js';
 import { decodePostCursor, encodePostCursor } from './post-cursor.js';
 import { ProfileAvatarService } from './profile-avatar.service.js';
+import {
+  emptyPostInteractionSummary,
+  PostInteractionQueryService,
+} from './post-interaction-query.js';
 import { OBJECT_STORAGE } from './storage.provider.js';
 import {
   POST_EVENT_PUBLISHER,
@@ -41,6 +46,8 @@ export class PostService {
     @Inject(POST_EVENT_PUBLISHER)
     private readonly events: PostEventPublisher,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    @Inject(PostInteractionQueryService)
+    private readonly interactionQueries: PostInteractionQueryService,
   ) {
     this.database = infrastructure.databaseClient;
   }
@@ -113,6 +120,7 @@ export class PostService {
   ): Promise<PostPage> {
     await this.requireBoxMembership(userId, boxId);
     return this.page(
+      userId,
       and(eq(posts.boxId, boxId), eq(posts.status, 'active')),
       input,
     );
@@ -123,6 +131,7 @@ export class PostService {
     input: { cursor?: string | undefined; limit: number },
   ): Promise<PostPage> {
     return this.page(
+      userId,
       and(
         eq(posts.status, 'active'),
         exists(
@@ -186,6 +195,7 @@ export class PostService {
 
   public async get(userId: UserId, postId: PostId): Promise<Post> {
     const rows = await this.selectPosts(
+      userId,
       and(
         eq(posts.id, postId),
         eq(posts.status, 'active'),
@@ -252,10 +262,24 @@ export class PostService {
         .from(postMedia)
         .innerJoin(mediaAssets, eq(mediaAssets.id, postMedia.mediaAssetId))
         .where(eq(postMedia.postId, postId));
-      if (linkedMedia.length > 0) {
+      const reactionMedia = await transaction
+        .select({
+          id: mediaAssets.id,
+          objectKey: mediaAssets.objectKey,
+          displayObjectKey: mediaAssets.displayObjectKey,
+          thumbnailObjectKey: mediaAssets.thumbnailObjectKey,
+        })
+        .from(postReactions)
+        .innerJoin(mediaAssets, eq(mediaAssets.id, postReactions.mediaAssetId))
+        .where(eq(postReactions.postId, postId));
+      await transaction
+        .delete(postReactions)
+        .where(eq(postReactions.postId, postId));
+      const removedMedia = [...linkedMedia, ...reactionMedia];
+      if (removedMedia.length > 0) {
         await transaction
           .insert(mediaJobOutbox)
-          .values(linkedMedia.map(mediaDeletionOutboxEntry));
+          .values(removedMedia.map(mediaDeletionOutboxEntry));
       }
       return removed;
     });
@@ -269,6 +293,7 @@ export class PostService {
   }
 
   private async page(
+    userId: UserId,
     baseCondition: ReturnType<typeof and>,
     input: { cursor?: string | undefined; limit: number },
   ): Promise<PostPage> {
@@ -280,6 +305,7 @@ export class PostService {
         )
       : undefined;
     const rows = await this.selectPosts(
+      userId,
       and(baseCondition, cursorCondition),
       input.limit + 1,
     );
@@ -296,6 +322,7 @@ export class PostService {
   }
 
   private async selectPosts(
+    userId: UserId,
     condition: ReturnType<typeof and>,
     limit: number,
   ): Promise<Post[]> {
@@ -315,6 +342,10 @@ export class PostService {
       rows.map(({ post }) => post.authorUserId as UserId),
     );
     const postIds = rows.map(({ post }) => post.id);
+    const interactionSummaries = await this.interactionQueries.load(
+      userId,
+      postIds as PostId[],
+    );
     const mediaRows =
       postIds.length === 0
         ? []
@@ -378,6 +409,8 @@ export class PostService {
       },
       content: post.content,
       media: mappedMedia.get(post.id) ?? [],
+      interactions:
+        interactionSummaries.get(post.id) ?? emptyPostInteractionSummary(),
       status: 'active' as const,
       editedAt: post.editedAt?.toISOString() ?? null,
       createdAt: post.createdAt.toISOString(),

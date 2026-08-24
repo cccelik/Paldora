@@ -1,15 +1,16 @@
 'use client';
 
-import type { Post, UserId } from '@paldora/domain';
+import type { Post, ReactionPresets, UserId } from '@paldora/domain';
 import type { Route } from 'next';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { deletePostAction, updatePostAction } from '../actions/posts';
 import { ConfirmSubmitButton } from './confirm-submit-button';
 import { InitialAvatar } from './ui';
 import { OverflowMenu } from './overflow-menu';
 import { PendingSubmitButton } from './pending-submit-button';
 import { PostMediaGallery } from './post-media-gallery';
+import { PostInteractions } from './post-interactions';
 
 export function PostFeed({
   posts,
@@ -18,6 +19,7 @@ export function PostFeed({
   nextCursor,
   emptyTitle = 'No posts yet.',
   emptyDescription = 'Share the first story when the moment feels right.',
+  reactionPresets,
 }: {
   posts: readonly Post[];
   currentUserId: UserId;
@@ -25,6 +27,7 @@ export function PostFeed({
   nextCursor: string | null;
   emptyTitle?: string;
   emptyDescription?: string;
+  reactionPresets: ReactionPresets;
 }) {
   if (posts.length === 0) {
     return (
@@ -43,6 +46,7 @@ export function PostFeed({
           key={post.id}
           post={post}
           returnPath={returnPath}
+          reactionPresets={reactionPresets}
         />
       ))}
       {nextCursor && (
@@ -63,15 +67,43 @@ function PostCard({
   post,
   currentUserId,
   returnPath,
+  reactionPresets,
 }: {
   post: Post;
   currentUserId: UserId;
   returnPath: string;
+  reactionPresets: ReactionPresets;
 }) {
   const owned = post.author.userId === currentUserId;
   const [editing, setEditing] = useState(false);
+  const [quickLikeRequest, setQuickLikeRequest] = useState(0);
+  const lastTouchAt = useRef(0);
+  const lastTriggerAt = useRef(0);
+  const triggerQuickLike = () => {
+    const now = Date.now();
+    if (now - lastTriggerAt.current < 350) return;
+    lastTriggerAt.current = now;
+    setQuickLikeRequest((value) => value + 1);
+  };
   return (
-    <article className="post-card" id={`post-${post.id}`}>
+    <article
+      className="post-card"
+      id={`post-${post.id}`}
+      onDoubleClick={(event) => {
+        if (!isInteractiveTarget(event.target)) triggerQuickLike();
+      }}
+      onPointerUp={(event) => {
+        if (
+          event.pointerType !== 'touch' ||
+          isInteractiveTarget(event.target)
+        ) {
+          return;
+        }
+        const now = Date.now();
+        if (now - lastTouchAt.current <= 320) triggerQuickLike();
+        lastTouchAt.current = now;
+      }}
+    >
       <header className={`post-card-header${owned ? ' has-actions' : ''}`}>
         <InitialAvatar
           className="post-avatar"
@@ -151,7 +183,25 @@ function PostCard({
           </div>
         </form>
       )}
+      <PostInteractions
+        currentUserId={currentUserId}
+        initial={post.interactions}
+        postId={post.id}
+        presets={reactionPresets}
+        quickLikeRequest={quickLikeRequest}
+      />
     </article>
+  );
+}
+
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        'a, button, input, textarea, select, label, form, [role="button"], [contenteditable="true"]',
+      ),
+    )
   );
 }
 

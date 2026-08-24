@@ -5,6 +5,7 @@ import { AuthLayout } from '../../components/auth-layout';
 import { SignInForm } from '../../components/auth-forms';
 import { AvatarUploader } from '../../components/avatar-uploader';
 import { OnboardingLayout } from '../../components/onboarding-layout';
+import { ReactionPresetEditor } from '../../components/reaction-preset-editor';
 import {
   ProfileSetupForm,
   SettingsForm,
@@ -31,6 +32,7 @@ const previewUser: CurrentUser = {
     displayName: 'Alice Moreno',
     bio: 'Learning pottery, keeping tiny moments, and making Berlin feel like home.',
     avatarUrl: null,
+    reactionPresets: ['👍', '❤️', '😂', '😮', '😢'],
     onboardingState: 'complete',
     createdAt: '2026-08-23T00:00:00.000Z',
     updatedAt: '2026-08-23T00:00:00.000Z',
@@ -86,16 +88,23 @@ export default async function PhaseOneDesignPreview({
           description="Keep the identity your people see up to date."
         />
         <div className="settings-layout">
-          <SurfaceCard
-            className="profile-settings-card"
-            title="Profile information"
-          >
-            <SettingsForm
-              username="alice_moreno"
-              displayName="Alice Moreno"
-              bio={previewUser.profile.bio ?? ''}
-            />
-          </SurfaceCard>
+          <div className="settings-main">
+            <SurfaceCard
+              className="profile-settings-card"
+              title="Profile information"
+            >
+              <SettingsForm
+                username="alice_moreno"
+                displayName="Alice Moreno"
+                bio={previewUser.profile.bio ?? ''}
+              />
+            </SurfaceCard>
+            <SurfaceCard title="Reaction shortcuts">
+              <ReactionPresetEditor
+                presets={previewUser.profile.reactionPresets}
+              />
+            </SurfaceCard>
+          </div>
           <aside className="settings-side">
             <SurfaceCard title="Profile photo">
               <AvatarUploader />

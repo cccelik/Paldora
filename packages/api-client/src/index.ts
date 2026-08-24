@@ -6,6 +6,11 @@ import type {
   BoxInvitationId,
   BoxMember,
   BoxRole,
+  Comment,
+  CommentId,
+  CommentPage,
+  CommentInteractions,
+  CreateCommentInput,
   CreateBoxInput,
   CreateBoxInvitationInput,
   CreateFriendRequestInput,
@@ -14,6 +19,8 @@ import type {
   CreatePostInput,
   CreatePostMediaUploadInput,
   CreatePostMediaUploadResult,
+  CreateReactionPhotoUploadInput,
+  CreateReactionPhotoUploadResult,
   CursorPageInput,
   CurrentUser,
   HealthStatus,
@@ -21,9 +28,15 @@ import type {
   FriendshipId,
   MediaAsset,
   MediaAssetId,
+  NotificationId,
+  NotificationPage,
   Post,
   PostId,
   PostPage,
+  PostInteractions,
+  SetPostReactionInput,
+  SetCommentReactionInput,
+  UpdateCommentInput,
   UpdatePostInput,
   UpdateProfileInput,
   UsernameAvailability,
@@ -48,7 +61,7 @@ export interface ApiClientOptions {
 }
 
 interface SendOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal | undefined;
   authenticated?: boolean;
@@ -371,6 +384,136 @@ export class PaldoraApiClient {
     return this.send(`/posts/${id}`, { method: 'DELETE', signal });
   }
 
+  public postComments(
+    postId: PostId,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<CommentPage> {
+    return this.send(pagePath(`/posts/${postId}/comments`, page), { signal });
+  }
+
+  public createComment(
+    postId: PostId,
+    input: CreateCommentInput,
+    signal?: AbortSignal,
+  ): Promise<Comment> {
+    return this.send(`/posts/${postId}/comments`, {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public updateComment(
+    commentId: CommentId,
+    input: UpdateCommentInput,
+    signal?: AbortSignal,
+  ): Promise<Comment> {
+    return this.send(`/comments/${commentId}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+    });
+  }
+
+  public deleteComment(
+    commentId: CommentId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/comments/${commentId}`, {
+      method: 'DELETE',
+      signal,
+    });
+  }
+
+  public setCommentReaction(
+    commentId: CommentId,
+    input: SetCommentReactionInput,
+    signal?: AbortSignal,
+  ): Promise<CommentInteractions> {
+    return this.send(`/comments/${commentId}/reaction`, {
+      method: 'PUT',
+      body: input,
+      signal,
+    });
+  }
+
+  public setPostReaction(
+    postId: PostId,
+    input: SetPostReactionInput,
+    signal?: AbortSignal,
+  ): Promise<PostInteractions> {
+    return this.send(`/posts/${postId}/reaction`, {
+      method: 'PUT',
+      body: input,
+      signal,
+    });
+  }
+
+  public createReactionPhotoUpload(
+    postId: PostId,
+    input: CreateReactionPhotoUploadInput,
+    signal?: AbortSignal,
+  ): Promise<CreateReactionPhotoUploadResult> {
+    return this.send(`/posts/${postId}/reaction-media/uploads`, {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public completeReactionPhotoUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<MediaAsset> {
+    return this.send(`/reaction-media/uploads/${id}/complete`, {
+      method: 'POST',
+      signal,
+    });
+  }
+
+  public cancelReactionPhotoUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/reaction-media/uploads/${id}`, {
+      method: 'DELETE',
+      signal,
+    });
+  }
+
+  public notifications(
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<NotificationPage> {
+    return this.send(pagePath('/me/notifications', page), { signal });
+  }
+
+  public unreadNotificationCount(
+    signal?: AbortSignal,
+  ): Promise<{ unreadCount: number }> {
+    return this.send('/me/notifications/unread-count', { signal });
+  }
+
+  public markNotificationRead(
+    notificationId: NotificationId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/me/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+      signal,
+    });
+  }
+
+  public markAllNotificationsRead(
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send('/me/notifications/read', {
+      method: 'PATCH',
+      signal,
+    });
+  }
+
   private async send<Result>(
     path: string,
     options: SendOptions = {},
@@ -394,6 +537,7 @@ function requestOptions(
   return {
     method: options.method ?? 'GET',
     headers,
+    cache: 'no-store',
     ...(options.body !== undefined
       ? { body: JSON.stringify(options.body) }
       : {}),

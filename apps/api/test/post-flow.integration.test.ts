@@ -16,6 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BoxService } from '../src/box.service.js';
 import type { InfrastructureService } from '../src/infrastructure.service.js';
 import { PostService } from '../src/post.service.js';
+import { PostInteractionQueryService } from '../src/post-interaction-query.js';
 import { ProfileAvatarService } from '../src/profile-avatar.service.js';
 import type { PublishPostEventInput } from '../src/post-event.service.js';
 import { createFakeObjectStorage } from './fake-object-storage.js';
@@ -42,6 +43,7 @@ describe.runIf(Boolean(databaseUrl))('private text-post flow', () => {
       createFakeObjectStorage(),
     );
     boxes = createBoxService(infrastructure, avatars);
+    const storage = createFakeObjectStorage();
     posts = new PostService(
       infrastructure,
       avatars,
@@ -51,7 +53,8 @@ describe.runIf(Boolean(databaseUrl))('private text-post flow', () => {
           return true;
         },
       },
-      createFakeObjectStorage(),
+      storage,
+      new PostInteractionQueryService(infrastructure, storage),
     );
     const inserted = await connection.database
       .insert(users)

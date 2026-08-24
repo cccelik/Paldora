@@ -133,12 +133,28 @@ export class PostController {
   ): Observable<MessageEvent> {
     return new Observable<MessageEvent>((subscriber) => {
       let active = true;
-      let unsubscribe: (() => void) | undefined;
+      let pendingSubscriptions = 2;
+      const unsubscribers: Array<() => void> = [];
+      const register = (subscription: Promise<() => void>) => {
+        void subscription
+          .then((stop) => {
+            if (!active) {
+              stop();
+              return;
+            }
+            unsubscribers.push(stop);
+            pendingSubscriptions -= 1;
+            if (pendingSubscriptions === 0) {
+              subscriber.next({ type: 'ready', data: { at: Date.now() } });
+            }
+          })
+          .catch((error: unknown) => subscriber.error(error));
+      };
       const heartbeat = setInterval(() => {
         subscriber.next({ type: 'heartbeat', data: { at: Date.now() } });
       }, 20_000);
-      void this.postEvents
-        .subscribe((event) => {
+      register(
+        this.postEvents.subscribe((event) => {
           if (!active || (boxId && event.boxId !== boxId)) return;
           void this.posts
             .canAccessBox(userId, event.boxId)
@@ -152,16 +168,35 @@ export class PostController {
               }
             })
             .catch((error: unknown) => subscriber.error(error));
-        })
-        .then((stop) => {
-          if (active) unsubscribe = stop;
-          else stop();
-        })
-        .catch((error: unknown) => subscriber.error(error));
+        }),
+      );
+      register(
+        this.postEvents.subscribeInteractions((event) => {
+          if (!active || (boxId && event.boxId !== boxId)) return;
+          if (
+            event.action === 'notification.created' &&
+            event.recipientUserId !== userId
+          ) {
+            return;
+          }
+          void this.posts
+            .canAccessBox(userId, event.boxId)
+            .then((canAccess) => {
+              if (active && canAccess) {
+                subscriber.next({
+                  id: event.id,
+                  type: event.action,
+                  data: event,
+                });
+              }
+            })
+            .catch((error: unknown) => subscriber.error(error));
+        }),
+      );
       return () => {
         active = false;
         clearInterval(heartbeat);
-        unsubscribe?.();
+        for (const unsubscribe of unsubscribers) unsubscribe();
       };
     });
   }

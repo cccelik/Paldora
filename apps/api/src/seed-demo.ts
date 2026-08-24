@@ -75,9 +75,10 @@ async function provisionAccount(
   supabase: SupabaseClient,
   connection: DatabaseConnection,
 ): Promise<void> {
-  const authUser =
-    findAuthUser(existingUsers, account.email) ??
-    (await createAuthUser(supabase, account));
+  const existingAuthUser = findAuthUser(existingUsers, account.email);
+  const authUser = existingAuthUser
+    ? await reconcileAuthUser(supabase, existingAuthUser, account)
+    : await createAuthUser(supabase, account);
   const emailNormalized = account.email.trim().toLocaleLowerCase('en-US');
   const [appUser] = await connection.database
     .insert(users)
@@ -99,6 +100,18 @@ async function provisionAccount(
     .from(users)
     .where(eq(users.id, appUser.id));
   process.stdout.write(`Provisioned demo account ${result?.email ?? ''}\n`);
+}
+
+async function reconcileAuthUser(
+  supabase: SupabaseClient,
+  user: User,
+  account: DemoAccount,
+): Promise<User> {
+  const updated = await supabase.auth.admin.updateUserById(user.id, {
+    password: account.password,
+  });
+  if (updated.error) throw updated.error;
+  return updated.data.user;
 }
 
 function findAuthUser(existingUsers: User[], email: string): User | undefined {

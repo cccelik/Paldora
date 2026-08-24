@@ -5,9 +5,13 @@ import {
   createAvatarUploadSchema,
   createFriendRequestSchema,
   createPostSchema,
+  createCommentSchema,
   cursorPageSchema,
   isReservedUsername,
+  isSingleEmoji,
   normalizeUsername,
+  setPostReactionSchema,
+  setCommentReactionSchema,
   transferBoxOwnershipSchema,
   updateProfileSchema,
   usernameSchema,
@@ -17,6 +21,71 @@ describe('cursorPageSchema', () => {
   it('applies a bounded default page size', () => {
     expect(cursorPageSchema.parse({})).toEqual({ limit: 20 });
     expect(() => cursorPageSchema.parse({ limit: 51 })).toThrow();
+  });
+});
+
+describe('Phase 5 interaction validation', () => {
+  it('trims comments and enforces content and reply ID bounds', () => {
+    expect(createCommentSchema.parse({ content: '  hello  ' })).toEqual({
+      content: 'hello',
+    });
+    expect(createCommentSchema.safeParse({ content: '   ' }).success).toBe(
+      false,
+    );
+    expect(
+      createCommentSchema.safeParse({ content: 'x'.repeat(2_001) }).success,
+    ).toBe(false);
+    expect(
+      createCommentSchema.safeParse({
+        content: 'reply',
+        parentCommentId: 'not-a-comment',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts explicit reaction state and removal only', () => {
+    expect(setPostReactionSchema.parse({ kind: '😮' })).toEqual({
+      kind: '😮',
+    });
+    expect(setPostReactionSchema.parse({ kind: null })).toEqual({ kind: null });
+    expect(
+      setPostReactionSchema.safeParse({
+        kind: 'real',
+        mediaAssetId: '00000000-0000-4000-8000-000000000001',
+      }).success,
+    ).toBe(true);
+    expect(setPostReactionSchema.safeParse({ kind: 'real' }).success).toBe(
+      false,
+    );
+    expect(
+      setPostReactionSchema.safeParse({
+        kind: '❤️',
+        mediaAssetId: '00000000-0000-4000-8000-000000000001',
+      }).success,
+    ).toBe(false);
+    expect(setPostReactionSchema.safeParse({ kind: 'angry' }).success).toBe(
+      false,
+    );
+  });
+
+  it('accepts emoji comment reactions but not camera markers', () => {
+    expect(setCommentReactionSchema.parse({ kind: '🥳' })).toEqual({
+      kind: '🥳',
+    });
+    expect(setCommentReactionSchema.parse({ kind: null })).toEqual({
+      kind: null,
+    });
+    expect(setCommentReactionSchema.safeParse({ kind: 'real' }).success).toBe(
+      false,
+    );
+  });
+
+  it('accepts one complete Unicode emoji and rejects text or emoji pairs', () => {
+    expect(isSingleEmoji('👍🏽')).toBe(true);
+    expect(isSingleEmoji('👨‍👩‍👧‍👦')).toBe(true);
+    expect(isSingleEmoji('🇹🇷')).toBe(true);
+    expect(isSingleEmoji('👍❤️')).toBe(false);
+    expect(isSingleEmoji('like')).toBe(false);
   });
 });
 
@@ -45,6 +114,24 @@ describe('profile and avatar validation', () => {
     expect(updateProfileSchema.safeParse({}).success).toBe(false);
     expect(
       updateProfileSchema.safeParse({ displayName: 'A'.repeat(81) }).success,
+    ).toBe(false);
+  });
+
+  it('requires five distinct emoji reaction presets', () => {
+    expect(
+      updateProfileSchema.safeParse({
+        reactionPresets: ['👍', '❤️', '😂', '😮', '🙏'],
+      }).success,
+    ).toBe(true);
+    expect(
+      updateProfileSchema.safeParse({
+        reactionPresets: ['👍', '👍', '😂', '😮', '🙏'],
+      }).success,
+    ).toBe(false);
+    expect(
+      updateProfileSchema.safeParse({
+        reactionPresets: ['👍', '❤️', '😂', '😮'],
+      }).success,
     ).toBe(false);
   });
 

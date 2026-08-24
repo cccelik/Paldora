@@ -72,6 +72,7 @@ export class UserService {
         displayName: row.profile.displayName,
         bio: row.profile.bio,
         avatarUrl,
+        reactionPresets: row.profile.reactionPresets,
         onboardingState: row.profile.onboardingState,
         createdAt: row.profile.createdAt.toISOString(),
         updatedAt: row.profile.updatedAt.toISOString(),
@@ -214,6 +215,9 @@ export class UserService {
       ...(input.bio !== undefined ? { bio: input.bio?.trim() || null } : {}),
       ...(input.onboardingState !== undefined
         ? { onboardingState: input.onboardingState }
+        : {}),
+      ...(input.reactionPresets !== undefined
+        ? { reactionPresets: input.reactionPresets }
         : {}),
       updatedAt: new Date(),
     };

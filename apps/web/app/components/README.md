@@ -42,3 +42,21 @@ Route-sized product sections are also reusable components: `BoxGrid`,
 rendering through `AvatarUploaderView`, `PostComposerForm`, and
 `PostMediaLightbox`. Extend these components or extract a new focused sibling;
 do not copy their markup back into a route.
+
+Phase 5 interactions are split by responsibility: `ReactionBar` renders
+reaction state, `CommentThread` and `CommentForm` render the one-level thread,
+and `PostInteractions` owns browser-side loading and mutations. Notifications
+reuse `NotificationRow`, `NotificationNavLink`, and the shared authenticated SSE
+loop. `AppRealtimeBridge` owns the single application-wide stream so individual
+pages and navigation controls never open competing connections. Keep future
+interaction surfaces on these contracts instead of copying post-card controls.
+
+`ReactionBar` owns the compact emoji picker and aggregate counts.
+`ReactionCamera` owns live permission, capture, preview, and retake behavior;
+the signed upload and mutation orchestration stays in `usePostInteractions`.
+`EmojiChooser` is the shared arbitrary-emoji surface used by both post reactions
+and `ReactionPresetEditor`; `EmojiReactionPicker` composes it for post and
+comment reaction bars, and profiles own five persisted shortcuts. Post cards
+send the ordinary thumbs-up reaction on guarded double-click/double-tap without
+intercepting links, media controls, menus, or forms. Future reaction surfaces
+must reuse these boundaries.

@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import { signOutAction } from '../actions/auth';
 import { Wordmark } from './wordmark';
 import { InitialAvatar } from './ui';
+import { NotificationNavLink } from './notification-nav-link';
+import { AppRealtimeBridge } from './app-realtime-bridge';
 
 const navigation = [
   { key: 'home', label: 'Home', href: '/home', icon: '⌂' },
@@ -19,12 +21,13 @@ export function AppShell({
   children,
 }: {
   current: CurrentUser;
-  active: 'home' | 'boxes' | 'friends' | 'settings';
+  active: 'home' | 'boxes' | 'friends' | 'notifications' | 'settings';
   children: ReactNode;
 }) {
   const accountName = current.profile.displayName ?? current.user.email;
   return (
     <main className="application-shell">
+      <AppRealtimeBridge />
       <aside className="app-sidebar">
         <Wordmark compact />
         <nav aria-label="Primary navigation">
@@ -48,6 +51,9 @@ export function AppShell({
             ),
           )}
         </nav>
+        <div className="sidebar-notifications">
+          <NotificationNavLink active={active === 'notifications'} />
+        </div>
         <div className="sidebar-account">
           <div className="mini-profile">
             <InitialAvatar
@@ -92,6 +98,7 @@ export function AppShell({
         <Link className={active === 'friends' ? 'active' : ''} href="/friends">
           <span>♧</span>Friends
         </Link>
+        <NotificationNavLink active={active === 'notifications'} mobile />
         <Link
           className={active === 'settings' ? 'active' : ''}
           href="/settings/account"

@@ -44,3 +44,26 @@ losing the cleanup instructions. The API dispatcher claims rows with
 job ID, and retries unpublished rows with bounded backoff when Redis is
 unavailable. Published rows remain as an audit record and worker operations are
 idempotent.
+
+Phase 5 owns `comments`, `post_reactions`, `activity_events`, and
+`notifications`. `comment_reactions` adds one Unicode emoji state per
+`(comment_id, user_id)`; its cascading foreign keys remove state when a comment,
+post, or Box is hard-deleted. Comments are soft-deleted so replies keep their conversational
+position; a self-referencing foreign key and the interaction service enforce a
+single reply level. `post_reactions` uses `(post_id, user_id)` as its primary key,
+making reaction state unique and safe under concurrent writes.
+Emoji reactions store one validated Unicode grapheme as text, allowing the UI
+to offer any current or future emoji without a schema migration. Each profile's
+five distinct shortcuts are stored in `reaction_presets` with a stable default.
+A `real` reaction must reference exactly one unique `reaction_image` media asset;
+emoji reactions cannot reference media. Replacing or removing a camera reaction writes a
+durable deletion-outbox entry after detaching the asset.
+
+`activity_events` is the durable boundary between interaction mutations and
+notification/realtime projection. Comment and reaction state and its event are
+committed atomically. Projectors claim pending rows with `for update skip
+locked`, retry failures with bounded backoff, and retain processed rows for
+audit. Notification dedupe keys prevent retries or repeated reaction changes
+from producing duplicate rows. Notification reads always join through an active
+post and active Box membership, so persisted activity never bypasses current
+visibility.

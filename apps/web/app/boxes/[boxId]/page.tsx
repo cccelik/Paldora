@@ -5,7 +5,6 @@ import { AppShell } from '../../components/app-shell';
 import { BoxDetailHeaderActions } from '../../components/box-detail-header-actions';
 import { PostComposer } from '../../components/post-composer';
 import { PostFeed } from '../../components/post-feed';
-import { PostRealtimeRefresh } from '../../components/post-realtime-refresh';
 import { PageFeedback, PageHeader } from '../../components/ui';
 import {
   authenticatedApiClient,
@@ -42,7 +41,6 @@ export default async function BoxDetailPage({
   const socialConnections = [...friends, ...friendRequests, ...blockedUsers];
   return (
     <AppShell current={current} active="boxes">
-      <PostRealtimeRefresh boxId={box.id} />
       <PageHeader
         className="social-heading"
         eyebrow={`Private Box · ${box.currentUserRole} · ${box.status}`}
@@ -85,6 +83,7 @@ export default async function BoxDetailPage({
             nextCursor={postPage.nextCursor}
             posts={postPage.items}
             returnPath={`/boxes/${box.id}`}
+            reactionPresets={current.profile.reactionPresets}
           />
         </div>
       </div>

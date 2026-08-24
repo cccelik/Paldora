@@ -50,6 +50,41 @@
       "when": 1787516467235,
       "tag": "0006_giant_menace",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787518555789,
+      "tag": "0007_medical_lethal_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787522086665,
+      "tag": "0008_dizzy_nuke",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787522537655,
+      "tag": "0009_attach-reaction-media",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787523441928,
+      "tag": "0010_crazy_titania",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787524509595,
+      "tag": "0011_bitter_gamma_corps",
+      "breakpoints": true
     }
   ]
 }

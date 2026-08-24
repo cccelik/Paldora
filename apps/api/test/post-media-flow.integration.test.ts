@@ -13,9 +13,13 @@ import { S3ObjectStorage } from '@paldora/storage';
 import { eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { InfrastructureService } from '../src/infrastructure.service.js';
+import { InteractionAuthorizationPolicy } from '../src/interaction-authorization-policy.service.js';
+import { InteractionService } from '../src/interaction.service.js';
 import { PostMediaService } from '../src/post-media.service.js';
+import { PostInteractionQueryService } from '../src/post-interaction-query.js';
 import { PostService } from '../src/post.service.js';
 import { ProfileAvatarService } from '../src/profile-avatar.service.js';
+import { ReactionMediaService } from '../src/reaction-media.service.js';
 import { UserService } from '../src/user.service.js';
 import { createBoxService } from './create-box-service.js';
 
@@ -107,10 +111,28 @@ describe.runIf(configured)('post media upload flow', () => {
       avatars,
       { publish: async () => true },
       storage,
+      new PostInteractionQueryService(infrastructure, storage),
     );
     const postMedia = new PostMediaService(
       infrastructure,
       posts,
+      usersService,
+      storage,
+    );
+    const policy = new InteractionAuthorizationPolicy(infrastructure);
+    const interactionQueries = new PostInteractionQueryService(
+      infrastructure,
+      storage,
+    );
+    const interactions = new InteractionService(
+      infrastructure,
+      policy,
+      avatars,
+      interactionQueries,
+    );
+    const reactionMedia = new ReactionMediaService(
+      infrastructure,
+      policy,
       usersService,
       storage,
     );
@@ -165,11 +187,42 @@ describe.runIf(configured)('post media upload flow', () => {
         .from(mediaJobOutbox)
         .where(eq(mediaJobOutbox.mediaAssetId, upload.mediaAsset.id)),
     ).resolves.toEqual([{ jobType: 'process-post-image' }]);
-    await expect(
-      posts.create(owner, box.id, '', [upload.mediaAsset.id]),
-    ).resolves.toMatchObject({
+    const post = await posts.create(owner, box.id, '', [upload.mediaAsset.id]);
+    expect(post).toMatchObject({
       content: '',
       media: [{ id: upload.mediaAsset.id, status: 'processing' }],
+    });
+    const reactionUpload = await reactionMedia.createUpload(owner, post.id, {
+      contentType: 'image/png',
+      contentLength: image.byteLength,
+    });
+    const reactionUploaded = await fetch(reactionUpload.upload.url, {
+      method: 'PUT',
+      headers: reactionUpload.upload.headers,
+      body: image,
+    });
+    expect(reactionUploaded.ok).toBe(true);
+    await expect(
+      reactionMedia.completeUpload(outsider, reactionUpload.mediaAsset.id),
+    ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
+    await expect(
+      reactionMedia.completeUpload(owner, reactionUpload.mediaAsset.id),
+    ).resolves.toMatchObject({
+      status: 'processing',
+      purpose: 'reaction_image',
+    });
+    await expect(
+      interactions.setReaction(
+        owner,
+        post.id,
+        'real',
+        reactionUpload.mediaAsset.id,
+      ),
+    ).resolves.toMatchObject({
+      currentUserReaction: 'real',
+      realReactions: [
+        expect.objectContaining({ mediaAssetId: reactionUpload.mediaAsset.id }),
+      ],
     });
   });
 });
