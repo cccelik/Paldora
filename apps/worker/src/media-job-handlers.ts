@@ -97,6 +97,7 @@ async function processMediaObject(
           'post_image',
           'reaction_image',
           'life_update_image',
+          'room_banner',
         ]),
         eq(mediaAssets.status, 'processing'),
       ),

@@ -354,7 +354,7 @@ export class LifeUpdateService {
           this.cursorCondition(input.cursor),
         ),
       )
-      .orderBy(desc(lifeUpdates.id))
+      .orderBy(desc(lifeUpdates.createdAt), desc(lifeUpdates.id))
       .limit(input.limit + 1);
     return this.mapPage(userId, rows, input.limit);
   }

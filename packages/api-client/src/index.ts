@@ -24,6 +24,8 @@ import type {
   CreatePostMediaUploadResult,
   CreateReactionPhotoUploadInput,
   CreateReactionPhotoUploadResult,
+  CreateRoomBannerUploadInput,
+  CreateRoomBannerUploadResult,
   CursorPageInput,
   CurrentUser,
   HealthStatus,
@@ -42,11 +44,18 @@ import type {
   PostId,
   PostPage,
   PostInteractions,
+  RoomGalleryPage,
+  RoomView,
   SetPostReactionInput,
   SetCommentReactionInput,
   UpdateCommentInput,
   UpdatePostInput,
   UpdateProfileInput,
+  UpdateRoomInput,
+  UpdateRoomTopFriendsInput,
+  UpdateRoomWidgetsInput,
+  UpdateUserPreferencesInput,
+  UserPreferences,
   UpdateLifeUpdateInput,
   UsernameAvailability,
   UserId,
@@ -95,6 +104,137 @@ export class PaldoraApiClient {
 
   public currentUser(signal?: AbortSignal): Promise<CurrentUser> {
     return this.send('/me', { signal });
+  }
+
+  public myRoom(signal?: AbortSignal): Promise<RoomView> {
+    return this.send('/me/room', { signal });
+  }
+
+  public room(username: string, signal?: AbortSignal): Promise<RoomView> {
+    return this.send(`/rooms/${encodeURIComponent(username)}`, { signal });
+  }
+
+  public updateRoom(
+    input: UpdateRoomInput,
+    signal?: AbortSignal,
+  ): Promise<RoomView> {
+    return this.send('/me/room', { method: 'PATCH', body: input, signal });
+  }
+
+  public updateRoomWidgets(
+    input: UpdateRoomWidgetsInput,
+    signal?: AbortSignal,
+  ): Promise<RoomView> {
+    return this.send('/me/room/widgets', {
+      method: 'PUT',
+      body: input,
+      signal,
+    });
+  }
+
+  public updateRoomTopFriends(
+    input: UpdateRoomTopFriendsInput,
+    signal?: AbortSignal,
+  ): Promise<RoomView> {
+    return this.send('/me/room/top-friends', {
+      method: 'PUT',
+      body: input,
+      signal,
+    });
+  }
+
+  public roomPosts(
+    username: string,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<PostPage> {
+    return this.send(
+      pagePath(`/rooms/${encodeURIComponent(username)}/posts`, page),
+      { signal },
+    );
+  }
+
+  public roomLifeUpdates(
+    username: string,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<LifeUpdatePage> {
+    return this.send(
+      pagePath(`/rooms/${encodeURIComponent(username)}/life-updates`, page),
+      { signal },
+    );
+  }
+
+  public roomGallery(
+    username: string,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<RoomGalleryPage> {
+    return this.send(
+      pagePath(`/rooms/${encodeURIComponent(username)}/gallery`, page),
+      { signal },
+    );
+  }
+
+  public roomMemories(
+    username: string,
+    page?: CursorPageInput,
+    signal?: AbortSignal,
+  ): Promise<MemoryPage> {
+    return this.send(
+      pagePath(`/rooms/${encodeURIComponent(username)}/memories`, page),
+      { signal },
+    );
+  }
+
+  public preferences(signal?: AbortSignal): Promise<UserPreferences> {
+    return this.send('/me/preferences', { signal });
+  }
+
+  public updatePreferences(
+    input: UpdateUserPreferencesInput,
+    signal?: AbortSignal,
+  ): Promise<UserPreferences> {
+    return this.send('/me/preferences', {
+      method: 'PATCH',
+      body: input,
+      signal,
+    });
+  }
+
+  public createRoomBannerUpload(
+    input: CreateRoomBannerUploadInput,
+    signal?: AbortSignal,
+  ): Promise<CreateRoomBannerUploadResult> {
+    return this.send('/me/room/banner/uploads', {
+      method: 'POST',
+      body: input,
+      signal,
+    });
+  }
+
+  public completeRoomBannerUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<RoomView> {
+    return this.send(`/me/room/banner/uploads/${id}/complete`, {
+      method: 'POST',
+      signal,
+    });
+  }
+
+  public cancelRoomBannerUpload(
+    id: MediaAssetId,
+    signal?: AbortSignal,
+  ): Promise<{ success: true }> {
+    return this.send(`/me/room/banner/uploads/${id}`, {
+      method: 'DELETE',
+      signal,
+    });
+  }
+
+  public deleteRoomBanner(signal?: AbortSignal): Promise<RoomView> {
+    return this.send('/me/room/banner', { method: 'DELETE', signal });
   }
 
   public usernameAvailability(

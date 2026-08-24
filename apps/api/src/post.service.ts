@@ -152,6 +152,33 @@ export class PostService {
     );
   }
 
+  public listUser(
+    viewerUserId: UserId,
+    authorUserId: UserId,
+    input: { cursor?: string | undefined; limit: number },
+  ): Promise<PostPage> {
+    return this.page(
+      viewerUserId,
+      and(
+        eq(posts.authorUserId, authorUserId),
+        eq(posts.status, 'active'),
+        exists(
+          this.database
+            .select({ userId: boxMemberships.userId })
+            .from(boxMemberships)
+            .where(
+              and(
+                eq(boxMemberships.boxId, posts.boxId),
+                eq(boxMemberships.userId, viewerUserId),
+                eq(boxMemberships.status, 'active'),
+              ),
+            ),
+        ),
+      ),
+      input,
+    );
+  }
+
   public async assertBoxAccess(userId: UserId, boxId: BoxId): Promise<void> {
     await this.requireBoxMembership(userId, boxId);
   }

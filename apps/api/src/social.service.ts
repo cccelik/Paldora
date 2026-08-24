@@ -2,6 +2,7 @@ import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
   friendships,
   profiles,
+  roomTopFriends,
   users,
   type PaldoraDatabase,
 } from '@paldora/database';
@@ -73,16 +74,34 @@ export class SocialService {
     otherUserId: UserId,
   ): Promise<{ success: true }> {
     const [low, high] = this.pair(userId, otherUserId);
-    const deleted = await this.database
-      .delete(friendships)
-      .where(
-        and(
-          eq(friendships.userLowId, low),
-          eq(friendships.userHighId, high),
-          eq(friendships.status, 'accepted'),
-        ),
-      )
-      .returning({ id: friendships.id });
+    const deleted = await this.database.transaction(async (tx) => {
+      const removed = await tx
+        .delete(friendships)
+        .where(
+          and(
+            eq(friendships.userLowId, low),
+            eq(friendships.userHighId, high),
+            eq(friendships.status, 'accepted'),
+          ),
+        )
+        .returning({ id: friendships.id });
+      if (removed.length > 0)
+        await tx
+          .delete(roomTopFriends)
+          .where(
+            or(
+              and(
+                eq(roomTopFriends.roomUserId, userId),
+                eq(roomTopFriends.friendUserId, otherUserId),
+              ),
+              and(
+                eq(roomTopFriends.roomUserId, otherUserId),
+                eq(roomTopFriends.friendUserId, userId),
+              ),
+            ),
+          );
+      return removed;
+    });
     if (!deleted.length) this.friendshipNotFound();
     return { success: true };
   }
@@ -98,38 +117,59 @@ export class SocialService {
     }
     const [low, high] = this.pair(userId, target.userId);
     const now = new Date();
-    const [existing] = await this.database
-      .select()
-      .from(friendships)
-      .where(
-        and(eq(friendships.userLowId, low), eq(friendships.userHighId, high)),
-      )
-      .limit(1);
-    if (existing?.status === 'blocked' && existing.blockedByUserId !== userId) {
-      this.interactionUnavailable();
-    }
-    const [row] = existing
-      ? await this.database
-          .update(friendships)
-          .set({
-            status: 'blocked',
-            blockedByUserId: userId,
-            respondedAt: now,
-            updatedAt: now,
-          })
-          .where(eq(friendships.id, existing.id))
-          .returning()
-      : await this.database
-          .insert(friendships)
-          .values({
-            userLowId: low,
-            userHighId: high,
-            initiatedByUserId: userId,
-            blockedByUserId: userId,
-            status: 'blocked',
-            respondedAt: now,
-          })
-          .returning();
+    const row = await this.database.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(friendships)
+        .where(
+          and(eq(friendships.userLowId, low), eq(friendships.userHighId, high)),
+        )
+        .for('update')
+        .limit(1);
+      if (
+        existing?.status === 'blocked' &&
+        existing.blockedByUserId !== userId
+      ) {
+        this.interactionUnavailable();
+      }
+      const [blocked] = existing
+        ? await tx
+            .update(friendships)
+            .set({
+              status: 'blocked',
+              blockedByUserId: userId,
+              respondedAt: now,
+              updatedAt: now,
+            })
+            .where(eq(friendships.id, existing.id))
+            .returning()
+        : await tx
+            .insert(friendships)
+            .values({
+              userLowId: low,
+              userHighId: high,
+              initiatedByUserId: userId,
+              blockedByUserId: userId,
+              status: 'blocked',
+              respondedAt: now,
+            })
+            .returning();
+      await tx
+        .delete(roomTopFriends)
+        .where(
+          or(
+            and(
+              eq(roomTopFriends.roomUserId, userId),
+              eq(roomTopFriends.friendUserId, target.userId),
+            ),
+            and(
+              eq(roomTopFriends.roomUserId, target.userId),
+              eq(roomTopFriends.friendUserId, userId),
+            ),
+          ),
+        );
+      return blocked;
+    });
     if (!row) throw new Error('Block did not return a row.');
     return this.map(row, userId, target);
   }

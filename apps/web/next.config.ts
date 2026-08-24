@@ -25,11 +25,49 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()',
+    value: 'camera=(self), microphone=(), geolocation=()',
+  },
+  {
+    key: 'Content-Security-Policy',
+    value: contentSecurityPolicy(),
   },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
 ];
+
+function contentSecurityPolicy(): string {
+  const connectOrigins = [
+    originOf(process.env.NEXT_PUBLIC_API_URL),
+    originOf(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  ].filter(Boolean);
+  const websocketOrigins = connectOrigins.map((origin) =>
+    origin.replace(/^http/, 'ws'),
+  );
+  const developmentEval =
+    process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '';
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    `connect-src 'self' ${[...connectOrigins, ...websocketOrigins].join(' ')}`,
+    "font-src 'self' data:",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "img-src 'self' data: blob: https: http://localhost:9000",
+    "object-src 'none'",
+    `script-src 'self' 'unsafe-inline'${developmentEval}`,
+    "style-src 'self' 'unsafe-inline'",
+    "worker-src 'self' blob:",
+  ].join('; ');
+}
+
+function originOf(value: string | undefined): string {
+  if (!value) return '';
+  try {
+    return new URL(value).origin;
+  } catch {
+    return '';
+  }
+}
 
 const nextConfig: NextConfig = {
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),

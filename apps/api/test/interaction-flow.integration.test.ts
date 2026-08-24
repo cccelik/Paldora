@@ -212,7 +212,7 @@ describe.runIf(Boolean(databaseUrl))('Phase 5 interaction flow', () => {
     expect(
       page.items.find(({ id }) => id === comment.id)?.interactions,
     ).toMatchObject({ currentUserReaction: '🥳' });
-    await dispatcher.flush();
+    await flushUntilNotification(member);
     await expect(
       connection.database
         .select()
@@ -238,6 +238,25 @@ describe.runIf(Boolean(databaseUrl))('Phase 5 interaction flow', () => {
       response: { error: { code: 'COMMENT_NOT_FOUND' } },
     });
   });
+
+  async function flushUntilNotification(
+    recipientUserId: UserId,
+  ): Promise<void> {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await dispatcher.flush();
+      const [projected] = await connection.database
+        .select({ id: notifications.id })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.recipientUserId, recipientUserId),
+            eq(notifications.type, 'comment.reaction'),
+          ),
+        )
+        .limit(1);
+      if (projected) return;
+    }
+  }
 
   it('projects deduplicated notifications from durable events', async () => {
     const [owner, member] = requiredUsers(userIds);

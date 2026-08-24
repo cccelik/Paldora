@@ -66,3 +66,15 @@ Logs must never include bodies of private posts, credentials, access tokens, coo
 Phase 1 uses Supabase only as the identity provider. Nest validates access tokens and maps `sub` to a separately provisioned internal user; arbitrary valid Supabase users are denied. The browser receives only the Supabase anonymous key. Password recovery does not disclose whether an address exists.
 
 Avatar buckets remain private. Clients upload only through short-lived, size-bound, content-type-bound signed URLs; completion verifies metadata and ownership before attaching an asset. Replaced assets are deleted asynchronously. Production CSP origins and bucket CORS must be explicit rather than wildcarded.
+
+Phase 7 Room reads require authentication and deliberately conceal missing,
+blocked, and unauthorized profiles behind the same response. Room visibility
+authorizes only the profile container: every post, Life Update, photo, memory,
+and Box name is filtered again for the current viewer. Friendship removal and
+blocking delete Top Friends references in the same transaction as the social
+change. Room configuration is a versioned allowlist and cannot store CSS, HTML,
+script, font URLs, background URLs, or executable values. Music links require
+HTTPS and reject credentials and non-web schemes. Banner reads are signed only
+after current Room visibility succeeds. Web CSP limits scripts, frames,
+connections, and form actions; camera access is allowed only for Paldora's own
+origin so realtime photo reactions remain functional.

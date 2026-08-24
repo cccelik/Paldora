@@ -22,7 +22,8 @@
     "db:studio": "pnpm --filter @paldora/database db:studio",
     "seed:demo": "pnpm --filter @paldora/api seed:demo",
     "design:capture:phase1": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase1-designs.ts",
-    "design:capture:phase6": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase6-designs.ts"
+    "design:capture:phase6": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase6-designs.ts",
+    "design:capture:phase7": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase7-designs.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

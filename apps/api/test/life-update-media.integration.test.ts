@@ -15,6 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { InfrastructureService } from '../src/infrastructure.service.js';
 import { LifeUpdateMediaService } from '../src/life-update-media.service.js';
 import { ProfileAvatarService } from '../src/profile-avatar.service.js';
+import type { RoomService } from '../src/room.service.js';
 import { UserService } from '../src/user.service.js';
 import { createFakeObjectStorage } from './fake-object-storage.js';
 
@@ -143,7 +144,9 @@ describe.runIf(Boolean(databaseUrl))('Life Update media reservations', () => {
     const avatars = new ProfileAvatarService(infrastructure, storage);
     return new LifeUpdateMediaService(
       infrastructure,
-      new UserService(infrastructure, avatars),
+      new UserService(infrastructure, avatars, {
+        ensure: async () => undefined,
+      } as unknown as RoomService),
       storage,
     );
   }

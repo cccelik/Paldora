@@ -2,10 +2,12 @@ import type { CurrentUser } from '@paldora/domain';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { signOutAction } from '../actions/auth';
+import { roomPath } from '../lib/room-paths';
 import { Wordmark } from './wordmark';
 import { InitialAvatar } from './ui';
 import { NotificationNavLink } from './notification-nav-link';
 import { AppRealtimeBridge } from './app-realtime-bridge';
+import { AppAppearanceBridge } from './app-appearance-bridge';
 
 const navigation = [
   { key: 'home', label: 'Home', href: '/home', icon: '⌂' },
@@ -31,6 +33,7 @@ export function AppShell({
     | 'life-updates'
     | 'boxes'
     | 'memories'
+    | 'room'
     | 'friends'
     | 'notifications'
     | 'settings';
@@ -40,6 +43,7 @@ export function AppShell({
   return (
     <main className="application-shell">
       <AppRealtimeBridge />
+      <AppAppearanceBridge />
       <aside className="app-sidebar">
         <Wordmark compact />
         <nav aria-label="Primary navigation">
@@ -54,12 +58,29 @@ export function AppShell({
               {item.label}
             </Link>
           ))}
+          {current.profile.username && (
+            <Link
+              aria-current={active === 'room' ? 'page' : undefined}
+              className={active === 'room' ? 'active' : ''}
+              href={roomPath(current.profile.username)}
+            >
+              <span aria-hidden="true">✦</span>
+              My Room
+            </Link>
+          )}
         </nav>
         <div className="sidebar-notifications">
           <NotificationNavLink active={active === 'notifications'} />
         </div>
         <div className="sidebar-account">
-          <div className="mini-profile">
+          <Link
+            className="mini-profile"
+            href={
+              current.profile.username
+                ? roomPath(current.profile.username)
+                : '/settings/account'
+            }
+          >
             <InitialAvatar
               className="mini-avatar"
               name={accountName}
@@ -70,7 +91,7 @@ export function AppShell({
               <strong>{current.profile.displayName ?? 'Paldora friend'}</strong>
               <span>@{current.profile.username ?? 'setting-up'}</span>
             </div>
-          </div>
+          </Link>
           <Link
             className={active === 'settings' ? 'active' : ''}
             href="/settings/account"

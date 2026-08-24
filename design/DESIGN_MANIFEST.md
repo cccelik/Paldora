@@ -121,29 +121,29 @@ This is the source of truth for Paldora design generation. Each asset is generat
 | PAL-084 | Suggested friends          | Desktop       | Light      | 1440×1024  | `09-friends/suggested-friends.png`  | TODO     | PAL-082      |
 | PAL-085 | Find friends / User search | Desktop       | Dark       | 1440×1024  | `09-friends/find-friends.png`       | TODO     | PAL-082      |
 | PAL-086 | Blocked users              | Desktop       | Light      | 1440×1024  | `09-friends/blocked-users.png`      | TODO     | PAL-082      |
-| PAL-087 | Top Friends editor         | Desktop       | Light      | 1440×1024  | `09-friends/top-friends-editor.png` | TODO     | PAL-009      |
+| PAL-087 | Top Friends editor         | Desktop       | Light      | 1440×1024  | `09-friends/top-friends-editor.png` | COMPLETE | PAL-009      |
 
 ## Rooms, themes, and customization
 
-| ID      | Screen                          | Platform     | Appearance         | Dimensions | Filename                                        | Status | Dependencies |
-| ------- | ------------------------------- | ------------ | ------------------ | ---------- | ----------------------------------------------- | ------ | ------------ |
-| PAL-088 | Room theme                      | Desktop      | Obsidian Gold      | 1440×1024  | `11-themes/room-obsidian-gold-desktop.png`      | TODO   | PAL-009      |
-| PAL-089 | Room theme                      | Desktop      | Cream Paper        | 1440×1024  | `11-themes/room-cream-paper-desktop.png`        | TODO   | PAL-009      |
-| PAL-090 | Room theme                      | Desktop      | Lavender Dream     | 1440×1024  | `11-themes/room-lavender-dream-desktop.png`     | TODO   | PAL-009      |
-| PAL-091 | Room theme                      | Desktop      | Ocean Glow         | 1440×1024  | `11-themes/room-ocean-glow-desktop.png`         | TODO   | PAL-009      |
-| PAL-092 | Room theme                      | Desktop      | Daisy Day          | 1440×1024  | `11-themes/room-daisy-day-desktop.png`          | TODO   | PAL-009      |
-| PAL-093 | Room theme                      | Desktop      | Neon Night         | 1440×1024  | `11-themes/room-neon-night-desktop.png`         | TODO   | PAL-009      |
-| PAL-094 | Room theme                      | Desktop      | Dark Academia      | 1440×1024  | `11-themes/room-dark-academia-desktop.png`      | TODO   | PAL-009      |
-| PAL-095 | Room theme                      | Desktop      | Frutiger Aero      | 1440×1024  | `11-themes/room-frutiger-aero-desktop.png`      | TODO   | PAL-009      |
-| PAL-096 | Room theme                      | Desktop      | Tumblr 2014        | 1440×1024  | `11-themes/room-tumblr-2014-desktop.png`        | TODO   | PAL-009      |
-| PAL-097 | Room theme                      | Desktop      | Retro Windows      | 1440×1024  | `11-themes/room-retro-windows-desktop.png`      | TODO   | PAL-009      |
-| PAL-098 | Room theme                      | Desktop      | Cyberpunk          | 1440×1024  | `11-themes/room-cyberpunk-desktop.png`          | TODO   | PAL-009      |
-| PAL-099 | Room theme                      | Desktop      | Minimal Editorial  | 1440×1024  | `11-themes/room-minimal-editorial-desktop.png`  | TODO   | PAL-009      |
-| PAL-100 | Room theme                      | Desktop      | Polaroid Scrapbook | 1440×1024  | `11-themes/room-polaroid-scrapbook-desktop.png` | TODO   | PAL-009      |
-| PAL-101 | Advanced MySpace editor         | Desktop      | Dark               | 1440×1024  | `12-theme-editor/advanced-editor-desktop.png`   | TODO   | PAL-011      |
-| PAL-102 | HTML widget library             | Design board | Mixed              | 2048×2400  | `12-theme-editor/html-widget-library.png`       | TODO   | PAL-101      |
-| PAL-103 | Top Friends privacy and layouts | Design board | Mixed              | 2048×1536  | `12-theme-editor/top-friends-options.png`       | TODO   | PAL-087      |
-| PAL-104 | Music widgets                   | Design board | Mixed              | 2048×1536  | `12-theme-editor/music-widgets.png`             | TODO   | PAL-009      |
+| ID      | Screen                          | Platform     | Appearance         | Dimensions | Filename                                        | Status   | Dependencies |
+| ------- | ------------------------------- | ------------ | ------------------ | ---------- | ----------------------------------------------- | -------- | ------------ |
+| PAL-088 | Room theme                      | Desktop      | Obsidian Gold      | 1440×1024  | `11-themes/room-obsidian-gold-desktop.png`      | COMPLETE | PAL-009      |
+| PAL-089 | Room theme                      | Desktop      | Cream Paper        | 1440×1024  | `11-themes/room-cream-paper-desktop.png`        | COMPLETE | PAL-009      |
+| PAL-090 | Room theme                      | Desktop      | Lavender Dream     | 1440×1024  | `11-themes/room-lavender-dream-desktop.png`     | COMPLETE | PAL-009      |
+| PAL-091 | Room theme                      | Desktop      | Ocean Glow         | 1440×1024  | `11-themes/room-ocean-glow-desktop.png`         | COMPLETE | PAL-009      |
+| PAL-092 | Room theme                      | Desktop      | Daisy Day          | 1440×1024  | `11-themes/room-daisy-day-desktop.png`          | COMPLETE | PAL-009      |
+| PAL-093 | Room theme                      | Desktop      | Neon Night         | 1440×1024  | `11-themes/room-neon-night-desktop.png`         | COMPLETE | PAL-009      |
+| PAL-094 | Room theme                      | Desktop      | Dark Academia      | 1440×1024  | `11-themes/room-dark-academia-desktop.png`      | COMPLETE | PAL-009      |
+| PAL-095 | Room theme                      | Desktop      | Frutiger Aero      | 1440×1024  | `11-themes/room-frutiger-aero-desktop.png`      | COMPLETE | PAL-009      |
+| PAL-096 | Room theme                      | Desktop      | Tumblr 2014        | 1440×1024  | `11-themes/room-tumblr-2014-desktop.png`        | COMPLETE | PAL-009      |
+| PAL-097 | Room theme                      | Desktop      | Retro Windows      | 1440×1024  | `11-themes/room-retro-windows-desktop.png`      | COMPLETE | PAL-009      |
+| PAL-098 | Room theme                      | Desktop      | Cyberpunk          | 1440×1024  | `11-themes/room-cyberpunk-desktop.png`          | COMPLETE | PAL-009      |
+| PAL-099 | Room theme                      | Desktop      | Minimal Editorial  | 1440×1024  | `11-themes/room-minimal-editorial-desktop.png`  | COMPLETE | PAL-009      |
+| PAL-100 | Room theme                      | Desktop      | Polaroid Scrapbook | 1440×1024  | `11-themes/room-polaroid-scrapbook-desktop.png` | COMPLETE | PAL-009      |
+| PAL-101 | Advanced MySpace editor         | Desktop      | Dark               | 1440×1024  | `12-theme-editor/advanced-editor-desktop.png`   | TODO     | PAL-011      |
+| PAL-102 | HTML widget library             | Design board | Mixed              | 2048×2400  | `12-theme-editor/html-widget-library.png`       | TODO     | PAL-101      |
+| PAL-103 | Top Friends privacy and layouts | Design board | Mixed              | 2048×1536  | `12-theme-editor/top-friends-options.png`       | COMPLETE | PAL-087      |
+| PAL-104 | Music widgets                   | Design board | Mixed              | 2048×1536  | `12-theme-editor/music-widgets.png`             | COMPLETE | PAL-009      |
 
 ## Memories, collections, gallery, and discovery
 
@@ -218,7 +218,7 @@ This is the source of truth for Paldora design generation. Each asset is generat
 | PAL-161 | Create post          | Mobile       | Dark       | 390×844    | `23-mobile/create-post.png`       | TODO     | PAL-007, PAL-062 |
 | PAL-162 | Box detail           | Mobile       | Dark       | 390×844    | `23-mobile/box-detail.png`        | TODO     | PAL-071          |
 | PAL-163 | Memories             | Mobile       | Light      | 390×844    | `23-mobile/memories.png`          | COMPLETE | PAL-105          |
-| PAL-164 | Room                 | Mobile       | Custom     | 390×844    | `23-mobile/room.png`              | TODO     | PAL-009          |
+| PAL-164 | Room                 | Mobile       | Custom     | 390×844    | `23-mobile/room.png`              | COMPLETE | PAL-009          |
 | PAL-165 | Friends              | Mobile       | Light      | 390×844    | `23-mobile/friends.png`           | TODO     | PAL-082          |
 | PAL-166 | Notifications        | Mobile       | Dark       | 390×844    | `23-mobile/notifications.png`     | TODO     | PAL-126          |
 | PAL-167 | Search               | Mobile       | Light      | 390×844    | `23-mobile/search.png`            | TODO     | PAL-124          |

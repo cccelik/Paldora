@@ -14,12 +14,17 @@ export type PostId = Brand<string, 'PostId'>;
 export type CommentId = Brand<string, 'CommentId'>;
 export type NotificationId = Brand<string, 'NotificationId'>;
 export type LifeUpdateId = Brand<string, 'LifeUpdateId'>;
+export type RoomId = Brand<string, 'RoomId'>;
 
 export type UserStatus = 'active' | 'suspended' | 'deleted';
 export type OnboardingState = 'username' | 'profile' | 'avatar' | 'complete';
 export type MediaAssetStatus = 'pending' | 'processing' | 'ready' | 'failed';
 export type MediaAssetPurpose =
-  'avatar' | 'post_image' | 'reaction_image' | 'life_update_image';
+  | 'avatar'
+  | 'post_image'
+  | 'reaction_image'
+  | 'life_update_image'
+  | 'room_banner';
 export type BoxRole = 'owner' | 'admin' | 'member';
 export type BoxStatus = 'active' | 'archived';
 export type BoxMembershipStatus = 'active' | 'left' | 'removed';
@@ -411,6 +416,317 @@ export interface MemoryPage {
   items: MemoryItem[];
   nextCursor: string | null;
 }
+
+export const ROOM_THEME_PRESETS = [
+  'obsidian_gold',
+  'cream_paper',
+  'lavender_dream',
+  'ocean_glow',
+  'daisy_day',
+  'neon_night',
+  'y2k_glitter',
+  'dark_academia',
+  'frutiger_aero',
+  'tumblr_2014',
+  'retro_windows',
+  'cyberpunk',
+  'minimal_editorial',
+  'polaroid_scrapbook',
+] as const;
+export type RoomThemePreset = (typeof ROOM_THEME_PRESETS)[number];
+export const roomThemeRegistry: Record<
+  RoomThemePreset,
+  {
+    label: string;
+    defaults: {
+      accent: string;
+      background: string;
+      font: string;
+      decorationPack: string;
+      sparkles: boolean;
+    };
+    variables: Record<`--${string}`, string>;
+  }
+> = {
+  obsidian_gold: roomTheme(
+    'Obsidian Gold',
+    '#14110d',
+    '#f7efd9',
+    '#c4933f',
+    '#211b14',
+    'none',
+    'gold',
+  ),
+  cream_paper: roomTheme(
+    'Cream Paper',
+    '#f8f0df',
+    '#241d16',
+    '#b47a22',
+    '#fffaf0',
+    'tape',
+    'gold',
+  ),
+  lavender_dream: roomTheme(
+    'Lavender Dream',
+    '#eee6fa',
+    '#2e2140',
+    '#8c63bd',
+    '#faf7ff',
+    'stars',
+    'lavender',
+  ),
+  ocean_glow: roomTheme(
+    'Ocean Glow',
+    '#dff5f4',
+    '#102f39',
+    '#168ca0',
+    '#f5ffff',
+    'stars',
+    'ocean',
+  ),
+  daisy_day: roomTheme(
+    'Daisy Day',
+    '#fff4c9',
+    '#3a3115',
+    '#db8d16',
+    '#fffbed',
+    'flowers',
+    'daisy',
+  ),
+  neon_night: roomTheme(
+    'Neon Night',
+    '#100d20',
+    '#f8f2ff',
+    '#dc49ff',
+    '#211839',
+    'pixels',
+    'pink',
+  ),
+  y2k_glitter: roomTheme(
+    'Y2K Glitter',
+    '#f2e8fa',
+    '#352044',
+    '#ad65d5',
+    '#fff7ff',
+    'stars',
+    'lavender',
+  ),
+  dark_academia: roomTheme(
+    'Dark Academia',
+    '#211b14',
+    '#f1dfbd',
+    '#a7763e',
+    '#30271c',
+    'tape',
+    'gold',
+  ),
+  frutiger_aero: roomTheme(
+    'Frutiger Aero',
+    '#dff7ff',
+    '#12374a',
+    '#2d9d4d',
+    '#f7ffff',
+    'stickers',
+    'emerald',
+  ),
+  tumblr_2014: roomTheme(
+    'Tumblr 2014',
+    '#263247',
+    '#f5f7fb',
+    '#7fa4d8',
+    '#34445f',
+    'stars',
+    'ocean',
+  ),
+  retro_windows: roomTheme(
+    'Retro Windows',
+    '#c0c0c0',
+    '#101010',
+    '#000080',
+    '#ececec',
+    'pixels',
+    'cyan',
+  ),
+  cyberpunk: roomTheme(
+    'Cyberpunk',
+    '#110b1b',
+    '#f4ff52',
+    '#00e5ff',
+    '#21122d',
+    'pixels',
+    'cyan',
+  ),
+  minimal_editorial: roomTheme(
+    'Minimal Editorial',
+    '#f7f5f0',
+    '#151515',
+    '#a23c2d',
+    '#ffffff',
+    'none',
+    'crimson',
+  ),
+  polaroid_scrapbook: roomTheme(
+    'Polaroid Scrapbook',
+    '#eee3cc',
+    '#292118',
+    '#b85542',
+    '#fffdf8',
+    'tape',
+    'crimson',
+  ),
+};
+
+function roomTheme(
+  ...[
+    label,
+    canvas,
+    text,
+    accent,
+    surface,
+    decorationPack,
+    accentToken,
+  ]: readonly [string, string, string, string, string, string, string]
+) {
+  return {
+    label,
+    defaults: {
+      accent: accentToken,
+      background: 'theme',
+      font: 'editorial',
+      decorationPack,
+      sparkles: decorationPack === 'stars',
+    },
+    variables: {
+      '--room-canvas': canvas,
+      '--room-text': text,
+      '--room-accent': accent,
+      '--room-surface': surface,
+      '--room-border': `${accent}66`,
+    },
+  };
+}
+export const ROOM_WIDGET_TYPES = [
+  'currently',
+  'music',
+  'top_friends',
+  'photos',
+  'life_updates',
+  'posts',
+  'memories',
+] as const;
+export type RoomWidgetType = (typeof ROOM_WIDGET_TYPES)[number];
+export type RoomVisibility = 'friends' | 'members' | 'hidden';
+export type RoomLayout = 'single' | 'two_column';
+export type RoomWidgetPlacement = 'main' | 'sidebar';
+export type TopFriendsSize = 4 | 8 | 12;
+export type TopFriendsVisibility = 'visible' | 'friends' | 'hidden';
+export type AppearancePreference = 'light' | 'dark' | 'system';
+export type RoomViewerRelationship = 'owner' | 'friend' | 'member';
+
+export interface RoomMusic {
+  url: string;
+  title: string | null;
+  artist: string | null;
+}
+
+export interface RoomWidget {
+  type: RoomWidgetType;
+  placement: RoomWidgetPlacement;
+  position: number;
+  enabled: boolean;
+}
+
+export interface RoomTopFriend {
+  userId: UserId;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  position: number;
+}
+
+export interface RoomConfiguration {
+  id: RoomId;
+  ownerUserId: UserId;
+  visibility: RoomVisibility;
+  themePreset: RoomThemePreset;
+  configurationVersion: 1;
+  layout: RoomLayout;
+  accent: string;
+  background: string;
+  font: string;
+  decorationPack: string;
+  sparkles: boolean;
+  location: string | null;
+  currently: string | null;
+  music: RoomMusic | null;
+  bannerMediaId: MediaAssetId | null;
+  bannerUrl: string | null;
+  topFriendsSize: TopFriendsSize;
+  topFriendsVisibility: TopFriendsVisibility;
+  widgets: RoomWidget[];
+  topFriends: RoomTopFriend[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoomView extends RoomConfiguration {
+  owner: Pick<
+    Profile,
+    'userId' | 'username' | 'displayName' | 'bio' | 'avatarUrl'
+  >;
+  viewerRelationship: RoomViewerRelationship;
+}
+
+export interface UpdateRoomInput {
+  visibility?: RoomVisibility;
+  themePreset?: RoomThemePreset;
+  layout?: RoomLayout;
+  accent?: string;
+  background?: string;
+  font?: string;
+  decorationPack?: string;
+  sparkles?: boolean;
+  location?: string | null;
+  currently?: string | null;
+  music?: RoomMusic | null;
+  expectedUpdatedAt?: string;
+}
+
+export interface UpdateRoomWidgetsInput {
+  widgets: RoomWidget[];
+  expectedUpdatedAt?: string;
+}
+
+export interface UpdateRoomTopFriendsInput {
+  userIds: UserId[];
+  size: TopFriendsSize;
+  visibility: TopFriendsVisibility;
+  expectedUpdatedAt?: string;
+}
+
+export interface UserPreferences {
+  appearance: AppearancePreference;
+  updatedAt: string;
+}
+
+export interface UpdateUserPreferencesInput {
+  appearance: AppearancePreference;
+}
+
+export interface RoomGalleryItem {
+  media: PostMedia;
+  postId: PostId;
+  lifeUpdateId: LifeUpdateId | null;
+  occurredAt: string;
+}
+
+export interface RoomGalleryPage {
+  items: RoomGalleryItem[];
+  nextCursor: string | null;
+}
+
+export type CreateRoomBannerUploadInput = CreateAvatarUploadInput;
+export type CreateRoomBannerUploadResult = CreateAvatarUploadResult;
 
 export interface CreateFriendRequestInput {
   username: string;

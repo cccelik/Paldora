@@ -19,6 +19,7 @@ import { PostMediaService } from '../src/post-media.service.js';
 import { PostInteractionQueryService } from '../src/post-interaction-query.js';
 import { PostService } from '../src/post.service.js';
 import { ProfileAvatarService } from '../src/profile-avatar.service.js';
+import type { RoomService } from '../src/room.service.js';
 import { ReactionMediaService } from '../src/reaction-media.service.js';
 import { UserService } from '../src/user.service.js';
 import { createBoxService } from './create-box-service.js';
@@ -104,7 +105,9 @@ describe.runIf(configured)('post media upload flow', () => {
     } as unknown as InfrastructureService;
     const storage = createStorage();
     const avatars = new ProfileAvatarService(infrastructure, storage);
-    const usersService = new UserService(infrastructure, avatars);
+    const usersService = new UserService(infrastructure, avatars, {
+      ensure: async () => undefined,
+    } as unknown as RoomService);
     const boxes = createBoxService(infrastructure, avatars);
     const posts = new PostService(
       infrastructure,

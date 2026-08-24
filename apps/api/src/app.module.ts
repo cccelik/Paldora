@@ -34,6 +34,11 @@ import { LifeUpdateService } from './life-update.service.js';
 import { LifeUpdateMediaService } from './life-update-media.service.js';
 import { MemoryController } from './memory.controller.js';
 import { MemoryService } from './memory.service.js';
+import { RoomAuthorizationPolicy } from './room-authorization-policy.service.js';
+import { RoomBannerService } from './room-banner.service.js';
+import { RoomContentService } from './room-content.service.js';
+import { RoomController } from './room.controller.js';
+import { RoomService } from './room.service.js';
 import {
   POST_EVENT_PUBLISHER,
   PostEventService,
@@ -51,6 +56,7 @@ import {
     ReactionMediaController,
     LifeUpdateController,
     MemoryController,
+    RoomController,
   ],
   providers: [
     InfrastructureService,
@@ -81,6 +87,10 @@ import {
     LifeUpdateService,
     LifeUpdateMediaService,
     MemoryService,
+    RoomAuthorizationPolicy,
+    RoomService,
+    RoomContentService,
+    RoomBannerService,
     objectStorageProvider,
   ],
 })

@@ -1,5 +1,6 @@
 import {
   bigint,
+  boolean,
   check,
   index,
   integer,
@@ -92,6 +93,27 @@ export const lifeUpdateAudience = paldoraSchema.enum('life_update_audience', [
   'box',
   'only_me',
 ]);
+export const roomVisibility = paldoraSchema.enum('room_visibility', [
+  'friends',
+  'members',
+  'hidden',
+]);
+export const roomLayout = paldoraSchema.enum('room_layout', [
+  'single',
+  'two_column',
+]);
+export const roomWidgetPlacement = paldoraSchema.enum('room_widget_placement', [
+  'main',
+  'sidebar',
+]);
+export const topFriendsVisibility = paldoraSchema.enum(
+  'top_friends_visibility',
+  ['visible', 'friends', 'hidden'],
+);
+export const appearancePreference = paldoraSchema.enum(
+  'appearance_preference',
+  ['light', 'dark', 'system'],
+);
 
 export const users = paldoraSchema.table(
   'users',
@@ -179,11 +201,11 @@ export const mediaAssets = paldoraSchema.table(
     index('media_assets_box_status_index').on(table.boxId, table.status),
     check(
       'media_assets_purpose_check',
-      sql`${table.purpose} in ('avatar', 'post_image', 'reaction_image', 'life_update_image')`,
+      sql`${table.purpose} in ('avatar', 'post_image', 'reaction_image', 'life_update_image', 'room_banner')`,
     ),
     check(
       'media_assets_purpose_box_check',
-      sql`(${table.purpose} in ('avatar', 'life_update_image') and ${table.boxId} is null) or (${table.purpose} in ('post_image', 'reaction_image') and ${table.boxId} is not null)`,
+      sql`(${table.purpose} in ('avatar', 'life_update_image', 'room_banner') and ${table.boxId} is null) or (${table.purpose} in ('post_image', 'reaction_image') and ${table.boxId} is not null)`,
     ),
     check(
       'media_assets_content_type_check',
@@ -284,6 +306,169 @@ export const profiles = paldoraSchema.table(
     ),
   ],
 );
+
+export const rooms = paldoraSchema.table(
+  'rooms',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    visibility: roomVisibility('visibility').notNull().default('friends'),
+    themePreset: text('theme_preset').notNull().default('cream_paper'),
+    configurationVersion: integer('configuration_version').notNull().default(1),
+    layout: roomLayout('layout').notNull().default('two_column'),
+    accent: text('accent').notNull().default('gold'),
+    background: text('background').notNull().default('theme'),
+    font: text('font').notNull().default('editorial'),
+    decorationPack: text('decoration_pack').notNull().default('tape'),
+    sparkles: boolean('sparkles').notNull().default(false),
+    location: text('location'),
+    currently: text('currently'),
+    musicUrl: text('music_url'),
+    musicTitle: text('music_title'),
+    musicArtist: text('music_artist'),
+    bannerMediaId: uuid('banner_media_id').references(() => mediaAssets.id, {
+      onDelete: 'set null',
+    }),
+    topFriendsSize: integer('top_friends_size').notNull().default(8),
+    topFriendsVisibility: topFriendsVisibility('top_friends_visibility')
+      .notNull()
+      .default('visible'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('rooms_visibility_index').on(table.visibility, table.updatedAt),
+    check(
+      'rooms_configuration_version_check',
+      sql`${table.configurationVersion} = 1`,
+    ),
+    check(
+      'rooms_theme_preset_check',
+      sql`${table.themePreset} in ('obsidian_gold', 'cream_paper', 'lavender_dream', 'ocean_glow', 'daisy_day', 'neon_night', 'y2k_glitter', 'dark_academia', 'frutiger_aero', 'tumblr_2014', 'retro_windows', 'cyberpunk', 'minimal_editorial', 'polaroid_scrapbook')`,
+    ),
+    check(
+      'rooms_accent_check',
+      sql`${table.accent} in ('gold', 'lavender', 'ocean', 'daisy', 'pink', 'emerald', 'cyan', 'crimson')`,
+    ),
+    check(
+      'rooms_background_check',
+      sql`${table.background} in ('theme', 'paper', 'midnight', 'gradient', 'scrapbook', 'terminal')`,
+    ),
+    check(
+      'rooms_font_check',
+      sql`${table.font} in ('editorial', 'modern', 'rounded', 'mono', 'handwritten')`,
+    ),
+    check(
+      'rooms_decoration_pack_check',
+      sql`${table.decorationPack} in ('none', 'stars', 'flowers', 'stickers', 'tape', 'pixels')`,
+    ),
+    check(
+      'rooms_location_length_check',
+      sql`${table.location} is null or char_length(${table.location}) <= 120`,
+    ),
+    check(
+      'rooms_currently_length_check',
+      sql`${table.currently} is null or char_length(${table.currently}) <= 240`,
+    ),
+    check(
+      'rooms_music_url_length_check',
+      sql`${table.musicUrl} is null or char_length(${table.musicUrl}) <= 2048`,
+    ),
+    check(
+      'rooms_music_title_length_check',
+      sql`${table.musicTitle} is null or char_length(${table.musicTitle}) <= 120`,
+    ),
+    check(
+      'rooms_music_artist_length_check',
+      sql`${table.musicArtist} is null or char_length(${table.musicArtist}) <= 120`,
+    ),
+    check(
+      'rooms_music_https_check',
+      sql`${table.musicUrl} is null or ${table.musicUrl} like 'https://%'`,
+    ),
+    check(
+      'rooms_top_friends_size_check',
+      sql`${table.topFriendsSize} in (4, 8, 12)`,
+    ),
+  ],
+);
+
+export const roomWidgets = paldoraSchema.table(
+  'room_widgets',
+  {
+    roomUserId: uuid('room_user_id')
+      .notNull()
+      .references(() => rooms.userId, { onDelete: 'cascade' }),
+    widgetType: text('widget_type').notNull(),
+    placement: roomWidgetPlacement('placement').notNull(),
+    position: integer('position').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.roomUserId, table.widgetType] }),
+    uniqueIndex('room_widgets_position_unique').on(
+      table.roomUserId,
+      table.position,
+    ),
+    check(
+      'room_widgets_type_check',
+      sql`${table.widgetType} in ('currently', 'music', 'top_friends', 'photos', 'life_updates', 'posts', 'memories')`,
+    ),
+    check(
+      'room_widgets_position_check',
+      sql`${table.position} between 0 and 6`,
+    ),
+  ],
+);
+
+export const roomTopFriends = paldoraSchema.table(
+  'room_top_friends',
+  {
+    roomUserId: uuid('room_user_id')
+      .notNull()
+      .references(() => rooms.userId, { onDelete: 'cascade' }),
+    friendUserId: uuid('friend_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.roomUserId, table.friendUserId] }),
+    uniqueIndex('room_top_friends_position_unique').on(
+      table.roomUserId,
+      table.position,
+    ),
+    check(
+      'room_top_friends_position_check',
+      sql`${table.position} between 0 and 11`,
+    ),
+    check(
+      'room_top_friends_not_self_check',
+      sql`${table.roomUserId} <> ${table.friendUserId}`,
+    ),
+  ],
+);
+
+export const userPreferences = paldoraSchema.table('user_preferences', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  appearance: appearancePreference('appearance').notNull().default('system'),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const boxMemberships = paldoraSchema.table(
   'box_memberships',

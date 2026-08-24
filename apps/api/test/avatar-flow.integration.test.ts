@@ -15,6 +15,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AvatarService } from '../src/avatar.service.js';
 import type { InfrastructureService } from '../src/infrastructure.service.js';
 import { ProfileAvatarService } from '../src/profile-avatar.service.js';
+import type { RoomService } from '../src/room.service.js';
 import { UserService } from '../src/user.service.js';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -60,7 +61,9 @@ describe.runIf(Boolean(databaseUrl))('avatar upload flow', () => {
       databaseClient: connection.database,
     } as InfrastructureService;
     const avatarUrls = new ProfileAvatarService(infrastructure, storage);
-    const usersService = new UserService(infrastructure, avatarUrls);
+    const usersService = new UserService(infrastructure, avatarUrls, {
+      ensure: async () => undefined,
+    } as unknown as RoomService);
     service = new AvatarService(infrastructure, usersService, storage);
   });
 

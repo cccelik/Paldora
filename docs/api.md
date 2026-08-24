@@ -168,3 +168,32 @@ The authored history and accessible Home feed are deliberately separate. Life
 Update responses contain shared content once plus only the delivery contexts
 the requester can currently access. Each context contains its backing post ID,
 Box identity, and isolated interaction summary.
+
+# Phase 7 Rooms and personalization
+
+Rooms are authenticated user profiles. Missing, blocked, and inaccessible
+Rooms all return `ROOM_NOT_FOUND`; a visible Room never expands the viewer's Box
+access. Every preview query independently rechecks active Box membership and
+blocking.
+
+- `GET /api/v1/me/room`
+- `GET /api/v1/rooms/:username`
+- `PATCH /api/v1/me/room`
+- `PUT /api/v1/me/room/widgets`
+- `PUT /api/v1/me/room/top-friends`
+- `GET /api/v1/rooms/:username/posts`
+- `GET /api/v1/rooms/:username/life-updates`
+- `GET /api/v1/rooms/:username/gallery`
+- `GET /api/v1/rooms/:username/memories`
+- `GET /api/v1/me/preferences`
+- `PATCH /api/v1/me/preferences`
+- `POST /api/v1/me/room/banner/uploads`
+- `POST /api/v1/me/room/banner/uploads/:id/complete`
+- `DELETE /api/v1/me/room/banner/uploads/:id`
+- `DELETE /api/v1/me/room/banner`
+
+Room and widget updates accept `expectedUpdatedAt` for optimistic concurrency
+and return `ROOM_UPDATE_STALE` when another save won. Top Friends writes replace
+the complete order transactionally and accept only active accepted friends.
+Music accepts credential-free HTTPS links only. Banner uploads inherit the
+private signed-upload and durable media-outbox contract.

@@ -4,6 +4,7 @@ import type { LifeUpdate, ReactionPresets, UserId } from '@paldora/domain';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { deleteLifeUpdateAction } from '../actions/life-updates';
+import { roomPath } from '../lib/room-paths';
 import { ConfirmSubmitButton } from './confirm-submit-button';
 import { OverflowMenu } from './overflow-menu';
 import { PostInteractions } from './post-interactions';
@@ -58,17 +59,19 @@ export function LifeUpdateCard({
   return (
     <article className="life-update-card">
       <header>
-        <InitialAvatar
-          className="post-avatar"
-          imageUrl={update.author.avatarUrl}
-          name={update.author.displayName}
-          length={2}
-        />
+        <Link href={roomPath(update.author.username)}>
+          <InitialAvatar
+            className="post-avatar"
+            imageUrl={update.author.avatarUrl}
+            name={update.author.displayName}
+            length={2}
+          />
+        </Link>
         <div>
           <span className="life-update-kicker">Life Update</span>
           <Link
             className="life-update-author-link"
-            href={`/users/${encodeURIComponent(update.author.username)}/life-updates`}
+            href={roomPath(update.author.username)}
           >
             {update.author.displayName}
           </Link>

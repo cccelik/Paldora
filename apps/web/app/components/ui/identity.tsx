@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import type { Route } from 'next';
+import Link from 'next/link';
 import { classNames } from './class-names';
 
 export function InitialAvatar({
@@ -51,22 +53,25 @@ export function PersonRow({
   avatarUrl = null,
   detail = 'Friend request',
   actions,
+  href,
 }: {
   name: string;
   username: string;
   avatarUrl?: string | null;
   detail?: ReactNode;
   actions?: ReactNode;
+  href?: Route;
 }) {
+  const avatar = <InitialAvatar name={name} imageUrl={avatarUrl} />;
   return (
     <SocialRow
-      title={name}
+      title={href ? <Link href={href}>{name}</Link> : name}
       detail={
         <>
           @{username} · {detail}
         </>
       }
-      leading={<InitialAvatar name={name} imageUrl={avatarUrl} />}
+      leading={href ? <Link href={href}>{avatar}</Link> : avatar}
       actions={actions}
     />
   );

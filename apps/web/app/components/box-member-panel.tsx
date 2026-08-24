@@ -1,5 +1,6 @@
 import type { BoxId, BoxMember, BoxRole, UserId } from '@paldora/domain';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import {
   leaveBoxAction,
   removeBoxMemberAction,
@@ -8,6 +9,7 @@ import {
   updateBoxMemberRoleAction,
 } from '../actions/social';
 import { boxMemberPermissions } from '../lib/box-memberships';
+import { roomPath } from '../lib/room-paths';
 import { ConfirmSubmitButton } from './confirm-submit-button';
 import { OverflowMenu } from './overflow-menu';
 import { PendingSubmitButton } from './pending-submit-button';
@@ -71,9 +73,13 @@ function BoxMemberRow({
   );
   return (
     <div className="member-row">
-      <InitialAvatar name={member.displayName} imageUrl={member.avatarUrl} />
+      <Link href={roomPath(member.username)}>
+        <InitialAvatar name={member.displayName} imageUrl={member.avatarUrl} />
+      </Link>
       <div className="member-row-copy">
-        <strong>{member.displayName}</strong>
+        <Link href={roomPath(member.username)}>
+          <strong>{member.displayName}</strong>
+        </Link>
         <div className="member-identity-line">
           <small className="member-username">@{member.username}</small>
           <span className="member-role">{member.role}</span>

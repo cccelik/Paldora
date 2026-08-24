@@ -7,7 +7,9 @@ import type {
   ReactionPresets,
   UserId,
 } from '@paldora/domain';
+import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
+import { roomPath } from '../lib/room-paths';
 import { CommentReactionBar } from './comment-reaction-bar';
 import { OverflowMenu } from './overflow-menu';
 import { InitialAvatar } from './ui';
@@ -90,16 +92,20 @@ function CommentItem({
   const owned = comment.author.userId === currentUserId;
   return (
     <div className={`comment-item${comment.parentCommentId ? ' reply' : ''}`}>
-      <InitialAvatar
-        className="comment-avatar"
-        imageUrl={comment.author.avatarUrl}
-        length={2}
-        name={comment.author.displayName}
-      />
+      <Link href={roomPath(comment.author.username)}>
+        <InitialAvatar
+          className="comment-avatar"
+          imageUrl={comment.author.avatarUrl}
+          length={2}
+          name={comment.author.displayName}
+        />
+      </Link>
       <div className="comment-body">
         <div className="comment-bubble">
           <div className="comment-meta">
-            <strong>{comment.author.displayName}</strong>
+            <Link href={roomPath(comment.author.username)}>
+              <strong>{comment.author.displayName}</strong>
+            </Link>
             <span>@{comment.author.username}</span>
             <time dateTime={comment.createdAt}>
               {formatInteractionDate(comment.createdAt)}

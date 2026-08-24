@@ -6,6 +6,7 @@ import {
   sendFriendRequestAction,
   unblockUserAction,
 } from '../actions/social';
+import { roomPath } from '../lib/room-paths';
 import { ConfirmSubmitButton } from './confirm-submit-button';
 import {
   ListEmpty,
@@ -176,5 +177,6 @@ function personIdentity(friendship: Friendship) {
       'Paldora friend',
     username: friendship.user.username ?? '',
     avatarUrl: friendship.user.avatarUrl,
+    href: roomPath(friendship.user.username ?? ''),
   };
 }

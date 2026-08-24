@@ -1,0 +1,6 @@
+ALTER TABLE "paldora"."rooms" ADD CONSTRAINT "rooms_theme_preset_check" CHECK ("paldora"."rooms"."theme_preset" in ('obsidian_gold', 'cream_paper', 'lavender_dream', 'ocean_glow', 'daisy_day', 'neon_night', 'y2k_glitter', 'dark_academia', 'frutiger_aero', 'tumblr_2014', 'retro_windows', 'cyberpunk', 'minimal_editorial', 'polaroid_scrapbook'));--> statement-breakpoint
+ALTER TABLE "paldora"."rooms" ADD CONSTRAINT "rooms_accent_check" CHECK ("paldora"."rooms"."accent" in ('gold', 'lavender', 'ocean', 'daisy', 'pink', 'emerald', 'cyan', 'crimson'));--> statement-breakpoint
+ALTER TABLE "paldora"."rooms" ADD CONSTRAINT "rooms_background_check" CHECK ("paldora"."rooms"."background" in ('theme', 'paper', 'midnight', 'gradient', 'scrapbook', 'terminal'));--> statement-breakpoint
+ALTER TABLE "paldora"."rooms" ADD CONSTRAINT "rooms_font_check" CHECK ("paldora"."rooms"."font" in ('editorial', 'modern', 'rounded', 'mono', 'handwritten'));--> statement-breakpoint
+ALTER TABLE "paldora"."rooms" ADD CONSTRAINT "rooms_decoration_pack_check" CHECK ("paldora"."rooms"."decoration_pack" in ('none', 'stars', 'flowers', 'stickers', 'tape', 'pixels'));--> statement-breakpoint
+ALTER TABLE "paldora"."rooms" ADD CONSTRAINT "rooms_music_https_check" CHECK ("paldora"."rooms"."music_url" is null or "paldora"."rooms"."music_url" like 'https://%');

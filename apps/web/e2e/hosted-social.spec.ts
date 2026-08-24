@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { createClient } from '@supabase/supabase-js';
+
+const hostedApiOrigin = `http://127.0.0.1:${process.env.PLAYWRIGHT_API_PORT ?? '4100'}/api/v1`;
 
 const accounts = [
   {
@@ -317,6 +320,63 @@ test('Box and Home feeds receive another member post without a reload', async ({
   }
 });
 
+test('Rooms enforce member, friend, and hidden visibility for two hosted accounts', async ({
+  browser,
+}) => {
+  test.setTimeout(60_000);
+  test.skip(
+    accounts.length < 2,
+    'Two provisioned demo accounts are required for hosted Room privacy.',
+  );
+  const [primary, friend] = accounts;
+  if (!primary || !friend) return;
+  const primaryContext = await browser.newContext();
+  const friendContext = await browser.newContext();
+  const primaryPage = await primaryContext.newPage();
+  const friendPage = await friendContext.newPage();
+  let originalVisibility = 'friends';
+  let currentVisibility = 'friends';
+  let accessToken: string | null = null;
+  try {
+    await signIn(primaryPage, primary);
+    await signIn(friendPage, friend);
+    const roomPath = await primaryPage
+      .getByRole('link', { name: 'My Room' })
+      .getAttribute('href');
+    if (!roomPath) throw new Error('Primary Room path is unavailable.');
+    accessToken = await hostedAccessToken(primary);
+    const initialRoom = await hostedRoom(accessToken);
+    originalVisibility = initialRoom.visibility;
+    currentVisibility = originalVisibility;
+
+    await updateHostedRoomVisibility(accessToken, 'members');
+    currentVisibility = 'members';
+    await friendPage.goto(roomPath);
+    await expect(friendPage.getByText('Paldora Members')).toBeVisible();
+
+    await updateHostedRoomVisibility(accessToken, 'friends');
+    currentVisibility = 'friends';
+    await friendPage.goto(roomPath);
+    await expect(friendPage.getByText('Friends Only')).toBeVisible();
+
+    await updateHostedRoomVisibility(accessToken, 'hidden');
+    currentVisibility = 'hidden';
+    await friendPage.goto(roomPath);
+    await expect(
+      friendPage.getByRole('heading', {
+        name: 'This Room can’t be opened.',
+      }),
+    ).toBeVisible();
+  } finally {
+    if (accessToken && currentVisibility !== originalVisibility) {
+      await updateHostedRoomVisibility(accessToken, originalVisibility).catch(
+        () => undefined,
+      );
+    }
+    await Promise.all([primaryContext.close(), friendContext.close()]);
+  }
+});
+
 test('two hosted accounts share one Life Update across private Box threads', async ({
   browser,
 }) => {
@@ -457,6 +517,51 @@ async function signIn(
   await page.getByLabel('Password').fill(account.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/home$/);
+}
+
+async function hostedAccessToken(account: {
+  email: string;
+  password: string;
+}): Promise<string> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) throw new Error('Hosted Supabase is not configured.');
+  const supabase = createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await supabase.auth.signInWithPassword(account);
+  if (error || !data.session) throw error ?? new Error('Session is missing.');
+  return data.session.access_token;
+}
+
+async function hostedRoom(accessToken: string): Promise<{
+  visibility: string;
+  updatedAt: string;
+}> {
+  const response = await fetch(`${hostedApiOrigin}/me/room`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok)
+    throw new Error(`Room request returned ${response.status}.`);
+  return (await response.json()) as { visibility: string; updatedAt: string };
+}
+
+async function updateHostedRoomVisibility(
+  accessToken: string,
+  visibility: string,
+): Promise<void> {
+  const room = await hostedRoom(accessToken);
+  const response = await fetch(`${hostedApiOrigin}/me/room`, {
+    method: 'PATCH',
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ visibility, expectedUpdatedAt: room.updatedAt }),
+  });
+  if (!response.ok) {
+    throw new Error(`Room update returned ${response.status}.`);
+  }
 }
 
 async function createBoxAndInvite(

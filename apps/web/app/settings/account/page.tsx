@@ -1,10 +1,13 @@
 import { signOutAction } from '../../actions/auth';
+import type { Route } from 'next';
+import Link from 'next/link';
 import { AppShell } from '../../components/app-shell';
 import { AvatarUploader } from '../../components/avatar-uploader';
 import { SettingsForm } from '../../components/profile-forms';
 import { ReactionPresetEditor } from '../../components/reaction-preset-editor';
 import { PageHeader, SurfaceCard } from '../../components/ui';
 import { loadCurrentUser } from '../../lib/api';
+import { roomCustomizePath } from '../../lib/room-paths';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +35,18 @@ export default async function AccountSettingsPage() {
           </SurfaceCard>
           <SurfaceCard title="Reaction shortcuts">
             <ReactionPresetEditor presets={current.profile.reactionPresets} />
+          </SurfaceCard>
+          <SurfaceCard title="Personalization">
+            <div className="settings-link-list">
+              {current.profile.username && (
+                <Link href={roomCustomizePath(current.profile.username)}>
+                  Customize your Room
+                </Link>
+              )}
+              <Link href={'/settings/appearance' as Route}>
+                Application appearance
+              </Link>
+            </div>
           </SurfaceCard>
         </div>
         <aside className="settings-side">

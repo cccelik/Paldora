@@ -5,6 +5,7 @@ import type { Route } from 'next';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { deletePostAction, updatePostAction } from '../actions/posts';
+import { roomPath } from '../lib/room-paths';
 import { ConfirmSubmitButton } from './confirm-submit-button';
 import { InitialAvatar } from './ui';
 import { OverflowMenu } from './overflow-menu';
@@ -105,17 +106,24 @@ export function PostCard({
       }}
     >
       <header className={`post-card-header${owned ? ' has-actions' : ''}`}>
-        <InitialAvatar
-          className="post-avatar"
-          imageUrl={post.author.avatarUrl}
-          name={post.author.displayName}
-          length={2}
-        />
+        <Link href={roomPath(post.author.username)}>
+          <InitialAvatar
+            className="post-avatar"
+            imageUrl={post.author.avatarUrl}
+            name={post.author.displayName}
+            length={2}
+          />
+        </Link>
         <div>
           <Link className="post-box-link" href={`/boxes/${post.boxId}`}>
             {post.boxName}
           </Link>
-          <strong>{post.author.displayName}</strong>
+          <Link
+            className="post-author-link"
+            href={roomPath(post.author.username)}
+          >
+            <strong>{post.author.displayName}</strong>
+          </Link>
           <span>
             @{post.author.username} ·{' '}
             <time dateTime={post.createdAt}>

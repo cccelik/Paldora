@@ -22,6 +22,163 @@ export const REACTION_EMOJI_MAX_LENGTH = 64;
 export const LIFE_UPDATE_SECTION_MAX_LENGTH = 2_000;
 export const LIFE_UPDATE_TOTAL_MAX_LENGTH = 10_000;
 export const LIFE_UPDATE_MAX_BOXES = 20;
+export const ROOM_LOCATION_MAX_LENGTH = 120;
+export const ROOM_CURRENTLY_MAX_LENGTH = 240;
+export const ROOM_MUSIC_TEXT_MAX_LENGTH = 120;
+export const ROOM_MUSIC_URL_MAX_LENGTH = 2_048;
+
+export const roomThemePresetSchema = z.enum([
+  'obsidian_gold',
+  'cream_paper',
+  'lavender_dream',
+  'ocean_glow',
+  'daisy_day',
+  'neon_night',
+  'y2k_glitter',
+  'dark_academia',
+  'frutiger_aero',
+  'tumblr_2014',
+  'retro_windows',
+  'cyberpunk',
+  'minimal_editorial',
+  'polaroid_scrapbook',
+]);
+export const roomAccentSchema = z.enum([
+  'gold',
+  'lavender',
+  'ocean',
+  'daisy',
+  'pink',
+  'emerald',
+  'cyan',
+  'crimson',
+]);
+export const roomBackgroundSchema = z.enum([
+  'theme',
+  'paper',
+  'midnight',
+  'gradient',
+  'scrapbook',
+  'terminal',
+]);
+export const roomFontSchema = z.enum([
+  'editorial',
+  'modern',
+  'rounded',
+  'mono',
+  'handwritten',
+]);
+export const roomDecorationPackSchema = z.enum([
+  'none',
+  'stars',
+  'flowers',
+  'stickers',
+  'tape',
+  'pixels',
+]);
+export const roomWidgetTypeSchema = z.enum([
+  'currently',
+  'music',
+  'top_friends',
+  'photos',
+  'life_updates',
+  'posts',
+  'memories',
+]);
+
+export function isSafeMusicUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      value.length <= ROOM_MUSIC_URL_MAX_LENGTH
+    );
+  } catch {
+    return false;
+  }
+}
+
+const roomMusicSchema = z.object({
+  url: z
+    .string()
+    .trim()
+    .refine(isSafeMusicUrl, 'Use a valid HTTPS music link.'),
+  title: z.string().trim().max(ROOM_MUSIC_TEXT_MAX_LENGTH).nullable(),
+  artist: z.string().trim().max(ROOM_MUSIC_TEXT_MAX_LENGTH).nullable(),
+});
+const expectedRoomUpdatedAtSchema = z.iso.datetime().optional();
+export const updateRoomSchema = z
+  .object({
+    visibility: z.enum(['friends', 'members', 'hidden']).optional(),
+    themePreset: roomThemePresetSchema.optional(),
+    layout: z.enum(['single', 'two_column']).optional(),
+    accent: roomAccentSchema.optional(),
+    background: roomBackgroundSchema.optional(),
+    font: roomFontSchema.optional(),
+    decorationPack: roomDecorationPackSchema.optional(),
+    sparkles: z.boolean().optional(),
+    location: z
+      .string()
+      .trim()
+      .max(ROOM_LOCATION_MAX_LENGTH)
+      .nullable()
+      .optional(),
+    currently: z
+      .string()
+      .trim()
+      .max(ROOM_CURRENTLY_MAX_LENGTH)
+      .nullable()
+      .optional(),
+    music: roomMusicSchema.nullable().optional(),
+    expectedUpdatedAt: expectedRoomUpdatedAtSchema,
+  })
+  .refine(
+    (value) => Object.keys(value).some((key) => key !== 'expectedUpdatedAt'),
+    'At least one Room field is required.',
+  );
+
+const roomWidgetSchema = z.object({
+  type: roomWidgetTypeSchema,
+  placement: z.enum(['main', 'sidebar']),
+  position: z.number().int().min(0).max(6),
+  enabled: z.boolean(),
+});
+export const updateRoomWidgetsSchema = z
+  .object({
+    widgets: z.array(roomWidgetSchema).length(7),
+    expectedUpdatedAt: expectedRoomUpdatedAtSchema,
+  })
+  .refine(
+    ({ widgets }) => new Set(widgets.map(({ type }) => type)).size === 7,
+    {
+      message: 'Configure each Room widget exactly once.',
+    },
+  )
+  .refine(
+    ({ widgets }) =>
+      new Set(widgets.map(({ position }) => position)).size === 7,
+    { message: 'Each Room widget position must be unique.' },
+  );
+
+export const updateRoomTopFriendsSchema = z
+  .object({
+    userIds: z.array(uuidSchema).max(12),
+    size: z.union([z.literal(4), z.literal(8), z.literal(12)]),
+    visibility: z.enum(['visible', 'friends', 'hidden']),
+    expectedUpdatedAt: expectedRoomUpdatedAtSchema,
+  })
+  .refine(({ userIds }) => new Set(userIds).size === userIds.length, {
+    message: 'Choose each friend once.',
+  })
+  .refine(({ userIds, size }) => userIds.length <= size, {
+    message: 'The selected friends must fit the chosen layout.',
+  });
+
+export const updateUserPreferencesSchema = z.object({
+  appearance: z.enum(['light', 'dark', 'system']),
+});
 
 const emojiSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
 const emojiCodePoint =
@@ -123,6 +280,7 @@ export const createAvatarUploadSchema = z.object({
   contentType: avatarContentTypeSchema,
   contentLength: z.number().int().positive().max(AVATAR_MAX_BYTES),
 });
+export const createRoomBannerUploadSchema = createAvatarUploadSchema;
 
 export const boxNameSchema = z
   .string()
@@ -321,3 +479,7 @@ export type SetCommentReaction = z.infer<typeof setCommentReactionSchema>;
 export type CreateReactionPhotoUpload = z.infer<
   typeof createReactionPhotoUploadSchema
 >;
+export type UpdateRoom = z.infer<typeof updateRoomSchema>;
+export type UpdateRoomWidgets = z.infer<typeof updateRoomWidgetsSchema>;
+export type UpdateRoomTopFriends = z.infer<typeof updateRoomTopFriendsSchema>;
+export type UpdateUserPreferences = z.infer<typeof updateUserPreferencesSchema>;

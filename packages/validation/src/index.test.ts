@@ -11,13 +11,117 @@ import {
   isReservedUsername,
   isSingleEmoji,
   normalizeUsername,
+  isSafeMusicUrl,
+  roomThemePresetSchema,
   setPostReactionSchema,
   setCommentReactionSchema,
   transferBoxOwnershipSchema,
   updateProfileSchema,
   updateLifeUpdateSchema,
+  updateRoomSchema,
+  updateRoomTopFriendsSchema,
+  updateRoomWidgetsSchema,
+  updateUserPreferencesSchema,
   usernameSchema,
 } from './index.js';
+
+describe('Phase 7 Room validation', () => {
+  const ids = Array.from(
+    { length: 13 },
+    (_, index) =>
+      `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+  );
+
+  it('recognizes all 14 allowlisted themes and rejects executable values', () => {
+    expect(roomThemePresetSchema.options).toHaveLength(14);
+    expect(
+      updateRoomSchema.safeParse({ themePreset: 'cream_paper' }).success,
+    ).toBe(true);
+    expect(
+      updateRoomSchema.safeParse({ themePreset: '<script>' }).success,
+    ).toBe(false);
+    expect(updateRoomSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('accepts HTTPS music links without credentials only', () => {
+    expect(isSafeMusicUrl('https://music.example/song?id=4')).toBe(true);
+    expect(isSafeMusicUrl('http://music.example/song')).toBe(false);
+    expect(isSafeMusicUrl('https://person:secret@music.example/song')).toBe(
+      false,
+    );
+    expect(isSafeMusicUrl('data:text/html,<script>alert(1)</script>')).toBe(
+      false,
+    );
+    expect(
+      updateRoomSchema.safeParse({
+        music: {
+          url: 'https://music.example/song',
+          title: 'A song',
+          artist: null,
+        },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('requires each widget and position exactly once', () => {
+    const widgets = [
+      'currently',
+      'music',
+      'top_friends',
+      'photos',
+      'life_updates',
+      'posts',
+      'memories',
+    ].map((type, position) => ({
+      type,
+      position,
+      placement: position < 4 ? 'sidebar' : 'main',
+      enabled: true,
+    }));
+    expect(updateRoomWidgetsSchema.safeParse({ widgets }).success).toBe(true);
+    expect(
+      updateRoomWidgetsSchema.safeParse({
+        widgets: widgets.map((item) => ({ ...item, position: 0 })),
+      }).success,
+    ).toBe(false);
+    expect(
+      updateRoomWidgetsSchema.safeParse({
+        widgets: [...widgets.slice(0, 6), widgets[0]],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('bounds and deduplicates Top Friends and appearance preferences', () => {
+    expect(
+      updateRoomTopFriendsSchema.safeParse({
+        userIds: ids.slice(0, 4),
+        size: 4,
+        visibility: 'friends',
+      }).success,
+    ).toBe(true);
+    expect(
+      updateRoomTopFriendsSchema.safeParse({
+        userIds: ids.slice(0, 5),
+        size: 4,
+        visibility: 'visible',
+      }).success,
+    ).toBe(false);
+    expect(
+      updateRoomTopFriendsSchema.safeParse({
+        userIds: [ids[0], ids[0]],
+        size: 4,
+        visibility: 'visible',
+      }).success,
+    ).toBe(false);
+    expect(
+      updateUserPreferencesSchema.safeParse({ appearance: 'system' }).success,
+    ).toBe(true);
+    expect(
+      updateUserPreferencesSchema.safeParse({ appearance: 'room-theme' })
+        .success,
+    ).toBe(false);
+  });
+});
 
 describe('cursorPageSchema', () => {
   it('applies a bounded default page size', () => {

@@ -166,3 +166,19 @@ authorized API. Run `node --env-file=.env
 apps/api/node_modules/vitest/vitest.mjs run
 apps/api/test/interaction-flow.integration.test.ts` for concurrent reaction,
 notification dedupe, block, membership, deletion, and cursor coverage.
+
+## Phase 7 Room testing
+
+Apply migrations through `0015`. Open one Room as its owner, an accepted friend,
+an unrelated provisioned member, and a blocked account. Exercise Friends Only,
+Paldora Members, and Hidden; inaccessible cases must remain indistinguishable.
+Change all 14 themes, reorder widgets with drag-and-drop and keyboard controls,
+save Top 4/8/12, validate HTTPS music, replace/delete a banner, and reload to
+confirm appearance and Room settings persist. Remove a friendship and block a
+selected friend to verify both Top Friends references disappear atomically.
+
+Run `node --env-file=.env apps/api/node_modules/vitest/vitest.mjs run
+apps/api/test/room-flow.integration.test.ts` for database authorization,
+concurrency, Top Friends, and banner coverage. With the web development server
+running, generate implementation-derived artboards with
+`pnpm design:capture:phase7`.

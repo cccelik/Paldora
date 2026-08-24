@@ -23,6 +23,7 @@ import { ApiError } from './api-error.js';
 import { isUniqueViolation } from './database-errors.js';
 import { InfrastructureService } from './infrastructure.service.js';
 import { ProfileAvatarService } from './profile-avatar.service.js';
+import { RoomService } from './room.service.js';
 
 const onboardingRank = {
   username: 0,
@@ -39,6 +40,7 @@ export class UserService {
     @Inject(InfrastructureService) infrastructure: InfrastructureService,
     @Inject(ProfileAvatarService)
     private readonly avatars: ProfileAvatarService,
+    @Inject(RoomService) private readonly rooms: RoomService,
   ) {
     this.database = infrastructure.databaseClient;
   }
@@ -146,6 +148,7 @@ export class UserService {
       }
       throw error;
     }
+    if (input.onboardingState === 'complete') await this.rooms.ensure(userId);
     return this.getCurrentUser(userId);
   }
 
