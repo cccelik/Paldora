@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readEventStream } from './event-stream';
-import { backoffDelay, parseHint, shouldRefresh } from './realtime';
+import {
+  backoffDelay,
+  isInteractionHint,
+  isNotificationHint,
+  parseHint,
+  shouldRefresh,
+} from './realtime';
 
 const BOX = '7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10';
 const POST = '0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22';
@@ -105,6 +111,59 @@ describe('shouldRefresh', () => {
       shouldRefresh('/friends', { type: 'post.created', boxId: BOX }),
     ).toBe(false);
     expect(shouldRefresh('/home', { type: 'ping' })).toBe(false);
+  });
+});
+
+describe('interaction and notification hints', () => {
+  const COMMENT = '3b9f0f2a-1c4d-4e5f-8a6b-7c8d9e0f1a2b';
+
+  it('keeps comment and notification IDs', () => {
+    expect(
+      parseHint(
+        JSON.stringify({
+          type: 'comment.created',
+          boxId: BOX,
+          postId: POST,
+          commentId: COMMENT.toUpperCase(),
+          notificationId: COMMENT,
+          emoji: '👍',
+        }),
+      ),
+    ).toEqual({
+      type: 'comment.created',
+      boxId: BOX,
+      postId: POST,
+      commentId: COMMENT,
+      notificationId: COMMENT,
+    });
+  });
+
+  it('never refreshes Home or a Box page for comments and reactions', () => {
+    for (const type of [
+      'comment.created',
+      'comment.updated',
+      'comment.deleted',
+      'reaction.changed',
+    ]) {
+      const hint = { type, boxId: BOX, postId: POST, commentId: COMMENT };
+      expect(isInteractionHint(hint)).toBe(true);
+      expect(shouldRefresh('/home', hint)).toBe(false);
+      expect(shouldRefresh(`/boxes/${BOX}`, hint)).toBe(false);
+      expect(shouldRefresh(`/posts/${POST}`, hint)).toBe(true);
+      expect(shouldRefresh(`/posts/${BOX}`, hint)).toBe(false);
+    }
+  });
+
+  it('refreshes only the notifications page for notification hints', () => {
+    for (const type of ['notification.created', 'notifications.changed']) {
+      const hint = { type, postId: POST, notificationId: COMMENT };
+      expect(isNotificationHint(hint)).toBe(true);
+      expect(isInteractionHint(hint)).toBe(false);
+      expect(shouldRefresh('/notifications', hint)).toBe(true);
+      expect(shouldRefresh('/home', hint)).toBe(false);
+      expect(shouldRefresh(`/posts/${POST}`, hint)).toBe(false);
+    }
+    expect(isNotificationHint({ type: 'post.created' })).toBe(false);
   });
 });
 

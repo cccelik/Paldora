@@ -1,0 +1,114 @@
+.dialog {
+  width: min(calc(100vw - 2 * var(--pal-space-4)), 26rem);
+  max-width: 100vw;
+  max-height: calc(100dvh - 2 * var(--pal-space-4));
+  margin: auto;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-canvas);
+  color: var(--pal-text);
+}
+
+.dialog::backdrop {
+  background: color-mix(
+    in srgb,
+    var(--pal-color-brand-obsidian) 60%,
+    transparent
+  );
+}
+
+.body {
+  display: grid;
+  gap: var(--pal-space-4);
+  padding: var(--pal-space-4);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pal-space-3);
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.close,
+.use {
+  min-width: var(--pal-size-touch-target);
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 30%, transparent);
+  border-radius: var(--pal-radius-pill);
+  background: transparent;
+  color: var(--pal-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--pal-size-touch-target), 1fr)
+  );
+  gap: var(--pal-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: var(--pal-size-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--pal-radius-md);
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.choice:hover {
+  background: var(--pal-surface);
+}
+
+.custom {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.customRow {
+  display: flex;
+  gap: var(--pal-space-2);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+  color: var(--pal-text);
+  font: inherit;
+  font-size: 1.25rem;
+}
+
+.problem {
+  min-height: 1.5em;
+  color: var(--pal-warning-text);
+  font-size: 0.875rem;
+}

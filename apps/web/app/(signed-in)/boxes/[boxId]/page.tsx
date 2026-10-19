@@ -75,6 +75,7 @@ export default async function BoxPage({
         {box.status === 'active' ? <PostComposer boxId={boxId} /> : null}
         <PostFeed
           items={feed.items}
+          presets={me.preferences.reactionPresets}
           empty="No posts yet. Be the first to share."
         />
         {feed.nextCursor ? (

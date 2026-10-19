@@ -1,0 +1,122 @@
+.section {
+  display: grid;
+  gap: var(--pal-space-4);
+  scroll-margin-top: 7rem;
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.note {
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+  color: var(--pal-text-muted);
+}
+
+.threads,
+.replies {
+  display: grid;
+  gap: var(--pal-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.thread {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+/* One level of indent only: 16px on narrow screens. */
+.replies,
+.indent {
+  padding-inline-start: var(--pal-space-4);
+  border-inline-start: 2px solid
+    color-mix(in srgb, var(--pal-text) 12%, transparent);
+}
+
+.pinned {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-3);
+  border: 1px solid var(--pal-accent);
+  border-radius: var(--pal-radius-lg);
+}
+
+.comment {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+  /* Clears the sticky header when a deep link scrolls here. */
+  scroll-margin-top: 7rem;
+}
+
+.comment:focus-visible {
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus);
+  outline-offset: 2px;
+}
+
+.placeholder {
+  color: var(--pal-text-muted);
+  font-style: italic;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.composer {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-self: start;
+  gap: var(--pal-space-2);
+  padding-inline-start: var(--pal-space-3);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-surface);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .replies,
+  .indent {
+    padding-inline-start: var(--pal-space-6);
+  }
+}

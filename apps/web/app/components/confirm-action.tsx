@@ -21,6 +21,7 @@ export function ConfirmAction({
   confirmLabel,
   pendingLabel,
   variant = 'danger',
+  onSuccess,
 }: {
   action: FormAction;
   fields: HiddenFields;
@@ -29,12 +30,18 @@ export function ConfirmAction({
   confirmLabel: string;
   pendingLabel: string;
   variant?: ButtonVariant;
+  /** For content the page does not re-render on its own (client-held rows). */
+  onSuccess?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(action, idleResult);
   const trigger = useRef<HTMLButtonElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (state.status === 'success') onSuccess?.();
+  }, [state, onSuccess]);
 
   useEffect(() => {
     if (open) cancel.current?.focus();

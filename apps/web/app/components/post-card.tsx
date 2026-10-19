@@ -2,18 +2,25 @@ import type { FeedItemView, PostView } from '@paldora/validation';
 import Link from 'next/link';
 import { LocalTime } from './local-time';
 import { PostActions } from './post-actions';
+import { PostInteractions } from './post-interactions';
 import { PostPhotos } from './post-photos';
 import { Avatar, Badge, EmptyState } from './ui';
 import styles from './post-card.module.css';
 
 export function PostCard({
   post,
+  presets,
   showBox = false,
   leaveAfterDelete = false,
+  permalink = false,
 }: {
   post: PostView;
+  /** The viewer's five reaction shortcuts. */
+  presets: readonly string[];
   showBox?: boolean;
   leaveAfterDelete?: boolean;
+  /** On the post's own page the thread follows, so no comments link. */
+  permalink?: boolean;
 }) {
   return (
     <article
@@ -39,6 +46,12 @@ export function PostCard({
       </header>
       {post.content ? <p className={styles.body}>{post.content}</p> : null}
       <PostPhotos photos={post.media} authorName={post.author.displayName} />
+      <PostInteractions
+        postId={post.id}
+        summary={post.interactions}
+        presets={presets}
+        commentsLink={!permalink}
+      />
       {post.canEdit ? (
         <PostActions
           postId={post.id}
@@ -65,10 +78,12 @@ function HiddenPostCard() {
 
 export function PostFeed({
   items,
+  presets,
   showBox = false,
   empty,
 }: {
   items: readonly FeedItemView[];
+  presets: readonly string[];
   showBox?: boolean;
   empty: string;
 }) {
@@ -78,7 +93,7 @@ export function PostFeed({
       {items.map((item) => (
         <li key={item.kind === 'post' ? item.post.id : item.hidden.id}>
           {item.kind === 'post' ? (
-            <PostCard post={item.post} showBox={showBox} />
+            <PostCard post={item.post} presets={presets} showBox={showBox} />
           ) : (
             <HiddenPostCard />
           )}

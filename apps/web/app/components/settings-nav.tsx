@@ -7,6 +7,7 @@ import styles from './settings-nav.module.css';
 const sections = [
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/appearance', label: 'Appearance' },
+  { href: '/settings/reactions', label: 'Reactions' },
 ] as const;
 
 export function SettingsNav() {

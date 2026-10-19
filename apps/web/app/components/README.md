@@ -25,10 +25,10 @@ component.
 
 | Component                                               | Owns                                                                     |
 | ------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `AppShell`, `AppNav`                                    | The trusted signed-in frame: brand, primary nav, avatar, sign-out.       |
+| `AppShell`, `AppNav`                                    | The trusted signed-in frame: brand, primary nav, bell, avatar, sign-out. |
 | `AuthLayout`                                            | Signed-out frame (sign-in, recovery, account unavailable).               |
 | `OnboardingLayout`                                      | The three setup steps with progress.                                     |
-| `SettingsNav`                                           | Account / Appearance sections.                                           |
+| `SettingsNav`                                           | Account / Appearance / Reactions sections.                               |
 | `SubmitButton`                                          | Submit with pending state (`useFormStatus`).                             |
 | `ActionFeedback`                                        | Renders an `ActionResult` into `FormMessage`.                            |
 | `SignInForm`, `ForgotPasswordForm`, `ResetPasswordForm` | Auth forms on `useActionState`.                                          |
@@ -55,13 +55,38 @@ Shared form rhythm lives in `components/form-stack.module.css`.
 
 ## Posts, photos, and realtime
 
-| Component              | Owns                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------- |
-| `PostFeed`, `PostCard` | Chronological posts; hidden (blocked) items render a neutral card with no author.         |
-| `PostComposer`         | Text plus up to 4 photos; Cmd/Ctrl+Enter posts; locked while photos are processing.       |
-| `usePhotoAttachments`  | Photo flow: reserve → PUT → complete → wait for the worker; polls one at a time.          |
-| `PostActions`          | The author's inline Edit and confirmed Delete.                                            |
-| `PostPhotos`           | Photo grid and full-screen viewer (native `<dialog>`: focus trap, Escape, arrows).        |
-| `LocalTime`            | UTC on the server, the viewer's timezone after mount; no hydration mismatch.              |
-| `MoreLink`             | "Show more" for keyset-paged lists: a plain link, no script.                              |
-| `RealtimeBridge`       | One event stream per tab; refreshes only the page a hint concerns; marks `data-realtime`. |
+| Component              | Owns                                                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PostFeed`, `PostCard` | Chronological posts; hidden (blocked) items render a neutral card with no author.                                                                        |
+| `PostComposer`         | Text plus up to 4 photos; Cmd/Ctrl+Enter posts; locked while photos are processing.                                                                      |
+| `usePhotoAttachments`  | Photo flow: reserve → PUT → complete → wait for the worker; polls one at a time.                                                                         |
+| `PostActions`          | The author's inline Edit and confirmed Delete.                                                                                                           |
+| `PostPhotos`           | Photo grid and full-screen viewer (native `<dialog>`: focus trap, Escape, arrows).                                                                       |
+| `LocalTime`            | UTC on the server, the viewer's timezone after mount; no hydration mismatch.                                                                             |
+| `MoreLink`             | "Show more" for keyset-paged lists: a plain link, no script.                                                                                             |
+| `RealtimeBridge`       | One event stream per tab; refreshes only the page a hint concerns; marks `data-realtime`; re-dispatches every hint as a window `paldora:realtime` event. |
+| `useRealtimeHint`      | Subscribes a component to `paldora:realtime` hints (cards, the bell).                                                                                    |
+
+## Feedback
+
+| Component                     | Owns                                                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ToastProvider`, `useToast`   | The one toast stack (in the signed-in layout). Errors (`attention`, `failure`) in a `role="alert"` region, others polite; 5 s / 8 s, paused on hover and focus; at most 3; 44×44 dismiss. Timing and stacking: `lib/toast-queue.ts`. |
+| `useActionToast`              | Toasts a button-style action's result once. Forms keep inline `ActionFeedback`.                                                                                                                                                      |
+| `ConfirmAction` (`onSuccess`) | Optional callback for rows the page does not re-render itself (client-held replies).                                                                                                                                                 |
+
+## Interactions and notifications
+
+| Component                             | Owns                                                                                                                                                                                                                      |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PostInteractions`                    | A post's reaction bar, camera-reaction strip (when the summary has previews), and "N comments" link. Holds the summary via `useOptimisticReaction`; refetches only its own summary on a matching hint (debounced action). |
+| `useOptimisticReaction`               | Server summary + `useOptimistic` + set-reaction action in a transition; failures toast. Shared by posts and comments.                                                                                                     |
+| `ReactionBar`                         | Preset buttons (posts) or used kinds (comments, `compact`), `aria-pressed`, "React with 👍. 3 people" labels, the tap guard (`lib/tap-guard.ts`), a More/React chooser, and an `extra` slot at the end (camera button).   |
+| `EmojiChooser`                        | Native `<dialog>` emoji picker: presets, curated grid, free "Any emoji" checked with `isSingleEmoji`. No nested form, so it can sit inside one.                                                                           |
+| `CommentThread`                       | Server-rendered comments section: composer or archived note, pinned deep-linked thread, roots `<ol>`, older-comments `MoreLink`.                                                                                          |
+| `CommentThreadView`                   | One root plus one nested reply `<ol>`; "View N more replies" (`listReplies` action); reply composer with "Replying to" chip.                                                                                              |
+| `CommentEntry`, `CommentPlaceholder`  | A comment with inline edit, confirmed delete, compact reactions; neutral text for hidden and deleted rows. `id="comment-{id}"`, focusable for deep links.                                                                 |
+| `CommentComposer`                     | Comment or reply textarea with counter, Cmd/Ctrl+Enter.                                                                                                                                                                   |
+| `ReactionPresetEditor`                | Five shortcut slots using `EmojiChooser`, reset to defaults, saved via `reactionPresetsAction`.                                                                                                                           |
+| `NotificationBell`                    | Header link to `/notifications`: "Notifications, N unread" (99+), refetches on notification hints, generic "new notification" toast.                                                                                      |
+| `NotificationList`, `NotificationRow` | Rows are plain forms (work without JS): mark read, then redirect to the post with `?comment=` pinned. Sentences from `lib/notification-text.ts`.                                                                          |

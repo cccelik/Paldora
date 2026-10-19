@@ -8,7 +8,7 @@ import styles from './page.module.css';
 export const metadata = { title: 'Home' };
 
 export default async function HomePage({ searchParams }: PageProps<'/home'>) {
-  const { profile } = await completedUser();
+  const { profile, preferences } = await completedUser();
   const cursor = cursorParam((await searchParams).feed);
   const feed = await (await apiClient()).homeFeed({ limit: 20, cursor });
   return (
@@ -34,6 +34,7 @@ export default async function HomePage({ searchParams }: PageProps<'/home'>) {
       >
         <PostFeed
           items={feed.items}
+          presets={preferences.reactionPresets}
           showBox
           empty="Nothing here yet. Open a Box and share something, or accept an invitation."
         />

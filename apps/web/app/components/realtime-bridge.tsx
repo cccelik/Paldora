@@ -4,7 +4,13 @@ import { createBrowserClient } from '@supabase/ssr';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { readEventStream } from '../lib/event-stream';
-import { backoffDelay, parseHint, shouldRefresh } from '../lib/realtime';
+import {
+  backoffDelay,
+  parseHint,
+  REALTIME_EVENT,
+  shouldRefresh,
+  type RealtimeHint,
+} from '../lib/realtime';
 
 interface RealtimeBridgeProps {
   apiUrl: string;
@@ -26,7 +32,8 @@ const sleep = (ms: number, signal: AbortSignal) =>
 /**
  * One event stream per tab (R5). It only invalidates: when a hint says the
  * page on screen is affected, the server components re-render through their
- * normal authorized queries. Nothing from the stream is rendered directly.
+ * normal authorized queries. Every hint is also re-dispatched as a window
+ * `paldora:realtime` event, so a card or the bell can refetch just itself. Nothing from the stream is rendered directly.
  * The stream ends at token expiry and on any error; reconnecting gets a fresh
  * token and a `resync`, so a missed hint is repaired rather than trusted.
  */
@@ -79,8 +86,13 @@ export function RealtimeBridge({
           // may have missed events while disconnected.
           if (connectedBefore) refresh();
           connectedBefore = true;
-        } else if (shouldRefresh(pathRef.current, hint)) {
-          refresh();
+        } else if (hint.type !== 'ping') {
+          // Components that show one item (a card's summary, the bell)
+          // listen for this and refetch only what the hint concerns.
+          window.dispatchEvent(
+            new CustomEvent<RealtimeHint>(REALTIME_EVENT, { detail: hint }),
+          );
+          if (shouldRefresh(pathRef.current, hint)) refresh();
         }
       }
     }

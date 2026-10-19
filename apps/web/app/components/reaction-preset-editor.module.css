@@ -1,0 +1,41 @@
+.form {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trigger {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  border-color: var(--pal-text);
+}
+
+.notice {
+  color: var(--pal-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}

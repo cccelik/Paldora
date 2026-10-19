@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, Ref, TextareaHTMLAttributes } from 'react';
 import styles from './field.module.css';
 
 interface FieldFrame {
@@ -73,7 +73,10 @@ export function TextField({
 }
 
 type AreaFieldProps = FieldFrame &
-  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id' | 'prefix'>;
+  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id' | 'prefix'> & {
+    /** React 19 passes `ref` as an ordinary prop. */
+    ref?: Ref<HTMLTextAreaElement>;
+  };
 
 export function TextAreaField({
   label,

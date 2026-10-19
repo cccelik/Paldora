@@ -1,0 +1,98 @@
+/* Bottom of the screen, clear of the safe areas, above page content. */
+.region {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--pal-z-index-toast);
+  display: grid;
+  justify-items: center;
+  gap: var(--pal-space-2);
+  padding: 0 max(var(--pal-space-4), env(safe-area-inset-right, 0px))
+    calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-4))
+    max(var(--pal-space-4), env(safe-area-inset-left, 0px));
+  /* Clicks pass through the empty band; only toasts catch the pointer. */
+  pointer-events: none;
+}
+
+.group {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+}
+
+.list {
+  display: grid;
+  gap: var(--pal-space-2);
+  width: min(100%, 28rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-1) var(--pal-space-1) var(--pal-space-1)
+    var(--pal-space-4);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+  color: var(--pal-text);
+  pointer-events: auto;
+  animation: rise var(--pal-duration-standard) var(--pal-easing-standard);
+}
+
+.toast[data-tone='success'] {
+  border-inline-start: 4px solid var(--pal-success-text);
+}
+
+.toast[data-tone='attention'] {
+  border-inline-start: 4px solid var(--pal-warning-text);
+}
+
+.toast[data-tone='failure'] {
+  border-inline-start: 4px solid var(--pal-danger-text);
+}
+
+.message {
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--pal-space-2);
+  overflow-wrap: anywhere;
+}
+
+.link {
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+
+.dismiss {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--pal-size-touch-target);
+  height: var(--pal-size-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--pal-radius-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(0.5rem);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

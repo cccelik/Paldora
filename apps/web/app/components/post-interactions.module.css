@@ -1,0 +1,41 @@
+.interactions {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+.comments {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  color: var(--pal-text);
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+
+.real {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.realList {
+  display: flex;
+  gap: var(--pal-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.realImage {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--pal-radius-sm);
+  object-fit: cover;
+}
+
+.meta {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
