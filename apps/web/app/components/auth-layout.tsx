@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { Wordmark } from './wordmark';
+import { Wordmark } from './ui';
+import styles from './auth-layout.module.css';
 
+/** The frame for signed-out pages: sign-in and password recovery. */
 export function AuthLayout({
   title,
   description,
@@ -11,29 +13,31 @@ export function AuthLayout({
   children: ReactNode;
 }) {
   return (
-    <main className="auth-page">
-      <section className="auth-story" aria-hidden="true">
+    <div className={styles.page}>
+      {/* Always the dark brand surface, whatever the app appearance. */}
+      <aside className={styles.story} aria-hidden="true" data-appearance="dark">
         <Wordmark />
-        <div>
-          <p className="eyebrow">A quieter corner of the internet</p>
-          <blockquote>“The good stuff was always meant to be kept.”</blockquote>
-        </div>
-        <p className="auth-footnote">Private by default · Made to last</p>
-      </section>
-      <section className="auth-panel">
-        <div className="auth-mobile-brand">
-          <Wordmark />
-        </div>
-        <div className="auth-card">
-          <p className="eyebrow">Paldora access</p>
-          <h1>{title}</h1>
-          <p className="auth-description">{description}</p>
+        <p className={styles.quote}>
+          The good stuff was always meant to be kept.
+        </p>
+        <p className={styles.storyFootnote}>
+          Private by default · Made to last
+        </p>
+      </aside>
+      <main id="main" className={styles.panel}>
+        <Wordmark />
+        <section className={styles.card} aria-labelledby="auth-title">
+          <p className={styles.eyebrow}>Paldora access</p>
+          <h1 id="auth-title" className={styles.title}>
+            {title}
+          </h1>
+          <p className={styles.description}>{description}</p>
           {children}
-          <p className="demo-note">
-            Access is limited to provisioned demo accounts.
-          </p>
-        </div>
-      </section>
-    </main>
+        </section>
+        <p className={styles.footnote}>
+          Paldora is in private testing. Accounts are created by invitation.
+        </p>
+      </main>
+    </div>
   );
 }

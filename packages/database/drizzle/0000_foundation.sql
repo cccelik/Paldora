@@ -1,4 +1,3 @@
+-- drizzle-kit creates this schema first to hold its migration journal
+-- (migrations.schema = 'paldora'), so creation must be idempotent.
 CREATE SCHEMA IF NOT EXISTS "paldora";
-
-COMMENT ON SCHEMA "paldora" IS
-  'Paldora application schema. All schema changes must be applied through committed migrations.';

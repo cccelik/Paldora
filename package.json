@@ -1,35 +1,36 @@
 {
   "name": "paldora",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
-  "description": "A privacy-first living scrapbook for close friends and private communities.",
+  "description": "A box for your people: a privacy-first living scrapbook for real friends and private communities.",
   "packageManager": "pnpm@11.22.0",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0 <25"
   },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
-    "start:api-worker": "node scripts/start-deployed-services.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint scripts --max-warnings=0 && turbo run lint",
+    "lint": "eslint scripts *.config.ts --max-warnings=0 && turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:integration": "turbo run test:integration --concurrency=1",
     "test:e2e": "playwright test",
-    "test:e2e:hosted": "node --env-file=.env node_modules/@playwright/test/cli.js test --config=playwright.hosted.config.ts",
+    "contract:generate": "pnpm --filter @paldora/validation contract:generate",
+    "contract:check": "pnpm --filter @paldora/validation contract:check",
+    "tokens:generate": "pnpm --filter @paldora/tokens tokens:generate",
+    "tokens:check": "pnpm --filter @paldora/tokens tokens:check",
     "db:generate": "pnpm --filter @paldora/database db:generate",
     "db:migrate": "pnpm --filter @paldora/database db:migrate",
-    "db:studio": "pnpm --filter @paldora/database db:studio",
-    "seed:demo": "pnpm --filter @paldora/api seed:demo",
-    "design:capture:phase1": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase1-designs.ts",
-    "design:capture:phase6": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase6-designs.ts",
-    "design:capture:phase7": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase7-designs.ts"
+    "scan:client-bundle": "node scripts/scan-client-bundle.mjs apps/web/.next/static",
+    "test:e2e:full": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && playwright test -c playwright.fullstack.config.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.62.1",
-    "@types/node": "26.2.0",
+    "@types/node": "24.19.2",
     "@typescript-eslint/eslint-plugin": "8.67.0",
     "@typescript-eslint/parser": "8.67.0",
     "eslint": "10.9.0",

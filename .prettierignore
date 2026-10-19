@@ -1,8 +1,17 @@
+legacy
 .next
 apps/web/next-env.d.ts
 coverage
 dist
+generated
 node_modules
 playwright-report
 pnpm-lock.yaml
 test-results
+contracts/openapi.json
+packages/database/drizzle/meta
+.claude/skills
+skills-lock.json
+.task-observer
+graphify-out
+.claude/CLAUDE.md

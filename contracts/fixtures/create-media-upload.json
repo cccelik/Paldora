@@ -1,0 +1,31 @@
+{
+  "schema": "CreateMediaUploadRequest",
+  "valid": [
+    { "purpose": "avatar", "contentType": "image/jpeg", "contentLength": 1 },
+    {
+      "purpose": "avatar",
+      "contentType": "image/webp",
+      "contentLength": 10485760
+    }
+  ],
+  "invalid": [
+    { "purpose": "avatar", "contentType": "image/gif", "contentLength": 100 },
+    {
+      "purpose": "avatar",
+      "contentType": "image/png",
+      "contentLength": 10485761
+    },
+    { "purpose": "avatar", "contentType": "image/png", "contentLength": 0 },
+    {
+      "purpose": "post_image",
+      "contentType": "image/png",
+      "contentLength": 100
+    },
+    {
+      "purpose": "avatar",
+      "contentType": "image/png",
+      "contentLength": 100,
+      "objectKey": "x"
+    }
+  ]
+}

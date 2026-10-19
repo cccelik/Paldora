@@ -1,376 +1,184 @@
-import type {
-  BoxId,
-  CommentId,
-  MediaAssetId,
-  NotificationId,
-  PostId,
-  UserId,
-} from '@paldora/domain';
-import { expect, it, vi } from 'vitest';
-import { PaldoraApiClient } from './index.js';
+import { defineRoute } from '@paldora/validation';
+import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
+import { ApiClientError, PaldoraApiClient } from './index.js';
 
-it('uses the versioned health endpoint', async () => {
-  const request = vi.fn<typeof fetch>().mockResolvedValue(
-    new Response(
-      JSON.stringify({
+const json = (status: number, body: unknown, headers: HeadersInit = {}) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
+
+const privateRoute = defineRoute({
+  operationId: 'getThing',
+  method: 'GET',
+  path: '/things/{thingId}',
+  summary: 'Test route.',
+  tag: 'Test',
+  access: 'authenticated',
+  successStatus: 200,
+  response: z.object({ id: z.string() }),
+  errors: ['NOT_FOUND'],
+});
+
+describe('PaldoraApiClient', () => {
+  it('parses liveness against the contract', async () => {
+    const fetch = vi.fn(async () =>
+      json(200, {
         status: 'ok',
         service: 'api',
-        version: '0.1.0',
-        timestamp: '',
+        timestamp: '2026-10-18T12:00:00.000Z',
       }),
-    ),
-  );
-  const client = new PaldoraApiClient({
-    baseUrl: 'https://api.example/api/v1/',
-    fetchImplementation: request,
-  });
-  await client.health();
-  expect(request).toHaveBeenCalledWith(
-    'https://api.example/api/v1/health',
-    expect.any(Object),
-  );
-});
-
-it('attaches a fresh bearer token to authenticated requests', async () => {
-  const request = vi.fn<typeof fetch>().mockResolvedValue(
-    new Response(
-      JSON.stringify({
-        user: { id: 'user' },
-        profile: { userId: 'user' },
-      }),
-    ),
-  );
-  const getAccessToken = vi.fn().mockResolvedValue('fresh-token');
-  const client = new PaldoraApiClient({
-    baseUrl: 'https://api.example/api/v1',
-    fetchImplementation: request,
-    getAccessToken,
-  });
-  await client.currentUser();
-  expect(getAccessToken).toHaveBeenCalledOnce();
-  expect(request).toHaveBeenCalledWith(
-    'https://api.example/api/v1/me',
-    expect.objectContaining({
-      headers: expect.objectContaining({
-        authorization: 'Bearer fresh-token',
-      }),
-      cache: 'no-store',
-    }),
-  );
-});
-
-it('invokes the native fetch implementation with the global receiver', async () => {
-  const nativeFetch = vi.fn(function (this: unknown) {
-    if (this !== globalThis) throw new TypeError('Illegal invocation');
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          status: 'ok',
-          service: 'api',
-          version: '0.1.0',
-          timestamp: '',
-        }),
-      ),
     );
-  });
-  vi.stubGlobal('fetch', nativeFetch);
-  try {
     const client = new PaldoraApiClient({
-      baseUrl: 'https://api.example/api/v1',
+      baseUrl: 'https://api.test/api/v1/',
+      fetch,
     });
-    await client.health();
-    expect(nativeFetch).toHaveBeenCalledOnce();
-  } finally {
-    vi.unstubAllGlobals();
-  }
-});
-
-it('uses the versioned Boxes and friendship contracts', async () => {
-  const request = vi
-    .fn<typeof fetch>()
-    .mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          id: 'box-id',
-          name: 'Close friends',
-          currentUserRole: 'owner',
-        }),
-      ),
-    )
-    .mockResolvedValueOnce(new Response(JSON.stringify([])))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ inviteeUserIds: [] })))
-    .mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          ownerUserId: '00000000-0000-4000-8000-000000000002',
-        }),
-      ),
-    )
-    .mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: true, status: 'removed' })),
-    )
-    .mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: true, status: 'left' })),
-    )
-    .mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
-  const client = new PaldoraApiClient({
-    baseUrl: 'https://api.example/api/v1',
-    fetchImplementation: request,
-    getAccessToken: () => Promise.resolve('token'),
-  });
-  await client.createBox({ name: 'Close friends' });
-  await client.friendRequests();
-  await client.pendingBoxInvitees(
-    '00000000-0000-4000-8000-000000000001' as BoxId,
-  );
-  await client.transferBoxOwnership(
-    '00000000-0000-4000-8000-000000000001' as BoxId,
-    '00000000-0000-4000-8000-000000000002' as UserId,
-  );
-  await client.removeBoxMember(
-    '00000000-0000-4000-8000-000000000001' as BoxId,
-    '00000000-0000-4000-8000-000000000002' as UserId,
-  );
-  await client.leaveBox('00000000-0000-4000-8000-000000000001' as BoxId);
-  await client.deleteBox('00000000-0000-4000-8000-000000000001' as BoxId);
-  expect(request).toHaveBeenNthCalledWith(
-    1,
-    'https://api.example/api/v1/boxes',
-    expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ name: 'Close friends' }),
-    }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    2,
-    'https://api.example/api/v1/friend-requests',
-    expect.objectContaining({ method: 'GET' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    3,
-    'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/invitations',
-    expect.objectContaining({ method: 'GET' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    4,
-    'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/owner',
-    expect.objectContaining({
-      method: 'PATCH',
-      body: JSON.stringify({
-        userId: '00000000-0000-4000-8000-000000000002',
-      }),
-    }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    5,
-    'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/members/00000000-0000-4000-8000-000000000002',
-    expect.objectContaining({ method: 'DELETE' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    6,
-    'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001/members/me',
-    expect.objectContaining({ method: 'DELETE' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    7,
-    'https://api.example/api/v1/boxes/00000000-0000-4000-8000-000000000001',
-    expect.objectContaining({ method: 'DELETE' }),
-  );
-});
-
-it('uses text-post and cursor feed contracts', async () => {
-  const request = vi
-    .fn<typeof fetch>()
-    .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'post-id' })))
-    .mockResolvedValueOnce(
-      new Response(JSON.stringify({ items: [], nextCursor: null })),
-    )
-    .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'post-id' })))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
-  const client = new PaldoraApiClient({
-    baseUrl: 'https://api.example/api/v1',
-    fetchImplementation: request,
-    getAccessToken: () => Promise.resolve('token'),
-  });
-  const boxId = '00000000-0000-4000-8000-000000000001' as BoxId;
-  const postId = '00000000-0000-4000-8000-000000000002' as PostId;
-  await client.createPost(boxId, { content: 'Hello circle' });
-  await client.feed({ cursor: 'next page', limit: 10 });
-  await client.updatePost(postId, { content: 'Edited' });
-  await client.deletePost(postId);
-
-  expect(request).toHaveBeenNthCalledWith(
-    1,
-    `https://api.example/api/v1/boxes/${boxId}/posts`,
-    expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ content: 'Hello circle' }),
-    }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    2,
-    'https://api.example/api/v1/me/feed?cursor=next+page&limit=10',
-    expect.objectContaining({ method: 'GET' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    3,
-    `https://api.example/api/v1/posts/${postId}`,
-    expect.objectContaining({
-      method: 'PATCH',
-      body: JSON.stringify({ content: 'Edited' }),
-    }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    4,
-    `https://api.example/api/v1/posts/${postId}`,
-    expect.objectContaining({ method: 'DELETE' }),
-  );
-});
-
-it('uses the private post-media upload lifecycle', async () => {
-  const mediaAssetId = '00000000-0000-4000-8000-000000000003' as MediaAssetId;
-  const request = vi
-    .fn<typeof fetch>()
-    .mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          mediaAsset: { id: mediaAssetId },
-          upload: { url: 'https://storage.example/upload', headers: {} },
-        }),
-      ),
-    )
-    .mockResolvedValueOnce(
-      new Response(JSON.stringify({ id: mediaAssetId, status: 'processing' })),
-    )
-    .mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
-  const client = new PaldoraApiClient({
-    baseUrl: 'https://api.example/api/v1',
-    fetchImplementation: request,
-    getAccessToken: () => Promise.resolve('token'),
-  });
-  const boxId = '00000000-0000-4000-8000-000000000001' as BoxId;
-  await client.createPostMediaUpload(boxId, {
-    contentType: 'image/png',
-    contentLength: 128,
-  });
-  await client.completePostMediaUpload(mediaAssetId);
-  await client.cancelPostMediaUpload(mediaAssetId);
-
-  expect(request).toHaveBeenNthCalledWith(
-    1,
-    `https://api.example/api/v1/boxes/${boxId}/post-media/uploads`,
-    expect.objectContaining({ method: 'POST' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    2,
-    `https://api.example/api/v1/post-media/uploads/${mediaAssetId}/complete`,
-    expect.objectContaining({ method: 'POST' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    3,
-    `https://api.example/api/v1/post-media/uploads/${mediaAssetId}`,
-    expect.objectContaining({ method: 'DELETE' }),
-  );
-});
-
-it('uses the private camera-reaction upload lifecycle', async () => {
-  const mediaAssetId = '00000000-0000-4000-8000-000000000004' as MediaAssetId;
-  const request = vi
-    .fn<typeof fetch>()
-    .mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          mediaAsset: { id: mediaAssetId },
-          upload: { url: 'https://storage.example/reaction', headers: {} },
-        }),
-      ),
-    )
-    .mockResolvedValueOnce(new Response(JSON.stringify({ id: mediaAssetId })))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
-  const client = new PaldoraApiClient({
-    baseUrl: 'https://api.example/api/v1',
-    fetchImplementation: request,
-    getAccessToken: () => Promise.resolve('token'),
-  });
-  const postId = '00000000-0000-4000-8000-000000000005' as PostId;
-  await client.createReactionPhotoUpload(postId, {
-    contentType: 'image/jpeg',
-    contentLength: 123,
-  });
-  await client.completeReactionPhotoUpload(mediaAssetId);
-  await client.cancelReactionPhotoUpload(mediaAssetId);
-  expect(request).toHaveBeenNthCalledWith(
-    1,
-    `https://api.example/api/v1/posts/${postId}/reaction-media/uploads`,
-    expect.objectContaining({ method: 'POST' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    2,
-    `https://api.example/api/v1/reaction-media/uploads/${mediaAssetId}/complete`,
-    expect.objectContaining({ method: 'POST' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    3,
-    `https://api.example/api/v1/reaction-media/uploads/${mediaAssetId}`,
-    expect.objectContaining({ method: 'DELETE' }),
-  );
-});
-
-it('uses idempotent interaction and notification contracts', async () => {
-  const request = vi
-    .fn<typeof fetch>()
-    .mockImplementation(() =>
-      Promise.resolve(new Response(JSON.stringify({ success: true }))),
+    await expect(client.liveness()).resolves.toMatchObject({ status: 'ok' });
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.test/api/v1/health',
+      expect.objectContaining({ method: 'GET' }),
     );
-  const client = new PaldoraApiClient({
-    baseUrl: 'https://api.example/api/v1',
-    fetchImplementation: request,
-    getAccessToken: () => Promise.resolve('token'),
   });
-  const postId = '00000000-0000-4000-8000-000000000001' as PostId;
-  const commentId = '00000000-0000-4000-8000-000000000002' as CommentId;
-  const notificationId =
-    '00000000-0000-4000-8000-000000000003' as NotificationId;
-  await client.postComments(postId, { cursor: 'older', limit: 10 });
-  await client.createComment(postId, { content: 'Hello' });
-  await client.updateComment(commentId, { content: 'Edited' });
-  await client.deleteComment(commentId);
-  await client.setPostReaction(postId, { kind: '❤️' });
-  await client.setCommentReaction(commentId, { kind: '🥳' });
-  await client.notifications({ limit: 20 });
-  await client.unreadNotificationCount();
-  await client.markNotificationRead(notificationId);
-  await client.markAllNotificationsRead();
 
-  expect(request).toHaveBeenNthCalledWith(
-    1,
-    `https://api.example/api/v1/posts/${postId}/comments?cursor=older&limit=10`,
-    expect.objectContaining({ method: 'GET' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    2,
-    `https://api.example/api/v1/posts/${postId}/comments`,
-    expect.objectContaining({ method: 'POST' }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    5,
-    `https://api.example/api/v1/posts/${postId}/reaction`,
-    expect.objectContaining({
-      method: 'PUT',
-      body: JSON.stringify({ kind: '❤️' }),
-    }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    6,
-    `https://api.example/api/v1/comments/${commentId}/reaction`,
-    expect.objectContaining({
-      method: 'PUT',
-      body: JSON.stringify({ kind: '🥳' }),
-    }),
-  );
-  expect(request).toHaveBeenNthCalledWith(
-    9,
-    `https://api.example/api/v1/me/notifications/${notificationId}/read`,
-    expect.objectContaining({ method: 'PATCH' }),
-  );
+  it('sends bearer tokens and encodes path and query values', async () => {
+    const fetch = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        expect(new Headers(init?.headers).get('authorization')).toBe(
+          'Bearer token-1',
+        );
+        return json(200, { id: 'x' });
+      },
+    );
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      fetch,
+      getAccessToken: async () => 'token-1',
+    });
+    await client.call(privateRoute, {
+      params: { thingId: 'a/b' },
+      query: { limit: 20, cursor: undefined },
+    });
+    expect(fetch.mock.calls[0]?.[0]).toBe(
+      'https://api.test/api/v1/things/a%2Fb?limit=20',
+    );
+  });
+
+  it('refuses authenticated calls without a token before any network call', async () => {
+    const fetch = vi.fn();
+    const client = new PaldoraApiClient({ baseUrl: 'https://api.test', fetch });
+    await expect(
+      client.call(privateRoute, { params: { thingId: '1' } }),
+    ).rejects.toMatchObject({ code: 'AUTHENTICATION_REQUIRED', status: 401 });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('maps error envelopes to typed errors', async () => {
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test',
+      fetch: async () =>
+        json(404, {
+          error: { code: 'NOT_FOUND', message: 'Missing.', requestId: 'r-1' },
+        }),
+      getAccessToken: async () => 't',
+    });
+    const error = await client
+      .call(privateRoute, { params: { thingId: '1' } })
+      .catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ApiClientError);
+    expect(error).toMatchObject({
+      status: 404,
+      code: 'NOT_FOUND',
+      requestId: 'r-1',
+    });
+  });
+
+  it('treats malformed success and error bodies as unexpected', async () => {
+    const malformed = new PaldoraApiClient({
+      baseUrl: 'https://api.test',
+      fetch: async () => json(200, { id: 42 }, { 'x-request-id': 'r-2' }),
+      getAccessToken: async () => 't',
+    });
+    await expect(
+      malformed.call(privateRoute, { params: { thingId: '1' } }),
+    ).rejects.toMatchObject({ code: 'UNEXPECTED_RESPONSE', requestId: 'r-2' });
+
+    const htmlError = new PaldoraApiClient({
+      baseUrl: 'https://api.test',
+      fetch: async () =>
+        new Response('<html>Bad gateway</html>', { status: 502 }),
+    });
+    await expect(htmlError.readiness()).rejects.toMatchObject({
+      code: 'INTERNAL_ERROR',
+      status: 502,
+    });
+  });
+});
+
+describe('identity and media methods', () => {
+  const currentUser = {
+    user: {
+      id: '7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10',
+      email: 'ada@example.test',
+      status: 'active',
+      createdAt: '2026-10-18T12:00:00.000Z',
+    },
+    profile: {
+      username: 'ada',
+      displayName: 'Ada',
+      bio: null,
+      avatar: null,
+      avatarProcessing: false,
+      onboardingState: 'complete',
+      updatedAt: '2026-10-18T12:00:00.000Z',
+    },
+    preferences: { appearance: 'system' },
+  };
+
+  it('sends profile changes with the bearer token and parses the result', async () => {
+    const fetch = vi.fn(async () => json(200, currentUser));
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 'token-1',
+      fetch,
+    });
+    await expect(
+      client.updateProfile({ displayName: 'Ada' }),
+    ).resolves.toMatchObject({ profile: { username: 'ada' } });
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.test/api/v1/me/profile');
+    expect(init.method).toBe('PATCH');
+    expect(new Headers(init.headers).get('authorization')).toBe(
+      'Bearer token-1',
+    );
+    expect(init.body).toBe(JSON.stringify({ displayName: 'Ada' }));
+  });
+
+  it('encodes path parameters and query values', async () => {
+    const fetch = vi.fn(async () =>
+      json(200, { username: 'a b', available: false, reason: 'invalid' }),
+    );
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 'token-1',
+      fetch,
+    });
+    await client.usernameAvailability('a b');
+    expect((fetch.mock.calls[0] as unknown as [string])[0]).toBe(
+      'https://api.test/api/v1/me/username-availability?username=a+b',
+    );
+  });
+
+  it('rejects a response that breaks the contract', async () => {
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 'token-1',
+      fetch: vi.fn(async () =>
+        json(200, { ...currentUser, profile: { username: 42 } }),
+      ),
+    });
+    await expect(client.currentUser()).rejects.toMatchObject({
+      code: 'UNEXPECTED_RESPONSE',
+    });
+  });
 });

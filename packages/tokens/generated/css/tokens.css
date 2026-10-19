@@ -1,0 +1,115 @@
+/* Generated from design/tokens/paldora.tokens.json by `pnpm tokens:generate`. Do not edit. */
+:root {
+  --pal-color-brand-obsidian: #11100E;
+  --pal-color-brand-soft-black: #191713;
+  --pal-color-brand-gold: #C79A3B;
+  --pal-color-brand-deep-gold: #9C7424;
+  --pal-color-brand-champagne: #F4E7C3;
+  --pal-color-brand-ivory: #FAF7EF;
+  --pal-color-brand-paper: #F4EFE5;
+  --pal-color-brand-lavender: #C8B7E8;
+  --pal-color-text-dark-primary: #F8F1E0;
+  --pal-color-text-dark-muted: #B9AF9D;
+  --pal-color-text-light-primary: #171717;
+  --pal-color-text-light-muted: #6E6250;
+  --pal-color-status-success: #668060;
+  --pal-color-status-warning: #A96F2D;
+  --pal-color-status-danger: #A54B46;
+  --pal-color-accessible-gold-text: #88651F;
+  --pal-color-accessible-success-text: #5B7255;
+  --pal-color-accessible-warning-text: #936127;
+  --pal-color-focus: #8D6CD1;
+  --pal-space-1: 4px;
+  --pal-space-2: 8px;
+  --pal-space-3: 12px;
+  --pal-space-4: 16px;
+  --pal-space-5: 20px;
+  --pal-space-6: 24px;
+  --pal-space-8: 32px;
+  --pal-space-10: 40px;
+  --pal-space-12: 48px;
+  --pal-space-16: 64px;
+  --pal-space-20: 80px;
+  --pal-radius-sm: 8px;
+  --pal-radius-md: 14px;
+  --pal-radius-lg: 20px;
+  --pal-radius-xl: 28px;
+  --pal-radius-pill: 999px;
+  --pal-size-touch-target: 44px;
+  --pal-size-focus-ring: 3px;
+  --pal-size-reading-column: 620px;
+  --pal-size-content-max: 1280px;
+  --pal-breakpoint-sm: 390px;
+  --pal-breakpoint-md: 768px;
+  --pal-breakpoint-lg: 1024px;
+  --pal-breakpoint-xl: 1280px;
+  --pal-breakpoint-xxl: 1440px;
+  --pal-duration-fast: 120ms;
+  --pal-duration-standard: 200ms;
+  --pal-duration-slow: 320ms;
+  --pal-easing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --pal-z-index-base: 0;
+  --pal-z-index-sticky: 100;
+  --pal-z-index-dropdown: 300;
+  --pal-z-index-overlay: 500;
+  --pal-z-index-modal: 600;
+  --pal-z-index-toast: 700;
+  --pal-z-index-security: 800;
+  --pal-font-brand: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+  --pal-font-editorial: Newsreader, 'Iowan Old Style', Georgia, serif;
+  --pal-font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+:root,
+[data-appearance='light'] {
+  color-scheme: light;
+  --pal-canvas: #FAF7EF;
+  --pal-surface: #F4EFE5;
+  --pal-text: #171717;
+  --pal-text-muted: #6E6250;
+  --pal-accent: #C79A3B;
+  --pal-accent-text: #88651F;
+  --pal-highlight: #F4E7C3;
+  --pal-emotional: #C8B7E8;
+  --pal-success-text: #5B7255;
+  --pal-warning-text: #936127;
+  --pal-danger-text: #A54B46;
+  --pal-focus: #8D6CD1;
+  --pal-on-accent: #11100E;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance='light']) {
+    color-scheme: dark;
+    --pal-canvas: #11100E;
+    --pal-surface: #191713;
+    --pal-text: #F8F1E0;
+    --pal-text-muted: #B9AF9D;
+    --pal-accent: #C79A3B;
+    --pal-accent-text: #C79A3B;
+    --pal-highlight: #F4E7C3;
+    --pal-emotional: #C8B7E8;
+    --pal-success-text: #9DB596;
+    --pal-warning-text: #D9A066;
+    --pal-danger-text: #E08A84;
+    --pal-focus: #C8B7E8;
+    --pal-on-accent: #11100E;
+  }
+}
+
+[data-appearance='dark'] {
+  color-scheme: dark;
+  --pal-canvas: #11100E;
+  --pal-surface: #191713;
+  --pal-text: #F8F1E0;
+  --pal-text-muted: #B9AF9D;
+  --pal-accent: #C79A3B;
+  --pal-accent-text: #C79A3B;
+  --pal-highlight: #F4E7C3;
+  --pal-emotional: #C8B7E8;
+  --pal-success-text: #9DB596;
+  --pal-warning-text: #D9A066;
+  --pal-danger-text: #E08A84;
+  --pal-focus: #C8B7E8;
+  --pal-on-accent: #11100E;
+}

@@ -1,54 +1,49 @@
-import { describe, expect, it } from 'vitest';
-import {
-  isSupportedImageContentType,
-  isSupportedImageFile,
-  MAX_IMAGE_BYTES,
-  uploadFileToSignedRequest,
-} from './image-upload';
+import { describe, expect, it, vi } from 'vitest';
+import { avatarFileProblem, putToSignedUrl } from './image-upload';
 
-describe('image upload validation', () => {
-  it('shares MIME and byte limits across avatar and post images', () => {
-    expect(isSupportedImageContentType('image/webp')).toBe(true);
-    expect(isSupportedImageContentType('image/gif')).toBe(false);
-    expect(
-      isSupportedImageFile({
-        type: 'image/png',
-        size: MAX_IMAGE_BYTES,
-      } as File),
-    ).toBe(true);
-    expect(
-      isSupportedImageFile({
-        type: 'image/png',
-        size: MAX_IMAGE_BYTES + 1,
-      } as File),
-    ).toBe(false);
+describe('avatarFileProblem', () => {
+  it.each([
+    [{ type: 'image/png', size: 1024 }, null],
+    [{ type: 'image/gif', size: 1024 }, 'Choose a JPEG, PNG, or WebP photo.'],
+    [{ type: 'image/svg+xml', size: 10 }, 'Choose a JPEG, PNG, or WebP photo.'],
+    [{ type: 'image/jpeg', size: 0 }, 'That file is empty.'],
+    [
+      { type: 'image/webp', size: 10 * 1024 * 1024 + 1 },
+      'Choose a photo up to 10 MB.',
+    ],
+  ])('%o → %s', (file, expected) => {
+    expect(avatarFileProblem(file)).toBe(expected);
   });
+});
 
-  it('uses one checked transport for signed avatar and post uploads', async () => {
-    const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> =
-      [];
-    const file = { type: 'image/png', size: 12 } as File;
-    await uploadFileToSignedRequest(
-      file,
+describe('putToSignedUrl', () => {
+  it('sends the signed headers without credentials', async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 200 }));
+    await putToSignedUrl(
+      new Blob(['x']),
       {
-        url: 'https://storage.example/upload',
+        url: 'https://storage.test/u',
         headers: { 'content-type': 'image/png' },
       },
-      ((input, init) => {
-        requests.push({ input, ...(init ? { init } : {}) });
-        return Promise.resolve(new Response(null, { status: 200 }));
-      }) as typeof fetch,
+      fetch,
     );
-    expect(requests).toHaveLength(1);
-    expect(requests[0]?.init).toMatchObject({ method: 'PUT', body: file });
+    expect(fetch).toHaveBeenCalledWith(
+      'https://storage.test/u',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: { 'content-type': 'image/png' },
+        credentials: 'omit',
+      }),
+    );
+  });
 
+  it('fails when storage rejects the upload', async () => {
     await expect(
-      uploadFileToSignedRequest(
-        file,
-        { url: 'https://storage.example/upload', headers: {} },
-        (() =>
-          Promise.resolve(new Response(null, { status: 503 }))) as typeof fetch,
+      putToSignedUrl(
+        new Blob(['x']),
+        { url: 'https://s/u', headers: {} },
+        vi.fn(async () => new Response(null, { status: 403 })),
       ),
-    ).rejects.toThrow('Signed image upload failed.');
+    ).rejects.toThrow(/rejected/);
   });
 });

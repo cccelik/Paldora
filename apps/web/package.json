@@ -1,30 +1,34 @@
 {
   "name": "@paldora/web",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
+  "description": "Paldora responsive website (Next.js App Router).",
+  "type": "module",
   "scripts": {
-    "build": "next build --webpack",
+    "build": "next build",
     "dev": "next dev",
-    "lint": "eslint . --max-warnings=0",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run app --passWithNoTests"
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@paldora/api-client": "workspace:*",
+    "@paldora/config": "workspace:*",
     "@paldora/domain": "workspace:*",
-    "@supabase/ssr": "^0.12.4",
-    "@supabase/supabase-js": "^2.112.3",
+    "@paldora/tokens": "workspace:*",
+    "@paldora/validation": "workspace:*",
+    "@supabase/ssr": "0.12.4",
+    "@supabase/supabase-js": "2.112.3",
     "next": "16.3.2",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "4.4.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.3.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
-    "postcss": "8.5.26",
-    "tailwindcss": "4.3.3",
     "vitest": "4.1.11"
   }
 }

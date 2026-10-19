@@ -1,10 +1,9 @@
 {
   "name": "@paldora/api-client",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
+  "description": "Typed Paldora HTTP client derived from the shared route registry.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,11 +13,13 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src --max-warnings=0",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@paldora/domain": "workspace:*"
+    "@paldora/domain": "workspace:*",
+    "@paldora/validation": "workspace:*",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "vitest": "4.1.11"

@@ -1,842 +1,190 @@
-import type {
-  ApiErrorShape,
-  Box,
-  BoxId,
-  BoxInvitation,
-  BoxInvitationId,
-  BoxMember,
-  BoxRole,
-  Comment,
-  CommentId,
-  CommentPage,
-  CommentInteractions,
-  CreateCommentInput,
-  CreateBoxInput,
-  CreateBoxInvitationInput,
-  CreateFriendRequestInput,
-  CreateLifeUpdateInput,
-  CreateLifeUpdateMediaUploadInput,
-  CreateLifeUpdateMediaUploadResult,
-  CreateAvatarUploadInput,
-  CreateAvatarUploadResult,
-  CreatePostInput,
-  CreatePostMediaUploadInput,
-  CreatePostMediaUploadResult,
-  CreateReactionPhotoUploadInput,
-  CreateReactionPhotoUploadResult,
-  CreateRoomBannerUploadInput,
-  CreateRoomBannerUploadResult,
-  CursorPageInput,
-  CurrentUser,
-  HealthStatus,
-  Friendship,
-  FriendshipId,
-  MediaAsset,
-  MediaAssetId,
-  LifeUpdate,
-  LifeUpdateId,
-  LifeUpdatePage,
-  MemoryPage,
-  MemoryYear,
-  NotificationId,
-  NotificationPage,
-  Post,
-  PostId,
-  PostPage,
-  PostInteractions,
-  RoomGalleryPage,
-  RoomView,
-  SetPostReactionInput,
-  SetCommentReactionInput,
-  UpdateCommentInput,
-  UpdatePostInput,
-  UpdateProfileInput,
-  UpdateRoomInput,
-  UpdateRoomTopFriendsInput,
-  UpdateRoomWidgetsInput,
-  UpdateUserPreferencesInput,
-  UserPreferences,
-  UpdateLifeUpdateInput,
-  UsernameAvailability,
-  UserId,
-} from '@paldora/domain';
+import {
+  apiRoutes,
+  errorEnvelopeSchema,
+  type CreateMediaUploadInput,
+  type Preferences,
+  type RouteDefinition,
+  type RouteResponse,
+} from '@paldora/validation';
+import type { z } from 'zod';
 
+/**
+ * A failed API call. `code` is the stable public error code; branch on it,
+ * never on `message`, which is human copy and may change.
+ */
 export class ApiClientError extends Error {
   public constructor(
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly requestId: string | null,
   ) {
     super(message);
     this.name = 'ApiClientError';
   }
 }
 
-export interface ApiClientOptions {
+export interface PaldoraApiClientOptions {
+  /** Absolute base URL ending in `/api/v1`. */
   baseUrl: string;
-  fetchImplementation?: typeof fetch;
+  /** Returns a current access token, or null for anonymous calls. */
   getAccessToken?: () => Promise<string | null>;
+  fetch?: typeof globalThis.fetch;
 }
 
-interface SendOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+/** The profile fields a client may send; see `updateProfileSchema`. */
+export type ProfileChanges = z.input<typeof apiRoutes.updateProfile.body>;
+
+interface CallOptions {
+  params?: Readonly<Record<string, string>>;
+  query?: Readonly<Record<string, string | number | undefined>>;
   body?: unknown;
-  signal?: AbortSignal | undefined;
-  authenticated?: boolean;
+  signal?: AbortSignal;
+}
+
+function buildPath(
+  route: RouteDefinition,
+  params: CallOptions['params'] = {},
+): string {
+  return route.path.replace(/\{(\w+)\}/g, (_match, name: string) => {
+    const value = params[name];
+    if (value === undefined) {
+      throw new Error(
+        `Missing path parameter ${name} for ${route.operationId}.`,
+      );
+    }
+    return encodeURIComponent(value);
+  });
+}
+
+function buildQuery(query: CallOptions['query'] = {}): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) search.set(key, String(value));
+  }
+  const serialized = search.toString();
+  return serialized ? `?${serialized}` : '';
+}
+
+async function toError(response: Response): Promise<ApiClientError> {
+  const fallback = new ApiClientError(
+    response.status,
+    response.status >= 500 ? 'INTERNAL_ERROR' : 'UNEXPECTED_RESPONSE',
+    'Something went wrong. Try again.',
+    response.headers.get('x-request-id'),
+  );
+  const parsed = errorEnvelopeSchema.safeParse(
+    await response.json().catch(() => null),
+  );
+  if (!parsed.success) return fallback;
+  const { code, message, requestId } = parsed.data.error;
+  return new ApiClientError(response.status, code, message, requestId);
 }
 
 export class PaldoraApiClient {
-  private readonly request: typeof fetch;
   private readonly baseUrl: string;
-  private readonly getAccessToken: () => Promise<string | null>;
+  private readonly fetchImplementation: typeof globalThis.fetch;
 
-  public constructor(options: ApiClientOptions) {
+  public constructor(private readonly options: PaldoraApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
-    this.request =
-      options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
-    this.getAccessToken =
-      options.getAccessToken ?? (() => Promise.resolve(null));
+    this.fetchImplementation =
+      options.fetch ?? globalThis.fetch.bind(globalThis);
   }
 
-  public async health(signal?: AbortSignal): Promise<HealthStatus> {
-    return this.send<HealthStatus>('/health', { signal, authenticated: false });
+  public liveness(signal?: AbortSignal) {
+    return this.call(apiRoutes.getLiveness, signal ? { signal } : {});
   }
 
-  public currentUser(signal?: AbortSignal): Promise<CurrentUser> {
-    return this.send('/me', { signal });
+  public readiness(signal?: AbortSignal) {
+    return this.call(apiRoutes.getReadiness, signal ? { signal } : {});
   }
 
-  public myRoom(signal?: AbortSignal): Promise<RoomView> {
-    return this.send('/me/room', { signal });
+  public currentUser() {
+    return this.call(apiRoutes.getCurrentUser);
   }
 
-  public room(username: string, signal?: AbortSignal): Promise<RoomView> {
-    return this.send(`/rooms/${encodeURIComponent(username)}`, { signal });
+  /** Accepts the wire input; the server validates and normalizes it. */
+  public updateProfile(body: ProfileChanges) {
+    return this.call(apiRoutes.updateProfile, { body });
   }
 
-  public updateRoom(
-    input: UpdateRoomInput,
-    signal?: AbortSignal,
-  ): Promise<RoomView> {
-    return this.send('/me/room', { method: 'PATCH', body: input, signal });
-  }
-
-  public updateRoomWidgets(
-    input: UpdateRoomWidgetsInput,
-    signal?: AbortSignal,
-  ): Promise<RoomView> {
-    return this.send('/me/room/widgets', {
-      method: 'PUT',
-      body: input,
-      signal,
+  public usernameAvailability(username: string) {
+    return this.call(apiRoutes.getUsernameAvailability, {
+      query: { username },
     });
   }
 
-  public updateRoomTopFriends(
-    input: UpdateRoomTopFriendsInput,
-    signal?: AbortSignal,
-  ): Promise<RoomView> {
-    return this.send('/me/room/top-friends', {
-      method: 'PUT',
-      body: input,
-      signal,
+  public updatePreferences(body: Preferences) {
+    return this.call(apiRoutes.updatePreferences, { body });
+  }
+
+  public deleteAvatar() {
+    return this.call(apiRoutes.deleteAvatar);
+  }
+
+  public createMediaUpload(body: CreateMediaUploadInput) {
+    return this.call(apiRoutes.createMediaUpload, { body });
+  }
+
+  public completeMediaUpload(mediaAssetId: string) {
+    return this.call(apiRoutes.completeMediaUpload, {
+      params: { mediaAssetId },
     });
   }
 
-  public roomPosts(
-    username: string,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<PostPage> {
-    return this.send(
-      pagePath(`/rooms/${encodeURIComponent(username)}/posts`, page),
-      { signal },
+  public mediaAsset(mediaAssetId: string) {
+    return this.call(apiRoutes.getMediaAsset, { params: { mediaAssetId } });
+  }
+
+  /**
+   * Performs one registered operation and validates the response against the
+   * contract, so a server/client mismatch fails loudly instead of rendering
+   * malformed data.
+   */
+  public async call<Route extends RouteDefinition>(
+    route: Route,
+    options: CallOptions = {},
+  ): Promise<RouteResponse<Route>> {
+    const headers = new Headers({ accept: 'application/json' });
+    if (route.access === 'authenticated') {
+      const token = await this.options.getAccessToken?.();
+      if (!token) {
+        throw new ApiClientError(
+          401,
+          'AUTHENTICATION_REQUIRED',
+          'Sign in to continue.',
+          null,
+        );
+      }
+      headers.set('authorization', `Bearer ${token}`);
+    }
+    if (options.body !== undefined) {
+      headers.set('content-type', 'application/json');
+    }
+    const response = await this.fetchImplementation(
+      `${this.baseUrl}${buildPath(route, options.params)}${buildQuery(options.query)}`,
+      {
+        method: route.method,
+        headers,
+        cache: 'no-store',
+        ...(options.body !== undefined
+          ? { body: JSON.stringify(options.body) }
+          : {}),
+        ...(options.signal ? { signal: options.signal } : {}),
+      },
     );
+    if (!response.ok) throw await toError(response);
+    if (route.successStatus === 204) return undefined as RouteResponse<Route>;
+    const schema: z.ZodType = route.response;
+    const parsed = schema.safeParse(await response.json().catch(() => null));
+    if (!parsed.success) {
+      throw new ApiClientError(
+        response.status,
+        'UNEXPECTED_RESPONSE',
+        'The server returned an unexpected response.',
+        response.headers.get('x-request-id'),
+      );
+    }
+    return parsed.data as RouteResponse<Route>;
   }
-
-  public roomLifeUpdates(
-    username: string,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdatePage> {
-    return this.send(
-      pagePath(`/rooms/${encodeURIComponent(username)}/life-updates`, page),
-      { signal },
-    );
-  }
-
-  public roomGallery(
-    username: string,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<RoomGalleryPage> {
-    return this.send(
-      pagePath(`/rooms/${encodeURIComponent(username)}/gallery`, page),
-      { signal },
-    );
-  }
-
-  public roomMemories(
-    username: string,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<MemoryPage> {
-    return this.send(
-      pagePath(`/rooms/${encodeURIComponent(username)}/memories`, page),
-      { signal },
-    );
-  }
-
-  public preferences(signal?: AbortSignal): Promise<UserPreferences> {
-    return this.send('/me/preferences', { signal });
-  }
-
-  public updatePreferences(
-    input: UpdateUserPreferencesInput,
-    signal?: AbortSignal,
-  ): Promise<UserPreferences> {
-    return this.send('/me/preferences', {
-      method: 'PATCH',
-      body: input,
-      signal,
-    });
-  }
-
-  public createRoomBannerUpload(
-    input: CreateRoomBannerUploadInput,
-    signal?: AbortSignal,
-  ): Promise<CreateRoomBannerUploadResult> {
-    return this.send('/me/room/banner/uploads', {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public completeRoomBannerUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<RoomView> {
-    return this.send(`/me/room/banner/uploads/${id}/complete`, {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  public cancelRoomBannerUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/me/room/banner/uploads/${id}`, {
-      method: 'DELETE',
-      signal,
-    });
-  }
-
-  public deleteRoomBanner(signal?: AbortSignal): Promise<RoomView> {
-    return this.send('/me/room/banner', { method: 'DELETE', signal });
-  }
-
-  public usernameAvailability(
-    username: string,
-    signal?: AbortSignal,
-  ): Promise<UsernameAvailability> {
-    return this.send('/me/username/availability', {
-      method: 'POST',
-      body: { username },
-      signal,
-    });
-  }
-
-  public updateProfile(
-    input: UpdateProfileInput,
-    signal?: AbortSignal,
-  ): Promise<CurrentUser> {
-    return this.send('/me/profile', {
-      method: 'PATCH',
-      body: input,
-      signal,
-    });
-  }
-
-  public createAvatarUpload(
-    input: CreateAvatarUploadInput,
-    signal?: AbortSignal,
-  ): Promise<CreateAvatarUploadResult> {
-    return this.send('/me/avatar/uploads', {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public completeAvatarUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<CurrentUser> {
-    return this.send(`/me/avatar/uploads/${id}/complete`, {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  public deleteAvatar(signal?: AbortSignal): Promise<CurrentUser> {
-    return this.send('/me/avatar', { method: 'DELETE', signal });
-  }
-
-  public boxes(signal?: AbortSignal): Promise<Box[]> {
-    return this.send('/boxes', { signal });
-  }
-
-  public createBox(input: CreateBoxInput, signal?: AbortSignal): Promise<Box> {
-    return this.send('/boxes', { method: 'POST', body: input, signal });
-  }
-
-  public box(id: BoxId, signal?: AbortSignal): Promise<Box> {
-    return this.send(`/boxes/${id}`, { signal });
-  }
-
-  public updateBox(
-    id: BoxId,
-    input: { name?: string; status?: 'active' | 'archived' },
-    signal?: AbortSignal,
-  ): Promise<Box> {
-    return this.send(`/boxes/${id}`, {
-      method: 'PATCH',
-      body: input,
-      signal,
-    });
-  }
-
-  public deleteBox(
-    id: BoxId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/boxes/${id}`, { method: 'DELETE', signal });
-  }
-
-  public boxMembers(id: BoxId, signal?: AbortSignal): Promise<BoxMember[]> {
-    return this.send(`/boxes/${id}/members`, { signal });
-  }
-
-  public inviteToBox(
-    id: BoxId,
-    input: CreateBoxInvitationInput,
-    signal?: AbortSignal,
-  ): Promise<BoxInvitation> {
-    return this.send(`/boxes/${id}/invitations`, {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public pendingBoxInvitees(
-    boxId: BoxId,
-    signal?: AbortSignal,
-  ): Promise<{ inviteeUserIds: UserId[] }> {
-    return this.send(`/boxes/${boxId}/invitations`, { signal });
-  }
-
-  public boxInvitations(signal?: AbortSignal): Promise<BoxInvitation[]> {
-    return this.send('/me/box-invitations', { signal });
-  }
-
-  public respondToBoxInvitation(
-    id: BoxInvitationId,
-    response: 'accept' | 'decline',
-    signal?: AbortSignal,
-  ): Promise<{ status: 'accepted' | 'declined' }> {
-    return this.send(`/box-invitations/${id}/${response}`, {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  public updateBoxMemberRole(
-    boxId: BoxId,
-    userId: UserId,
-    role: Exclude<BoxRole, 'owner'>,
-    signal?: AbortSignal,
-  ): Promise<{ role: Exclude<BoxRole, 'owner'> }> {
-    return this.send(`/boxes/${boxId}/members/${userId}`, {
-      method: 'PATCH',
-      body: { role },
-      signal,
-    });
-  }
-
-  public transferBoxOwnership(
-    boxId: BoxId,
-    userId: UserId,
-    signal?: AbortSignal,
-  ): Promise<{ ownerUserId: UserId }> {
-    return this.send(`/boxes/${boxId}/owner`, {
-      method: 'PATCH',
-      body: { userId },
-      signal,
-    });
-  }
-
-  public removeBoxMember(
-    boxId: BoxId,
-    userId: UserId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true; status: 'left' | 'removed' }> {
-    return this.send(`/boxes/${boxId}/members/${userId}`, {
-      method: 'DELETE',
-      signal,
-    });
-  }
-
-  public leaveBox(
-    boxId: BoxId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true; status: 'left' }> {
-    return this.send(`/boxes/${boxId}/members/me`, {
-      method: 'DELETE',
-      signal,
-    });
-  }
-
-  public friends(signal?: AbortSignal): Promise<Friendship[]> {
-    return this.send('/friends', { signal });
-  }
-
-  public friendRequests(signal?: AbortSignal): Promise<Friendship[]> {
-    return this.send('/friend-requests', { signal });
-  }
-
-  public createFriendRequest(
-    input: CreateFriendRequestInput,
-    signal?: AbortSignal,
-  ): Promise<Friendship> {
-    return this.send('/friend-requests', {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public respondToFriendRequest(
-    id: FriendshipId,
-    response: 'accept' | 'decline',
-    signal?: AbortSignal,
-  ): Promise<Friendship> {
-    return this.send(`/friend-requests/${id}/${response}`, {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  public removeFriend(
-    userId: UserId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/friends/${userId}`, { method: 'DELETE', signal });
-  }
-
-  public blockedUsers(signal?: AbortSignal): Promise<Friendship[]> {
-    return this.send('/blocks', { signal });
-  }
-
-  public blockUser(
-    input: CreateFriendRequestInput,
-    signal?: AbortSignal,
-  ): Promise<Friendship> {
-    return this.send('/blocks', { method: 'POST', body: input, signal });
-  }
-
-  public unblockUser(
-    userId: UserId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/blocks/${userId}`, { method: 'DELETE', signal });
-  }
-
-  public createPost(
-    boxId: BoxId,
-    input: CreatePostInput,
-    signal?: AbortSignal,
-  ): Promise<Post> {
-    return this.send(`/boxes/${boxId}/posts`, {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public createLifeUpdate(
-    input: CreateLifeUpdateInput,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdate> {
-    return this.send('/me/life-updates', {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public lifeUpdates(
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdatePage> {
-    return this.send(pagePath('/me/life-updates', page), { signal });
-  }
-
-  public feedLifeUpdates(
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdatePage> {
-    return this.send(pagePath('/me/feed/life-updates', page), { signal });
-  }
-
-  public boxLifeUpdates(
-    boxId: BoxId,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdatePage> {
-    return this.send(pagePath(`/boxes/${boxId}/life-updates`, page), {
-      signal,
-    });
-  }
-
-  public userLifeUpdates(
-    username: string,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdatePage> {
-    return this.send(
-      pagePath(`/users/${encodeURIComponent(username)}/life-updates`, page),
-      { signal },
-    );
-  }
-
-  public lifeUpdate(
-    id: LifeUpdateId,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdate> {
-    return this.send(`/life-updates/${id}`, { signal });
-  }
-
-  public updateLifeUpdate(
-    id: LifeUpdateId,
-    input: UpdateLifeUpdateInput,
-    signal?: AbortSignal,
-  ): Promise<LifeUpdate> {
-    return this.send(`/life-updates/${id}`, {
-      method: 'PATCH',
-      body: input,
-      signal,
-    });
-  }
-
-  public deleteLifeUpdate(
-    id: LifeUpdateId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/life-updates/${id}`, { method: 'DELETE', signal });
-  }
-
-  public createLifeUpdateMediaUpload(
-    input: CreateLifeUpdateMediaUploadInput,
-    signal?: AbortSignal,
-  ): Promise<CreateLifeUpdateMediaUploadResult> {
-    return this.send('/life-update-media/uploads', {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public completeLifeUpdateMediaUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<MediaAsset> {
-    return this.send(`/life-update-media/uploads/${id}/complete`, {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  public cancelLifeUpdateMediaUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/life-update-media/uploads/${id}`, {
-      method: 'DELETE',
-      signal,
-    });
-  }
-
-  public memoryYears(
-    boxId?: BoxId,
-    signal?: AbortSignal,
-  ): Promise<MemoryYear[]> {
-    return this.send(
-      boxId ? `/boxes/${boxId}/memories/years` : '/me/memories/years',
-      { signal },
-    );
-  }
-
-  public memories(
-    input: { year: number; month?: number; cursor?: string; limit?: number },
-    boxId?: BoxId,
-    signal?: AbortSignal,
-  ): Promise<MemoryPage> {
-    const search = new URLSearchParams({
-      year: String(input.year),
-      limit: String(input.limit ?? 20),
-    });
-    if (input.month) search.set('month', String(input.month));
-    if (input.cursor) search.set('cursor', input.cursor);
-    const base = boxId ? `/boxes/${boxId}/memories` : '/me/memories';
-    return this.send(`${base}?${search.toString()}`, { signal });
-  }
-
-  public createPostMediaUpload(
-    boxId: BoxId,
-    input: CreatePostMediaUploadInput,
-    signal?: AbortSignal,
-  ): Promise<CreatePostMediaUploadResult> {
-    return this.send(`/boxes/${boxId}/post-media/uploads`, {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public completePostMediaUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<MediaAsset> {
-    return this.send(`/post-media/uploads/${id}/complete`, {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  public cancelPostMediaUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/post-media/uploads/${id}`, {
-      method: 'DELETE',
-      signal,
-    });
-  }
-
-  public boxPosts(
-    boxId: BoxId,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<PostPage> {
-    return this.send(pagePath(`/boxes/${boxId}/posts`, page), { signal });
-  }
-
-  public feed(page?: CursorPageInput, signal?: AbortSignal): Promise<PostPage> {
-    return this.send(pagePath('/me/feed', page), { signal });
-  }
-
-  public post(id: PostId, signal?: AbortSignal): Promise<Post> {
-    return this.send(`/posts/${id}`, { signal });
-  }
-
-  public updatePost(
-    id: PostId,
-    input: UpdatePostInput,
-    signal?: AbortSignal,
-  ): Promise<Post> {
-    return this.send(`/posts/${id}`, {
-      method: 'PATCH',
-      body: input,
-      signal,
-    });
-  }
-
-  public deletePost(
-    id: PostId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/posts/${id}`, { method: 'DELETE', signal });
-  }
-
-  public postComments(
-    postId: PostId,
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<CommentPage> {
-    return this.send(pagePath(`/posts/${postId}/comments`, page), { signal });
-  }
-
-  public createComment(
-    postId: PostId,
-    input: CreateCommentInput,
-    signal?: AbortSignal,
-  ): Promise<Comment> {
-    return this.send(`/posts/${postId}/comments`, {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public updateComment(
-    commentId: CommentId,
-    input: UpdateCommentInput,
-    signal?: AbortSignal,
-  ): Promise<Comment> {
-    return this.send(`/comments/${commentId}`, {
-      method: 'PATCH',
-      body: input,
-      signal,
-    });
-  }
-
-  public deleteComment(
-    commentId: CommentId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/comments/${commentId}`, {
-      method: 'DELETE',
-      signal,
-    });
-  }
-
-  public setCommentReaction(
-    commentId: CommentId,
-    input: SetCommentReactionInput,
-    signal?: AbortSignal,
-  ): Promise<CommentInteractions> {
-    return this.send(`/comments/${commentId}/reaction`, {
-      method: 'PUT',
-      body: input,
-      signal,
-    });
-  }
-
-  public setPostReaction(
-    postId: PostId,
-    input: SetPostReactionInput,
-    signal?: AbortSignal,
-  ): Promise<PostInteractions> {
-    return this.send(`/posts/${postId}/reaction`, {
-      method: 'PUT',
-      body: input,
-      signal,
-    });
-  }
-
-  public createReactionPhotoUpload(
-    postId: PostId,
-    input: CreateReactionPhotoUploadInput,
-    signal?: AbortSignal,
-  ): Promise<CreateReactionPhotoUploadResult> {
-    return this.send(`/posts/${postId}/reaction-media/uploads`, {
-      method: 'POST',
-      body: input,
-      signal,
-    });
-  }
-
-  public completeReactionPhotoUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<MediaAsset> {
-    return this.send(`/reaction-media/uploads/${id}/complete`, {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  public cancelReactionPhotoUpload(
-    id: MediaAssetId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/reaction-media/uploads/${id}`, {
-      method: 'DELETE',
-      signal,
-    });
-  }
-
-  public notifications(
-    page?: CursorPageInput,
-    signal?: AbortSignal,
-  ): Promise<NotificationPage> {
-    return this.send(pagePath('/me/notifications', page), { signal });
-  }
-
-  public unreadNotificationCount(
-    signal?: AbortSignal,
-  ): Promise<{ unreadCount: number }> {
-    return this.send('/me/notifications/unread-count', { signal });
-  }
-
-  public markNotificationRead(
-    notificationId: NotificationId,
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send(`/me/notifications/${notificationId}/read`, {
-      method: 'PATCH',
-      signal,
-    });
-  }
-
-  public markAllNotificationsRead(
-    signal?: AbortSignal,
-  ): Promise<{ success: true }> {
-    return this.send('/me/notifications/read', {
-      method: 'PATCH',
-      signal,
-    });
-  }
-
-  private async send<Result>(
-    path: string,
-    options: SendOptions = {},
-  ): Promise<Result> {
-    const token =
-      options.authenticated === false ? null : await this.getAccessToken();
-    const requestInit = requestOptions(options, token);
-    const response = await this.request(`${this.baseUrl}${path}`, requestInit);
-    if (!response.ok) throw await responseError(response);
-    return (await response.json()) as Result;
-  }
-}
-
-function requestOptions(
-  options: SendOptions,
-  token: string | null,
-): RequestInit {
-  const headers: Record<string, string> = { accept: 'application/json' };
-  if (options.body !== undefined) headers['content-type'] = 'application/json';
-  if (token) headers.authorization = `Bearer ${token}`;
-  return {
-    method: options.method ?? 'GET',
-    headers,
-    cache: 'no-store',
-    ...(options.body !== undefined
-      ? { body: JSON.stringify(options.body) }
-      : {}),
-    ...(options.signal ? { signal: options.signal } : {}),
-  };
-}
-
-async function responseError(response: Response): Promise<ApiClientError> {
-  const body = (await response
-    .json()
-    .catch(() => null)) as ApiErrorShape | null;
-  return new ApiClientError(
-    response.status,
-    body?.error.code ?? 'UNEXPECTED_API_ERROR',
-    body?.error.message ?? 'The Paldora API request failed.',
-  );
-}
-
-function pagePath(path: string, page?: CursorPageInput): string {
-  const query = new URLSearchParams();
-  if (page?.cursor) query.set('cursor', page.cursor);
-  if (page?.limit !== undefined) query.set('limit', String(page.limit));
-  const value = query.toString();
-  return value ? `${path}?${value}` : path;
 }

@@ -1,68 +1,27 @@
 import 'reflect-metadata';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { parseApiEnvironment } from '@paldora/config';
-import { createLogger } from '@paldora/observability';
-import type { NextFunction, Request, Response } from 'express';
-import helmet from 'helmet';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { ApiEnvironment } from '@paldora/config';
+import type { Logger } from '@paldora/observability';
 import { AppModule } from './app.module.js';
-import { resolveRequestId } from './request-id.js';
-
-const logger = createLogger({
-  service: 'api',
-  environment: process.env.NODE_ENV ?? 'unknown',
-  ...(process.env.LOG_LEVEL ? { level: process.env.LOG_LEVEL } : {}),
-});
+import { configureApp } from './configure-app.js';
+import { API_ENVIRONMENT, LOGGER } from './platform/tokens.js';
 
 async function bootstrap(): Promise<void> {
-  const environment = parseApiEnvironment(process.env);
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     abortOnError: false,
+    bodyParser: false,
     logger: false,
   });
-
-  app.enableShutdownHooks();
-  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
-  app.setGlobalPrefix('api');
-  app.use(helmet());
-  app.enableCors({
-    origin: environment.WEB_ORIGIN,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  });
-  app.useGlobalPipes(
-    new ValidationPipe({
-      forbidNonWhitelisted: true,
-      forbidUnknownValues: true,
-      stopAtFirstError: true,
-      transform: true,
-      whitelist: true,
-    }),
-  );
-  app.use((request: Request, response: Response, next: NextFunction) => {
-    const requestId = resolveRequestId(request.header('x-request-id'));
-    response.setHeader('x-request-id', requestId);
-    const startedAt = performance.now();
-    response.on('finish', () => {
-      logger.info(
-        {
-          requestId,
-          method: request.method,
-          path: request.path,
-          statusCode: response.statusCode,
-          durationMs: Math.round(performance.now() - startedAt),
-        },
-        'request completed',
-      );
-    });
-    next();
-  });
-
+  const environment = app.get<ApiEnvironment>(API_ENVIRONMENT);
+  const logger = app.get<Logger>(LOGGER);
+  configureApp(app, { webOrigin: environment.WEB_ORIGIN, logger });
   await app.listen(environment.API_PORT, environment.API_HOST);
   logger.info({ port: environment.API_PORT }, 'Paldora API listening');
 }
 
 void bootstrap().catch((error: unknown) => {
-  logger.fatal({ err: error }, 'Paldora API failed to start');
+  // Configuration errors name keys, never values, so they are safe to print.
+  console.error('Paldora API failed to start:', error);
   process.exitCode = 1;
 });

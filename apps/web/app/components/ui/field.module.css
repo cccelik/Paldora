@@ -1,0 +1,69 @@
+.field {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.optional {
+  margin-inline-start: var(--pal-space-2);
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+}
+
+.control:focus-within {
+  border-color: var(--pal-focus);
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus);
+  outline-offset: 1px;
+}
+
+.control input,
+.control textarea {
+  flex: 1;
+  min-width: 0;
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border: 0;
+  background: transparent;
+  color: var(--pal-text);
+  font: inherit;
+}
+
+.control input:focus-visible,
+.control textarea:focus-visible {
+  outline: none;
+}
+
+.control textarea {
+  resize: vertical;
+}
+
+.prefix {
+  padding-inline-start: var(--pal-space-4);
+  color: var(--pal-text-muted);
+}
+
+.prefix + input {
+  padding-inline-start: var(--pal-space-1);
+}
+
+.readOnly {
+  background: var(--pal-surface);
+  color: var(--pal-text-muted);
+}
+
+.help {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}

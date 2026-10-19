@@ -1,84 +1,57 @@
-import 'server-only';
 import { ApiClientError } from '@paldora/api-client';
-import type { Route } from 'next';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
-export function apiErrorMessage(error: unknown): string {
+/**
+ * What a Server Action returns to `useActionState`. Results travel in React
+ * state, never in URL query strings, so messages do not leak into history,
+ * logs, or shared links.
+ */
+export type ActionResult<Data = undefined> =
+  | { readonly status: 'idle' }
+  | {
+      readonly status: 'success';
+      readonly message: string;
+      readonly data: Data;
+    }
+  | {
+      readonly status: 'error';
+      readonly code: string;
+      readonly message: string;
+      /** `attention` for expected conflicts, `failure` for real errors. */
+      readonly tone: 'attention' | 'failure';
+    };
+
+/** What an action returns once it has run: never `idle`. */
+export type ActionOutcome<Data = undefined> = Exclude<
+  ActionResult<Data>,
+  { status: 'idle' }
+>;
+
+export const idleResult = { status: 'idle' } as const satisfies ActionResult;
+
+const genericFailure = 'Something went wrong. Try again.';
+
+/**
+ * Converts any thrown value into a displayable error. Only API error codes in
+ * `copy` get custom text; unknown errors never expose internal messages.
+ */
+export function actionError(
+  error: unknown,
+  copy: Readonly<Partial<Record<string, string>>> = {},
+): Extract<ActionResult, { status: 'error' }> {
   if (!(error instanceof ApiClientError)) {
-    return 'Something went wrong. Try again.';
+    return {
+      status: 'error',
+      code: 'INTERNAL_ERROR',
+      message: genericFailure,
+      tone: 'failure',
+    };
   }
-  const messages: Record<string, string> = {
-    ALREADY_FRIENDS: 'You are already friends.',
-    FRIEND_REQUEST_ALREADY_PENDING: 'A friend request is already pending.',
-    FRIENDSHIP_NOT_FOUND: 'That friendship is no longer available.',
-    INTERACTION_NOT_AVAILABLE: 'This interaction is not available.',
-    INVITATION_ALREADY_PENDING: 'An invitation is already pending.',
-    ALREADY_BOX_MEMBER: 'That person is already in this Box.',
-    BOX_ARCHIVED: error.message,
-    BOX_ACCESS_DENIED: error.message,
-    BOX_MEMBER_NOT_FOUND: 'That Box member is no longer available.',
-    INVITATION_EXPIRED: 'That invitation has expired.',
-    INVITATION_ALREADY_HANDLED: 'That invitation was already handled.',
-    POST_NOT_FOUND: 'That post is no longer available.',
-    RATE_LIMITED: 'You have sent too many requests. Try again later.',
-    RATE_LIMIT_UNAVAILABLE:
-      'This action is temporarily unavailable. Try again shortly.',
-    USER_NOT_FOUND: 'No person with that username was found.',
-    VALIDATION_FAILED: error.message,
+  const message =
+    copy[error.code] ?? (error.status < 500 ? error.message : genericFailure);
+  return {
+    status: 'error',
+    code: error.code,
+    message,
+    tone: error.status < 500 ? 'attention' : 'failure',
   };
-  return messages[error.code] ?? error.message;
-}
-
-export function withNotice(
-  path: string,
-  key: 'error' | 'warning' | 'notice',
-  message: string,
-) {
-  const [pathname, query = ''] = path.split('?', 2);
-  const searchParams = new URLSearchParams(query);
-  searchParams.set(key, message);
-  return `${pathname}?${searchParams.toString()}`;
-}
-
-export function apiErrorNoticeKey(error: unknown): 'error' | 'warning' {
-  if (!(error instanceof ApiClientError)) return 'error';
-  const attentionCodes = new Set([
-    'ALREADY_BOX_MEMBER',
-    'ALREADY_FRIENDS',
-    'BOX_ACCESS_DENIED',
-    'BOX_ARCHIVED',
-    'BOX_MEMBER_NOT_FOUND',
-    'FRIEND_REQUEST_ALREADY_PENDING',
-    'FRIENDSHIP_NOT_FOUND',
-    'INTERACTION_NOT_AVAILABLE',
-    'INVITATION_ALREADY_HANDLED',
-    'INVITATION_ALREADY_PENDING',
-    'INVITATION_EXPIRED',
-    'POST_NOT_FOUND',
-    'RATE_LIMITED',
-    'USER_NOT_FOUND',
-    'VALIDATION_FAILED',
-  ]);
-  return attentionCodes.has(error.code) ? 'warning' : 'error';
-}
-
-export async function mutateAndRedirect(
-  path: string,
-  successMessage: string,
-  operation: () => Promise<unknown>,
-  destinationPath = path,
-): Promise<never> {
-  let destination = withNotice(destinationPath, 'notice', successMessage);
-  try {
-    await operation();
-    revalidatePath(path as Route);
-  } catch (error) {
-    destination = withNotice(
-      destinationPath,
-      apiErrorNoticeKey(error),
-      apiErrorMessage(error),
-    );
-  }
-  redirect(destination as Route);
 }

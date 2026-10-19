@@ -1,0 +1,21 @@
+/* Shared vertical rhythm for every form in the app. */
+.form {
+  display: grid;
+  gap: var(--pal-space-5);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+.link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  color: var(--pal-text);
+  text-underline-offset: 0.2em;
+}

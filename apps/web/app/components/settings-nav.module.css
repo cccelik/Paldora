@@ -1,0 +1,21 @@
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border-radius: var(--pal-radius-pill);
+  color: var(--pal-text-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link[aria-current='page'] {
+  background: var(--pal-surface);
+  color: var(--pal-text);
+}

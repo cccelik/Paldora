@@ -1,4 +1,7 @@
-name: paldora
+# Local development services only. Credentials here are deliberately weak and
+# marked dev_only; the config parsers reject them in staging and production.
+# Distinct from the legacy build's `paldora` project so volumes never mix.
+name: paldora-v2
 
 services:
   postgres:
@@ -21,7 +24,15 @@ services:
   redis:
     image: redis:8-alpine
     restart: unless-stopped
-    command: ['redis-server', '--appendonly', 'yes']
+    # BullMQ requires noeviction; AOF keeps queued jobs across restarts.
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
     ports:
       - '127.0.0.1:6379:6379'
     volumes:
@@ -32,6 +43,7 @@ services:
       timeout: 3s
       retries: 10
 
+  # Private S3-compatible storage for media (used from Phase 1).
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z
     restart: unless-stopped
@@ -39,7 +51,7 @@ services:
     environment:
       MINIO_ROOT_USER: paldora_minio
       MINIO_ROOT_PASSWORD: paldora_minio_dev_only
-      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3100,http://127.0.0.1:3100
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:3000,http://127.0.0.1:3000,http://127.0.0.1:3100
     ports:
       - '127.0.0.1:9000:9000'
       - '127.0.0.1:9001:9001'
@@ -57,11 +69,12 @@ services:
       minio:
         condition: service_healthy
     entrypoint:
-      [
-        '/bin/sh',
-        '-c',
-        'mc alias set local http://minio:9000 paldora_minio paldora_minio_dev_only && mc mb --ignore-existing local/paldora-private',
-      ]
+      - /bin/sh
+      - -c
+      - >-
+        mc alias set local http://minio:9000 paldora_minio paldora_minio_dev_only &&
+        mc mb --ignore-existing local/paldora-private &&
+        mc anonymous set none local/paldora-private
 
 volumes:
   paldora-postgres:

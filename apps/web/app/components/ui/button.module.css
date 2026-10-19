@@ -1,0 +1,57 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pal-space-2);
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-5);
+  border: 1px solid transparent;
+  border-radius: var(--pal-radius-pill);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--pal-duration-fast) var(--pal-easing-standard),
+    border-color var(--pal-duration-fast) var(--pal-easing-standard);
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.primary {
+  background: var(--pal-text);
+  color: var(--pal-canvas);
+}
+
+.secondary {
+  border-color: color-mix(in srgb, var(--pal-text) 30%, transparent);
+  background: transparent;
+  color: var(--pal-text);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: var(--pal-text);
+}
+
+.quiet {
+  padding-inline: var(--pal-space-3);
+  background: transparent;
+  color: var(--pal-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.danger {
+  padding-inline: var(--pal-space-3);
+  background: transparent;
+  color: var(--pal-danger-text);
+}
+
+.block {
+  width: 100%;
+}

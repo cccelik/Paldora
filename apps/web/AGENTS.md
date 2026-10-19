@@ -4,19 +4,35 @@
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
 <!-- END:nextjs-agent-rules -->
 
-## Paldora web component rules
+## Paldora web rules
 
-- Read `app/components/README.md` before adding or restructuring UI.
-- Route files load data and compose components; repeated rendering belongs in
-  `app/components`.
-- Reuse `app/components/ui` primitives before writing equivalent page markup.
-- Extract a matching pattern on its second genuine use and export new primitives
-  from `app/components/ui/index.ts`.
-- Keep primitives as Server Components. Add `'use client'` only at the smallest
-  interactive boundary.
-- Keep `@paldora/ui` framework-neutral until web and mobile share a rendering
-  contract.
+Read the root [CLAUDE.md](../../CLAUDE.md) first. These rules add to it.
+
+**Known Next 16 differences that already matter here:**
+
+- Request interception lives in `proxy.ts` (formerly middleware). It runs on the Node runtime and is for optimistic, cookie-only work.
+- `error.tsx` receives `retry` (not `reset`).
+- `typedRoutes` is stable config.
+- `next typegen` generates route types for `tsc`.
+
+**Security:**
+
+- `proxy.ts` sets the **only** Content-Security-Policy. Never add one in `next.config.ts`.
+- Production CSP allows no inline styles, so **never use `style={...}` attributes**. Express dynamic presentation through classes or `data-*` attributes.
+- Public configuration comes from `app/lib/environment.ts`, which validates it. There are no `localhost` fallbacks.
+- Server-only secrets never appear in this app.
+- Authorization is the API's job. Pages call the typed `@paldora/api-client` and render the result.
+
+**Server Actions** return `ActionResult` (`app/lib/action-result.ts`) to `useActionState`. They never put messages in query strings.
+
+**Components** (catalog: [app/components/README.md](app/components/README.md)):
+
+- Route files load data and compose. Repeated rendering lives in `app/components`.
+- Stateless, server-compatible primitives live in `app/components/ui` and are exported from `ui/index.ts`.
+- Server Components by default. Put `'use client'` on the smallest interactive leaf.
+- Styling uses co-located CSS Modules and the generated `--pal-*` tokens from `@paldora/tokens/tokens.css`. Never hard-code colors.
+- Extract at the second genuine use, and search before creating.
+
+**Accessibility:** every page must hold up at desktop and 390px width, provide keyboard access, visible focus, and 44px targets, respect reduced motion, and pass the axe checks in `e2e/`.

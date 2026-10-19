@@ -1,0 +1,16 @@
+{
+  "schema": "UpdateProfileRequest",
+  "valid": [
+    { "username": "zoë_99" },
+    { "displayName": "Ada", "bio": null, "onboardingState": "avatar" },
+    { "bio": "" }
+  ],
+  "invalid": [
+    {},
+    { "username": "no spaces" },
+    { "username": "ab" },
+    { "onboardingState": "finished" },
+    { "displayName": "" },
+    { "status": "active" }
+  ]
+}

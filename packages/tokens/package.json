@@ -1,0 +1,26 @@
+{
+  "name": "@paldora/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Design tokens generated from design/tokens for web, iOS, and Android.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./tokens.css": "./generated/css/tokens.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src scripts --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "tokens:generate": "tsx scripts/generate.ts",
+    "tokens:check": "tsx scripts/generate.ts --check"
+  },
+  "devDependencies": {
+    "tsx": "4.20.5",
+    "vitest": "4.1.11"
+  }
+}

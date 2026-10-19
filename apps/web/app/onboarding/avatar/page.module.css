@@ -1,0 +1,4 @@
+.finish {
+  display: grid;
+  margin-top: var(--pal-space-2);
+}

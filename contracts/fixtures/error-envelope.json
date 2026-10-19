@@ -1,0 +1,26 @@
+{
+  "schema": "ErrorEnvelope",
+  "description": "Every client must decode these identically. Unknown codes are valid and fall back to the message.",
+  "valid": [
+    {
+      "error": {
+        "code": "NOT_FOUND",
+        "message": "The requested resource was not found.",
+        "requestId": "6f1c2b8e-4d0a-4b7e-9a51-3f2d7c9e1a00"
+      }
+    },
+    {
+      "error": {
+        "code": "SOME_FUTURE_CODE",
+        "message": "A code this client version has never seen.",
+        "requestId": "req-123"
+      }
+    }
+  ],
+  "invalid": [
+    { "error": { "code": "not_found", "message": "x", "requestId": "r" } },
+    { "error": { "code": "NOT_FOUND", "message": "", "requestId": "r" } },
+    { "error": { "code": "NOT_FOUND", "message": "x" } },
+    { "message": "Internal server error", "statusCode": 500 }
+  ]
+}

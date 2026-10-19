@@ -1,134 +1,126 @@
 'use server';
 
-import { ApiClientError, PaldoraApiClient } from '@paldora/api-client';
+import { ApiClientError } from '@paldora/api-client';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { configuredWebOrigin } from '../lib/public-url';
+import { actionError, type ActionResult } from '../lib/action-result';
+import { APPEARANCE_COOKIE, appearanceCookieOptions } from '../lib/appearance';
+import { publicEnvironment } from '../lib/environment';
+import { textField } from '../lib/form-data';
+import { routeForOnboarding } from '../lib/onboarding';
+import { apiClientFor } from '../lib/session';
 import { createSupabaseServerClient } from '../lib/supabase/server';
 
-export interface AuthActionState {
-  status: 'idle' | 'error' | 'success';
-  message?: string;
-}
+const failure = (message: string): ActionResult => ({
+  status: 'error',
+  code: 'VALIDATION_FAILED',
+  message,
+  tone: 'attention',
+});
 
+const secureCookies = () =>
+  publicEnvironment().NEXT_PUBLIC_WEB_URL.startsWith('https://');
+
+/**
+ * Signs in with Supabase, then asks the API whether this identity is a
+ * provisioned Paldora account. Identities without one are signed out again.
+ * The same message covers wrong passwords and unknown emails.
+ */
 export async function signInAction(
-  _previous: AuthActionState,
+  _previous: ActionResult,
   formData: FormData,
-): Promise<AuthActionState> {
-  const email = String(formData.get('email') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
-  if (!email || !password)
-    return { status: 'error', message: 'Enter your email and password.' };
+): Promise<ActionResult> {
+  const email = textField(formData, 'email').trim();
+  const password = textField(formData, 'password');
+  if (!email || !password) return failure('Enter your email and password.');
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
-  if (error)
-    return {
-      status: 'error',
-      message: 'Those credentials did not match a provisioned account.',
-    };
-  try {
-    await new PaldoraApiClient({
-      baseUrl:
-        process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1',
-      getAccessToken: () => Promise.resolve(data.session.access_token),
-    }).currentUser();
-  } catch (provisioningError) {
-    if (
-      provisioningError instanceof ApiClientError &&
-      provisioningError.code === 'ACCOUNT_NOT_PROVISIONED'
-    ) {
-      await supabase.auth.signOut();
-      return {
-        status: 'error',
-        message: 'This account has not been provisioned for Paldora.',
-      };
-    }
-    return {
-      status: 'error',
-      message: 'Paldora is temporarily unavailable. Try again shortly.',
-    };
+  if (error || !data.session) {
+    return failure('That email and password don’t match an account.');
   }
-  redirect('/home');
+  let destination;
+  try {
+    const user = await apiClientFor(data.session.access_token).currentUser();
+    (await cookies()).set(
+      APPEARANCE_COOKIE,
+      user.preferences.appearance,
+      appearanceCookieOptions(secureCookies()),
+    );
+    destination = routeForOnboarding(user.profile.onboardingState);
+  } catch (apiError) {
+    await supabase.auth.signOut();
+    if (
+      apiError instanceof ApiClientError &&
+      (apiError.code === 'ACCOUNT_NOT_PROVISIONED' ||
+        apiError.code === 'ACCOUNT_BLOCKED')
+    ) {
+      return failure('This account isn’t set up for Paldora.');
+    }
+    return actionError(apiError);
+  }
+  redirect(destination);
 }
 
+/** Always answers the same way, so it cannot reveal which emails exist. */
 export async function forgotPasswordAction(
-  _previous: AuthActionState,
+  _previous: ActionResult,
   formData: FormData,
-): Promise<AuthActionState> {
-  const email = String(formData.get('email') ?? '').trim();
-  if (!email) return { status: 'error', message: 'Enter the account email.' };
-  let origin: string;
-  try {
-    origin = configuredWebOrigin();
-  } catch {
-    return {
-      status: 'error',
-      message: 'Password reset is temporarily unavailable.',
-    };
-  }
+): Promise<ActionResult> {
+  const email = textField(formData, 'email').trim();
+  if (!email) return failure('Enter the email for your account.');
   const supabase = await createSupabaseServerClient();
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+    redirectTo: `${publicEnvironment().NEXT_PUBLIC_WEB_URL}/auth/callback?next=/reset-password`,
   });
   return {
     status: 'success',
-    message: 'If that account exists, reset instructions are on their way.',
+    message: 'If that account exists, a reset link is on its way.',
+    data: undefined,
   };
 }
 
-export async function resetPasswordAction(
-  _previous: AuthActionState,
-  formData: FormData,
-): Promise<AuthActionState> {
-  const password = String(formData.get('password') ?? '');
-  const confirmation = String(formData.get('confirmation') ?? '');
-  if (password.length < 8)
-    return {
-      status: 'error',
-      message: 'Use a password with at least 8 characters.',
-    };
-  if (password !== confirmation)
-    return { status: 'error', message: 'The passwords do not match.' };
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-    error: sessionError,
-  } = await supabase.auth.getUser();
-  if (sessionError || !user) {
-    return {
-      status: 'error',
-      message:
-        'This reset session is invalid or has expired. Request a new link.',
-    };
+const MIN_PASSWORD_LENGTH = 10;
+
+function passwordProblem(password: string, confirmation: string) {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
   }
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error)
-    return {
-      status: 'error',
-      message: resetPasswordErrorMessage(error.message),
-    };
-  return { status: 'success', message: 'Password updated. You can continue.' };
+  if (password !== confirmation) return 'The passwords don’t match.';
+  return null;
 }
 
-function resetPasswordErrorMessage(message: string): string {
-  if (/same password|different from the old password/i.test(message)) {
-    return 'Choose a password different from your current password.';
+export async function resetPasswordAction(
+  _previous: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const password = textField(formData, 'password');
+  const problem = passwordProblem(
+    password,
+    textField(formData, 'confirmation'),
+  );
+  if (problem) return failure(problem);
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims) {
+    return failure('This reset link expired. Request a new one.');
   }
-  if (
-    /password|weak|characters|uppercase|lowercase|digit|symbol/i.test(message)
-  ) {
-    return 'That password does not meet the account security requirements. Try a longer password with a mix of characters.';
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return failure(
+      /same|different/i.test(error.message)
+        ? 'Choose a password you haven’t used here before.'
+        : 'That password couldn’t be saved. Try a longer one.',
+    );
   }
-  if (/session|expired|jwt|token/i.test(message)) {
-    return 'This reset session is invalid or has expired. Request a new link.';
-  }
-  return 'The password could not be updated. Try again or request a new reset link.';
+  return { status: 'success', message: 'Password updated.', data: undefined };
 }
 
 export async function signOutAction(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
+  (await cookies()).delete(APPEARANCE_COOKIE);
   redirect('/sign-in');
 }

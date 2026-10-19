@@ -1,80 +1,51 @@
 'use client';
 
-import type { AppearancePreference } from '@paldora/domain';
-import { useState } from 'react';
-import { createBrowserApiClient } from '../lib/browser-api';
-import { applyAppearance } from './app-appearance-bridge';
+import type { Appearance } from '@paldora/domain';
+import { useActionState } from 'react';
+import { saveAppearanceAction } from '../actions/profile';
+import { idleResult } from '../lib/action-result';
+import { ActionFeedback } from './action-feedback';
+import { SubmitButton } from './submit-button';
+import styles from './appearance-form.module.css';
+import formStyles from './form-stack.module.css';
 
-export function AppearanceForm({ initial }: { initial: AppearancePreference }) {
-  const [value, setValue] = useState(initial);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+const options: readonly { value: Appearance; label: string; detail: string }[] =
+  [
+    {
+      value: 'system',
+      label: 'System',
+      detail: 'Follow this device’s setting.',
+    },
+    { value: 'light', label: 'Light', detail: 'Warm ivory paper.' },
+    { value: 'dark', label: 'Dark', detail: 'Obsidian ink.' },
+  ];
 
-  async function save(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    setMessage(null);
-    try {
-      const saved = await createBrowserApiClient().updatePreferences({
-        appearance: value,
-      });
-      applyAppearance(saved.appearance);
-      setMessage('Appearance saved.');
-    } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'Appearance could not be saved.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
+/** App appearance only. Room themes are separate and arrive with Rooms. */
+export function AppearanceForm({ current }: { current: Appearance }) {
+  const [state, action] = useActionState(saveAppearanceAction, idleResult);
   return (
-    <form
-      className="appearance-form form-stack"
-      onSubmit={(event) => void save(event)}
-    >
-      <fieldset>
-        <legend>Application appearance</legend>
-        {(['light', 'dark', 'system'] as const).map((appearance) => (
-          <label className="appearance-choice" key={appearance}>
+    <form action={action} className={formStyles.form}>
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.legend}>Appearance</legend>
+        {options.map((option) => (
+          <label key={option.value} className={styles.option}>
             <input
-              checked={value === appearance}
-              name="appearance"
-              onChange={() => {
-                setValue(appearance);
-                applyAppearance(appearance);
-              }}
               type="radio"
-              value={appearance}
+              name="appearance"
+              value={option.value}
+              defaultChecked={option.value === current}
             />
             <span>
-              <strong>
-                {appearance[0]!.toUpperCase() + appearance.slice(1)}
-              </strong>
-              <small>
-                {appearance === 'system'
-                  ? 'Follow this device.'
-                  : `Always use Paldora’s ${appearance} palette.`}
-              </small>
+              <span className={styles.label}>{option.label}</span>
+              <span className={styles.detail}>{option.detail}</span>
             </span>
           </label>
         ))}
       </fieldset>
-      <p className="muted-copy">
-        This changes the trusted application shell. Every Room keeps its owner’s
-        chosen theme.
-      </p>
-      {message && (
-        <p className="form-notice success" role="status">
-          {message}
-        </p>
-      )}
-      <button className="button-primary" disabled={busy} type="submit">
-        {busy ? 'Saving…' : 'Save appearance'}
-      </button>
+      <ActionFeedback state={state} />
+      <div className={formStyles.actions}>
+        <SubmitButton pendingLabel="Saving…">Save appearance</SubmitButton>
+      </div>
     </form>
   );
 }

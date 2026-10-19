@@ -1,26 +1,20 @@
-import { loadCurrentUser } from '../../lib/api';
 import { OnboardingLayout } from '../../components/onboarding-layout';
-import { ProfileSetupForm } from '../../components/profile-forms';
-import { redirect } from 'next/navigation';
+import { ProfileStepForm } from '../../components/profile-forms';
+import { userOnStep } from '../../lib/session';
 
-export const dynamic = 'force-dynamic';
+export const metadata = { title: 'About you' };
 
-export default async function ProfileOnboardingPage() {
-  const current = await loadCurrentUser();
-  if (current.profile.onboardingState === 'username')
-    redirect('/onboarding/username');
-  if (current.profile.onboardingState === 'avatar')
-    redirect('/onboarding/avatar');
-  if (current.profile.onboardingState === 'complete') redirect('/home');
+export default async function ProfileStepPage() {
+  const user = await userOnStep('profile');
   return (
     <OnboardingLayout
       step={2}
-      title="Tell us about yourself"
-      description="A little context helps this place feel like yours."
+      title="Tell your people who you are"
+      description="Your name shows on everything you share. Add a short bio if you like."
     >
-      <ProfileSetupForm
-        displayName={current.profile.displayName ?? ''}
-        bio={current.profile.bio ?? ''}
+      <ProfileStepForm
+        displayName={user.profile.displayName ?? ''}
+        bio={user.profile.bio ?? ''}
       />
     </OnboardingLayout>
   );

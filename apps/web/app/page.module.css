@@ -1,0 +1,101 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pal-space-4);
+  max-width: var(--pal-size-content-max);
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--pal-space-6))
+    max(var(--pal-space-4), env(safe-area-inset-right, 0px)) var(--pal-space-6)
+    max(var(--pal-space-4), env(safe-area-inset-left, 0px));
+}
+
+.main {
+  display: grid;
+  gap: var(--pal-space-16);
+  max-width: var(--pal-size-content-max);
+  margin: 0 auto;
+  padding: var(--pal-space-10) var(--pal-space-4)
+    calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-16));
+}
+
+.hero {
+  display: grid;
+  gap: var(--pal-space-5);
+  max-width: 44rem;
+}
+
+.eyebrow {
+  color: var(--pal-accent-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--pal-font-brand);
+  font-size: clamp(2.75rem, 9vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.title em {
+  color: var(--pal-accent-text);
+}
+
+.intro {
+  max-width: var(--pal-size-reading-column);
+  color: var(--pal-text-muted);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.status {
+  width: fit-content;
+  padding: var(--pal-space-2) var(--pal-space-4);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-surface);
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.promises {
+  display: grid;
+  gap: var(--pal-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.promise {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}
+
+.promiseTitle {
+  font-family: var(--pal-font-editorial);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.promiseDetail {
+  color: var(--pal-text-muted);
+}
+
+@media (min-width: 768px) {
+  .header {
+    padding-inline: var(--pal-space-8);
+  }
+
+  .main {
+    padding-inline: var(--pal-space-8);
+  }
+
+  .promises {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

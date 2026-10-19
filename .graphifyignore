@@ -1,0 +1,13 @@
+# Graphify indexes the current build only. .gitignore already excludes
+# node_modules, dist, .next, and local state; this file can only exclude more.
+legacy/
+graphify-out/
+.claude/
+.task-observer/
+.impeccable/
+packages/tokens/generated/
+packages/tokens/src/generated/
+packages/database/drizzle/meta/
+contracts/openapi.json
+pnpm-lock.yaml
+skills-lock.json

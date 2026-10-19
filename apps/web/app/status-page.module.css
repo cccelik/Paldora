@@ -1,0 +1,37 @@
+/* Shared layout for not-found and error boundaries. */
+.page {
+  display: grid;
+  place-content: center;
+  gap: var(--pal-space-5);
+  min-height: 100dvh;
+  padding: var(--pal-space-8) var(--pal-space-4);
+  text-align: center;
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 600;
+}
+
+.detail {
+  max-width: 32rem;
+  color: var(--pal-text-muted);
+}
+
+.action {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-6);
+  border: 0;
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-accent);
+  color: var(--pal-on-accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}

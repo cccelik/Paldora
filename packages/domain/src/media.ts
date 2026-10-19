@@ -1,0 +1,75 @@
+/**
+ * The media purpose policy table (R4). Every upload names a purpose, and the
+ * API and worker read its rules from here: what may be uploaded, how large,
+ * and which metadata-free derivatives the worker produces. Adding a purpose
+ * means adding a row here and widening the `media_assets_purpose_check`
+ * constraint in a migration.
+ */
+export const MEDIA_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
+export type MediaContentType = (typeof MEDIA_CONTENT_TYPES)[number];
+
+export const MEDIA_STATUSES = [
+  'pending',
+  'processing',
+  'ready',
+  'failed',
+  'deleted',
+] as const;
+export type MediaStatus = (typeof MEDIA_STATUSES)[number];
+
+export interface DerivativeSpec {
+  /** Longest edge in pixels for `inside`; edge length for `square`. */
+  readonly size: number;
+  readonly fit: 'inside' | 'square';
+  readonly quality: number;
+}
+
+export interface MediaPurposePolicy {
+  readonly contentTypes: readonly MediaContentType[];
+  readonly maxBytes: number;
+  /** Upper bound on decoded pixels, checked before any resize work. */
+  readonly maxInputPixels: number;
+  /**
+   * D2: the raw upload is deleted after processing; this re-encoded,
+   * metadata-free master is the long-term copy.
+   */
+  readonly master: DerivativeSpec;
+  readonly display: DerivativeSpec;
+  readonly thumbnail: DerivativeSpec;
+}
+
+const megabytes = (count: number) => count * 1024 * 1024;
+
+export const MEDIA_PURPOSES = ['avatar'] as const;
+export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
+
+export const MEDIA_PURPOSE_POLICIES: Readonly<
+  Record<MediaPurpose, MediaPurposePolicy>
+> = {
+  avatar: {
+    contentTypes: MEDIA_CONTENT_TYPES,
+    maxBytes: megabytes(10),
+    maxInputPixels: 40_000_000,
+    master: { size: 2048, fit: 'inside', quality: 86 },
+    display: { size: 512, fit: 'square', quality: 82 },
+    thumbnail: { size: 160, fit: 'square', quality: 78 },
+  },
+};
+
+/** Signed uploads are bound to exact MIME and length and expire quickly. */
+export const SIGNED_UPLOAD_TTL_SECONDS = 300;
+/**
+ * Completion stays possible for a while after the signed PUT expires, because
+ * a slow upload that started in time may still be finishing. After this the
+ * reaper expires the reservation and deletes whatever arrived.
+ */
+export const UPLOAD_COMPLETION_GRACE_SECONDS = 15 * 60;
+/** Signed reads of derivatives. */
+export const SIGNED_READ_TTL_SECONDS = 900;
+
+export const MEDIA_JOB_TYPES = ['media.process', 'media.delete'] as const;
+export type MediaJobType = (typeof MEDIA_JOB_TYPES)[number];

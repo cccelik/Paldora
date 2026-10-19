@@ -1,126 +1,109 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { createBrowserApiClient } from '../lib/browser-api';
-import {
-  isSupportedImageContentType,
-  MAX_IMAGE_BYTES,
-  uploadFileToSignedRequest,
-} from '../lib/image-upload';
-import { AvatarUploaderView } from './avatar-uploader-view';
+import { useRef } from 'react';
+import { AVATAR_ACCEPT } from '../lib/image-upload';
+import { Avatar, Button, FormMessage } from './ui';
+import { useAvatarUpload } from './use-avatar-upload';
+import styles from './avatar-uploader.module.css';
 
-export function AvatarUploader({
+function PhotoPreview({
+  preview,
+  busy,
   currentUrl,
-  onboarding = false,
+  name,
 }: {
-  currentUrl?: string | null;
-  onboarding?: boolean;
+  preview: string | null;
+  busy: boolean;
+  currentUrl: string | null;
+  name: string | null;
 }) {
-  const router = useRouter();
-  const input = useRef<HTMLInputElement>(null);
-  const localPreviewUrl = useRef<string | null>(null);
-  const [preview, setPreview] = useState(currentUrl ?? '');
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  usePreviewCleanup(localPreviewUrl);
-
-  async function upload(file: File) {
-    if (
-      !isSupportedImageContentType(file.type) ||
-      file.size <= 0 ||
-      file.size > MAX_IMAGE_BYTES
-    ) {
-      setMessage('Choose a JPEG, PNG, or WebP image up to 10 MB.');
-      return;
-    }
-    setBusy(true);
-    setMessage('');
-    try {
-      const api = createBrowserApiClient();
-      const signed = await api.createAvatarUpload({
-        contentType: file.type,
-        contentLength: file.size,
-      });
-      await uploadFileToSignedRequest(file, signed.upload);
-      const current = await api.completeAvatarUpload(signed.mediaAsset.id);
-      if (onboarding) await api.updateProfile({ onboardingState: 'complete' });
-      if (localPreviewUrl.current) {
-        URL.revokeObjectURL(localPreviewUrl.current);
-        localPreviewUrl.current = null;
-      }
-      if (current.profile.avatarUrl) {
-        setPreview(current.profile.avatarUrl);
-      } else {
-        localPreviewUrl.current = URL.createObjectURL(file);
-        setPreview(localPreviewUrl.current);
-      }
-      setMessage('Profile photo saved.');
-      if (onboarding) router.push('/home');
-      else router.refresh();
-    } catch {
-      setMessage('The photo could not be uploaded. Try again.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function skip() {
-    setBusy(true);
-    try {
-      await createBrowserApiClient().updateProfile({
-        onboardingState: 'complete',
-      });
-      router.push('/home');
-    } catch {
-      setMessage('Something went wrong. Try again.');
-      setBusy(false);
-    }
-  }
-
-  async function remove() {
-    setBusy(true);
-    try {
-      await createBrowserApiClient().deleteAvatar();
-      if (localPreviewUrl.current) {
-        URL.revokeObjectURL(localPreviewUrl.current);
-        localPreviewUrl.current = null;
-      }
-      setPreview('');
-      setMessage('Profile photo removed.');
-      router.refresh();
-    } catch {
-      setMessage('The photo could not be removed.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  if (!preview) return <Avatar url={currentUrl} name={name} size="large" />;
+  // A local blob preview of the chosen file, shown while it uploads.
   return (
-    <AvatarUploaderView
-      preview={preview}
-      message={message}
-      busy={busy}
-      onboarding={onboarding}
-      inputRef={input}
-      onChoose={() => input.current?.click()}
-      onFileChange={(event) => {
-        const file = event.target.files?.[0];
-        event.target.value = '';
-        if (file) void upload(file);
-      }}
-      onRemove={() => void remove()}
-      onSkip={() => void skip()}
+    <img
+      className={`${styles.preview} ${busy ? styles.busy : ''}`}
+      src={preview}
+      alt=""
     />
   );
 }
 
-function usePreviewCleanup(previewUrl: RefObject<string | null>): void {
-  useEffect(
-    () => () => {
-      if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
-    },
-    [previewUrl],
+const chooseLabel = (busy: boolean, hasPhoto: boolean) => {
+  if (busy) return 'Uploading…';
+  return hasPhoto ? 'Change photo' : 'Choose photo';
+};
+
+/**
+ * Choose, replace, or remove a profile photo. Used in onboarding and in
+ * account settings; onboarding hides removal and adds its own continue step.
+ */
+export function AvatarUploader({
+  currentUrl,
+  name,
+  processing = false,
+  allowRemove = true,
+}: {
+  currentUrl: string | null;
+  name: string | null;
+  /** The server already reports a newer photo being prepared. */
+  processing?: boolean;
+  allowRemove?: boolean;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const { preview, phase, message, upload, remove } = useAvatarUpload();
+  const busy = phase === 'uploading' || phase === 'processing';
+  const hasPhoto = Boolean(preview ?? currentUrl);
+  const status =
+    message ??
+    (processing
+      ? {
+          text: 'Your new photo is still being prepared.',
+          tone: 'success' as const,
+        }
+      : undefined);
+
+  return (
+    <div className={styles.uploader}>
+      <div className={styles.row}>
+        <PhotoPreview
+          preview={preview}
+          busy={busy}
+          currentUrl={currentUrl}
+          name={name}
+        />
+        <div className={styles.actions}>
+          <input
+            ref={input}
+            className="visually-hidden"
+            type="file"
+            accept={AVATAR_ACCEPT}
+            aria-label="Choose a profile photo"
+            tabIndex={-1}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) void upload(file);
+            }}
+          />
+          <Button
+            variant="secondary"
+            disabled={busy}
+            onClick={() => input.current?.click()}
+          >
+            {chooseLabel(busy, hasPhoto)}
+          </Button>
+          {allowRemove && currentUrl && !busy ? (
+            <Button variant="danger" onClick={() => void remove()}>
+              Remove photo
+            </Button>
+          ) : null}
+        </div>
+      </div>
+      <FormMessage message={status?.text} tone={status?.tone} />
+      <p className={styles.help}>
+        JPEG, PNG, or WebP, up to 10 MB. Location and camera details are removed
+        before your photo is stored.
+      </p>
+    </div>
   );
 }

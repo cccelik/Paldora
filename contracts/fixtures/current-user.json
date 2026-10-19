@@ -1,0 +1,82 @@
+{
+  "schema": "CurrentUser",
+  "valid": [
+    {
+      "user": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "email": "ada@example.com",
+        "status": "active",
+        "createdAt": "2026-10-18T12:00:00.000Z"
+      },
+      "profile": {
+        "username": null,
+        "displayName": null,
+        "bio": null,
+        "avatar": null,
+        "avatarProcessing": false,
+        "onboardingState": "username",
+        "updatedAt": "2026-10-18T12:00:00.000Z"
+      },
+      "preferences": { "appearance": "system" }
+    },
+    {
+      "user": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "email": "ada@example.com",
+        "status": "active",
+        "createdAt": "2026-10-18T12:00:00.000Z"
+      },
+      "profile": {
+        "username": "Zoë_99",
+        "displayName": "Ada",
+        "bio": "Counting engines.",
+        "avatar": {
+          "url": "https://media.example.com/media/x/display.webp?X-Amz-Signature=a",
+          "thumbnailUrl": "https://media.example.com/media/x/thumbnail.webp?X-Amz-Signature=b"
+        },
+        "avatarProcessing": true,
+        "onboardingState": "complete",
+        "updatedAt": "2026-10-18T12:00:00+02:00"
+      },
+      "preferences": { "appearance": "dark" }
+    }
+  ],
+  "invalid": [
+    {
+      "user": {
+        "id": "not-a-uuid",
+        "email": "ada@example.com",
+        "status": "active",
+        "createdAt": "2026-10-18T12:00:00.000Z"
+      },
+      "profile": {
+        "username": null,
+        "displayName": null,
+        "bio": null,
+        "avatar": null,
+        "avatarProcessing": false,
+        "onboardingState": "username",
+        "updatedAt": "2026-10-18T12:00:00.000Z"
+      },
+      "preferences": { "appearance": "system" }
+    },
+    {
+      "user": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "email": "ada@example.com",
+        "status": "active",
+        "createdAt": "2026-10-18T12:00:00.000Z"
+      },
+      "profile": {
+        "username": null,
+        "displayName": null,
+        "bio": null,
+        "avatar": null,
+        "avatarProcessing": false,
+        "onboardingState": "finished",
+        "updatedAt": "2026-10-18T12:00:00.000Z"
+      },
+      "preferences": { "appearance": "system" }
+    }
+  ]
+}

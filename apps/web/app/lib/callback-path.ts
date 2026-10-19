@@ -1,5 +1,10 @@
-const allowedCallbackPaths = new Set(['/home', '/reset-password']);
+import type { Route } from 'next';
 
-export function safeCallbackPath(value: string | null): string {
-  return value && allowedCallbackPaths.has(value) ? value : '/home';
+const allowedCallbackPaths = new Set<Route>(['/home', '/reset-password']);
+
+/** Auth callbacks may only continue to known in-app paths. */
+export function safeCallbackPath(value: string | null): Route {
+  return value && allowedCallbackPaths.has(value as Route)
+    ? (value as Route)
+    : '/home';
 }

@@ -6,13 +6,18 @@ import globals from 'globals';
 export default [
   {
     ignores: [
+      'legacy/**',
+      '.claude/**',
+      '.task-observer/**',
+      'graphify-out/**',
       '**/.next/**',
-      '**/.next-hosted/**',
       '**/coverage/**',
       '**/dist/**',
+      '**/generated/**',
       '**/node_modules/**',
       '**/playwright-report/**',
       '**/test-results/**',
+      '**/next-env.d.ts',
     ],
   },
   eslint.configs.recommended,
@@ -42,9 +47,10 @@ export default [
     files: [
       'apps/*/src/**/*.{ts,tsx}',
       'apps/web/app/**/*.{ts,tsx}',
+      'apps/web/proxy.ts',
       'packages/*/src/**/*.{ts,tsx}',
     ],
-    ignores: ['**/*.test.*', '**/*.integration.test.*'],
+    ignores: ['**/*.test.*'],
     rules: {
       complexity: ['error', 15],
       'max-depth': ['error', 4],

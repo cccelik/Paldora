@@ -1,0 +1,18 @@
+.message {
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+  font-size: 0.9375rem;
+}
+
+.success {
+  color: var(--pal-success-text);
+}
+
+.attention {
+  color: var(--pal-warning-text);
+}
+
+.failure {
+  color: var(--pal-danger-text);
+}

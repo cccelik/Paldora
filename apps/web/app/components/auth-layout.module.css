@@ -1,0 +1,75 @@
+.page {
+  display: grid;
+  min-height: 100dvh;
+}
+
+.story {
+  display: none;
+}
+
+.panel {
+  display: grid;
+  align-content: center;
+  gap: var(--pal-space-8);
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--pal-space-8))
+    var(--pal-space-4)
+    calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-8));
+}
+
+.card {
+  display: grid;
+  gap: var(--pal-space-5);
+}
+
+.eyebrow {
+  color: var(--pal-accent-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: clamp(1.875rem, 6vw, 2.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.description {
+  color: var(--pal-text-muted);
+}
+
+.footnote {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .story {
+    display: grid;
+    align-content: space-between;
+    padding: var(--pal-space-12);
+    background: var(--pal-canvas);
+    color: var(--pal-text);
+  }
+
+  .quote {
+    max-width: 24rem;
+    font-family: var(--pal-font-brand);
+    font-size: 2.5rem;
+    line-height: 1.15;
+  }
+
+  .storyFootnote {
+    color: var(--pal-text-muted);
+    font-size: 0.875rem;
+  }
+}

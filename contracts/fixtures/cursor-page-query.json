@@ -1,0 +1,18 @@
+{
+  "schema": "CursorPageQuery",
+  "description": "Pagination input as it arrives in a query string. Limits are bounded at 50; cursors are opaque.",
+  "valid": [
+    {},
+    { "limit": "20" },
+    {
+      "limit": "50",
+      "cursor": "eyJ0IjoiMjAyNi0xMC0xOFQxMjowMDowMFoiLCJpZCI6IngifQ"
+    }
+  ],
+  "invalid": [
+    { "limit": "0" },
+    { "limit": "51" },
+    { "limit": "ten" },
+    { "cursor": "" }
+  ]
+}

@@ -1,28 +1,26 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { redirect } from 'next/navigation';
+import type { NextRequest } from 'next/server';
 import { safeCallbackPath } from '../../lib/callback-path';
-import { configuredWebOrigin } from '../../lib/public-url';
-import { createSupabaseRouteClient } from '../../lib/supabase/server';
+import { createSupabaseServerClient } from '../../lib/supabase/server';
 
+/**
+ * Email links land here: PKCE `code` from the default templates, or
+ * `token_hash` from custom recovery templates. Only allowlisted in-app paths
+ * may follow, and failures never put details in the URL.
+ */
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const code = url.searchParams.get('code');
-  const tokenHash = url.searchParams.get('token_hash');
-  const type = url.searchParams.get('type');
-  const next = safeCallbackPath(url.searchParams.get('next'));
-  const webOrigin = configuredWebOrigin();
-  const successResponse = NextResponse.redirect(new URL(next, webOrigin));
-  const supabase = createSupabaseRouteClient(request, successResponse);
+  const params = request.nextUrl.searchParams;
+  const code = params.get('code');
+  const tokenHash = params.get('token_hash');
+  const next = safeCallbackPath(params.get('next'));
+  const supabase = await createSupabaseServerClient();
+  let verified = false;
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return successResponse;
-  } else if (tokenHash && type === 'recovery') {
-    const { error } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: 'recovery',
-    });
-    if (!error) return successResponse;
+    verified = !(await supabase.auth.exchangeCodeForSession(code)).error;
+  } else if (tokenHash && params.get('type') === 'recovery') {
+    verified = !(
+      await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+    ).error;
   }
-  return NextResponse.redirect(
-    new URL('/sign-in?error=invalid_callback', webOrigin),
-  );
+  redirect(verified ? next : '/auth/link-expired');
 }

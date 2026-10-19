@@ -12,47 +12,41 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PALDORA_ENV: test
+  # Public placeholders: CI never talks to a real identity provider.
+  NEXT_PUBLIC_WEB_URL: http://127.0.0.1:3100
+  NEXT_PUBLIC_API_URL: http://127.0.0.1:4000/api/v1
+  NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+  NEXT_PUBLIC_MEDIA_ORIGIN: http://127.0.0.1:9000
+
 jobs:
   validate:
+    name: Format, lint, types, unit tests, build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11.22.0
-          run_install: false
+        with: { version: 11.22.0, run_install: false }
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+        with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm contract:check
+      - run: pnpm tokens:check
       - run: pnpm build
+      - name: Scan browser bundle for secrets
+        run: pnpm scan:client-bundle
 
-  e2e:
+  integration:
+    name: Migrations and integration tests (real services)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.22.0
-          run_install: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e --project=chromium
-
-  migration-validation:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     services:
       postgres:
         image: postgres:17-alpine
@@ -63,17 +57,117 @@ jobs:
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U paldora -d paldora_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        # Redis defaults to maxmemory-policy noeviction, which BullMQ requires.
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       DATABASE_URL: postgresql://paldora:test_only@localhost:5432/paldora_test
+      REDIS_URL: redis://localhost:6379
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: paldora-private
+      S3_ACCESS_KEY_ID: paldora_minio
+      S3_SECRET_ACCESS_KEY: test_only_minio_secret
+    steps:
+      - uses: actions/checkout@v4
+      # Service containers cannot pass MinIO its `server` command, so it runs
+      # as a step. Same image as infrastructure/docker-compose.yml.
+      - name: Start MinIO with a private bucket
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=$S3_ACCESS_KEY_ID -e MINIO_ROOT_PASSWORD=$S3_SECRET_ACCESS_KEY \
+            minio/minio:RELEASE.2025-07-23T15-54-02Z server /data
+          for attempt in $(seq 1 30); do curl -fs http://127.0.0.1:9000/minio/health/ready && break; sleep 1; done
+          docker run --rm --network host --entrypoint /bin/sh minio/mc:RELEASE.2025-07-21T05-28-08Z -c \
+            "mc alias set ci http://127.0.0.1:9000 $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY && mc mb --ignore-existing ci/$S3_BUCKET && mc anonymous set none ci/$S3_BUCKET"
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.22.0, run_install: false }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Apply every migration to an empty database
+        run: pnpm db:migrate
+      - name: Re-apply migrations (must be a no-op)
+        run: pnpm db:migrate
+      # Integration suites throw when DATABASE_URL/REDIS_URL are missing, so a
+      # misconfigured job fails instead of silently skipping.
+      - run: pnpm test:integration
+
+  e2e:
+    name: Browser tests (desktop and 390px, axe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with: { version: 11.22.0, run_install: false }
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm turbo run build --filter=@paldora/web^...
+      - run: pnpm test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results
+          retention-days: 7
+
+  e2e-full-stack:
+    name: Signed-in browser tests (web, API, worker, real services)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: paldora_e2e
+          POSTGRES_USER: paldora
+          POSTGRES_PASSWORD: test_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U paldora -d paldora_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://paldora:test_only@localhost:5432/paldora_e2e
+      REDIS_URL: redis://localhost:6379
+      S3_BUCKET: paldora-private
+      S3_ACCESS_KEY_ID: paldora_minio
+      S3_SECRET_ACCESS_KEY: test_only_minio_secret
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start MinIO with a private bucket and browser CORS
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=$S3_ACCESS_KEY_ID -e MINIO_ROOT_PASSWORD=$S3_SECRET_ACCESS_KEY \
+            -e MINIO_API_CORS_ALLOW_ORIGIN=http://127.0.0.1:3100 \
+            minio/minio:RELEASE.2025-07-23T15-54-02Z server /data
+          for attempt in $(seq 1 30); do curl -fs http://127.0.0.1:9000/minio/health/ready && break; sleep 1; done
+          docker run --rm --network host --entrypoint /bin/sh minio/mc:RELEASE.2025-07-21T05-28-08Z -c \
+            "mc alias set ci http://127.0.0.1:9000 $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY && mc mb --ignore-existing ci/$S3_BUCKET && mc anonymous set none ci/$S3_BUCKET"
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.22.0, run_install: false }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm db:migrate
-      - run: pnpm --filter @paldora/database test
+      - run: pnpm test:e2e:full
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-full-stack-traces
+          path: test-results
+          retention-days: 7

@@ -1,10 +1,9 @@
 {
   "name": "@paldora/config",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
+  "description": "Fail-fast environment parsing for every Paldora runtime.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,8 +13,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src --max-warnings=0",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "4.4.3"

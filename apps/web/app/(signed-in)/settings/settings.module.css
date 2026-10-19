@@ -1,0 +1,43 @@
+.page {
+  display: grid;
+  gap: var(--pal-space-8);
+  max-width: 40rem;
+}
+
+.header {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: clamp(2rem, 6vw, 2.5rem);
+  font-weight: 600;
+}
+
+.section {
+  display: grid;
+  gap: var(--pal-space-5);
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}
+
+.sectionTitle {
+  font-family: var(--pal-font-editorial);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.sectionDetail {
+  color: var(--pal-text-muted);
+}
+
+.link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  color: var(--pal-text);
+  text-underline-offset: 0.2em;
+}

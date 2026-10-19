@@ -1,34 +1,46 @@
 import type { ReactNode } from 'react';
-import { Wordmark } from './wordmark';
+import { Wordmark } from './ui';
+import styles from './onboarding-layout.module.css';
 
+const totalSteps = 3;
+
+/** The frame for the three setup steps: username, profile, photo. */
 export function OnboardingLayout({
   step,
   title,
   description,
   children,
 }: {
-  step: number;
+  step: 1 | 2 | 3;
   title: string;
   description: string;
   children: ReactNode;
 }) {
   return (
-    <main className="onboarding-page">
-      <header className="onboarding-header">
+    <div className={styles.page}>
+      <header className={styles.header}>
         <Wordmark />
-        <span>Profile setup</span>
+        <span className={styles.headerNote}>Setting up your profile</span>
       </header>
-      <section className="onboarding-card">
-        <div className="step-track" aria-label={`Step ${step} of 3`}>
-          {[1, 2, 3].map((item) => (
-            <span className={item <= step ? 'active' : ''} key={item} />
+      <main id="main" className={styles.card}>
+        <ol
+          className={styles.steps}
+          aria-label={`Step ${step} of ${totalSteps}`}
+        >
+          {Array.from({ length: totalSteps }, (_, index) => (
+            <li
+              key={index}
+              className={`${styles.step} ${index < step ? styles.done : ''}`}
+            />
           ))}
-        </div>
-        <p className="eyebrow">Step {step} of 3</p>
-        <h1>{title}</h1>
-        <p className="auth-description">{description}</p>
+        </ol>
+        <p className={styles.eyebrow}>
+          Step {step} of {totalSteps}
+        </p>
+        <h1 className={styles.title}>{title}</h1>
+        <p className={styles.description}>{description}</p>
         {children}
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }

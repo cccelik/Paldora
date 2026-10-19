@@ -1,34 +1,42 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { Pool, type PoolConfig } from 'pg';
+import { Pool } from 'pg';
 import * as schema from './schema.js';
 
 export type PaldoraDatabase = NodePgDatabase<typeof schema>;
 
 export interface DatabaseConnection {
-  database: PaldoraDatabase;
-  pool: Pool;
-  close: () => Promise<void>;
-  check: () => Promise<void>;
+  readonly database: PaldoraDatabase;
+  check(): Promise<void>;
+  close(): Promise<void>;
+}
+
+export interface DatabaseConnectionOptions {
+  connectionString: string;
+  /** Per-process ceiling. Size it against the server's connection budget. */
+  poolMax: number;
+  applicationName: string;
 }
 
 export function createDatabaseConnection(
-  connectionString: string,
+  options: DatabaseConnectionOptions,
 ): DatabaseConnection {
-  const poolConfig: PoolConfig = {
-    connectionString,
-    max: 20,
+  const pool = new Pool({
+    connectionString: options.connectionString,
+    max: options.poolMax,
+    application_name: options.applicationName,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
-  };
-  const pool = new Pool(poolConfig);
+    // Bounds runaway queries; long migrations run through drizzle-kit instead.
+    statement_timeout: 15_000,
+  });
   return {
     database: drizzle(pool, { schema }),
-    pool,
-    close: async () => pool.end(),
     check: async () => {
       await pool.query('select 1');
     },
+    close: () => pool.end(),
   };
 }
 
 export * from './schema.js';
+export * from './media-outbox.js';

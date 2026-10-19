@@ -9,13 +9,16 @@ const rootEnvironmentPath = fileURLToPath(
 if (existsSync(rootEnvironmentPath)) loadEnvFile(rootEnvironmentPath);
 
 const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl)
-  throw new Error('DATABASE_URL is required for database tooling');
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is required for database tooling.');
+}
 
 export default defineConfig({
   dialect: 'postgresql',
   out: './drizzle',
   schema: './src/schema.ts',
+  schemaFilter: ['paldora'],
+  migrations: { schema: 'paldora', table: '__drizzle_migrations' },
   dbCredentials: { url: databaseUrl },
   strict: true,
   verbose: true,

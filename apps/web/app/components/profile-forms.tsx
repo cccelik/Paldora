@@ -1,74 +1,108 @@
 'use client';
 
+import {
+  BIO_MAX_LENGTH,
+  DISPLAY_NAME_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+} from '@paldora/domain';
 import { useActionState } from 'react';
 import {
-  saveProfileAction,
-  saveSettingsAction,
+  saveAccountAction,
+  saveProfileStepAction,
   saveUsernameAction,
-  type ProfileActionState,
 } from '../actions/profile';
-import { ActionFeedback, UsernameField } from './ui';
+import { idleResult } from '../lib/action-result';
+import { ActionFeedback } from './action-feedback';
+import { SubmitButton } from './submit-button';
+import { TextAreaField, TextField } from './ui';
+import styles from './form-stack.module.css';
 
-const initialProfileState: ProfileActionState = { status: 'idle' };
+const usernameHelp = '3–30 letters, numbers, or underscores.';
 
-export function UsernameForm({ username = '' }: { username?: string }) {
-  const [state, action, pending] = useActionState(
-    saveUsernameAction,
-    initialProfileState,
-  );
+function UsernameInput({ defaultValue }: { defaultValue: string }) {
   return (
-    <form action={action} className="form-stack">
-      <UsernameField
-        defaultValue={username}
-        autoComplete="username"
-        prefixed
-        required
-      />
-      <p className="field-help">3–30 letters, numbers, or underscores.</p>
+    <TextField
+      label="Username"
+      id="username"
+      name="username"
+      prefix="@"
+      defaultValue={defaultValue}
+      minLength={USERNAME_MIN_LENGTH}
+      maxLength={USERNAME_MAX_LENGTH}
+      pattern="[\p{L}\p{N}_]+"
+      autoComplete="username"
+      autoCapitalize="none"
+      spellCheck={false}
+      help={usernameHelp}
+      required
+    />
+  );
+}
+
+function DisplayNameInput({ defaultValue }: { defaultValue: string }) {
+  return (
+    <TextField
+      label="Display name"
+      id="displayName"
+      name="displayName"
+      defaultValue={defaultValue}
+      maxLength={DISPLAY_NAME_MAX_LENGTH}
+      autoComplete="name"
+      required
+    />
+  );
+}
+
+function BioInput({ defaultValue }: { defaultValue: string }) {
+  return (
+    <TextAreaField
+      label="Bio"
+      id="bio"
+      name="bio"
+      optional
+      defaultValue={defaultValue}
+      maxLength={BIO_MAX_LENGTH}
+      rows={4}
+      help="A line or two your people will see."
+    />
+  );
+}
+
+export function UsernameStepForm({ username }: { username: string }) {
+  const [state, action] = useActionState(saveUsernameAction, idleResult);
+  return (
+    <form action={action} className={styles.form}>
+      <UsernameInput defaultValue={username} />
       <ActionFeedback state={state} />
-      <button className="button-primary" disabled={pending} type="submit">
-        {pending ? 'Checking…' : 'Continue'}
-      </button>
+      <SubmitButton pendingLabel="Checking…" block>
+        Continue
+      </SubmitButton>
     </form>
   );
 }
 
-export function ProfileSetupForm({
-  displayName = '',
-  bio = '',
+export function ProfileStepForm({
+  displayName,
+  bio,
 }: {
-  displayName?: string;
-  bio?: string;
+  displayName: string;
+  bio: string;
 }) {
-  const [state, action, pending] = useActionState(
-    saveProfileAction,
-    initialProfileState,
-  );
+  const [state, action] = useActionState(saveProfileStepAction, idleResult);
   return (
-    <form action={action} className="form-stack">
-      <label>
-        Display name
-        <input
-          defaultValue={displayName}
-          name="displayName"
-          maxLength={80}
-          autoComplete="name"
-          required
-        />
-      </label>
-      <label>
-        Bio <small>Optional</small>
-        <textarea defaultValue={bio} name="bio" maxLength={500} rows={5} />
-      </label>
+    <form action={action} className={styles.form}>
+      <DisplayNameInput defaultValue={displayName} />
+      <BioInput defaultValue={bio} />
       <ActionFeedback state={state} />
-      <button className="button-primary" disabled={pending} type="submit">
-        {pending ? 'Saving…' : 'Continue'}
-      </button>
+      <SubmitButton pendingLabel="Saving…" block>
+        Continue
+      </SubmitButton>
     </form>
   );
 }
 
-export function SettingsForm({
+export function AccountForm({
   username,
   displayName,
   bio,
@@ -77,36 +111,16 @@ export function SettingsForm({
   displayName: string;
   bio: string;
 }) {
-  const [state, action, pending] = useActionState(
-    saveSettingsAction,
-    initialProfileState,
-  );
+  const [state, action] = useActionState(saveAccountAction, idleResult);
   return (
-    <form action={action} className="settings-form form-stack">
-      <div className="form-grid">
-        <label>
-          Display name
-          <input
-            defaultValue={displayName}
-            name="displayName"
-            maxLength={80}
-            required
-          />
-        </label>
-        <UsernameField defaultValue={username} required />
-      </div>
-      <label>
-        Bio
-        <textarea defaultValue={bio} name="bio" maxLength={500} rows={5} />
-      </label>
+    <form action={action} className={styles.form}>
+      <DisplayNameInput defaultValue={displayName} />
+      <UsernameInput defaultValue={username} />
+      <BioInput defaultValue={bio} />
       <ActionFeedback state={state} />
-      <button
-        className="button-primary settings-submit"
-        disabled={pending}
-        type="submit"
-      >
-        {pending ? 'Saving…' : 'Save changes'}
-      </button>
+      <div className={styles.actions}>
+        <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
+      </div>
     </form>
   );
 }

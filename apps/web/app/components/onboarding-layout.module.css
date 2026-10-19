@@ -1,0 +1,71 @@
+.page {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: var(--pal-space-8);
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--pal-space-6))
+    var(--pal-space-4)
+    calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-10));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 32rem;
+}
+
+.headerNote {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.card {
+  display: grid;
+  gap: var(--pal-space-5);
+  width: 100%;
+  max-width: 32rem;
+  padding: var(--pal-space-8) var(--pal-space-6);
+  border-radius: var(--pal-radius-xl);
+  background: var(--pal-surface);
+}
+
+.steps {
+  display: flex;
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--pal-radius-pill);
+  background: color-mix(in srgb, var(--pal-text) 15%, transparent);
+}
+
+.done {
+  background: var(--pal-accent);
+}
+
+.eyebrow {
+  color: var(--pal-accent-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: clamp(1.75rem, 6vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.description {
+  color: var(--pal-text-muted);
+}

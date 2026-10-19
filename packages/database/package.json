@@ -1,10 +1,9 @@
 {
   "name": "@paldora/database",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
+  "description": "PostgreSQL schema, migrations, and connection pool.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,14 +12,15 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
     "lint": "eslint src drizzle.config.ts --max-warnings=0",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src --passWithNoTests"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --exclude '**/*.integration.test.ts' --passWithNoTests",
+    "test:integration": "vitest run integration.test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@paldora/config": "workspace:*",
     "drizzle-orm": "0.45.2",
     "pg": "8.16.3"
   },

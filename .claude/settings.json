@@ -1,0 +1,31 @@
+{
+  "env": {
+    "SUPERPOWERS_DISABLE_TELEMETRY": "1",
+    "IMPECCABLE_NO_TELEMETRY": "1",
+    "GRAPHIFY_QUERY_LOG_DISABLE": "1",
+    "CLAUDE_MEM_TELEMETRY": "0"
+  },
+  "enabledPlugins": {
+    "superpowers@anthropic-plugin-directory": true,
+    "impeccable@impeccable": true,
+    "claude-mem@thedotmack": true
+  },
+  "extraKnownMarketplaces": {
+    "impeccable": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/pbakaus/impeccable.git",
+        "ref": "skill-v4.5.0",
+        "sparsePaths": [".claude-plugin", "plugin"]
+      }
+    },
+    "thedotmack": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/thedotmack/claude-mem.git",
+        "ref": "v13.28.0",
+        "sparsePaths": [".claude-plugin", "plugin"]
+      }
+    }
+  }
+}

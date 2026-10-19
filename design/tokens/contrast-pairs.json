@@ -1,0 +1,29 @@
+{
+  "$description": "Foreground/background pairs that must meet WCAG 2.2 AA. 4.5 = normal text, 3 = large text or non-text UI such as focus rings. Checked by packages/tokens tests.",
+  "pairs": [
+    ["theme.light.text", "theme.light.canvas", 4.5],
+    ["theme.light.text", "theme.light.surface", 4.5],
+    ["theme.light.textMuted", "theme.light.canvas", 4.5],
+    ["theme.light.textMuted", "theme.light.surface", 4.5],
+    ["theme.light.accentText", "theme.light.canvas", 4.5],
+    ["theme.light.accentText", "theme.light.surface", 4.5],
+    ["theme.light.successText", "theme.light.surface", 4.5],
+    ["theme.light.warningText", "theme.light.surface", 4.5],
+    ["theme.light.dangerText", "theme.light.surface", 4.5],
+    ["theme.light.onAccent", "theme.light.accent", 4.5],
+    ["theme.light.focus", "theme.light.canvas", 3],
+    ["theme.light.focus", "theme.light.surface", 3],
+    ["theme.dark.text", "theme.dark.canvas", 4.5],
+    ["theme.dark.text", "theme.dark.surface", 4.5],
+    ["theme.dark.textMuted", "theme.dark.canvas", 4.5],
+    ["theme.dark.textMuted", "theme.dark.surface", 4.5],
+    ["theme.dark.accentText", "theme.dark.canvas", 4.5],
+    ["theme.dark.accentText", "theme.dark.surface", 4.5],
+    ["theme.dark.successText", "theme.dark.surface", 4.5],
+    ["theme.dark.warningText", "theme.dark.surface", 4.5],
+    ["theme.dark.dangerText", "theme.dark.surface", 4.5],
+    ["theme.dark.onAccent", "theme.dark.accent", 4.5],
+    ["theme.dark.focus", "theme.dark.canvas", 3],
+    ["theme.dark.focus", "theme.dark.surface", 3]
+  ]
+}

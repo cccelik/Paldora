@@ -1,41 +1,38 @@
-import type { MediaAsset } from '@paldora/domain';
+import {
+  MEDIA_CONTENT_TYPES,
+  MEDIA_PURPOSE_POLICIES,
+  type MediaContentType,
+} from '@paldora/domain';
 
-export type SupportedImageContentType = MediaAsset['contentType'];
-export type SupportedImageFile = File & { type: SupportedImageContentType };
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const accepted = new Set<string>(MEDIA_CONTENT_TYPES);
 
-const supportedImageTypes = new Set<SupportedImageContentType>([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+export const AVATAR_ACCEPT = MEDIA_CONTENT_TYPES.join(',');
 
-export function isSupportedImageContentType(
-  value: string,
-): value is SupportedImageContentType {
-  return supportedImageTypes.has(value as SupportedImageContentType);
+/** Mirrors the server policy so people hear about a bad file immediately. */
+export function avatarFileProblem(
+  file: Pick<File, 'type' | 'size'>,
+): string | null {
+  if (!accepted.has(file.type)) return 'Choose a JPEG, PNG, or WebP photo.';
+  if (file.size <= 0) return 'That file is empty.';
+  if (file.size > MEDIA_PURPOSE_POLICIES.avatar.maxBytes) {
+    return 'Choose a photo up to 10 MB.';
+  }
+  return null;
 }
 
-export function isSupportedImageFile(file: File): file is SupportedImageFile {
-  return (
-    isSupportedImageContentType(file.type) &&
-    file.size > 0 &&
-    file.size <= MAX_IMAGE_BYTES
-  );
-}
+export const asContentType = (type: string) => type as MediaContentType;
 
-export async function uploadFileToSignedRequest(
-  file: File,
-  upload: {
-    url: string;
-    headers: Readonly<Record<string, string>>;
-  },
+/** PUTs the file to the signed URL with exactly the signed headers. */
+export async function putToSignedUrl(
+  file: Blob,
+  upload: { url: string; headers: Readonly<Record<string, string>> },
   fetchImplementation: typeof fetch = globalThis.fetch.bind(globalThis),
 ): Promise<void> {
   const response = await fetchImplementation(upload.url, {
     method: 'PUT',
     headers: upload.headers,
     body: file,
+    credentials: 'omit',
   });
-  if (!response.ok) throw new Error('Signed image upload failed.');
+  if (!response.ok) throw new Error('Upload rejected by storage.');
 }

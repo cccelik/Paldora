@@ -1,10 +1,9 @@
 {
   "name": "@paldora/validation",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
+  "description": "Zod schemas and the route registry: the single source of Paldora's HTTP contract.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,14 +12,18 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint src --max-warnings=0",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src"
+    "lint": "eslint src scripts --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "contract:generate": "tsx scripts/generate-openapi.ts",
+    "contract:check": "tsx scripts/generate-openapi.ts --check"
   },
   "dependencies": {
+    "@paldora/domain": "workspace:*",
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "tsx": "4.20.5",
     "vitest": "4.1.11"
   }
 }

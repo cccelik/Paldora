@@ -1,0 +1,145 @@
+{
+  "$description": "Paldora design tokens (W3C DTCG format). Single source for web CSS, Swift, and Kotlin. Primitives are copied verbatim from legacy/design/design-system.md. Edit here, then run `pnpm tokens:generate`.",
+  "color": {
+    "$type": "color",
+    "brand": {
+      "obsidian": { "$value": "#11100E" },
+      "softBlack": { "$value": "#191713" },
+      "gold": { "$value": "#C79A3B" },
+      "deepGold": { "$value": "#9C7424" },
+      "champagne": { "$value": "#F4E7C3" },
+      "ivory": { "$value": "#FAF7EF" },
+      "paper": { "$value": "#F4EFE5" },
+      "lavender": { "$value": "#C8B7E8" }
+    },
+    "text": {
+      "darkPrimary": { "$value": "#F8F1E0" },
+      "darkMuted": { "$value": "#B9AF9D" },
+      "lightPrimary": { "$value": "#171717" },
+      "lightMuted": { "$value": "#6E6250" }
+    },
+    "status": {
+      "success": { "$value": "#668060" },
+      "warning": { "$value": "#A96F2D" },
+      "danger": { "$value": "#A54B46" }
+    },
+    "accessible": {
+      "$description": "Approved 2026-10-18 (D7). Darkened text variants derived because deepGold (3.97:1), success (4.07:1), and warning (3.92:1) fail WCAG AA 4.5:1 as text on ivory/paper. Brand hues are preserved.",
+      "goldText": { "$value": "#88651F" },
+      "successText": { "$value": "#5B7255" },
+      "warningText": { "$value": "#936127" }
+    },
+    "focus": { "$value": "#8D6CD1" }
+  },
+  "theme": {
+    "$description": "Semantic tokens for the trusted application shell. Components use these, never brand primitives directly. Room themes are separate and scoped.",
+    "light": {
+      "$type": "color",
+      "canvas": { "$value": "{color.brand.ivory}" },
+      "surface": { "$value": "{color.brand.paper}" },
+      "text": { "$value": "{color.text.lightPrimary}" },
+      "textMuted": { "$value": "{color.text.lightMuted}" },
+      "accent": { "$value": "{color.brand.gold}" },
+      "accentText": { "$value": "{color.accessible.goldText}" },
+      "highlight": { "$value": "{color.brand.champagne}" },
+      "emotional": { "$value": "{color.brand.lavender}" },
+      "successText": { "$value": "{color.accessible.successText}" },
+      "warningText": { "$value": "{color.accessible.warningText}" },
+      "dangerText": { "$value": "{color.status.danger}" },
+      "focus": { "$value": "{color.focus}" },
+      "onAccent": { "$value": "{color.brand.obsidian}" }
+    },
+    "dark": {
+      "$type": "color",
+      "canvas": { "$value": "{color.brand.obsidian}" },
+      "surface": { "$value": "{color.brand.softBlack}" },
+      "text": { "$value": "{color.text.darkPrimary}" },
+      "textMuted": { "$value": "{color.text.darkMuted}" },
+      "accent": { "$value": "{color.brand.gold}" },
+      "accentText": { "$value": "{color.brand.gold}" },
+      "highlight": { "$value": "{color.brand.champagne}" },
+      "emotional": { "$value": "{color.brand.lavender}" },
+      "successText": { "$value": "#9DB596" },
+      "warningText": { "$value": "#D9A066" },
+      "dangerText": { "$value": "#E08A84" },
+      "focus": { "$value": "{color.brand.lavender}" },
+      "onAccent": { "$value": "{color.brand.obsidian}" }
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "1": { "$value": "4px" },
+    "2": { "$value": "8px" },
+    "3": { "$value": "12px" },
+    "4": { "$value": "16px" },
+    "5": { "$value": "20px" },
+    "6": { "$value": "24px" },
+    "8": { "$value": "32px" },
+    "10": { "$value": "40px" },
+    "12": { "$value": "48px" },
+    "16": { "$value": "64px" },
+    "20": { "$value": "80px" }
+  },
+  "radius": {
+    "$type": "dimension",
+    "sm": { "$value": "8px" },
+    "md": { "$value": "14px" },
+    "lg": { "$value": "20px" },
+    "xl": { "$value": "28px" },
+    "pill": { "$value": "999px" }
+  },
+  "size": {
+    "$type": "dimension",
+    "touchTarget": { "$value": "44px" },
+    "focusRing": { "$value": "3px" },
+    "readingColumn": { "$value": "620px" },
+    "contentMax": { "$value": "1280px" }
+  },
+  "breakpoint": {
+    "$type": "dimension",
+    "sm": { "$value": "390px" },
+    "md": { "$value": "768px" },
+    "lg": { "$value": "1024px" },
+    "xl": { "$value": "1280px" },
+    "xxl": { "$value": "1440px" }
+  },
+  "duration": {
+    "$type": "duration",
+    "fast": { "$value": "120ms" },
+    "standard": { "$value": "200ms" },
+    "slow": { "$value": "320ms" }
+  },
+  "easing": {
+    "$type": "cubicBezier",
+    "standard": { "$value": [0.2, 0.8, 0.2, 1] }
+  },
+  "zIndex": {
+    "$type": "number",
+    "base": { "$value": 0 },
+    "sticky": { "$value": 100 },
+    "dropdown": { "$value": 300 },
+    "overlay": { "$value": 500 },
+    "modal": { "$value": 600 },
+    "toast": { "$value": 700 },
+    "security": { "$value": 800 }
+  },
+  "font": {
+    "$type": "fontFamily",
+    "brand": {
+      "$value": ["Cormorant Garamond", "Iowan Old Style", "Georgia", "serif"]
+    },
+    "editorial": {
+      "$value": ["Newsreader", "Iowan Old Style", "Georgia", "serif"]
+    },
+    "ui": {
+      "$value": [
+        "Inter",
+        "ui-sans-serif",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "Segoe UI",
+        "sans-serif"
+      ]
+    }
+  }
+}
