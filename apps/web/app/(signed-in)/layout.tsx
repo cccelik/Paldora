@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { AppShell } from '../components/app-shell';
+import { RealtimeBridge } from '../components/realtime-bridge';
+import { publicEnvironment } from '../lib/environment';
 import { completedUser } from '../lib/session';
 
 /**
@@ -12,5 +14,15 @@ export default async function SignedInLayout({
   children: ReactNode;
 }) {
   const user = await completedUser();
-  return <AppShell user={user}>{children}</AppShell>;
+  const environment = publicEnvironment();
+  return (
+    <AppShell user={user}>
+      <RealtimeBridge
+        apiUrl={environment.NEXT_PUBLIC_API_URL}
+        supabaseUrl={environment.NEXT_PUBLIC_SUPABASE_URL}
+        supabaseAnonKey={environment.NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      />
+      {children}
+    </AppShell>
+  );
 }

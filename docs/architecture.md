@@ -71,7 +71,9 @@ reaper (15 min): expire abandoned reservations, requeue stalled rows, count dead
 - **Feeds** use fan-out-on-read with keyset pagination. Measure before adding
   ranking, caching, or a search engine.
 - **Realtime messages** are identifier-only invalidation hints. Clients
-  re-fetch through normal authorization.
+  re-fetch through normal authorization. A Redis bus fans events out to
+  per-person SSE streams whose Box subscriptions follow memberships
+  ([ADR 012](adr/012-realtime.md)).
 - **Native apps** share the contract, token values, terminology, and
   fixtures, never UI code.
 

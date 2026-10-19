@@ -37,14 +37,14 @@ export class LocalIssuer {
     );
   }
 
-  public token(subject: string): Promise<string> {
+  public token(subject: string, expiresIn = '10m'): Promise<string> {
     return new SignJWT({ session_id: `session-${subject}` })
       .setProtectedHeader({ alg: 'ES256', kid: 'local' })
       .setSubject(subject)
       .setIssuer(issuer)
       .setAudience(audience)
       .setIssuedAt()
-      .setExpirationTime('10m')
+      .setExpirationTime(expiresIn)
       .sign(this.privateKey);
   }
 }

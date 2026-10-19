@@ -21,6 +21,8 @@ export interface RouteDefinition<
   /** `public` routes are the only ones reachable without a bearer token. */
   readonly access: 'public' | 'authenticated';
   readonly successStatus: 200 | 201 | 204;
+  /** A `text/event-stream` response whose events follow `response`. */
+  readonly stream?: boolean;
   readonly response: Response;
   readonly body?: Body;
   readonly query?: Query;

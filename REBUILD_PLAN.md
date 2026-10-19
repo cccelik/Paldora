@@ -220,16 +220,16 @@ Friends, Boxes, and Box pages are responsive and tested at 390px.
 
 ## Phase 3 delivery notes (2026-10-19)
 
-**Delivered (steps 1–4 of [the plan](docs/plans/phase-3-posts-feeds-realtime.md)):**
+**Delivered (the whole [plan](docs/plans/phase-3-posts-feeds-realtime.md)):**
 text posts, Box and Home chronological feeds with keyset paging, permalink
 page, author-only edit and delete (text erased), archived Boxes read-only, and
 D1 block placeholders. Recommended defaults were used for every open question.
 
-**Not done (a second session):** the realtime stream (`/me/events`, Redis bus,
-membership-change publishing, web bridge). Until then pages update on reload or
-navigation. Delivered after Phase 3: integration and full-stack tests run in a
-dedicated `paldora_test` database (`scripts/with-test-database.mjs`). Still
-open: the first GitHub CI run.
+**Realtime delivered as well (steps 5–6):** the `/me/events` stream, a Redis
+bus, membership-change publishing, and a web bridge that refreshes only the
+affected pages ([ADR 012](docs/adr/012-realtime.md)). Integration and
+full-stack tests now run in a dedicated `paldora_test` database
+(`scripts/with-test-database.mjs`). Still open: the first GitHub CI run.
 
 ## Phases 1–9: Web product (rebuild to parity, then beyond)
 
@@ -292,10 +292,10 @@ before it is designed.
    Then implement the slice and report the exact gate results.
 4. Update this file's status table below when a phase exits.
 
-| Phase | Status                                                                                                             |
-| ----- | ------------------------------------------------------------------------------------------------------------------ |
-| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run                                         |
-| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending                                            |
-| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                                                             |
-| 3     | Posts and feeds delivered 2026-10-19; realtime stream pending ([plan](docs/plans/phase-3-posts-feeds-realtime.md)) |
-| 4–12  | Not started                                                                                                        |
+| Phase | Status                                                                     |
+| ----- | -------------------------------------------------------------------------- |
+| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run |
+| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending    |
+| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                     |
+| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green           |
+| 4–12  | Not started                                                                |

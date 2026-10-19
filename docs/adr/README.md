@@ -19,6 +19,6 @@ accepted when their phase is built.
 | [009](009-test-strategy.md)             | Integration fails, never skips; e2e on production builds  | Accepted                         |
 | [010](010-native-apps-in-repo.md)       | Native apps in this repository, outside the pnpm graph    | Accepted                         |
 | [011](011-media-pipeline.md)            | One media module; tracked outbox completion and a reaper  | Accepted (D2; Phase 4 hardening) |
-| [012](012-realtime.md)                  | One SSE stream per tab, scoped channels, targeted refresh | Proposed (Phase 3)               |
+| [012](012-realtime.md)                  | One SSE stream per tab, scoped channels, targeted refresh | Accepted                         |
 | [013](013-directional-blocks.md)        | Directional `user_blocks` table                           | Proposed (Phase 2, D1)           |
 | [014](014-release-topology.md)          | Migrations run as a release job, separate services        | Proposed (Phase 4)               |

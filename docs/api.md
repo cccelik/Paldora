@@ -104,6 +104,16 @@ deleted account), both 403.
 | `updatePost`   | `PATCH /posts/{postId}`     | 120/h      | Author only (`POST_ACCESS_DENIED` for other members)                                 |
 | `deletePost`   | `DELETE /posts/{postId}`    | 60/h       | Author only; 204; idempotent; text erased                                            |
 
+### Realtime
+
+`GET /me/events` is a `text/event-stream` (operation `openEventStream`). Send
+the normal Bearer token, ignore `ping`, treat `resync` as "anything may have
+changed", and refetch through normal routes on every other event. The server
+ends the stream at token expiry; reconnect with backoff and a fresh token. At
+most 5 open streams per person (`RATE_LIMITED` with `Retry-After` beyond that).
+Events are `{ type, boxId?, postId?, at }`; see `RealtimeEvent` in the
+contract.
+
 Lists return `{ items, nextCursor }`; pass `limit` (1–50, default 20) and the
 opaque `cursor`. People appear as `UserSummary`: `id`, `username`,
 `displayName` (falls back to the username), and a signed `avatarUrl`

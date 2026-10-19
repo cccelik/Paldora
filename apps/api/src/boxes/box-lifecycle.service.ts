@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { boxMemberships, boxes, type PaldoraDatabase } from '@paldora/database';
 import type { BoxView, UpdateBoxInput } from '@paldora/validation';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { boxNotFound, deleteConfirmationMismatch } from './box-errors.js';
 import { BoxPolicyService } from './box-policy.service.js';
 import { loadBoxView, toBoxView } from './box-views.js';
@@ -13,6 +14,7 @@ export class BoxLifecycleService {
   public constructor(
     @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
+    @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
 
   private get database(): PaldoraDatabase {
@@ -20,8 +22,8 @@ export class BoxLifecycleService {
   }
 
   /** The Box and its owner membership appear together or not at all. */
-  public create(ownerId: string, name: string): Promise<BoxView> {
-    return this.database.transaction(async (transaction) => {
+  public async create(ownerId: string, name: string): Promise<BoxView> {
+    const view = await this.database.transaction(async (transaction) => {
       const [box] = await transaction
         .insert(boxes)
         .values({ name })
@@ -32,6 +34,8 @@ export class BoxLifecycleService {
         .values({ boxId: box.id, userId: ownerId, role: 'owner' });
       return toBoxView(box, 'owner', 1);
     });
+    await this.bus.membershipsChanged([ownerId]);
+    return view;
   }
 
   public async update(
@@ -67,7 +71,7 @@ export class BoxLifecycleService {
     boxId: string,
     confirmName: string,
   ): Promise<void> {
-    await this.database.transaction(async (transaction) => {
+    const members = await this.database.transaction(async (transaction) => {
       await this.policy.requireOwner(
         ownerId,
         boxId,
@@ -82,7 +86,19 @@ export class BoxLifecycleService {
         .limit(1);
       if (!box) throw boxNotFound();
       if (box.name !== confirmName) throw deleteConfirmationMismatch();
+      const affected = await transaction
+        .select({ userId: boxMemberships.userId })
+        .from(boxMemberships)
+        .where(
+          and(
+            eq(boxMemberships.boxId, boxId),
+            eq(boxMemberships.status, 'active'),
+          ),
+        );
       await transaction.delete(boxes).where(eq(boxes.id, boxId));
+      return affected.map((row) => row.userId);
     });
+    // Everyone who was in the Box recomputes where they belong.
+    await this.bus.membershipsChanged(members);
   }
 }

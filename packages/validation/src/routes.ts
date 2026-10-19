@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { realtimeEventSchema } from './events.js';
 import { livenessSchema, readinessSchema } from './health.js';
 import {
   currentUserSchema,
@@ -624,6 +625,20 @@ export const deletePost = defineRoute({
   errors: ['POST_NOT_FOUND', 'POST_ACCESS_DENIED', 'BOX_ARCHIVED'],
 });
 
+export const openEventStream = defineRoute({
+  operationId: 'openEventStream',
+  method: 'GET',
+  path: '/me/events',
+  summary:
+    'One server-sent-event stream per client. Events are IDs only; refetch through normal routes. The stream ends when the access token expires and is capped per person, so clients reconnect with a fresh token and backoff.',
+  tag: 'Realtime',
+  access: 'authenticated',
+  successStatus: 200,
+  stream: true,
+  response: realtimeEventSchema,
+  errors: [],
+});
+
 /** Every operation in the public contract. Add new routes here. */
 export const apiRoutes = {
   getLiveness,
@@ -668,4 +683,5 @@ export const apiRoutes = {
   getPost,
   updatePost,
   deletePost,
+  openEventStream,
 } as const satisfies Record<string, RouteDefinition>;

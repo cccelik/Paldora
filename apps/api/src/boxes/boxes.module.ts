@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
+import { RealtimeModule } from '../realtime/realtime.module.js';
 import { BoxInvitationService } from './box-invitation.service.js';
 import { BoxLifecycleService } from './box-lifecycle.service.js';
 import { BoxMemberService } from './box-member.service.js';
@@ -15,7 +16,7 @@ import {
  * starts at `BoxPolicyService`, so non-members always see BOX_NOT_FOUND.
  */
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, RealtimeModule],
   controllers: [BoxesController, BoxInvitationsController],
   providers: [
     BoxPolicyService,

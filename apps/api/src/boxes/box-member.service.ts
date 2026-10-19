@@ -14,6 +14,7 @@ import type { BoxView } from '@paldora/validation';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import {
   boxAccessDenied,
   boxMemberNotFound,
@@ -37,6 +38,7 @@ interface LockedMember {
 export class BoxMemberService {
   public constructor(
     @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
 
   private get database(): PaldoraDatabase {
@@ -152,12 +154,12 @@ export class BoxMemberService {
     return this.remove(userId, boxId, userId);
   }
 
-  public remove(
+  public async remove(
     actorId: string,
     boxId: string,
     targetId: string,
   ): Promise<void> {
-    return this.database.transaction(async (transaction) => {
+    await this.database.transaction(async (transaction) => {
       const members = await this.lockActive(transaction, boxId, [
         actorId,
         targetId,
@@ -191,5 +193,6 @@ export class BoxMemberService {
           ),
         );
     });
+    await this.bus.membershipsChanged([targetId]);
   }
 }

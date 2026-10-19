@@ -6,6 +6,7 @@ import { boxArchived } from '../boxes/box-errors.js';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
 import { postAccessDenied, postNotFound } from './post-errors.js';
 import { loadPostContext, PostQueryService } from './post-query.service.js';
 import { toPostView } from './post-views.js';
@@ -16,6 +17,7 @@ export class PostService {
     @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(PostQueryService) private readonly queries: PostQueryService,
+    @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
 
   private get database(): PaldoraDatabase {
@@ -44,6 +46,7 @@ export class PostService {
       return post;
     });
     if (!created) throw new Error('Post insert returned no row.');
+    await this.announce('post.created', boxId, created.id);
     const { context, author } = await this.queries.get(authorId, created.id);
     return toPostView(context, author, authorId);
   }
@@ -72,6 +75,7 @@ export class PostService {
       .returning({ id: posts.id });
     // Deleted between the read and the write: the post is gone.
     if (changed.length === 0) throw postNotFound();
+    await this.announce('post.updated', context.post.boxId, postId);
     const fresh = await this.queries.get(viewerId, postId);
     return toPostView(fresh.context, fresh.author, viewerId);
   }
@@ -98,6 +102,16 @@ export class PostService {
         updatedAt: new Date(),
       })
       .where(and(eq(posts.id, postId), eq(posts.status, 'active')));
+    await this.announce('post.deleted', context.post.boxId, postId);
+  }
+
+  /** After commit and best effort: the hint carries IDs, never content. */
+  private announce(
+    type: 'post.created' | 'post.updated' | 'post.deleted',
+    boxId: string,
+    postId: string,
+  ): Promise<void> {
+    return this.bus.publish(boxChannel(boxId), { type, boxId, postId });
   }
 
   private assertMayChange(

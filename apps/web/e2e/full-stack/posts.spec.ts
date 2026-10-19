@@ -126,3 +126,57 @@ test('a blocked person’s post is hidden without saying who blocked whom', asyn
   await expect(page.getByText('A post here is hidden.')).toHaveCount(0);
   await grace.context.close();
 });
+
+const live = (page: Page) => page.locator('[data-realtime="connected"]');
+
+test('other members see changes without reloading', async ({
+  page,
+  browser,
+}) => {
+  const adaAccount = provisionAccount({ complete: true });
+  const graceAccount = provisionAccount({ complete: true });
+  await signedIn(page, adaAccount);
+  const grace = await personOnOwnSession(browser, graceAccount);
+  const boxUrl = await sharedBox(page, grace.page, graceAccount);
+
+  // Grace watches the Box page and, in a second tab, Home.
+  await grace.page.goto(boxUrl);
+  await expect(live(grace.page)).toBeAttached();
+  const homeTab = await grace.context.newPage();
+  await homeTab.goto('/home');
+  await expect(live(homeTab)).toBeAttached();
+
+  await page.getByLabel('Share with this Box').fill('Fresh off the press');
+  await page.getByRole('button', { name: 'Post', exact: true }).click();
+  await expect(grace.page.getByText('Fresh off the press')).toBeVisible({
+    timeout: 10_000,
+  });
+  await expect(homeTab.getByText('Fresh off the press')).toBeVisible({
+    timeout: 10_000,
+  });
+
+  await page.getByRole('button', { name: 'Edit' }).click();
+  await page.getByLabel('Edit your post').fill('Fresher still');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(grace.page.getByText('Fresher still')).toBeVisible({
+    timeout: 10_000,
+  });
+
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByRole('button', { name: 'Yes, delete' }).click();
+  await expect(grace.page.getByText('Fresher still')).toHaveCount(0, {
+    timeout: 10_000,
+  });
+
+  // Removal reaches the open page: the Box simply stops being there.
+  await page.reload();
+  await page.getByRole('button', { name: 'Remove', exact: true }).click();
+  await page.getByRole('button', { name: 'Yes, remove' }).click();
+  await expect(
+    grace.page.getByRole('heading', {
+      level: 1,
+      name: 'This page isn’t here.',
+    }),
+  ).toBeVisible({ timeout: 10_000 });
+  await grace.context.close();
+});

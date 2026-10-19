@@ -75,7 +75,7 @@ function operation(route: RouteDefinition, components: JsonObject): JsonObject {
       : {
           description: 'Success.',
           content: {
-            'application/json': {
+            [route.stream ? 'text/event-stream' : 'application/json']: {
               schema: jsonSchema(route.response, 'output', components),
             },
           },

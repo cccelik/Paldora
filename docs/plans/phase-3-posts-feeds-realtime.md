@@ -1,6 +1,6 @@
 # Phase 3 plan: posts, feeds, realtime
 
-Status: steps 1–4 delivered 2026-10-19; steps 5–7 (realtime) pending. Prepared 2026-10-19 after Phase 2 (`d3829e5`).
+Status: delivered 2026-10-19 (all steps).
 Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 3 and
 [ADR 012](../adr/012-realtime.md). Photos on posts are Phase 4.
 

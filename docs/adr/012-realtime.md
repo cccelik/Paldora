@@ -1,6 +1,6 @@
 # ADR 012: One SSE stream per tab, scoped channels, targeted invalidation
 
-Status: proposed (Phase 3). Implements R5.
+Status: accepted (2026-10-19), built in Phase 3. Implements R5.
 
 ## Context
 
@@ -38,3 +38,29 @@ The legacy realtime design had four problems:
 
 Bidirectional features (presence, typing) are required; consider WebSockets
 then.
+
+## What Phase 3 built
+
+- `GET /me/events` (SSE): one stream per tab. First event `resync`; then
+  `post.created|updated|deleted` for Boxes the person belongs to,
+  `memberships.changed`, and a `ping` every 25 s. Payloads are a type, IDs, and
+  a timestamp.
+- `RealtimeBus`: one Redis publisher and one shared subscriber per API process,
+  with reference-counted `paldora:box:{id}` and `paldora:user:{id}` channels.
+  No database query happens per event.
+- Membership changes (create, accept, leave, remove, Box delete) publish
+  `memberships.changed` after commit; the stream recomputes its Box set, so a
+  removed member stops receiving that Box's events immediately and a new member
+  starts.
+- Streams end at access-token expiry, when the Redis subscriber drops, or after
+  an error. Clients reconnect with jittered backoff and a fresh token; every
+  connection starts with `resync`. At most 5 streams per person; 120 connects
+  per hour.
+- Publishing is best effort after commit (no durable outbox until Phase 5).
+- Web: `RealtimeBridge` (one fetch-based stream per tab, Bearer token from the
+  Supabase browser session) refreshes the page only when the hint concerns it:
+  Home for any post change, a Box page for that Box, a post page for that post,
+  membership-shaped pages for membership changes.
+
+Not done: `Last-Event-ID` replay (a reconnect resyncs instead) and a k6 load
+profile.

@@ -32,6 +32,7 @@ import {
   type Page,
 } from '../platform/pagination.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import {
   alreadyBoxMember,
   boxArchived,
@@ -51,6 +52,7 @@ const DAY_MS = 24 * 60 * 60 * 1_000;
 export class BoxInvitationService {
   public constructor(
     @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(RealtimeBus) private readonly bus: RealtimeBus,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(UserDirectoryService)
     private readonly directory: UserDirectoryService,
@@ -289,6 +291,7 @@ export class BoxInvitationService {
       return { boxId: invitation.boxId };
     });
     if ('expired' in outcome) throw invitationExpired();
+    await this.bus.membershipsChanged([viewerId]);
     const view = await loadBoxView(this.database, outcome.boxId, 'member');
     if (!view) throw boxNotFound();
     return view;
