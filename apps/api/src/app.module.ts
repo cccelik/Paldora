@@ -3,6 +3,7 @@ import { BoxesModule } from './boxes/boxes.module.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { InteractionsModule } from './interactions/interactions.module.js';
 import { MediaModule } from './media/media.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { PostsModule } from './posts/posts.module.js';
 import { PlatformModule } from './platform/platform.module.js';
@@ -23,6 +24,7 @@ import { SocialModule } from './social/social.module.js';
     BoxesModule,
     PostsModule,
     InteractionsModule,
+    NotificationsModule,
     RealtimeModule,
   ],
 })

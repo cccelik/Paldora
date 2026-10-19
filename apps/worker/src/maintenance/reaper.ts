@@ -6,6 +6,10 @@ import {
 } from '@paldora/database';
 import { UPLOAD_COMPLETION_GRACE_SECONDS } from '@paldora/domain';
 import { and, count, eq, inArray, lt } from 'drizzle-orm';
+import {
+  retainActivity,
+  type ActivityRetentionResult,
+} from './activity-retention.js';
 import { expireUnattachedMedia } from './unattached-media.js';
 
 /** A published row whose job left Redis without finishing (e.g. a flush). */
@@ -18,7 +22,7 @@ export const OUTBOX_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
 const batchSize = 200;
 const purgeBatchSize = 1_000;
 
-export interface ReapResult {
+export interface ReapResult extends ActivityRetentionResult {
   readonly expiredUploads: number;
   /** Unclaimed ready post photos and camera captures. */
   readonly expiredPhotos: number;
@@ -160,6 +164,7 @@ export async function reap(
   const requeued = await requeueStalled(database, now);
   const retriedDeletions = await retryDeadDeletions(database, now);
   const purged = await purgeFinished(database, now);
+  const activity = await retainActivity(database, now);
   const [deadRows] = await database
     .select({ value: count() })
     .from(mediaJobOutbox)
@@ -171,5 +176,6 @@ export async function reap(
     retriedDeletions,
     purged,
     dead: deadRows?.value ?? 0,
+    ...activity,
   };
 }

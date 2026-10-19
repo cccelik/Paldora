@@ -79,8 +79,8 @@ Phase 4 API and worker keep running against it.
   characters and never `real`.
 - `user_preferences.reaction_presets`: `text[]`, default
   `{👍,❤️,😂,😮,😢}`, check `cardinality = 5`.
-- `activity_events` (the interactions outbox, projected by the worker from
-  Phase 5 slice 5): real FKs for actor, post, and comment instead of a JSON
+- `activity_events` (the interactions outbox, projected by the worker's
+  activity projector): real FKs for actor, post, and comment instead of a JSON
   payload, a type check, a check tying `comment_id` to the type, a unique
   `dedupe_key`, `pending|completed|dead` with attempts and backoff, and partial
   indexes for claiming and retention.
@@ -99,6 +99,17 @@ existing Box-scoped asset loop. Posts are soft-deleted, so cascades never fire
 on a post delete: `erasePostInteractions` tombstones the comments, deletes
 reactions and notifications, and retires camera images in the delete
 transaction.
+
+Projection and retention: the worker claims due `activity_events` with
+`FOR UPDATE SKIP LOCKED` (batches of 50, oldest `available_at` first) and
+projects each inside its own savepoint with one `INSERT … SELECT … ON CONFLICT
+(dedupe_key) DO NOTHING`, then marks it `completed` in the same savepoint. A
+failure rolls back only that savepoint and records `attempts`, `last_error`,
+and a backoff `available_at` (`min(60 s, 500 ms × 2^attempts)` plus up to 20%
+jitter); the eighth failure makes it `dead`. The claim and every projection
+commit together, so a crash leaves the events pending. The reaper purges
+completed events 14 days after completion and notifications 90 days after
+creation, oldest first in batches of 1,000, and reports dead events.
 
 Pair-level decisions (friend request, block, Box invitation, accepting one)
 take a transaction advisory lock on the pair first (`lockPair`), so a block can

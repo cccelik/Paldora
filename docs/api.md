@@ -165,6 +165,36 @@ contentLength ≤ 5 MB }`, upload, complete, poll until `ready`, then set
   after removal) and every new comment record an activity event that the
   worker turns into a notification for the person addressed.
 
+### Notifications
+
+| Operation                  | Route                                          | Rate limit                         | Notes                                                                         |
+| -------------------------- | ---------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| `listNotifications`        | `GET /me/notifications`                        | none                               | Paged, newest first; `{ items, nextCursor, unreadCount }`                     |
+| `getUnreadCount`           | `GET /me/notifications/unread-count`           | none                               | `{ count (0–100), capped }`; `capped` is true when there may be more than 100 |
+| `markNotificationRead`     | `POST /me/notifications/{notificationId}/read` | 600/h (shared `notification-read`) | 204; idempotent; `NOTIFICATION_NOT_FOUND` for anything you cannot see now     |
+| `markAllNotificationsRead` | `POST /me/notifications/read-all`              | 600/h (shared `notification-read`) | 204; marks every notification you can currently see                           |
+
+A `Notification` is `{ id, type, actor: UserSummary, postId, commentId|null,
+box: { id, name }, reaction: { kind, thumbnailUrl? }|null, read, createdAt }`.
+Types: `post.comment` (someone commented on your post), `comment.reply`
+(someone replied to your comment), `post.reaction` and `comment.reaction`.
+`reaction` is set for the reaction types only; `thumbnailUrl` is a signed
+camera-reaction thumbnail (15 minutes). Deep link to `/posts/{postId}`, plus
+the comment (`getComment` resolves its thread) when `commentId` is set.
+
+- **IDs only, joined live.** The stored row holds IDs. The actor's face, the
+  Box name, and the emoji come from current rows, so nothing outlives an edit,
+  removal, or block.
+- **Visibility is rechecked on every read** (list, count, mark-one): the post
+  is active, you are an active member of its Box, the actor is active and no
+  block exists either way, and the target is live (the comment is active; the
+  actor's reaction still exists). Anything else is simply absent, and its ID
+  answers `NOTIFICATION_NOT_FOUND`, the same as someone else's ID. An archived
+  Box keeps its notifications.
+- **Created by the worker.** One per person and target, never repeated:
+  re-reacting after a removal or a changed emoji does not notify again. Your
+  own activity never notifies you. Notifications are kept for 90 days.
+
 ### Realtime
 
 `GET /me/events` is a `text/event-stream` (operation `openEventStream`). Send
@@ -177,6 +207,10 @@ see `RealtimeEvent` in the contract. Comment writes send `comment.created`,
 `comment.updated`, and `comment.deleted` to the post's Box with `commentId`.
 A reaction that changed something sends `reaction.changed` with `postId`
 (and `commentId` for a comment reaction); an idempotent repeat sends nothing.
+A new notification sends `notification.created` with `notificationId` and
+`postId` to its recipient only. Marking read (one or all, when something
+changed) sends `notifications.changed` with no IDs to all of that person's
+streams, so other tabs refresh their count.
 
 Lists return `{ items, nextCursor }`; pass `limit` (1–50, default 20) and the
 opaque `cursor`. People appear as `UserSummary`: `id`, `username`,

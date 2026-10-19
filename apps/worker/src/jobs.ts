@@ -17,8 +17,10 @@ export function createJobHandlers(
   return {
     [MAINTENANCE_REAPER_JOB]: async (_job, { logger }) => {
       const result = await reap(dependencies.database);
-      const log =
-        result.dead > 0 ? logger.error.bind(logger) : logger.info.bind(logger);
+      const needsHuman = result.dead > 0 || result.deadActivityEvents > 0;
+      const log = needsHuman
+        ? logger.error.bind(logger)
+        : logger.info.bind(logger);
       log(result, 'maintenance reaper ran');
     },
     'media.process': createProcessMediaHandler(dependencies),

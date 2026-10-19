@@ -11,6 +11,8 @@ import {
   MAINTENANCE_REAPER_JOB,
   MAINTENANCE_REAPER_SCHEDULER,
 } from './jobs.js';
+import { startProjector } from './activity/projector.js';
+import { createRealtimePublisher } from './activity/realtime-publisher.js';
 import { startDispatcher } from './outbox/dispatcher.js';
 import { recordJobFailure } from './outbox/failures.js';
 
@@ -89,6 +91,15 @@ const dispatcher = startDispatcher({
   intervalMs: environment.OUTBOX_POLL_INTERVAL_MS,
 });
 
+// Notifications are projected here, never in the API (plan section C). Hints
+// go out on the fail-fast connection, so a Redis outage cannot stall it.
+const projector = startProjector({
+  database: connection.database,
+  publisher: createRealtimePublisher(queueConnection, logger),
+  logger,
+  intervalMs: environment.OUTBOX_POLL_INTERVAL_MS,
+});
+
 async function scheduleMaintenance(): Promise<void> {
   await queue.upsertJobScheduler(
     MAINTENANCE_REAPER_SCHEDULER,
@@ -106,7 +117,7 @@ function stop(signal: string): Promise<void> {
   shutdown ??= (async () => {
     logger.info({ signal }, 'worker shutting down');
     // Stop producing, then finish in-flight jobs before closing connections.
-    await dispatcher.stop();
+    await Promise.all([dispatcher.stop(), projector.stop()]);
     await worker.close();
     await queue.close();
     await Promise.allSettled([

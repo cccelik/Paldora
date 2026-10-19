@@ -392,6 +392,29 @@ export class PaldoraApiClient {
     });
   }
 
+  // --- Notifications -------------------------------------------------------
+
+  /** Newest first, with the unread count; rows are visibility-checked live. */
+  public notifications(page: PageOptions = {}) {
+    return this.call(apiRoutes.listNotifications, { query: page });
+  }
+
+  /** Counted up to 100; `capped` means there may be more. */
+  public unreadNotificationCount() {
+    return this.call(apiRoutes.getUnreadCount);
+  }
+
+  /** Idempotent. Anything not visible to you is NOTIFICATION_NOT_FOUND. */
+  public markNotificationRead(notificationId: string) {
+    return this.call(apiRoutes.markNotificationRead, {
+      params: { notificationId },
+    });
+  }
+
+  public markAllNotificationsRead() {
+    return this.call(apiRoutes.markAllNotificationsRead);
+  }
+
   /**
    * Performs one registered operation and validates the response against the
    * contract, so a server/client mismatch fails loudly instead of rendering

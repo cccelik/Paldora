@@ -2088,6 +2088,172 @@
         }
       }
     },
+    "/me/notifications": {
+      "get": {
+        "operationId": "listNotifications",
+        "summary": "Your notifications, newest first, with the unread count. Visibility is rechecked on every read: a notification disappears once its post, comment, or reaction is gone, you leave the Box, or a block exists with the actor. Everything shown is joined from live rows.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/{notificationId}/read": {
+      "post": {
+        "operationId": "markNotificationRead",
+        "summary": "Mark one notification read (idempotent). Other people’s, hidden, and missing notifications all answer NOTIFICATION_NOT_FOUND.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content."
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, NOTIFICATION_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/read-all": {
+      "post": {
+        "operationId": "markAllNotificationsRead",
+        "summary": "Mark every notification you can currently see as read.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "No content."
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/unread-count": {
+      "get": {
+        "operationId": "getUnreadCount",
+        "summary": "How many visible notifications are unread, counted up to 100 (`capped` is true when there may be more).",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCount"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/preferences": {
       "put": {
         "operationId": "updatePreferences",
@@ -5472,6 +5638,191 @@
           }
         }
       },
+      "NotificationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/Notification"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unreadCount": {
+            "$ref": "#/$defs/UnreadCount"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "unreadCount"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "Notification": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "post.comment",
+                  "comment.reply",
+                  "post.reaction",
+                  "comment.reaction"
+                ]
+              },
+              "actor": {
+                "$ref": "#/$defs/UserSummary"
+              },
+              "postId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "commentId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              "reaction": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string"
+                      },
+                      "thumbnailUrl": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "read": {
+                "type": "boolean"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "actor",
+              "postId",
+              "commentId",
+              "box",
+              "reaction",
+              "read",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          },
+          "UserSummary": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "username": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "avatarUrl"
+            ],
+            "additionalProperties": false
+          },
+          "UnreadCount": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "capped": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "count",
+              "capped"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
       "Post": {
         "type": "object",
         "properties": {
@@ -6070,6 +6421,24 @@
         "required": [
           "type",
           "at"
+        ],
+        "additionalProperties": false
+      },
+      "UnreadCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "capped": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "count",
+          "capped"
         ],
         "additionalProperties": false
       },

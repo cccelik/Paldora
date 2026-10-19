@@ -21,6 +21,7 @@ import {
 import { and, eq, inArray, not } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { client, errorOf, expectError, json, ok } from '../testing/http.js';
+import { notificationTools } from '../testing/notifications.js';
 import { scenes } from '../testing/scenes.js';
 import {
   createTestApp,
@@ -663,4 +664,70 @@ describe('comments and reactions in a shared Box (Phase 5)', () => {
       ).toBe(0);
     },
   );
+});
+
+describe('notifications across a block (Phase 5)', () => {
+  it.each([
+    ['the recipient blocked the actor', 'recipient'],
+    ['the actor blocked the recipient', 'actor'],
+  ])('%s', async (_name, direction) => {
+    const scene = scenes(app);
+    const { deliver, unread, visibleIds } = notificationTools(app);
+    const {
+      owner: recipient,
+      member: actor,
+      admin: bystander,
+      box,
+    } = await scene.room();
+    const post = await scene.say(recipient, box.id);
+    const comment = await scene.comment(actor, post.id, 'hello');
+    await scene.reactToPost(actor, post.id, '👍');
+    await scene.reactToPost(bystander, post.id, '❤️');
+    const fromActor = [
+      await deliver({
+        recipient,
+        actor,
+        type: 'post.comment',
+        postId: post.id,
+        commentId: comment.id,
+      }),
+      await deliver({
+        recipient,
+        actor,
+        type: 'post.reaction',
+        postId: post.id,
+      }),
+    ];
+    const fromBystander = await deliver({
+      recipient,
+      actor: bystander,
+      type: 'post.reaction',
+      postId: post.id,
+    });
+    const [from, target] =
+      direction === 'recipient' ? [recipient, actor] : [actor, recipient];
+
+    await block(from, target);
+    // Created before the block, hidden after it: rechecked at every read.
+    expect(await visibleIds(recipient)).toEqual([fromBystander]);
+    expect(await unread(recipient)).toEqual({ count: 1, capped: false });
+    for (const id of fromActor) {
+      // Sequential for clarity: one 404 per hidden notification.
+
+      await expectError(
+        await as(recipient).post(`/me/notifications/${id}/read`),
+        404,
+        'NOTIFICATION_NOT_FOUND',
+      );
+    }
+
+    // Unblocking restores them (still unread); blocking again hides them.
+    await ok(await as(from).delete(`/blocks/${target.id}`));
+    expect((await visibleIds(recipient)).sort()).toEqual(
+      [...fromActor, fromBystander].sort(),
+    );
+    expect(await unread(recipient)).toEqual({ count: 3, capped: false });
+    await block(from, target);
+    expect(await visibleIds(recipient)).toEqual([fromBystander]);
+  });
 });

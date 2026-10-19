@@ -175,6 +175,9 @@ importers:
       '@paldora/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@paldora/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       bullmq:
         specifier: 6.2.0
         version: 6.2.0(ioredis@6.0.0)(pg@8.16.3)

@@ -117,7 +117,7 @@ Known limits: suspended members stay in a Box's counts but vanish from its
 lists until Phase 9 defines suspension. Re-requesting after a decline is
 allowed and bounded only by the rate limit.
 
-## Authorization matrix: Phase 5 (comments and reactions, so far)
+## Authorization matrix: Phase 5 (comments, reactions, notifications)
 
 Every comment check starts from the post's context (membership, Box status,
 block with the post author) in `InteractionPolicyService`; comment targets add
@@ -137,6 +137,8 @@ the same block rule on the comment's author and its thread root's author.
 | List a post's reactions       | ✓; camera images signed only here and in summaries                                                                | ✓              | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | Reactor omitted (no placeholder)                                |
 | Reserve a camera upload       | Active member of an open Box (120/h, `camera-upload`, fail-closed)                                                | `BOX_ARCHIVED` | `BOX_NOT_FOUND`                     | n/a                        | n/a                                                             |
 | Set reaction presets          | Self only (120/h)                                                                                                 | n/a            | n/a                                 | n/a                        | n/a                                                             |
+| List notifications, count     | Own rows only, visibility rechecked on every read                                                                 | still visible  | Left or removed: hidden             | Hidden (either direction)  | Hidden when the actor is in a block with you (either direction) |
+| Mark one / all read           | Own visible rows only (600/h, `notification-read`); idempotent                                                    | ✓              | `NOTIFICATION_NOT_FOUND`            | `NOTIFICATION_NOT_FOUND`   | `NOTIFICATION_NOT_FOUND`                                        |
 
 Block matrix rows (ADR 013), tested in both directions with unblock and
 re-block in `block.integration.test.ts`: comments become neutral placeholders,
@@ -171,6 +173,31 @@ Activity events (`comment.created`, `post.reaction.set`,
 `comment.reaction.set`) hold IDs only, are written in the same transaction as
 their cause, and carry the notification's dedupe key, so a retry, a changed
 emoji, or a re-react after removal never records a second one.
+
+**Notifications.** The worker's projector turns each event into at most one
+notification for the person addressed, in one set-based statement that skips
+self-actions, inactive recipients, recipients no longer in the post's Box, a
+block in either direction (the shared `hiddenByBlock` fragment, with the
+recipient as the viewer), a post or comment no longer active, and a reaction
+already removed. Rows store IDs only. Every read (list, unread count,
+mark-one) applies `notification-visibility.ts`: own row, post active, active
+membership in its Box, actor active with a public face and not in a block
+either way, target still live (comment active; the actor's reaction row still
+exists). A block after creation therefore hides the notification at once, and
+unblocking restores it. Someone else's ID, a hidden one, and a missing one all
+answer `NOTIFICATION_NOT_FOUND`; mark-all touches only visible rows. Display
+data (face, Box name, emoji, camera thumbnail) is joined live and the
+thumbnail is signed only after these checks. Realtime hints carry IDs only:
+`notification.created` (`notificationId`, `postId`) goes to the recipient's
+user channel after the projection commits, `notifications.changed` (no IDs)
+to the reader's own channel after a mark. Suspended recipients are refused by
+the guard (`ACCOUNT_BLOCKED`). Tests: `notifications/notifications.integration.test.ts`
+(paging, count cap, mark one/all, other people's IDs, the visibility matrix,
+double mark-read, realtime), the notification rows in
+`block.integration.test.ts` (both directions, unblock, re-block), and
+`apps/worker/src/activity/projector.integration.test.ts` (every type, every
+skip rule, dedupe, concurrent projectors, poison events, crash before commit,
+Redis down at publish, retention).
 
 ## Assumptions
 

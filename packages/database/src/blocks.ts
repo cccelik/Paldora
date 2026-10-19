@@ -28,9 +28,14 @@ export async function isBlockedBetween(
 /**
  * A `WHERE` fragment that is true when a block in either direction exists
  * between the viewer and the person in `otherUser`. Use `not(...)` to
- * exclude blocked people from lists, feeds, and counts.
+ * exclude blocked people from lists, feeds, and counts. Either side may be
+ * an ID or a column/expression, so set-based queries (the notification
+ * projector, where the viewer is each row's recipient) share this definition.
  */
-export function hiddenByBlock(viewerId: string, otherUser: AnyColumn): SQL {
+export function hiddenByBlock(
+  viewerId: string | AnyColumn | SQL,
+  otherUser: AnyColumn | SQL,
+): SQL {
   return sql`exists (
     select 1 from ${userBlocks}
     where (${userBlocks.blockerId} = ${viewerId} and ${userBlocks.blockedId} = ${otherUser})

@@ -8,6 +8,7 @@ import { currentUserSchema, updateProfileSchema } from './identity.js';
 import { friendshipSchema } from './people.js';
 import { createMediaUploadSchema } from './media.js';
 import { commentItemSchema, createCommentSchema } from './comments.js';
+import { notificationSchema, unreadCountSchema } from './notifications.js';
 import { postSchema } from './posts.js';
 import { reactionPresetsSchema, setPostReactionSchema } from './reactions.js';
 import { cursorPageQuerySchema } from './primitives.js';
@@ -32,6 +33,8 @@ const schemas: Record<string, z.ZodType> = {
   CreateCommentRequest: createCommentSchema,
   SetPostReactionRequest: setPostReactionSchema,
   ReactionPresetsRequest: reactionPresetsSchema,
+  Notification: notificationSchema,
+  UnreadCount: unreadCountSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

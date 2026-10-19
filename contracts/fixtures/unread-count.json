@@ -1,0 +1,14 @@
+{
+  "schema": "UnreadCount",
+  "valid": [
+    { "count": 0, "capped": false },
+    { "count": 3, "capped": false },
+    { "count": 100, "capped": true }
+  ],
+  "invalid": [
+    { "count": 101, "capped": true },
+    { "count": -1, "capped": false },
+    { "count": 2.5, "capped": false },
+    { "count": 3 }
+  ]
+}
