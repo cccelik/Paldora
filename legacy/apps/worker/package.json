@@ -1,0 +1,29 @@
+{
+  "name": "@paldora/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "lint": "eslint src --max-warnings=0",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run src --passWithNoTests"
+  },
+  "dependencies": {
+    "@paldora/config": "workspace:*",
+    "@paldora/database": "workspace:*",
+    "@paldora/domain": "workspace:*",
+    "@paldora/observability": "workspace:*",
+    "@paldora/storage": "workspace:*",
+    "bullmq": "6.2.0",
+    "drizzle-orm": "0.45.2",
+    "ioredis": "6.0.0",
+    "sharp": "0.35.3"
+  },
+  "devDependencies": {
+    "tsx": "4.20.5",
+    "vitest": "4.1.11"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "paldora",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A privacy-first living scrapbook for close friends and private communities.",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "start:api-worker": "node scripts/start-deployed-services.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint scripts --max-warnings=0 && turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "test:e2e:hosted": "node --env-file=.env node_modules/@playwright/test/cli.js test --config=playwright.hosted.config.ts",
+    "db:generate": "pnpm --filter @paldora/database db:generate",
+    "db:migrate": "pnpm --filter @paldora/database db:migrate",
+    "db:studio": "pnpm --filter @paldora/database db:studio",
+    "seed:demo": "pnpm --filter @paldora/api seed:demo",
+    "design:capture:phase1": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase1-designs.ts",
+    "design:capture:phase6": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase6-designs.ts",
+    "design:capture:phase7": "pnpm --filter @paldora/api exec tsx ../../scripts/capture-phase7-designs.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
+    "@types/node": "26.2.0",
+    "@typescript-eslint/eslint-plugin": "8.67.0",
+    "@typescript-eslint/parser": "8.67.0",
+    "eslint": "10.9.0",
+    "globals": "17.11.0",
+    "prettier": "3.9.6",
+    "turbo": "2.10.10",
+    "typescript": "6.0.2"
+  }
+}
