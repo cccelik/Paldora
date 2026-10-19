@@ -47,6 +47,9 @@ export const API_ERROR_CODES = [
   'INVITATION_ALREADY_PENDING',
   'INVITATION_NOT_FOUND',
   'INVITATION_EXPIRED',
+  // Posts (Phase 3). Absence, non-membership, and blocks share POST_NOT_FOUND.
+  'POST_NOT_FOUND',
+  'POST_ACCESS_DENIED',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

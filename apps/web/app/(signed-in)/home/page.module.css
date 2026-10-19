@@ -1,19 +1,14 @@
-.page {
-  display: grid;
-  gap: var(--pal-space-8);
-  max-width: 48rem;
-}
-
 .welcome {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--pal-space-6);
+  gap: var(--pal-space-5);
 }
 
 .text {
   display: grid;
-  gap: var(--pal-space-2);
+  flex: 1 1 14rem;
+  gap: var(--pal-space-1);
   min-width: 0;
 }
 
@@ -25,9 +20,9 @@
 
 .title {
   font-family: var(--pal-font-editorial);
-  font-size: clamp(2rem, 6vw, 2.75rem);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
@@ -35,29 +30,4 @@
   max-width: var(--pal-size-reading-column);
   color: var(--pal-text-muted);
   overflow-wrap: anywhere;
-}
-
-.note {
-  display: grid;
-  justify-items: start;
-  gap: var(--pal-space-3);
-  padding: var(--pal-space-6);
-  border-radius: var(--pal-radius-lg);
-  background: var(--pal-surface);
-}
-
-.noteTitle {
-  font-family: var(--pal-font-editorial);
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.noteDetail {
-  color: var(--pal-text-muted);
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pal-space-2);
 }

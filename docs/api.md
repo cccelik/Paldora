@@ -93,6 +93,17 @@ deleted account), both 403.
 | `acceptBoxInvitation`  | `POST /box-invitations/{id}/accept`      | exempt     | Returns the Box; `INVITATION_EXPIRED` (410), `BOX_ARCHIVED`                                                 |
 | `declineBoxInvitation` | `POST /box-invitations/{id}/decline`     | exempt     | 204                                                                                                         |
 
+### Posts
+
+| Operation      | Route                       | Rate limit | Notes                                                                                |
+| -------------- | --------------------------- | ---------- | ------------------------------------------------------------------------------------ |
+| `createPost`   | `POST /boxes/{boxId}/posts` | 120/h      | Active member, active Box; text 1–5,000 chars; `BOX_ARCHIVED`                        |
+| `listBoxPosts` | `GET /boxes/{boxId}/posts`  | none       | Paged; items are `{kind:'post'}` or `{kind:'hidden'}` (block placeholder, no author) |
+| `getHomeFeed`  | `GET /me/feed`              | none       | All your Boxes, chronological, never ranked                                          |
+| `getPost`      | `GET /posts/{postId}`       | none       | `POST_NOT_FOUND` for missing, deleted, non-member, and blocked authors alike         |
+| `updatePost`   | `PATCH /posts/{postId}`     | 120/h      | Author only (`POST_ACCESS_DENIED` for other members)                                 |
+| `deletePost`   | `DELETE /posts/{postId}`    | 60/h       | Author only; 204; idempotent; text erased                                            |
+
 Lists return `{ items, nextCursor }`; pass `limit` (1–50, default 20) and the
 opaque `cursor`. People appear as `UserSummary`: `id`, `username`,
 `displayName` (falls back to the username), and a signed `avatarUrl`

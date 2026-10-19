@@ -4,6 +4,7 @@ export * from './health.js';
 export * from './identity.js';
 export * from './people.js';
 export * from './boxes.js';
+export * from './posts.js';
 export * from './media.js';
 export * from './route.js';
 export * from './routes.js';

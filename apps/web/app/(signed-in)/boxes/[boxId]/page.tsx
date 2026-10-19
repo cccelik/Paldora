@@ -9,6 +9,8 @@ import {
   SettingsSection,
 } from '../../../components/box-sections';
 import { MemberList } from '../../../components/box-members';
+import { PostComposer } from '../../../components/post-composer';
+import { PostFeed } from '../../../components/post-card';
 import { MoreLink } from '../../../components/more-link';
 import { Badge, PageHeader, Section } from '../../../components/ui';
 import {
@@ -37,7 +39,9 @@ export default async function BoxPage({
   const manager = canManageMembers(box.currentUserRole);
   const owner = box.currentUserRole === 'owner';
   const cursor = cursorParam((await searchParams).members);
-  const [members, invitations] = await Promise.all([
+  const postsCursor = cursorParam((await searchParams).posts);
+  const [feed, members, invitations] = await Promise.all([
+    orNotFound(api.boxPosts(boxId, { limit: 20, cursor: postsCursor }), absent),
     orNotFound(api.boxMembers(boxId, { limit: 25, cursor }), absent),
     manager
       ? orNotFound(api.boxInvitations(boxId, { limit: 50 }), absent)
@@ -67,6 +71,19 @@ export default async function BoxPage({
             : undefined
         }
       />
+      <Section id="posts" title="Posts">
+        {box.status === 'active' ? <PostComposer boxId={boxId} /> : null}
+        <PostFeed
+          items={feed.items}
+          empty="No posts yet. Be the first to share."
+        />
+        {feed.nextCursor ? (
+          <MoreLink
+            href={`/boxes/${boxId}?posts=${encodeURIComponent(feed.nextCursor)}`}
+            label="Show older posts"
+          />
+        ) : null}
+      </Section>
       <Section id="members" title="Members">
         <MemberList
           boxId={boxId}

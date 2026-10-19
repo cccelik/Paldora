@@ -1,0 +1,128 @@
+import { expect, test, type Page } from '@playwright/test';
+import { provisionAccount, type Account } from './accounts';
+import {
+  expectAccessible,
+  expectNoOverflow,
+  personOnOwnSession,
+  signedIn,
+} from './sessions';
+
+/** Ada makes a Box and Grace joins it, both through the real screens. */
+async function sharedBox(ada: Page, grace: Page, graceAccount: Account) {
+  await ada.goto('/boxes');
+  await ada.getByLabel('Box name').fill('Weekend crew');
+  await ada.getByRole('button', { name: 'Create Box' }).click();
+  await expect(ada).toHaveURL(/\/boxes\/[0-9a-f-]{36}$/);
+  const url = ada.url();
+  await ada.getByLabel('Their username').fill(graceAccount.username);
+  await ada.getByRole('button', { name: 'Send invitation' }).click();
+  await expect(ada.getByText('Invitation sent.')).toBeVisible();
+  await grace.goto('/boxes');
+  await grace.getByRole('button', { name: 'Join' }).click();
+  await expect(grace.getByRole('link', { name: 'Weekend crew' })).toBeVisible();
+  return url;
+}
+
+test('a post is written, seen, edited, and deleted', async ({
+  page,
+  browser,
+}) => {
+  const adaAccount = provisionAccount({ complete: true });
+  const graceAccount = provisionAccount({ complete: true });
+  await signedIn(page, adaAccount);
+  const grace = await personOnOwnSession(browser, graceAccount);
+  const boxUrl = await sharedBox(page, grace.page, graceAccount);
+
+  await expect(
+    page.getByText('No posts yet. Be the first to share.'),
+  ).toBeVisible();
+  const composer = page.getByLabel('Share with this Box');
+  const post = page.getByRole('button', { name: 'Post', exact: true });
+  await expect(post).toBeDisabled();
+  await composer.fill('First light ✦\nsecond line');
+  await expect(page.getByText('25 / 5,000')).toBeVisible();
+  await composer.press('ControlOrMeta+Enter');
+  await expect(page.getByText('First light ✦')).toBeVisible();
+  await expect(composer).toHaveValue('');
+  await expectAccessible(page);
+  await expectNoOverflow(page);
+
+  // Another member sees it in the Box and on Home, without edit controls.
+  await grace.page.goto(boxUrl);
+  await expect(grace.page.getByText('First light ✦')).toBeVisible();
+  await expect(grace.page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+  await grace.page.goto('/home');
+  const onHome = grace.page.getByRole('article', { name: /Post by/ });
+  await expect(onHome.getByText('First light ✦')).toBeVisible();
+  await expect(onHome.getByText('Weekend crew')).toBeVisible();
+  await expectAccessible(grace.page);
+  await expectNoOverflow(grace.page);
+
+  // The author edits it.
+  await page.getByRole('button', { name: 'Edit' }).click();
+  await page.getByLabel('Edit your post').fill('Edited light');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Edited light')).toBeVisible();
+  await expect(page.getByText('edited', { exact: true })).toBeVisible();
+
+  // Permalink works for members and 404s for anyone else.
+  await page
+    .getByRole('link', { name: /\d{4}|UTC|AM|PM/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/posts\/[0-9a-f-]{36}$/);
+  const permalink = page.url();
+  await expect(page.getByText('Edited light')).toBeVisible();
+
+  // Deleting asks first, then removes the post everywhere.
+  await page.getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await page.getByRole('button', { name: 'Yes, delete' }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByText('Edited light')).toHaveCount(0);
+  const gone = await grace.page.goto(permalink);
+  expect(gone?.status()).toBe(404);
+  await grace.context.close();
+});
+
+test('a blocked person’s post is hidden without saying who blocked whom', async ({
+  page,
+  browser,
+}) => {
+  const adaAccount = provisionAccount({ complete: true });
+  const graceAccount = provisionAccount({ complete: true });
+  await signedIn(page, adaAccount);
+  const grace = await personOnOwnSession(browser, graceAccount);
+  const boxUrl = await sharedBox(page, grace.page, graceAccount);
+
+  await page.getByLabel('Share with this Box').fill('Ada’s private thought');
+  await page.getByRole('button', { name: 'Post', exact: true }).click();
+  await expect(page.getByText('Ada’s private thought')).toBeVisible();
+  await grace.page.goto(boxUrl);
+  await expect(grace.page.getByText('Ada’s private thought')).toBeVisible();
+
+  // Grace blocks Ada. Both stay in the Box.
+  await grace.page.goto('/friends');
+  const blocked = grace.page.getByRole('region', { name: 'Blocked people' });
+  await blocked
+    .getByLabel('Block someone by username')
+    .fill(adaAccount.username);
+  await blocked.getByRole('button', { name: 'Block', exact: true }).click();
+  await expect(blocked.getByText(`@${adaAccount.username}`)).toBeVisible();
+
+  for (const path of [boxUrl, '/home']) {
+    await grace.page.goto(path);
+    await expect(grace.page.getByText('A post here is hidden.')).toBeVisible();
+    await expect(grace.page.getByText('Ada’s private thought')).toHaveCount(0);
+    await expect(grace.page.getByText(adaAccount.username)).toHaveCount(
+      path === boxUrl ? 1 : 0,
+    );
+  }
+  await expectAccessible(grace.page);
+
+  // Ada sees her own post as normal, and is not told anything.
+  await page.goto(boxUrl);
+  await expect(page.getByText('Ada’s private thought')).toBeVisible();
+  await expect(page.getByText('A post here is hidden.')).toHaveCount(0);
+  await grace.context.close();
+});

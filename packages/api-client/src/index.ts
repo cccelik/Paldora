@@ -3,6 +3,7 @@ import {
   errorEnvelopeSchema,
   type CreateBoxInput,
   type CreateMediaUploadInput,
+  type CreatePostInput,
   type Preferences,
   type UpdateBoxInput,
   type RouteDefinition,
@@ -279,6 +280,35 @@ export class PaldoraApiClient {
     return this.call(apiRoutes.acceptBoxInvitation, {
       params: { invitationId },
     });
+  }
+
+  // --- Posts ---------------------------------------------------------------
+
+  public createPost(boxId: string, body: CreatePostInput) {
+    return this.call(apiRoutes.createPost, { params: { boxId }, body });
+  }
+
+  public boxPosts(boxId: string, page: PageOptions = {}) {
+    return this.call(apiRoutes.listBoxPosts, {
+      params: { boxId },
+      query: page,
+    });
+  }
+
+  public homeFeed(page: PageOptions = {}) {
+    return this.call(apiRoutes.getHomeFeed, { query: page });
+  }
+
+  public post(postId: string) {
+    return this.call(apiRoutes.getPost, { params: { postId } });
+  }
+
+  public updatePost(postId: string, body: CreatePostInput) {
+    return this.call(apiRoutes.updatePost, { params: { postId }, body });
+  }
+
+  public deletePost(postId: string) {
+    return this.call(apiRoutes.deletePost, { params: { postId } });
   }
 
   public declineBoxInvitation(invitationId: string) {

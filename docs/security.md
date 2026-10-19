@@ -91,6 +91,20 @@ sequences and concurrent races:
 | Shared Box membership and member list | **Unchanged.** Membership is a Box fact; what each person _authors_ is hidden from the other once content exists (Phases 3, 5, 6 add their rows). |
 | Block list                            | Only the blocker’s own blocks, with no avatars                                                                                                    |
 
+Posts (Phase 3, D1 applied):
+
+| Action         | Owner / admin / member                   | Former member, stranger      | Blocked pair (either direction)                  |
+| -------------- | ---------------------------------------- | ---------------------------- | ------------------------------------------------ |
+| Post in a Box  | ✓ (not if archived: `BOX_ARCHIVED`)      | `BOX_NOT_FOUND`              | n/a                                              |
+| Read feeds     | ✓                                        | `BOX_NOT_FOUND` / empty Home | Post becomes a `hidden` item: id, Box, time only |
+| Read one post  | ✓                                        | `POST_NOT_FOUND`             | `POST_NOT_FOUND`                                 |
+| Edit or delete | Author only; others `POST_ACCESS_DENIED` | `POST_NOT_FOUND`             | Author keeps access to their own post            |
+
+Deleting erases the text (database check) and keeps a tombstone. Moderators
+cannot delete others' posts until Phase 9. Tests: `posts.integration.test.ts`
+(roles, archived, guesses, concurrency, paging, both block directions,
+unblock then re-block) and the Playwright block scenario.
+
 Known limits: suspended members stay in a Box's counts but vanish from its
 lists until Phase 9 defines suspension. Re-requesting after a decline is
 allowed and bounded only by the rate limit.

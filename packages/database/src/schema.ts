@@ -452,6 +452,53 @@ export const boxInvitations = paldoraSchema.table(
   ],
 );
 
+// --- Posts ------------------------------------------------------------------
+
+export const postStatus = paldoraSchema.enum('post_status', [
+  'active',
+  'deleted',
+]);
+
+/**
+ * Text posts in a Box. Deleting keeps a tombstone (who, where, when) and
+ * erases the text. Phase 4 adds media and must queue storage deletion before
+ * the Box cascade removes these rows.
+ */
+export const posts = paldoraSchema.table(
+  'posts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => boxes.id, { onDelete: 'cascade' }),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    content: text('content'),
+    status: postStatus('status').notNull().default('active'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    editedAt: timestamp('edited_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('posts_box_feed_index')
+      .on(table.boxId, table.createdAt.desc(), table.id.desc())
+      .where(sql`${table.status} = 'active'`),
+    index('posts_author_index').on(
+      table.authorUserId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    check(
+      'posts_content_lifecycle_check',
+      sql`(${table.status} = 'active' and ${table.content} is not null and char_length(${table.content}) between 1 and 5000)
+        or (${table.status} = 'deleted' and ${table.content} is null and ${table.deletedAt} is not null)`,
+    ),
+  ],
+);
+
+export type PostRow = typeof posts.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ProfileRow = typeof profiles.$inferSelect;
 export type MediaAssetRow = typeof mediaAssets.$inferSelect;

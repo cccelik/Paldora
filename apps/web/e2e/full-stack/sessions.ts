@@ -1,0 +1,50 @@
+import AxeBuilder from '@axe-core/playwright';
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from '@playwright/test';
+import { signIn, type Account } from './accounts';
+
+const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+export async function expectAccessible(page: Page) {
+  const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+}
+
+export async function expectNoOverflow(page: Page) {
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+}
+
+/** Signs in and waits until the app has actually landed on Home. */
+export async function signedIn(page: Page, account: Account) {
+  await signIn(page, account);
+  await expect(page).toHaveURL(/\/home$/);
+}
+
+/** Another person in their own session, on the same device profile. */
+export async function personOnOwnSession(
+  browser: Browser,
+  account: Account,
+): Promise<{ page: Page; context: BrowserContext }> {
+  const { viewport, isMobile, hasTouch, userAgent, baseURL } =
+    test.info().project.use;
+  const context = await browser.newContext({
+    ...(viewport ? { viewport } : {}),
+    ...(isMobile !== undefined ? { isMobile } : {}),
+    ...(hasTouch !== undefined ? { hasTouch } : {}),
+    ...(userAgent ? { userAgent } : {}),
+    ...(baseURL ? { baseURL } : {}),
+  });
+  const page = await context.newPage();
+  await signedIn(page, account);
+  return { page, context };
+}

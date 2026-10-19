@@ -25,6 +25,6 @@ import {
     BoxInvitationService,
   ],
   // Blocking withdraws pending invitations between two people.
-  exports: [BoxInvitationService],
+  exports: [BoxInvitationService, BoxPolicyService],
 })
 export class BoxesModule {}

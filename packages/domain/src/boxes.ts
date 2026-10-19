@@ -47,3 +47,5 @@ export function mayChangeRole({
 export function mayRemoveMember(actor: BoxRole, target: BoxRole): boolean {
   return target !== 'owner' && canManageMembers(actor);
 }
+
+export const POST_CONTENT_MAX_LENGTH = 5_000;

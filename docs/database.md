@@ -34,6 +34,15 @@ removes only these rows.** Phases that attach Box content (posts, media, Life
 Update deliveries) must write their storage deletions to the media outbox in
 the same transaction as the delete, before the cascade removes the metadata.
 
+## Phase 3 table (`0003_posts`)
+
+`posts`: Box (cascade), author, `content`, `status` (`active|deleted`), edit and
+delete timestamps. A check ties content to lifecycle: active posts have 1–5,000
+characters, deleted posts have **no content** and a `deleted_at`. Indexes:
+`(box_id, created_at desc, id desc) where status = 'active'` for feeds and
+`(author_user_id, created_at desc, id desc)`. Phase 4 media must queue storage
+deletion before the Box cascade removes posts.
+
 Pair-level decisions (friend request, block, Box invitation, accepting one)
 take a transaction advisory lock on the pair first (`lockPair`), so a block can
 never commit between "is anyone blocked?" and "create the relationship".

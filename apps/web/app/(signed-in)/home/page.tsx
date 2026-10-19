@@ -1,15 +1,18 @@
-import Link from 'next/link';
-import { Avatar, buttonClassName } from '../../components/ui';
-import { completedUser } from '../../lib/session';
+import { MoreLink } from '../../components/more-link';
+import { PostFeed } from '../../components/post-card';
+import { Avatar, Section } from '../../components/ui';
+import { apiClient, completedUser, cursorParam } from '../../lib/session';
+import pageStyles from '../page-stack.module.css';
 import styles from './page.module.css';
 
 export const metadata = { title: 'Home' };
 
-export default async function HomePage() {
-  const user = await completedUser();
-  const { profile } = user;
+export default async function HomePage({ searchParams }: PageProps<'/home'>) {
+  const { profile } = await completedUser();
+  const cursor = cursorParam((await searchParams).feed);
+  const feed = await (await apiClient()).homeFeed({ limit: 20, cursor });
   return (
-    <div className={styles.page}>
+    <div className={pageStyles.stack}>
       <section className={styles.welcome} aria-labelledby="welcome-title">
         <Avatar
           url={profile.avatar?.url}
@@ -24,29 +27,23 @@ export default async function HomePage() {
           {profile.bio ? <p className={styles.bio}>{profile.bio}</p> : null}
         </div>
       </section>
-      <section className={styles.note} aria-labelledby="note-title">
-        <h2 id="note-title" className={styles.noteTitle}>
-          Your corner is ready
-        </h2>
-        <p className={styles.noteDetail}>
-          Paldora is in private testing. Add friends, then gather them in
-          private Boxes. Posts and photos for your Boxes come next.
-        </p>
-        <div className={styles.actions}>
-          <Link className={buttonClassName('primary')} href="/boxes">
-            Your Boxes
-          </Link>
-          <Link className={buttonClassName('secondary')} href="/friends">
-            Friends
-          </Link>
-          <Link
-            className={buttonClassName('secondary')}
-            href="/settings/account"
-          >
-            Edit your profile
-          </Link>
-        </div>
-      </section>
+      <Section
+        id="feed"
+        title="Your feed"
+        description="Posts from your Boxes, newest first. No ranking, ever."
+      >
+        <PostFeed
+          items={feed.items}
+          showBox
+          empty="Nothing here yet. Open a Box and share something, or accept an invitation."
+        />
+        {feed.nextCursor ? (
+          <MoreLink
+            href={`/home?feed=${encodeURIComponent(feed.nextCursor)}`}
+            label="Show older posts"
+          />
+        ) : null}
+      </Section>
     </div>
   );
 }
