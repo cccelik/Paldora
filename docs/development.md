@@ -62,6 +62,16 @@ pnpm --filter @paldora/api provision --demo   # DEMO_USER_* and DEMO_FRIEND_*
 | `pnpm db:generate --name <change>` / `pnpm db:migrate` | Create or apply a migration                                         |
 | `pnpm scan:client-bundle`                              | Scan the built browser bundle for secrets                           |
 
+## Tests never touch your development data
+
+`pnpm test:integration` and `pnpm test:e2e:full` run through
+`scripts/with-test-database.mjs`. Locally it creates a `<database>_test`
+database next to yours (for the default setup, `paldora_test`), applies every
+migration, and points the tests at it. Your development database is not
+modified. In CI (`CI=true`) the job's own clean database is used as is. Redis
+and MinIO are shared, but test keys are unique. To reset the test data, drop
+the database: `docker exec paldora-v2-postgres-1 psql -U paldora -d paldora -c 'drop database paldora_test'`.
+
 ## Focused runs
 
 ```bash

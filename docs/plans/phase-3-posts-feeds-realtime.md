@@ -6,7 +6,7 @@ Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 3 and
 
 ## Start here (small, do first)
 
-1. **Dedicated test database.** Integration tests share the dev database and
+1. **Dedicated test database (done 2026-10-19).** Integration tests share the dev database and
    leave rows behind (task-observer observation 0001). Add a `paldora_test`
    database to Compose init and point `pnpm test:integration` at it, so Phase 3
    tests cannot disturb real data.

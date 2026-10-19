@@ -15,7 +15,7 @@
     "lint": "eslint scripts *.config.ts --max-warnings=0 && turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:integration": "turbo run test:integration --concurrency=1",
+    "test:integration": "node scripts/with-test-database.mjs pnpm turbo run test:integration --concurrency=1",
     "test:e2e": "playwright test",
     "contract:generate": "pnpm --filter @paldora/validation contract:generate",
     "contract:check": "pnpm --filter @paldora/validation contract:check",
@@ -24,7 +24,7 @@
     "db:generate": "pnpm --filter @paldora/database db:generate",
     "db:migrate": "pnpm --filter @paldora/database db:migrate",
     "scan:client-bundle": "node scripts/scan-client-bundle.mjs apps/web/.next/static",
-    "test:e2e:full": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && playwright test -c playwright.fullstack.config.ts"
+    "test:e2e:full": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && node scripts/with-test-database.mjs playwright test -c playwright.fullstack.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

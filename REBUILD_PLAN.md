@@ -227,8 +227,9 @@ D1 block placeholders. Recommended defaults were used for every open question.
 
 **Not done (a second session):** the realtime stream (`/me/events`, Redis bus,
 membership-change publishing, web bridge). Until then pages update on reload or
-navigation. Also still open: a dedicated `paldora_test` database for
-integration tests, and the first GitHub CI run.
+navigation. Delivered after Phase 3: integration and full-stack tests run in a
+dedicated `paldora_test` database (`scripts/with-test-database.mjs`). Still
+open: the first GitHub CI run.
 
 ## Phases 1–9: Web product (rebuild to parity, then beyond)
 
