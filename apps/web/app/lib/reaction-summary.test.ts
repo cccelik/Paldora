@@ -58,6 +58,22 @@ describe('withViewerReaction', () => {
     expect(countOf(next, '👍')).toBe(3);
   });
 
+  it('counts a new camera reaction as real, never as an emoji kind', () => {
+    const mine = { ...summary, viewerReaction: { kind: '👍' } };
+    const next = withViewerReaction(mine, 'real');
+    expect(next.realCount).toBe(1);
+    expect(next.reactionCount).toBe(3);
+    expect(countOf(next, '👍')).toBe(1);
+    expect(next.reactions.some((reaction) => reaction.kind === 'real')).toBe(
+      false,
+    );
+    expect(next.viewerReaction).toEqual({ kind: 'real' });
+
+    const fresh = withViewerReaction(summary, 'real');
+    expect(fresh.realCount).toBe(1);
+    expect(fresh.reactionCount).toBe(4);
+  });
+
   it('returns the same summary when nothing changes', () => {
     expect(withViewerReaction(summary, null)).toBe(summary);
   });

@@ -85,6 +85,16 @@ job: projection is pure SQL with no network call between claim and ack, so it
 needs no queue hop or lease. It stops before the database pool closes on
 shutdown.
 
+## Camera reaction flow (web, Phase 5)
+
+```text
+ReactionCamera dialog ─getUserMedia (secure context)─> live preview (mirrored by CSS)
+capture: canvas ≤ 1280 px → JPEG 0.88 → tracks stopped
+prepareReactionImage (reaction_image, post's Box) → PUT signed URL → complete
+poll media status (lib/media-polling.ts) → ready
+setCameraReactionAction (PUT /posts/{id}/reaction, kind real) → summary replaces the optimistic one
+```
+
 ## Principles
 
 - **PostgreSQL is canonical.** Redis is disposable and never holds the only

@@ -48,6 +48,7 @@ export function PostCard({
       <PostPhotos photos={post.media} authorName={post.author.displayName} />
       <PostInteractions
         postId={post.id}
+        boxId={post.box.id}
         summary={post.interactions}
         presets={presets}
         commentsLink={!permalink}

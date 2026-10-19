@@ -39,3 +39,35 @@
   color: var(--pal-text-muted);
   font-size: 0.875rem;
 }
+
+.everyone {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  color: var(--pal-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+
+/* Matches the reaction bar's pills. */
+.camera {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--pal-size-touch-target);
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-3);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border-radius: var(--pal-radius-pill);
+  background: transparent;
+  color: var(--pal-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.camera:hover {
+  border-color: color-mix(in srgb, var(--pal-text) 50%, transparent);
+}

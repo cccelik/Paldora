@@ -169,6 +169,17 @@ guard's fail-closed helper `assertWithinLimit`. The web app sends
 browsing-topics stay off) so `getUserMedia` works on Paldora's own pages and
 in no embedded frame.
 
+**Camera capture (web).** The browser asks for the camera only after the
+person opens the camera dialog on a post, and only in a secure context. The
+frame is drawn to a canvas and re-encoded as JPEG (longest edge 1280 px,
+quality 0.88), which drops any device metadata before upload; the worker
+strips again. Media tracks stop on capture, on close, on unmount, and when the
+page is hidden; preview object URLs are revoked. There is no file picker, so
+only a live capture can become a camera reaction. A closed dialog never sends
+late: every step checks that the capture is still current, and an unsent
+upload is reaped. The reactions page signs camera thumbnails only through
+`listPostReactions`, after its read check.
+
 Activity events (`comment.created`, `post.reaction.set`,
 `comment.reaction.set`) hold IDs only, are written in the same transaction as
 their cause, and carry the notification's dedupe key, so a retry, a changed

@@ -30,9 +30,11 @@ function adjust(
 }
 
 /**
- * The summary as it will look once the viewer's emoji reaction is `kind`
- * (or removed, for null). Used only as the optimistic value; the server's
- * answer replaces it.
+ * The summary as it will look once the viewer's reaction is `kind` (an
+ * emoji, `real` for a camera image, or null to remove it). One reaction per
+ * person, so a new kind replaces the old one: a camera image counts in
+ * `realCount`, never in `reactions`. Used only as the optimistic value; the
+ * server's answer (with the signed preview strip) replaces it.
  */
 export function withViewerReaction<Summary extends ReactionSummaryLike>(
   summary: Summary,
@@ -46,10 +48,9 @@ export function withViewerReaction<Summary extends ReactionSummaryLike>(
   if (previous === REAL_REACTION_KIND) realChange = -1;
   else if (previous !== null) reactions = adjust(reactions, previous, -1);
   if (previous !== null) reactionCount -= 1;
-  if (kind !== null) {
-    reactions = adjust(reactions, kind, 1);
-    reactionCount += 1;
-  }
+  if (kind === REAL_REACTION_KIND) realChange += 1;
+  else if (kind !== null) reactions = adjust(reactions, kind, 1);
+  if (kind !== null) reactionCount += 1;
   const next = {
     ...summary,
     reactions,

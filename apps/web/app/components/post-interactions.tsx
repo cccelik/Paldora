@@ -1,5 +1,6 @@
 'use client';
 
+import { REAL_REACTION_KIND } from '@paldora/domain';
 import type { PostInteractionSummary } from '@paldora/validation';
 import Link from 'next/link';
 import type { Route } from 'next';
@@ -8,8 +9,10 @@ import {
   postSummaryAction,
   setPostReactionAction,
 } from '../actions/interactions';
+import { setCameraReactionAction } from '../actions/reaction-media';
 import { isInteractionHint, type RealtimeHint } from '../lib/realtime';
 import { ReactionBar } from './reaction-bar';
+import { ReactionCamera } from './reaction-camera';
 import { useOptimisticReaction } from './use-optimistic-reaction';
 import { useRealtimeHint } from './use-realtime-hint';
 import styles from './post-interactions.module.css';
@@ -19,9 +22,19 @@ const REFETCH_DEBOUNCE_MS = 500;
 const commentsText = (count: number) =>
   count === 1 ? '1 comment' : `${count.toLocaleString('en')} comments`;
 
-/** Up to four camera reactions, when the summary already carries them. */
-function RealStrip({ summary }: { summary: PostInteractionSummary }) {
+/**
+ * Up to four camera reactions, with a link to everyone who reacted when
+ * there are more than the strip shows.
+ */
+function RealStrip({
+  postId,
+  summary,
+}: {
+  postId: string;
+  summary: PostInteractionSummary;
+}) {
   if (summary.realPreview.length === 0) return null;
+  const more = summary.realCount - summary.realPreview.length;
   return (
     <div className={styles.real}>
       <ul className={styles.realList} aria-label="Camera reactions">
@@ -36,11 +49,13 @@ function RealStrip({ summary }: { summary: PostInteractionSummary }) {
           </li>
         ))}
       </ul>
-      {summary.realCount > summary.realPreview.length ? (
-        <span className={styles.meta}>
-          +{summary.realCount - summary.realPreview.length} more
-        </span>
-      ) : null}
+      {more > 0 ? <span className={styles.meta}>+{more} more</span> : null}
+      <Link
+        className={styles.everyone}
+        href={`/posts/${postId}/reactions?kind=${REAL_REACTION_KIND}` as Route}
+      >
+        See all camera reactions
+      </Link>
     </div>
   );
 }
@@ -52,19 +67,27 @@ function RealStrip({ summary }: { summary: PostInteractionSummary }) {
  */
 export function PostInteractions({
   postId,
+  boxId,
   summary: initial,
   presets,
   commentsLink = true,
 }: {
   postId: string;
+  /** The post's Box: a camera image is scoped to it. */
+  boxId: string;
   summary: PostInteractionSummary;
   presets: readonly string[];
   /** Feeds link to the permalink; the permalink itself shows the thread. */
   commentsLink?: boolean;
 }) {
-  const { shown, setSummary, react } = useOptimisticReaction(initial, (kind) =>
-    setPostReactionAction({ postId, kind }),
+  const { shown, setSummary, react, run } = useOptimisticReaction(
+    initial,
+    (kind) => setPostReactionAction({ postId, kind }),
   );
+  const sendCamera = (mediaAssetId: string) =>
+    run(REAL_REACTION_KIND, () =>
+      setCameraReactionAction({ postId, mediaAssetId }),
+    );
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -92,8 +115,19 @@ export function PostInteractions({
         presets={presets}
         canInteract={shown.canInteract}
         react={react}
+        extra={
+          <ReactionCamera
+            boxId={boxId}
+            hasCameraReaction={
+              shown.viewerReaction?.kind === REAL_REACTION_KIND
+            }
+            sendReaction={sendCamera}
+            removeReaction={() => void react(null)}
+            triggerClassName={styles.camera}
+          />
+        }
       />
-      <RealStrip summary={shown} />
+      <RealStrip postId={postId} summary={shown} />
       {commentsLink ? (
         <Link className={styles.comments} href={href as Route}>
           {shown.commentCount === 0

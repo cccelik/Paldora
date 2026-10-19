@@ -1,6 +1,6 @@
 # Phase 5 plan: comments, reactions, camera reactions, notifications, toasts
 
-Status: accepted by the owner with all recommended defaults (2026-10-19); in implementation. Drafted by a smaller model, reviewed by the lead. Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 5, [ADR 011](../adr/011-media-pipeline.md), [ADR 012](../adr/012-realtime.md) and [ADR 013](../adr/013-directional-blocks.md). It follows the format of [phase-3-posts-feeds-realtime.md](phase-3-posts-feeds-realtime.md). Behaviour is taken from `legacy/` and nothing is imported from it. Several legacy weaknesses are fixed here: the 681-line `interaction.service.ts`, the projector running inside the API process, whole-page refresh, and friendship-row block checks.
+Status: delivered (2026-10-20); accepted by the owner with all recommended defaults (2026-10-19). Drafted by a smaller model, reviewed by the lead. Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 5, [ADR 011](../adr/011-media-pipeline.md), [ADR 012](../adr/012-realtime.md) and [ADR 013](../adr/013-directional-blocks.md). It follows the format of [phase-3-posts-feeds-realtime.md](phase-3-posts-feeds-realtime.md). Behaviour is taken from `legacy/` and nothing is imported from it. Several legacy weaknesses are fixed here: the 681-line `interaction.service.ts`, the projector running inside the API process, whole-page refresh, and friendship-row block checks.
 
 All claims below about existing code were checked against the repo at commit `fb9a5c5`.
 

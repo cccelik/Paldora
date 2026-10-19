@@ -57,3 +57,25 @@ block directions, plus unblock and re-block sequences.
 
 Still to do by phase: posts (3), comments and reactions (5), Life Updates (6),
 Rooms and Top Friends (7), each adding rows to the matrix test.
+
+## Addendum: Phase 5 rows (2026-10-20)
+
+Comments, reactions, and notifications use the shared `hiddenByBlock` /
+`isBlockedBetween` definition. `hiddenByBlock` now also accepts a column or
+SQL expression as the viewer, so the projector's set-based statement can use
+it with the recipient as the viewer. Rows added to the matrix,
+tested in both directions with unblock and re-block:
+
+| Content              | Behaviour across a block (either direction)                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Comments and replies | Neutral placeholder (id and time only, no author or text); a hidden root hides its thread; cannot be fetched or replied to (`COMMENT_NOT_FOUND`)             |
+| Reacting             | With the post author: `POST_NOT_FOUND`; with the comment's or its root's author: `COMMENT_NOT_FOUND`                                                         |
+| Reactions and counts | Blocked reactors omitted from `listPostReactions`, counts, and the camera preview strip, with no placeholder; counts are viewer-relative                     |
+| Notifications        | Not created when a block exists at projection; hidden at read time when a block appears later, restored on unblock; marking answers `NOTIFICATION_NOT_FOUND` |
+| Races                | A comment racing a block never becomes visible to the blocker                                                                                                |
+
+Tests: `apps/api/src/social/block.integration.test.ts`,
+`apps/api/src/interactions/reactions.integration.test.ts`,
+`apps/api/src/notifications/notifications.integration.test.ts`, and
+`apps/worker/src/activity/projector.integration.test.ts`. Still to do: Life
+Updates (6), Rooms and Top Friends (7).

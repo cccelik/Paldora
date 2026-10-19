@@ -64,3 +64,27 @@ then.
 
 Not done: `Last-Event-ID` replay (a reconnect resyncs instead) and a k6 load
 profile.
+
+## Addendum: Phase 5 (2026-10-20)
+
+- **New event types.** `comment.created|updated|deleted` and
+  `reaction.changed` go to the post's Box channel (`boxId`, `postId`, and
+  `commentId` where there is one); `notification.created` (`notificationId`,
+  `postId`) goes to the recipient's user channel, published by the worker's
+  activity projector after its transaction commits;
+  `notifications.changed` (no IDs) goes to the reader's own channel after a
+  mark, so their other tabs update. All are still IDs plus a timestamp, and
+  every optional ID is declared in `realtimeEventSchema`, because the bus
+  strips unknown keys in transit.
+- **Window-event dispatch.** `RealtimeBridge` no longer has to refresh the
+  page for everything: it re-dispatches each hint as a `paldora:realtime`
+  `CustomEvent` on `window` (`useRealtimeHint` subscribes). A feed card's
+  `PostInteractions` filters on its own `postId` and refetches only its
+  summary through a debounced Server Action; the bell updates its count.
+  Interaction hints refresh the route only on the post's own page, and never
+  on Home or a Box page. Notification hints show a generic toast that names no
+  one (events carry no content).
+- **Publishing** stays best effort after commit. The durable intent is the
+  `activity_events` outbox ([ADR 015](015-interactions-and-activity-projector.md)),
+  so a lost hint costs a stale count until the next fetch, never a lost
+  notification.

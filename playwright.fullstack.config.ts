@@ -42,6 +42,22 @@ export const fullStackEnvironment = {
   NEXT_PUBLIC_MEDIA_ORIGIN: storageUrl,
 };
 
+/**
+ * Chromium's fake camera (a test pattern) with prompts auto-accepted, and
+ * the camera granted. Headless Chromium ignores permission overrides for
+ * media once the fake UI is on, so the blocked-camera spec launches its own
+ * browser with `--use-fake-ui-for-media-stream=deny`.
+ */
+const fakeCamera = {
+  launchOptions: {
+    args: [
+      '--use-fake-device-for-media-stream',
+      '--use-fake-ui-for-media-stream',
+    ],
+  },
+  permissions: ['camera'],
+};
+
 const env = { ...process.env, ...fullStackEnvironment } as Record<
   string,
   string
@@ -56,10 +72,14 @@ export default defineConfig({
   timeout: 60_000,
   use: { baseURL: webUrl, trace: 'retain-on-failure' },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'], ...fakeCamera } },
     {
       name: 'mobile-390',
-      use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } },
+      use: {
+        ...devices['Pixel 7'],
+        viewport: { width: 390, height: 844 },
+        ...fakeCamera,
+      },
     },
   ],
   webServer: [

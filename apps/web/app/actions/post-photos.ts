@@ -1,13 +1,10 @@
 'use server';
 
 import { MEDIA_PURPOSE_POLICIES } from '@paldora/domain';
-import {
-  mediaContentTypeSchema,
-  uuidSchema,
-  type MediaAssetView,
-} from '@paldora/validation';
+import { mediaContentTypeSchema, uuidSchema } from '@paldora/validation';
 import { z } from 'zod';
 import { actionError, type ActionOutcome } from '../lib/action-result';
+import { assetStatusOutcome } from '../lib/media-asset-action';
 import { apiClient } from '../lib/session';
 import type { PreparedUpload } from './avatar';
 
@@ -59,26 +56,16 @@ export async function preparePostPhoto(
   }
 }
 
-async function withAsset(
-  mediaAssetId: unknown,
-  call: (id: string) => Promise<MediaAssetView>,
-): Promise<ActionOutcome<MediaAssetView['status']>> {
-  const id = uuidSchema.safeParse(mediaAssetId);
-  if (!id.success) return actionError(new Error('invalid id'));
-  try {
-    const asset = await call(id.data);
-    return { status: 'success', message: asset.status, data: asset.status };
-  } catch (error) {
-    return actionError(error, copy);
-  }
-}
-
 export async function completePostPhoto(mediaAssetId: unknown) {
   const api = await apiClient();
-  return withAsset(mediaAssetId, (id) => api.completeMediaUpload(id));
+  return assetStatusOutcome(
+    mediaAssetId,
+    (id) => api.completeMediaUpload(id),
+    copy,
+  );
 }
 
 export async function postPhotoStatus(mediaAssetId: unknown) {
   const api = await apiClient();
-  return withAsset(mediaAssetId, (id) => api.mediaAsset(id));
+  return assetStatusOutcome(mediaAssetId, (id) => api.mediaAsset(id), copy);
 }

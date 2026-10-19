@@ -242,6 +242,46 @@ retention), and fault-injection tests ([ADR 011](docs/adr/011-media-pipeline.md)
 on it, but a managed storage lifecycle policy and metrics-based alerting wait for
 it. Alerts today are error logs.
 
+## Phase 5 delivery notes (2026-10-20)
+
+**Delivered (the whole [plan](docs/plans/phase-5-interactions-notifications.md),
+all recommended defaults):** comments with one reply level enforced in the
+database, tombstones, and deep links; one emoji or camera reaction per person
+per post and per comment, with the guarded double tap; five personal reaction
+presets; camera reactions captured in the browser (no file picker), processed
+by the worker, shown as a thumbnail strip with a paged reactions list; the
+`activity_events` outbox and a worker projector with savepoints, dedupe keys,
+backoff, and dead-lettering; ID-only notifications with read-time visibility,
+a live bell, and a notifications page; toasts; and targeted realtime refresh
+through a window event ([ADR 015](docs/adr/015-interactions-and-activity-projector.md),
+addenda in ADR 012 and 013).
+
+**Deviations from the plan, as reported by each slice:**
+
+- Comment realtime hints were published in slice 2 (with comments), not with
+  reactions in slice 3.
+- Reaction presets (`PUT /me/reaction-presets`, defaults) landed in slice 3
+  with the API, ahead of the settings page.
+- Reaction writes take a per-person, per-target advisory lock (`lockReactor`)
+  before the row lock, so replacing a reaction and retiring its camera image
+  cannot interleave; the primary key stays the final word.
+- `hiddenByBlock` accepts a column or SQL expression as the viewer, so the
+  projector's set-based statement shares the one block definition.
+- Notification visibility also requires the actor to have a username (a
+  public face), so half-onboarded accounts never appear as actors.
+- Worker integration test files run serially: two reapers in one database
+  can lock each other's rows.
+- `Permissions-Policy: camera=(self)` shipped with the camera backend
+  (slice 4), not with the camera UI.
+- The blocked-camera e2e uses its own Chromium launched with
+  `--use-fake-ui-for-media-stream=deny`: with the fake UI on, headless
+  Chromium ignores per-context permission overrides for media.
+
+**Notes:** the camera strip links to a paged reactions page
+(`/posts/{id}/reactions`, filterable to camera reactions) rather than
+expanding inline. An optimistic camera reaction bumps the count only; the
+server's answer fills the strip with the signed thumbnail.
+
 ## Phases 1–9: Web product (rebuild to parity, then beyond)
 
 Every phase delivers: migration(s), domain + Zod + OpenAPI entries, policy +
@@ -310,4 +350,5 @@ before it is designed.
 | 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                     |
 | 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green           |
 | 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open         |
-| 5–12  | Not started                                                                |
+| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications   |
+| 6–12  | Not started                                                                |

@@ -1,0 +1,34 @@
+.filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  min-width: var(--pal-size-touch-target);
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border-radius: var(--pal-radius-pill);
+  color: var(--pal-text-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.option[aria-current='page'] {
+  background: var(--pal-surface);
+  color: var(--pal-text);
+}
+
+.emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.image {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--pal-radius-sm);
+  object-fit: cover;
+}

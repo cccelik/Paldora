@@ -12,6 +12,7 @@ import {
   photoFileProblem,
   putToSignedUrl,
 } from '../lib/image-upload';
+import { untilProcessed } from '../lib/media-polling';
 
 export interface Attachment {
   readonly key: number;
@@ -21,30 +22,7 @@ export interface Attachment {
   readonly message?: string;
 }
 
-const POLL_MS = 1_500;
-const MAX_POLLS = 40;
-const wait = (ms: number) =>
-  new Promise<void>((resolve) => {
-    setTimeout(resolve, ms);
-  });
-
-type Phase = Attachment['phase'];
 type Patch = Partial<Omit<Attachment, 'key' | 'previewUrl'>>;
-
-/** Polls until the worker finishes or the wait runs out. */
-async function untilProcessed(mediaAssetId: string): Promise<Phase> {
-  for (let poll = 0; poll < MAX_POLLS; poll += 1) {
-    // One poll at a time by design: each waits for the previous answer.
-    // eslint-disable-next-line no-await-in-loop
-    await wait(POLL_MS);
-    // eslint-disable-next-line no-await-in-loop
-    const result = await postPhotoStatus(mediaAssetId);
-    if (result.status === 'error') return 'failed';
-    if (result.data === 'ready') return 'ready';
-    if (result.data === 'failed' || result.data === 'deleted') return 'failed';
-  }
-  return 'failed';
-}
 
 /**
  * Up to four photos for one post: reserve → PUT → complete → wait for the
@@ -94,7 +72,10 @@ export function usePhotoAttachments(boxId: string) {
         phase: 'processing',
         mediaAssetId: prepared.data.mediaAssetId,
       });
-      const outcome = await untilProcessed(prepared.data.mediaAssetId);
+      const outcome = await untilProcessed(
+        prepared.data.mediaAssetId,
+        postPhotoStatus,
+      );
       return patch(key, {
         phase: outcome,
         ...(outcome === 'failed'
