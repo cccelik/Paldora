@@ -231,7 +231,9 @@ describe('fault injection: no orphaned objects', () => {
     const { outbox } = await queuedPhoto(storage);
     await database
       .update(mediaJobOutbox)
-      .set({ availableAt: new Date(-DAY) }) // earlier than any leftover row
+      // Earlier than any leftover row, including one an interrupted earlier
+      // run of this test left behind: each run picks an earlier instant.
+      .set({ availableAt: new Date(-Date.now()) })
       .where(eq(mediaJobOutbox.id, outbox.id));
 
     const down = {

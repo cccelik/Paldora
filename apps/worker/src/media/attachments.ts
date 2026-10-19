@@ -66,8 +66,16 @@ const attachAvatar: AttachReadyAsset = async (transaction, asset) => {
  */
 const attachPostImage: AttachReadyAsset = async () => undefined;
 
+/**
+ * Camera reactions are claimed by the API when the reaction is set, in the
+ * setter's own transaction, exactly like post photos. Becoming ready has
+ * nothing to do; an unclaimed capture is removed by the reaper.
+ */
+const attachReactionImage: AttachReadyAsset = async () => undefined;
+
 /** What "ready" means for each purpose. Add a row with each new purpose. */
 export const attachments: Readonly<Record<MediaPurpose, AttachReadyAsset>> = {
   avatar: attachAvatar,
   post_image: attachPostImage,
+  reaction_image: attachReactionImage,
 };

@@ -7,6 +7,8 @@ import { boxSchema, createBoxSchema } from './boxes.js';
 import { currentUserSchema, updateProfileSchema } from './identity.js';
 import { friendshipSchema } from './people.js';
 import { createMediaUploadSchema } from './media.js';
+import { commentItemSchema, createCommentSchema } from './comments.js';
+import { postSchema } from './posts.js';
 import { cursorPageQuerySchema } from './primitives.js';
 
 interface Fixture {
@@ -24,6 +26,9 @@ const schemas: Record<string, z.ZodType> = {
   Box: boxSchema,
   Friendship: friendshipSchema,
   CreateBoxRequest: createBoxSchema,
+  Post: postSchema,
+  CommentItem: commentItemSchema,
+  CreateCommentRequest: createCommentSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

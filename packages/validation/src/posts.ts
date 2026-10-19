@@ -1,6 +1,7 @@
 import { POST_CONTENT_MAX_LENGTH, POST_MEDIA_MAX_ITEMS } from '@paldora/domain';
 import { z } from 'zod';
 import { userSummarySchema } from './people.js';
+import { postInteractionSummarySchema } from './reactions.js';
 import {
   cursorPageSchema,
   isoTimestampSchema,
@@ -61,6 +62,8 @@ export const postSchema = z
     editedAt: isoTimestampSchema.nullable(),
     /** The viewer wrote it and its Box is still open for edits. */
     canEdit: z.boolean(),
+    /** Counts, the viewer's reaction, and camera previews (Phase 5). */
+    interactions: postInteractionSummarySchema,
   })
   .meta({ id: 'Post' });
 

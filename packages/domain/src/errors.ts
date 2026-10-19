@@ -51,6 +51,11 @@ export const API_ERROR_CODES = [
   'POST_NOT_FOUND',
   'POST_ACCESS_DENIED',
   'MEDIA_NOT_READY',
+  // Comments, reactions, notifications (Phase 5). Absence, deletion, and
+  // blocks share COMMENT_NOT_FOUND; other people's IDs NOTIFICATION_NOT_FOUND.
+  'COMMENT_NOT_FOUND',
+  'COMMENT_ACCESS_DENIED',
+  'NOTIFICATION_NOT_FOUND',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

@@ -2,6 +2,7 @@ import {
   apiRoutes,
   errorEnvelopeSchema,
   type CreateBoxInput,
+  type CreateCommentInput,
   type CreateMediaUploadInput,
   type CreatePostInput,
   type Preferences,
@@ -309,6 +310,43 @@ export class PaldoraApiClient {
 
   public deletePost(postId: string) {
     return this.call(apiRoutes.deletePost, { params: { postId } });
+  }
+
+  // --- Comments ------------------------------------------------------------
+
+  public createComment(postId: string, body: CreateCommentInput) {
+    return this.call(apiRoutes.createComment, { params: { postId }, body });
+  }
+
+  /** Threads, newest root first, each with its oldest replies. */
+  public comments(postId: string, page: PageOptions = {}) {
+    return this.call(apiRoutes.listComments, {
+      params: { postId },
+      query: page,
+    });
+  }
+
+  public commentReplies(commentId: string, page: PageOptions = {}) {
+    return this.call(apiRoutes.listReplies, {
+      params: { commentId },
+      query: page,
+    });
+  }
+
+  /** A comment and its thread's root, for deep links. */
+  public comment(commentId: string) {
+    return this.call(apiRoutes.getComment, { params: { commentId } });
+  }
+
+  public updateComment(commentId: string, content: string) {
+    return this.call(apiRoutes.updateComment, {
+      params: { commentId },
+      body: { content },
+    });
+  }
+
+  public deleteComment(commentId: string) {
+    return this.call(apiRoutes.deleteComment, { params: { commentId } });
   }
 
   public declineBoxInvitation(invitationId: string) {

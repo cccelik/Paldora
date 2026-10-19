@@ -117,6 +117,33 @@ Known limits: suspended members stay in a Box's counts but vanish from its
 lists until Phase 9 defines suspension. Re-requesting after a decline is
 allowed and bounded only by the rate limit.
 
+## Authorization matrix: Phase 5 (comments, so far)
+
+Every comment check starts from the post's context (membership, Box status,
+block with the post author) in `InteractionPolicyService`; comment targets add
+the same block rule on the comment's author and its thread root's author.
+
+| Action                        | Owner / admin / member                                                   | Archived Box   | Former member, stranger, guessed ID | Block with the post author | Block with the comment (or root) author                         |
+| ----------------------------- | ------------------------------------------------------------------------ | -------------- | ----------------------------------- | -------------------------- | --------------------------------------------------------------- |
+| Read a post's comments        | ✓                                                                        | ✓              | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | `hidden` placeholder (id, time); a hidden root hides its thread |
+| Comment or reply              | ✓ (300/h)                                                                | `BOX_ARCHIVED` | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | Reply target hidden → `COMMENT_NOT_FOUND`                       |
+| Read one comment, replies     | ✓                                                                        | ✓              | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | `COMMENT_NOT_FOUND`                                             |
+| Edit or delete own comment    | ✓ (delete idempotent)                                                    | `BOX_ARCHIVED` | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | n/a                                                             |
+| Edit or delete someone else's | `COMMENT_ACCESS_DENIED` (no moderation until Phase 9)                    | `BOX_ARCHIVED` | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | `COMMENT_NOT_FOUND`                                             |
+| Counts on posts and comments  | Viewer-relative: blocked people's comments and reactions are not counted | ✓              | n/a                                 | n/a                        | not counted                                                     |
+
+Block matrix rows (ADR 013), tested in both directions with unblock and
+re-block in `block.integration.test.ts`: comments become neutral placeholders,
+replies inside your thread become placeholders, reactions and camera previews
+are omitted and not counted, hidden comments cannot be fetched or replied to,
+and a comment racing a block never becomes visible to the blocker.
+
+Races decided by the database: an edit racing a delete (`UPDATE … WHERE
+status = 'active'`), a comment racing an archive (the Box row is held `FOR
+SHARE`), and reply depth (the composite self-reference). Deleting a post
+erases its comments, reactions, notifications, and camera images in the same
+transaction. Tests: `interactions/comments.integration.test.ts`.
+
 ## Assumptions
 
 - TLS terminates at the deployment edge, which enforces HTTPS.

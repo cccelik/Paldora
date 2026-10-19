@@ -1,12 +1,16 @@
 import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import type { Logger } from '@paldora/observability';
-import { realtimeEventSchema, type RealtimeEvent } from '@paldora/validation';
+import {
+  realtimeEventSchema,
+  userChannel,
+  type RealtimeEvent,
+} from '@paldora/validation';
 import type { Redis } from 'ioredis';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE, LOGGER } from '../platform/tokens.js';
 
-export const boxChannel = (boxId: string) => `paldora:box:${boxId}`;
-export const userChannel = (userId: string) => `paldora:user:${userId}`;
+// Channel names live in the contract package so the worker shares them.
+export { boxChannel, userChannel } from '@paldora/validation';
 
 type Handler = (event: RealtimeEvent) => void;
 

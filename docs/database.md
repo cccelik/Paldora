@@ -54,6 +54,51 @@ deletion before the Box cascade removes posts.
 - `posts.content` may be null for photo-only posts; the lifecycle check still
   forbids text on deleted posts. The service requires text or a photo.
 
+## Phase 5 changes (`0005_interactions_notifications`)
+
+Expand-only: new tables, one defaulted column, and widened checks, so the
+Phase 4 API and worker keep running against it.
+
+- `comments`: post (cascade), author (cascade), `parent_comment_id`,
+  `reply_to_user_id` (set null; replies only, for notifications), `content`,
+  `status` (`active|deleted`), edit and delete timestamps. **One reply level
+  is final in the database:** generated `depth` (0 root, 1 reply) and
+  `parent_depth` (null root, 0 reply) columns, a unique `(id, post_id, depth)`,
+  and a composite self-reference `(parent_comment_id, post_id, parent_depth) →
+(id, post_id, depth)`. A reply must name a root of the same post; a reply to
+  a reply or a cross-post parent is a foreign-key violation. The lifecycle
+  check requires 1–2,000 characters while active and no text (plus
+  `deleted_at`) once deleted. Partial indexes serve the roots page, the
+  replies page, active counts, and the author and reply-target cascades.
+- `post_reactions`: primary key `(post_id, user_id)`, so one reaction per
+  person per post. `kind` is 1–64 characters: an emoji (validated by the API)
+  or `real`. A check ties `real` to a `media_asset_id` (RESTRICT; assets are
+  tombstoned, never removed), and a partial unique index makes a camera image
+  single-use.
+- `comment_reactions`: primary key `(comment_id, user_id)`; `kind` 1–64
+  characters and never `real`.
+- `user_preferences.reaction_presets`: `text[]`, default
+  `{👍,❤️,😂,😮,😢}`, check `cardinality = 5`.
+- `activity_events` (the interactions outbox, projected by the worker from
+  Phase 5 slice 5): real FKs for actor, post, and comment instead of a JSON
+  payload, a type check, a check tying `comment_id` to the type, a unique
+  `dedupe_key`, `pending|completed|dead` with attempts and backoff, and partial
+  indexes for claiming and retention.
+- `notifications`: recipient and actor (cascade, never equal), type, post,
+  optional comment (required for every type except `post.reaction`), the
+  source event (set null, so event retention never deletes notifications), a
+  unique `dedupe_key`, `read_at`. Rows hold IDs only, never content.
+- `media_assets`: purpose `reaction_image` (Box-scoped like `post_image`);
+  `media_assets_box_scope_check` and the unattached-media reaper index now
+  cover both Box purposes.
+
+Cascades: Box deletion removes posts and with them comments, reactions,
+events, and notifications; it retires camera images first through the
+existing Box-scoped asset loop. Posts are soft-deleted, so cascades never fire
+on a post delete: `erasePostInteractions` tombstones the comments, deletes
+reactions and notifications, and retires camera images in the delete
+transaction.
+
 Pair-level decisions (friend request, block, Box invitation, accepting one)
 take a transaction advisory lock on the pair first (`lockPair`), so a block can
 never commit between "is anyone blocked?" and "create the relationship".

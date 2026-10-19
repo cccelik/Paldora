@@ -1,27 +1,42 @@
-import type { PostRow } from '@paldora/database';
-import type { BoxStatus } from '@paldora/domain';
 import type {
   FeedItemView,
+  PostInteractionSummary,
   PostMediaView,
   PostView,
   UserSummary,
 } from '@paldora/validation';
+import type { PostContext } from './post-context.js';
 
-export interface PostContext {
-  readonly post: PostRow;
-  readonly boxName: string;
-  readonly boxStatus: BoxStatus;
-  /** A block exists between the viewer and the author (either direction). */
-  readonly hidden: boolean;
-}
+export type { PostContext } from './post-context.js';
 
 export type MediaByPost = ReadonlyMap<string, readonly PostMediaView[]>;
+export type InteractionsByPost = ReadonlyMap<string, PostInteractionSummary>;
+
+/** Everything a page of posts shares, gathered once per page. */
+export interface PostPageData {
+  readonly viewerId: string;
+  readonly authors: ReadonlyMap<string, UserSummary>;
+  readonly media: MediaByPost;
+  readonly interactions: InteractionsByPost;
+}
+
+/** Summary for a post whose interactions were not loaded (never shown). */
+const noInteractions = (context: PostContext): PostInteractionSummary => ({
+  commentCount: 0,
+  reactions: [],
+  reactionCount: 0,
+  realCount: 0,
+  realPreview: [],
+  viewerReaction: null,
+  canInteract: context.boxStatus === 'active',
+});
 
 export function toPostView(
   context: PostContext,
   author: UserSummary,
   viewerId: string,
   media: readonly PostMediaView[],
+  interactions: PostInteractionSummary = noInteractions(context),
 ): PostView {
   const { post } = context;
   return {
@@ -33,6 +48,7 @@ export function toPostView(
     createdAt: post.createdAt.toISOString(),
     editedAt: post.editedAt?.toISOString() ?? null,
     canEdit: post.authorUserId === viewerId && context.boxStatus === 'active',
+    interactions,
   };
 }
 
@@ -42,9 +58,7 @@ export function toPostView(
  */
 export function toFeedItem(
   context: PostContext,
-  authors: ReadonlyMap<string, UserSummary>,
-  mediaByPost: MediaByPost,
-  viewerId: string,
+  page: PostPageData,
 ): FeedItemView | null {
   if (context.hidden) {
     return {
@@ -56,15 +70,16 @@ export function toFeedItem(
       },
     };
   }
-  const author = authors.get(context.post.authorUserId);
+  const author = page.authors.get(context.post.authorUserId);
   return author
     ? {
         kind: 'post',
         post: toPostView(
           context,
           author,
-          viewerId,
-          mediaByPost.get(context.post.id) ?? [],
+          page.viewerId,
+          page.media.get(context.post.id) ?? [],
+          page.interactions.get(context.post.id),
         ),
       }
     : null;

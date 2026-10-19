@@ -6,11 +6,11 @@ import {
   mediaAssets,
   postMedia,
   posts,
-  type DatabaseExecutor,
 } from '@paldora/database';
 import type { FeedItemView, PostMediaView } from '@paldora/validation';
 import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
+import { InteractionSummaryService } from '../interactions/interaction-summary.service.js';
 import { MediaUrlService } from '../media/media-urls.service.js';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
@@ -22,44 +22,13 @@ import {
   type Page,
 } from '../platform/pagination.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { isReadable, loadPostContext } from './post-context.js';
 import { postNotFound } from './post-errors.js';
-import {
-  toFeedItem,
-  type MediaByPost,
-  type PostContext,
-} from './post-views.js';
+import { toFeedItem, type MediaByPost } from './post-views.js';
 
 export interface PageQuery {
   readonly cursor?: string | undefined;
   readonly limit: number;
-}
-
-/** A post with the viewer's membership; undefined when they have none. */
-export async function loadPostContext(
-  executor: DatabaseExecutor,
-  viewerId: string,
-  postId: string,
-): Promise<PostContext | undefined> {
-  const [row] = await executor
-    .select({
-      post: posts,
-      boxName: boxes.name,
-      boxStatus: boxes.status,
-      hidden: hiddenByBlock(viewerId, posts.authorUserId).mapWith(Boolean),
-    })
-    .from(posts)
-    .innerJoin(boxes, eq(boxes.id, posts.boxId))
-    .innerJoin(
-      boxMemberships,
-      and(
-        eq(boxMemberships.boxId, posts.boxId),
-        eq(boxMemberships.userId, viewerId),
-        eq(boxMemberships.status, 'active'),
-      ),
-    )
-    .where(eq(posts.id, postId))
-    .limit(1);
-  return row;
 }
 
 /**
@@ -74,6 +43,8 @@ export class PostQueryService {
     @Inject(ProfileSummaryService)
     private readonly summaries: ProfileSummaryService,
     @Inject(MediaUrlService) private readonly mediaUrls: MediaUrlService,
+    @Inject(InteractionSummaryService)
+    private readonly interactions: InteractionSummaryService,
   ) {}
 
   public async boxFeed(
@@ -129,15 +100,19 @@ export class PostQueryService {
       )
       .orderBy(desc(posts.createdAt), desc(posts.id))
       .limit(query.limit + 1);
-    // Authors are looked up only for rows the viewer may see.
-    const authors = await this.summaries.summaries(
-      rows.filter((row) => !row.hidden).map((row) => row.post.authorUserId),
-    );
-    const media = await this.mediaFor(
-      rows.filter((row) => !row.hidden).map((row) => row.post.id),
-    );
+    // Authors, photos, and interactions only for rows the viewer may see.
+    const visible = rows.filter((row) => !row.hidden);
+    const [authors, media, interactions] = await Promise.all([
+      this.summaries.summaries(visible.map((row) => row.post.authorUserId)),
+      this.mediaFor(visible.map((row) => row.post.id)),
+      this.interactions.forPosts(
+        viewerId,
+        visible.map((row) => ({ id: row.post.id, boxStatus: row.boxStatus })),
+      ),
+    ]);
+    const page = { viewerId, authors, media, interactions };
     const items = rows.flatMap((row) => {
-      const item = toFeedItem(row, authors, media, viewerId);
+      const item = toFeedItem(row, page);
       return item ? [{ row, item }] : [];
     });
     return pageOf(
@@ -154,15 +129,22 @@ export class PostQueryService {
       viewerId,
       postId,
     );
-    if (!context || context.hidden || context.post.status !== 'active') {
-      throw postNotFound();
-    }
-    const author = (
-      await this.summaries.summaries([context.post.authorUserId])
-    ).get(context.post.authorUserId);
+    if (!isReadable(context)) throw postNotFound();
+    const [authors, media, interactions] = await Promise.all([
+      this.summaries.summaries([context.post.authorUserId]),
+      this.mediaFor([postId]),
+      this.interactions.forPosts(viewerId, [
+        { id: postId, boxStatus: context.boxStatus },
+      ]),
+    ]);
+    const author = authors.get(context.post.authorUserId);
     if (!author) throw postNotFound();
-    const media = (await this.mediaFor([postId])).get(postId) ?? [];
-    return { context, author, media };
+    return {
+      context,
+      author,
+      media: media.get(postId) ?? [],
+      interactions: interactions.get(postId),
+    };
   }
 
   /**

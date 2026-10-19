@@ -48,7 +48,11 @@ export interface MediaPurposePolicy {
 
 const megabytes = (count: number) => count * 1024 * 1024;
 
-export const MEDIA_PURPOSES = ['avatar', 'post_image'] as const;
+export const MEDIA_PURPOSES = [
+  'avatar',
+  'post_image',
+  'reaction_image',
+] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
 export const MEDIA_PURPOSE_POLICIES: Readonly<
@@ -71,6 +75,19 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     master: { size: 2560, fit: 'inside', quality: 86 },
     display: { size: 1600, fit: 'inside', quality: 82 },
     thumbnail: { size: 640, fit: 'inside', quality: 78 },
+  },
+  /**
+   * Camera reactions (Phase 5): one capture per person per post, visible to
+   * exactly the people who can see the post. Smaller than post photos.
+   */
+  reaction_image: {
+    scope: 'box',
+    contentTypes: MEDIA_CONTENT_TYPES,
+    maxBytes: megabytes(5),
+    maxInputPixels: 25_000_000,
+    master: { size: 1280, fit: 'inside', quality: 86 },
+    display: { size: 1024, fit: 'inside', quality: 82 },
+    thumbnail: { size: 320, fit: 'inside', quality: 78 },
   },
 };
 

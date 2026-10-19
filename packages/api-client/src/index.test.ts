@@ -231,3 +231,33 @@ describe('Box and friend methods', () => {
     );
   });
 });
+
+describe('comment methods', () => {
+  const client = (fetch: typeof globalThis.fetch) =>
+    new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+
+  it('pages threads and replies at their own paths', async () => {
+    const fetch = vi.fn(async () => json(200, { items: [], nextCursor: null }));
+    await client(fetch).comments('p1', { limit: 5 });
+    await client(fetch).commentReplies('c1', { cursor: 'x' });
+    expect(
+      fetch.mock.calls.map((call) => (call as unknown as [string])[0]),
+    ).toEqual([
+      'https://api.test/api/v1/posts/p1/comments?limit=5',
+      'https://api.test/api/v1/comments/c1/replies?cursor=x',
+    ]);
+  });
+
+  it('sends edits as a body and deletes without one', async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 204 }));
+    await expect(client(fetch).deleteComment('c1')).resolves.toBeUndefined();
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.test/api/v1/comments/c1');
+    expect(init).toMatchObject({ method: 'DELETE' });
+    expect(init.body).toBeUndefined();
+  });
+});

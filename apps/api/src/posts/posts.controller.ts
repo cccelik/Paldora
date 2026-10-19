@@ -71,11 +71,11 @@ export class PostsController {
     @CurrentPrincipal() me: Principal,
     @Param('postId', uuidParam) postId: string,
   ) {
-    const { context, author, media } = await this.queries.get(
+    const { context, author, media, interactions } = await this.queries.get(
       me.userId,
       postId,
     );
-    return toPostView(context, author, me.userId, media);
+    return toPostView(context, author, me.userId, media, interactions);
   }
 
   @Patch('posts/:postId')

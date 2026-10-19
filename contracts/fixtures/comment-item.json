@@ -1,0 +1,122 @@
+{
+  "schema": "CommentItem",
+  "valid": [
+    {
+      "kind": "comment",
+      "comment": {
+        "id": "3f2e1d0c-9b8a-4765-8432-10fedcba9876",
+        "postId": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "parentCommentId": null,
+        "author": {
+          "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+          "username": "grace",
+          "displayName": "Grace Hopper",
+          "avatarUrl": null
+        },
+        "content": "nice",
+        "createdAt": "2026-10-19T12:00:00.000Z",
+        "editedAt": null,
+        "replyCount": 2,
+        "interactions": {
+          "reactions": [
+            {
+              "kind": "🔥",
+              "count": 1
+            }
+          ],
+          "reactionCount": 1,
+          "viewerReaction": {
+            "kind": "🔥"
+          }
+        },
+        "canEdit": false
+      }
+    },
+    {
+      "kind": "deleted",
+      "deleted": {
+        "id": "3f2e1d0c-9b8a-4765-8432-10fedcba9876",
+        "postId": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "parentCommentId": null,
+        "createdAt": "2026-10-19T12:00:00.000Z"
+      }
+    },
+    {
+      "kind": "hidden",
+      "hidden": {
+        "id": "3f2e1d0c-9b8a-4765-8432-10fedcba9876",
+        "createdAt": "2026-10-19T12:00:00.000Z"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "kind": "removed",
+      "removed": {
+        "id": "3f2e1d0c-9b8a-4765-8432-10fedcba9876"
+      }
+    },
+    {
+      "kind": "hidden",
+      "hidden": {
+        "id": "3f2e1d0c-9b8a-4765-8432-10fedcba9876"
+      }
+    },
+    {
+      "kind": "comment",
+      "comment": {
+        "id": "3f2e1d0c-9b8a-4765-8432-10fedcba9876",
+        "postId": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "parentCommentId": null,
+        "author": {
+          "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+          "username": "grace",
+          "displayName": "Grace Hopper",
+          "avatarUrl": null
+        },
+        "content": "nice",
+        "createdAt": "2026-10-19T12:00:00.000Z",
+        "editedAt": null,
+        "replyCount": 2,
+        "interactions": {
+          "reactions": [
+            {
+              "kind": "🔥",
+              "count": 1
+            }
+          ],
+          "reactionCount": -2,
+          "viewerReaction": {
+            "kind": "🔥"
+          }
+        },
+        "canEdit": false
+      }
+    },
+    {
+      "kind": "comment",
+      "comment": {
+        "id": "3f2e1d0c-9b8a-4765-8432-10fedcba9876",
+        "postId": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "parentCommentId": null,
+        "content": "nice",
+        "createdAt": "2026-10-19T12:00:00.000Z",
+        "editedAt": null,
+        "replyCount": 2,
+        "interactions": {
+          "reactions": [
+            {
+              "kind": "🔥",
+              "count": 1
+            }
+          ],
+          "reactionCount": 1,
+          "viewerReaction": {
+            "kind": "🔥"
+          }
+        },
+        "canEdit": false
+      }
+    }
+  ]
+}

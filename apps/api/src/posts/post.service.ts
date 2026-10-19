@@ -11,6 +11,7 @@ import type { NewPost, PostView } from '@paldora/validation';
 import { and, eq, inArray } from 'drizzle-orm';
 import { boxArchived } from '../boxes/box-errors.js';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
+import { erasePostInteractions } from '../interactions/interaction-erasure.js';
 import { mediaNotFound, mediaNotReady } from '../media/media-errors.js';
 import { retireAssets } from '../media/media-retirement.js';
 import { ApiError } from '../platform/api-error.js';
@@ -18,8 +19,9 @@ import { isUniqueViolation } from '../platform/database-errors.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
+import { loadPostContext } from './post-context.js';
 import { postAccessDenied, postNotFound } from './post-errors.js';
-import { loadPostContext, PostQueryService } from './post-query.service.js';
+import { PostQueryService } from './post-query.service.js';
 import { toPostView } from './post-views.js';
 
 const needsSomething = () =>
@@ -96,11 +98,7 @@ export class PostService {
         throw error;
       });
     await this.announce('post.created', boxId, created.id);
-    const { context, author, media } = await this.queries.get(
-      authorId,
-      created.id,
-    );
-    return toPostView(context, author, authorId, media);
+    return this.view(authorId, created.id);
   }
 
   /** Every unusable photo looks the same: not yours, not here, or already used. */
@@ -172,13 +170,24 @@ export class PostService {
     // Deleted between the read and the write: the post is gone.
     if (changed.length === 0) throw postNotFound();
     await this.announce('post.updated', context.post.boxId, postId);
+    return this.view(viewerId, postId);
+  }
+
+  private async view(viewerId: string, postId: string): Promise<PostView> {
     const fresh = await this.queries.get(viewerId, postId);
-    return toPostView(fresh.context, fresh.author, viewerId, fresh.media);
+    return toPostView(
+      fresh.context,
+      fresh.author,
+      viewerId,
+      fresh.media,
+      fresh.interactions,
+    );
   }
 
   /**
-   * Idempotent for the author. The text is erased and the photos are retired
-   * in one transaction, so no photo outlives its post.
+   * Idempotent for the author. The text is erased, the photos are retired,
+   * and every comment, reaction, camera image, and notification on the post
+   * is erased in one transaction, so nothing outlives its post.
    */
   public async remove(viewerId: string, postId: string): Promise<void> {
     const context = await loadPostContext(this.database, viewerId, postId);
@@ -215,6 +224,7 @@ export class PostService {
         transaction,
         photos.map((row) => row.asset),
       );
+      await erasePostInteractions(transaction, postId);
     });
     await this.announce('post.deleted', context.post.boxId, postId);
   }

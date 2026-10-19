@@ -36,6 +36,13 @@
       "when": 1792408933010,
       "tag": "0004_post_media",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792410715108,
+      "tag": "0005_interactions_notifications",
+      "breakpoints": true
     }
   ]
 }

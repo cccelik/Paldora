@@ -117,6 +117,29 @@ contentLength }`, then `PUT` the bytes and `POST …/complete` as for avatars.
 Posts in responses carry `media: [{ id, width, height, url, thumbnailUrl }]`
 with signed URLs that expire in 15 minutes; refetch rather than caching them.
 
+### Comments
+
+| Operation       | Route                           | Rate limit | Notes                                                                                                                      |
+| --------------- | ------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `createComment` | `POST /posts/{postId}/comments` | 300/h      | `{ content (1–2,000), parentCommentId? }`; a reply to a reply joins the root's thread; `BOX_ARCHIVED`, `COMMENT_NOT_FOUND` |
+| `listComments`  | `GET /posts/{postId}/comments`  | none       | Threads, newest root first: `{ root, replies (oldest 3), replyCount }`; items are `comment`, `deleted`, or `hidden`        |
+| `listReplies`   | `GET /comments/{id}/replies`    | none       | One root's replies, oldest first; `COMMENT_NOT_FOUND` for a reply ID                                                       |
+| `getComment`    | `GET /comments/{id}`            | none       | `{ comment, rootId }` for deep links; missing, deleted, outside your Boxes, and blocked all answer `COMMENT_NOT_FOUND`     |
+| `updateComment` | `PATCH /comments/{id}`          | 300/h      | Author only (`COMMENT_ACCESS_DENIED`); `BOX_ARCHIVED`                                                                      |
+| `deleteComment` | `DELETE /comments/{id}`         | 300/h      | Author only; 204; idempotent; text erased and its reactions removed; replies stay                                          |
+
+A `deleted` item (a root kept because replies remain) carries its ID, post,
+and time, never text or author. A `hidden` item (a block either way) carries
+only an ID and a time; a hidden root is one placeholder with no replies.
+`replyCount` counts exactly the replies `listReplies` returns.
+
+Every post now carries `interactions`: `commentCount`, `reactions` (emoji kinds
+by count, top 8), `reactionCount` (emoji and camera), `realCount`,
+`realPreview` (up to 4 latest camera thumbnails), `viewerReaction`, and
+`canInteract` (false in an archived Box). Comments carry the same reaction
+fields. Counts leave out anything by people in a block relationship with you.
+Setting reactions arrives with the next Phase 5 slice.
+
 ### Realtime
 
 `GET /me/events` is a `text/event-stream` (operation `openEventStream`). Send
@@ -124,8 +147,9 @@ the normal Bearer token, ignore `ping`, treat `resync` as "anything may have
 changed", and refetch through normal routes on every other event. The server
 ends the stream at token expiry; reconnect with backoff and a fresh token. At
 most 5 open streams per person (`RATE_LIMITED` with `Retry-After` beyond that).
-Events are `{ type, boxId?, postId?, at }`; see `RealtimeEvent` in the
-contract.
+Events are `{ type, boxId?, postId?, commentId?, notificationId?, at }`;
+see `RealtimeEvent` in the contract. Comment writes send `comment.created`,
+`comment.updated`, and `comment.deleted` to the post's Box with `commentId`.
 
 Lists return `{ items, nextCursor }`; pass `limit` (1–50, default 20) and the
 opaque `cursor`. People appear as `UserSummary`: `id`, `username`,

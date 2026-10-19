@@ -47,13 +47,14 @@ afterAll(() => connection.close());
 
 /**
  * The database may hold other suites' (or a developer's) rows, so tests never
- * touch rows they did not create. Dispatcher tests backdate their own rows to
- * the epoch so the oldest-first claim order reaches them first.
+ * touch rows they did not create. Dispatcher tests backdate their own rows so
+ * the oldest-first claim order reaches them first: to an instant earlier than
+ * any earlier run used, so rows an interrupted run left behind never win.
  */
 async function backdate(ids: readonly string[]): Promise<void> {
   await database
     .update(mediaJobOutbox)
-    .set({ availableAt: new Date(0) })
+    .set({ availableAt: new Date(-Date.now()) })
     .where(inArray(mediaJobOutbox.id, [...ids]));
 }
 
