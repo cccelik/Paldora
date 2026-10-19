@@ -27,6 +27,28 @@ export class MediaUrlService {
     @Inject(LOGGER) private readonly logger: Logger,
   ) {}
 
+  /**
+   * Signs the thumbnail alone, for lists of people. Same rule as `sign`: the
+   * caller has already decided this viewer may see this person.
+   */
+  public async signThumbnail(
+    asset: Pick<MediaAssetRow, 'id' | 'status' | 'thumbnailObjectKey'> | null,
+  ): Promise<string | null> {
+    if (asset?.status !== 'ready' || !asset.thumbnailObjectKey) return null;
+    try {
+      return await this.storage.createSignedRead(
+        asset.thumbnailObjectKey,
+        SIGNED_READ_TTL_SECONDS,
+      );
+    } catch (error) {
+      this.logger.warn(
+        { err: error, mediaAssetId: asset.id },
+        'signing failed',
+      );
+      return null;
+    }
+  }
+
   /** Returns null for assets that are not ready or cannot be signed. */
   public async sign(asset: ReadyKeys | null): Promise<SignedImage | null> {
     if (

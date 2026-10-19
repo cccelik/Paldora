@@ -1,0 +1,4 @@
+.empty {
+  padding: var(--pal-space-4) 0;
+  color: var(--pal-text-muted);
+}

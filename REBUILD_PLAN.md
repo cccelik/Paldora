@@ -193,6 +193,31 @@ the session report; CI has still not run on GitHub.
 hostname no longer resolves, so a new Supabase project (asymmetric signing
 keys, Site URL and redirect `…/auth/callback`) is needed.
 
+## Phase 2 delivery notes (2026-10-19)
+
+**Delivered:** friendships, directional blocks (D1 applied), Boxes with
+owner/admin/member roles, invitations by username, atomic ownership transfer,
+archive/restore, and owner-only permanent delete (exact name plus a tick).
+Friends, Boxes, and Box pages are responsive and tested at 390px.
+
+**Deviations and additions:**
+
+- **Pagination everywhere.** Every list uses opaque keyset cursors (page size
+  ≤ 50), including friends, requests, blocks, Boxes, members, and invitations.
+- **Added beyond the reference build:** withdrawing a friend request and
+  withdrawing a Box invitation.
+- **`boxes` has no owner column** and no slug. Ownership is the single active
+  owner membership (a unique index), which removes a second source of truth.
+- **Delete confirmation moved to a query value** (`?confirmName=`) because
+  DELETE bodies are unreliable across HTTP clients and OpenAPI generators.
+- **Box deletion cleanup** covers memberships and invitations only; media and
+  content cleanup lands with the phases that add them (see
+  [docs/database.md](docs/database.md)).
+- **No notifications yet.** Invitations and requests appear on their pages;
+  durable notifications arrive in Phase 5.
+
+**Not yet verified:** the CI run on GitHub, and a hosted Supabase sign-in.
+
 ## Phases 1–9: Web product (rebuild to parity, then beyond)
 
 Every phase delivers: migration(s), domain + Zod + OpenAPI entries, policy +
@@ -258,4 +283,5 @@ before it is designed.
 | ----- | -------------------------------------------------------------------------- |
 | 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run |
 | 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending    |
-| 2–12  | Not started                                                                |
+| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                     |
+| 3–12  | Not started                                                                |

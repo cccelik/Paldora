@@ -19,3 +19,18 @@
   color: var(--pal-text);
   text-underline-offset: 0.2em;
 }
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pal-space-3);
+  min-height: var(--pal-size-touch-target);
+}
+
+.check input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  accent-color: var(--pal-accent);
+}

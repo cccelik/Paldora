@@ -9,11 +9,14 @@ export function SubmitButton({
   pendingLabel,
   variant = 'primary',
   block = false,
+  disabled = false,
 }: {
   children: string;
   pendingLabel: string;
   variant?: ButtonVariant;
   block?: boolean;
+  /** Locked until the form is ready, independent of its pending state. */
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -21,8 +24,8 @@ export function SubmitButton({
       type="submit"
       variant={variant}
       block={block}
-      disabled={pending}
-      aria-disabled={pending}
+      disabled={pending || disabled}
+      aria-disabled={pending || disabled}
     >
       {pending ? pendingLabel : children}
     </Button>

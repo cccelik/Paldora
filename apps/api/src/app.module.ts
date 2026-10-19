@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { BoxesModule } from './boxes/boxes.module.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { MediaModule } from './media/media.module.js';
 import { PlatformModule } from './platform/platform.module.js';
+import { SocialModule } from './social/social.module.js';
 
 /**
  * Composition root. Each product phase adds one feature module here
@@ -10,6 +12,12 @@ import { PlatformModule } from './platform/platform.module.js';
  * internals, only exported services.
  */
 @Module({
-  imports: [PlatformModule, IdentityModule, MediaModule],
+  imports: [
+    PlatformModule,
+    IdentityModule,
+    MediaModule,
+    SocialModule,
+    BoxesModule,
+  ],
 })
 export class AppModule {}

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { livenessSchema, readinessSchema } from './health.js';
 import {
   currentUserSchema,
@@ -12,7 +13,33 @@ import {
   mediaAssetSchema,
   mediaUploadSchema,
 } from './media.js';
+import {
+  boxInvitationPageSchema,
+  boxInvitationSchema,
+  boxMemberPageSchema,
+  boxMemberRoleSchema,
+  boxPageSchema,
+  boxSchema,
+  createBoxInvitationSchema,
+  createBoxSchema,
+  deleteBoxQuerySchema,
+  transferBoxOwnershipSchema,
+  updateBoxMemberSchema,
+  updateBoxSchema,
+} from './boxes.js';
+import {
+  blockedUserPageSchema,
+  blockedUserSchema,
+  createBlockSchema,
+  createFriendRequestSchema,
+  friendshipPageSchema,
+  friendshipSchema,
+} from './people.js';
+import { cursorPageQuerySchema } from './primitives.js';
 import { defineRoute, type RouteDefinition } from './route.js';
+
+/** Success responses that carry no body (HTTP 204). */
+const noContent = z.void();
 
 export const getLiveness = defineRoute({
   operationId: 'getLiveness',
@@ -153,6 +180,363 @@ export const getMediaAsset = defineRoute({
   errors: ['MEDIA_NOT_FOUND'],
 });
 
+const friends = 'Friends';
+const blocks = 'Blocks';
+const boxesTag = 'Boxes';
+
+export const listFriends = defineRoute({
+  operationId: 'listFriends',
+  method: 'GET',
+  path: '/friends',
+  summary: 'Your accepted friends, newest first.',
+  tag: friends,
+  access: 'authenticated',
+  successStatus: 200,
+  response: friendshipPageSchema,
+  query: cursorPageQuerySchema,
+  errors: [],
+});
+
+export const listFriendRequests = defineRoute({
+  operationId: 'listFriendRequests',
+  method: 'GET',
+  path: '/friend-requests',
+  summary: 'Pending requests, incoming and outgoing (see `direction`).',
+  tag: friends,
+  access: 'authenticated',
+  successStatus: 200,
+  response: friendshipPageSchema,
+  query: cursorPageQuerySchema,
+  errors: [],
+});
+
+export const createFriendRequest = defineRoute({
+  operationId: 'createFriendRequest',
+  method: 'POST',
+  path: '/friend-requests',
+  summary:
+    'Ask someone to be friends. If they blocked you the answer is USER_NOT_FOUND, never a hint that a block exists.',
+  tag: friends,
+  access: 'authenticated',
+  successStatus: 201,
+  response: friendshipSchema,
+  body: createFriendRequestSchema,
+  errors: [
+    'USER_NOT_FOUND',
+    'USER_BLOCKED',
+    'CANNOT_FRIEND_SELF',
+    'ALREADY_FRIENDS',
+    'FRIEND_REQUEST_ALREADY_PENDING',
+  ],
+});
+
+export const acceptFriendRequest = defineRoute({
+  operationId: 'acceptFriendRequest',
+  method: 'POST',
+  path: '/friend-requests/{friendshipId}/accept',
+  summary: 'Accept a request someone sent you.',
+  tag: friends,
+  access: 'authenticated',
+  successStatus: 200,
+  response: friendshipSchema,
+  errors: ['FRIEND_REQUEST_NOT_FOUND'],
+});
+
+export const declineFriendRequest = defineRoute({
+  operationId: 'declineFriendRequest',
+  method: 'POST',
+  path: '/friend-requests/{friendshipId}/decline',
+  summary: 'Decline a request someone sent you.',
+  tag: friends,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: ['FRIEND_REQUEST_NOT_FOUND'],
+});
+
+export const cancelFriendRequest = defineRoute({
+  operationId: 'cancelFriendRequest',
+  method: 'DELETE',
+  path: '/friend-requests/{friendshipId}',
+  summary: 'Withdraw a request you sent.',
+  tag: friends,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: ['FRIEND_REQUEST_NOT_FOUND'],
+});
+
+export const removeFriend = defineRoute({
+  operationId: 'removeFriend',
+  method: 'DELETE',
+  path: '/friends/{userId}',
+  summary: 'End a friendship. Boxes you share are unaffected.',
+  tag: friends,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: ['FRIENDSHIP_NOT_FOUND'],
+});
+
+export const listBlocks = defineRoute({
+  operationId: 'listBlocks',
+  method: 'GET',
+  path: '/blocks',
+  summary: 'People you have blocked. Who blocked you is never exposed.',
+  tag: blocks,
+  access: 'authenticated',
+  successStatus: 200,
+  response: blockedUserPageSchema,
+  query: cursorPageQuerySchema,
+  errors: [],
+});
+
+export const createBlock = defineRoute({
+  operationId: 'createBlock',
+  method: 'POST',
+  path: '/blocks',
+  summary:
+    'Block someone (idempotent). Ends any friendship, withdraws pending requests and Box invitations between you, and hides each of you from the other. Shared Boxes stay intact.',
+  tag: blocks,
+  access: 'authenticated',
+  successStatus: 201,
+  response: blockedUserSchema,
+  body: createBlockSchema,
+  errors: ['USER_NOT_FOUND', 'CANNOT_BLOCK_SELF'],
+});
+
+export const removeBlock = defineRoute({
+  operationId: 'removeBlock',
+  method: 'DELETE',
+  path: '/blocks/{userId}',
+  summary:
+    'Remove your block (idempotent). A block they placed on you stays in force.',
+  tag: blocks,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: [],
+});
+
+export const listBoxes = defineRoute({
+  operationId: 'listBoxes',
+  method: 'GET',
+  path: '/boxes',
+  summary: 'Boxes you belong to, newest membership first.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxPageSchema,
+  query: cursorPageQuerySchema,
+  errors: [],
+});
+
+export const createBox = defineRoute({
+  operationId: 'createBox',
+  method: 'POST',
+  path: '/boxes',
+  summary: 'Create a private Box. You become its owner.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 201,
+  response: boxSchema,
+  body: createBoxSchema,
+  errors: [],
+});
+
+export const getBox = defineRoute({
+  operationId: 'getBox',
+  method: 'GET',
+  path: '/boxes/{boxId}',
+  summary:
+    'One of your Boxes. Missing, someone else’s, and former memberships all answer BOX_NOT_FOUND.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxSchema,
+  errors: ['BOX_NOT_FOUND'],
+});
+
+export const updateBox = defineRoute({
+  operationId: 'updateBox',
+  method: 'PATCH',
+  path: '/boxes/{boxId}',
+  summary: 'Rename, archive, or restore a Box (owner only).',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxSchema,
+  body: updateBoxSchema,
+  errors: ['BOX_NOT_FOUND', 'BOX_ACCESS_DENIED'],
+});
+
+export const deleteBox = defineRoute({
+  operationId: 'deleteBox',
+  method: 'DELETE',
+  path: '/boxes/{boxId}',
+  summary:
+    'Permanently delete a Box (owner only). `confirmName` must equal the Box name exactly.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  query: deleteBoxQuerySchema,
+  errors: [
+    'BOX_NOT_FOUND',
+    'BOX_ACCESS_DENIED',
+    'BOX_DELETE_CONFIRMATION_MISMATCH',
+  ],
+});
+
+export const listBoxMembers = defineRoute({
+  operationId: 'listBoxMembers',
+  method: 'GET',
+  path: '/boxes/{boxId}/members',
+  summary: 'Active members, oldest first.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxMemberPageSchema,
+  query: cursorPageQuerySchema,
+  errors: ['BOX_NOT_FOUND'],
+});
+
+export const updateBoxMember = defineRoute({
+  operationId: 'updateBoxMember',
+  method: 'PATCH',
+  path: '/boxes/{boxId}/members/{userId}',
+  summary:
+    'Change a member’s role. Owners promote and demote; admins only promote members; the owner role moves only by transfer.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxMemberRoleSchema,
+  body: updateBoxMemberSchema,
+  errors: ['BOX_NOT_FOUND', 'BOX_ACCESS_DENIED', 'BOX_MEMBER_NOT_FOUND'],
+});
+
+export const leaveBox = defineRoute({
+  operationId: 'leaveBox',
+  method: 'DELETE',
+  path: '/boxes/{boxId}/members/me',
+  summary: 'Leave a Box. The owner must transfer ownership first.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: ['BOX_NOT_FOUND', 'BOX_OWNER_CANNOT_LEAVE'],
+});
+
+export const removeBoxMember = defineRoute({
+  operationId: 'removeBoxMember',
+  method: 'DELETE',
+  path: '/boxes/{boxId}/members/{userId}',
+  summary: 'Remove a member (owners and admins; never the owner).',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: ['BOX_NOT_FOUND', 'BOX_ACCESS_DENIED', 'BOX_MEMBER_NOT_FOUND'],
+});
+
+export const transferBoxOwnership = defineRoute({
+  operationId: 'transferBoxOwnership',
+  method: 'PUT',
+  path: '/boxes/{boxId}/owner',
+  summary: 'Make another active member the owner; you become an admin. Atomic.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxSchema,
+  body: transferBoxOwnershipSchema,
+  errors: ['BOX_NOT_FOUND', 'BOX_ACCESS_DENIED', 'BOX_MEMBER_NOT_FOUND'],
+});
+
+export const createBoxInvitation = defineRoute({
+  operationId: 'createBoxInvitation',
+  method: 'POST',
+  path: '/boxes/{boxId}/invitations',
+  summary:
+    'Invite anyone by username (friendship is not required). Expires after 7 days.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 201,
+  response: boxInvitationSchema,
+  body: createBoxInvitationSchema,
+  errors: [
+    'BOX_NOT_FOUND',
+    'BOX_ACCESS_DENIED',
+    'BOX_ARCHIVED',
+    'USER_NOT_FOUND',
+    'USER_BLOCKED',
+    'CANNOT_INVITE_SELF',
+    'ALREADY_BOX_MEMBER',
+    'INVITATION_ALREADY_PENDING',
+  ],
+});
+
+export const listBoxInvitations = defineRoute({
+  operationId: 'listBoxInvitations',
+  method: 'GET',
+  path: '/boxes/{boxId}/invitations',
+  summary: 'Pending invitations for a Box (owners and admins).',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxInvitationPageSchema,
+  query: cursorPageQuerySchema,
+  errors: ['BOX_NOT_FOUND', 'BOX_ACCESS_DENIED'],
+});
+
+export const revokeBoxInvitation = defineRoute({
+  operationId: 'revokeBoxInvitation',
+  method: 'DELETE',
+  path: '/boxes/{boxId}/invitations/{invitationId}',
+  summary: 'Withdraw a pending invitation (owners and admins).',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: ['BOX_NOT_FOUND', 'BOX_ACCESS_DENIED', 'INVITATION_NOT_FOUND'],
+});
+
+export const listMyBoxInvitations = defineRoute({
+  operationId: 'listMyBoxInvitations',
+  method: 'GET',
+  path: '/me/box-invitations',
+  summary: 'Invitations waiting for your answer.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxInvitationPageSchema,
+  query: cursorPageQuerySchema,
+  errors: [],
+});
+
+export const acceptBoxInvitation = defineRoute({
+  operationId: 'acceptBoxInvitation',
+  method: 'POST',
+  path: '/box-invitations/{invitationId}/accept',
+  summary: 'Join the Box.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: boxSchema,
+  errors: ['INVITATION_NOT_FOUND', 'INVITATION_EXPIRED', 'BOX_ARCHIVED'],
+});
+
+export const declineBoxInvitation = defineRoute({
+  operationId: 'declineBoxInvitation',
+  method: 'POST',
+  path: '/box-invitations/{invitationId}/decline',
+  summary: 'Decline an invitation.',
+  tag: boxesTag,
+  access: 'authenticated',
+  successStatus: 204,
+  response: noContent,
+  errors: ['INVITATION_NOT_FOUND'],
+});
+
 /** Every operation in the public contract. Add new routes here. */
 export const apiRoutes = {
   getLiveness,
@@ -165,4 +549,30 @@ export const apiRoutes = {
   createMediaUpload,
   completeMediaUpload,
   getMediaAsset,
+  listFriends,
+  listFriendRequests,
+  createFriendRequest,
+  acceptFriendRequest,
+  declineFriendRequest,
+  cancelFriendRequest,
+  removeFriend,
+  listBlocks,
+  createBlock,
+  removeBlock,
+  listBoxes,
+  createBox,
+  getBox,
+  updateBox,
+  deleteBox,
+  listBoxMembers,
+  updateBoxMember,
+  leaveBox,
+  removeBoxMember,
+  transferBoxOwnership,
+  createBoxInvitation,
+  listBoxInvitations,
+  revokeBoxInvitation,
+  listMyBoxInvitations,
+  acceptBoxInvitation,
+  declineBoxInvitation,
 } as const satisfies Record<string, RouteDefinition>;

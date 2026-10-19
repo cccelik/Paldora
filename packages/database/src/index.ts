@@ -4,6 +4,14 @@ import * as schema from './schema.js';
 
 export type PaldoraDatabase = NodePgDatabase<typeof schema>;
 
+/** The transaction handle `database.transaction` passes to its callback. */
+export type DatabaseTransaction = Parameters<
+  Parameters<PaldoraDatabase['transaction']>[0]
+>[0];
+
+/** Either the pool or an open transaction: for helpers used in both. */
+export type DatabaseExecutor = PaldoraDatabase | DatabaseTransaction;
+
 export interface DatabaseConnection {
   readonly database: PaldoraDatabase;
   check(): Promise<void>;
@@ -40,3 +48,4 @@ export function createDatabaseConnection(
 
 export * from './schema.js';
 export * from './media-outbox.js';
+export * from './blocks.js';

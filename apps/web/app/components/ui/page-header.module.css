@@ -1,0 +1,24 @@
+.header {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: clamp(2rem, 6vw, 2.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  max-width: var(--pal-size-reading-column);
+  color: var(--pal-text-muted);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}

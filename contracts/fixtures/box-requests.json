@@ -1,0 +1,31 @@
+{
+  "schema": "CreateBoxRequest",
+  "description": "Names are trimmed by the server; unknown fields are rejected.",
+  "valid": [
+    {
+      "name": "Weekend crew"
+    },
+    {
+      "name": "  padded  "
+    },
+    {
+      "name": "✦"
+    }
+  ],
+  "invalid": [
+    {},
+    {
+      "name": ""
+    },
+    {
+      "name": "   "
+    },
+    {
+      "name": "ok",
+      "status": "archived"
+    },
+    {
+      "name": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    }
+  ]
+}

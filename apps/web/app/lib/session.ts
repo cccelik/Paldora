@@ -2,7 +2,7 @@ import 'server-only';
 
 import { ApiClientError, PaldoraApiClient } from '@paldora/api-client';
 import type { CurrentUser } from '@paldora/validation';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import { publicEnvironment } from './environment';
 import { routeForOnboarding } from './onboarding';
@@ -74,4 +74,31 @@ export async function userOnStep(
     redirect(routeForOnboarding(user.profile.onboardingState));
   }
   return user;
+}
+
+/**
+ * Renders the shared not-found page when the API answers with one of these
+ * codes. Missing and not-yours are the same answer, so they look identical.
+ */
+export async function orNotFound<Value>(
+  work: Promise<Value>,
+  codes: readonly string[],
+): Promise<Value> {
+  try {
+    return await work;
+  } catch (error) {
+    if (error instanceof ApiClientError && codes.includes(error.code)) {
+      notFound();
+    }
+    throw error;
+  }
+}
+
+/** A `?cursor=` value from the URL, kept only if it is a plausible token. */
+export function cursorParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  return typeof value === 'string' && value.length > 0 && value.length <= 512
+    ? value
+    : undefined;
 }

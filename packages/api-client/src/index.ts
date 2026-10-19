@@ -1,8 +1,10 @@
 import {
   apiRoutes,
   errorEnvelopeSchema,
+  type CreateBoxInput,
   type CreateMediaUploadInput,
   type Preferences,
+  type UpdateBoxInput,
   type RouteDefinition,
   type RouteResponse,
 } from '@paldora/validation';
@@ -31,6 +33,13 @@ export interface PaldoraApiClientOptions {
   getAccessToken?: () => Promise<string | null>;
   fetch?: typeof globalThis.fetch;
 }
+
+/** Keyset paging for every list: opaque `cursor`, `limit` of 1–50. */
+// A type alias (not an interface) so it is assignable to a query record.
+export type PageOptions = {
+  cursor?: string | undefined;
+  limit?: number | undefined;
+};
 
 /** The profile fields a client may send; see `updateProfileSchema`. */
 export type ProfileChanges = z.input<typeof apiRoutes.updateProfile.body>;
@@ -134,6 +143,148 @@ export class PaldoraApiClient {
 
   public mediaAsset(mediaAssetId: string) {
     return this.call(apiRoutes.getMediaAsset, { params: { mediaAssetId } });
+  }
+
+  // --- Friends and blocks ---------------------------------------------------
+
+  public friends(page: PageOptions = {}) {
+    return this.call(apiRoutes.listFriends, { query: page });
+  }
+
+  public friendRequests(page: PageOptions = {}) {
+    return this.call(apiRoutes.listFriendRequests, { query: page });
+  }
+
+  public sendFriendRequest(username: string) {
+    return this.call(apiRoutes.createFriendRequest, { body: { username } });
+  }
+
+  public acceptFriendRequest(friendshipId: string) {
+    return this.call(apiRoutes.acceptFriendRequest, {
+      params: { friendshipId },
+    });
+  }
+
+  public declineFriendRequest(friendshipId: string) {
+    return this.call(apiRoutes.declineFriendRequest, {
+      params: { friendshipId },
+    });
+  }
+
+  public cancelFriendRequest(friendshipId: string) {
+    return this.call(apiRoutes.cancelFriendRequest, {
+      params: { friendshipId },
+    });
+  }
+
+  public removeFriend(userId: string) {
+    return this.call(apiRoutes.removeFriend, { params: { userId } });
+  }
+
+  public blocks(page: PageOptions = {}) {
+    return this.call(apiRoutes.listBlocks, { query: page });
+  }
+
+  public block(username: string) {
+    return this.call(apiRoutes.createBlock, { body: { username } });
+  }
+
+  public unblock(userId: string) {
+    return this.call(apiRoutes.removeBlock, { params: { userId } });
+  }
+
+  // --- Boxes ---------------------------------------------------------------
+
+  public boxes(page: PageOptions = {}) {
+    return this.call(apiRoutes.listBoxes, { query: page });
+  }
+
+  public createBox(body: CreateBoxInput) {
+    return this.call(apiRoutes.createBox, { body });
+  }
+
+  public box(boxId: string) {
+    return this.call(apiRoutes.getBox, { params: { boxId } });
+  }
+
+  public updateBox(boxId: string, body: UpdateBoxInput) {
+    return this.call(apiRoutes.updateBox, { params: { boxId }, body });
+  }
+
+  public deleteBox(boxId: string, confirmName: string) {
+    return this.call(apiRoutes.deleteBox, {
+      params: { boxId },
+      query: { confirmName },
+    });
+  }
+
+  public boxMembers(boxId: string, page: PageOptions = {}) {
+    return this.call(apiRoutes.listBoxMembers, {
+      params: { boxId },
+      query: page,
+    });
+  }
+
+  public setBoxMemberRole(
+    boxId: string,
+    userId: string,
+    role: 'admin' | 'member',
+  ) {
+    return this.call(apiRoutes.updateBoxMember, {
+      params: { boxId, userId },
+      body: { role },
+    });
+  }
+
+  public removeBoxMember(boxId: string, userId: string) {
+    return this.call(apiRoutes.removeBoxMember, { params: { boxId, userId } });
+  }
+
+  public leaveBox(boxId: string) {
+    return this.call(apiRoutes.leaveBox, { params: { boxId } });
+  }
+
+  public transferBoxOwnership(boxId: string, userId: string) {
+    return this.call(apiRoutes.transferBoxOwnership, {
+      params: { boxId },
+      body: { userId },
+    });
+  }
+
+  public inviteToBox(boxId: string, username: string) {
+    return this.call(apiRoutes.createBoxInvitation, {
+      params: { boxId },
+      body: { username },
+    });
+  }
+
+  public boxInvitations(boxId: string, page: PageOptions = {}) {
+    return this.call(apiRoutes.listBoxInvitations, {
+      params: { boxId },
+      query: page,
+    });
+  }
+
+  public revokeBoxInvitation(boxId: string, invitationId: string) {
+    return this.call(apiRoutes.revokeBoxInvitation, {
+      params: { boxId, invitationId },
+    });
+  }
+
+  public myBoxInvitations(page: PageOptions = {}) {
+    return this.call(apiRoutes.listMyBoxInvitations, { query: page });
+  }
+
+  public acceptBoxInvitation(invitationId: string) {
+    return this.call(apiRoutes.acceptBoxInvitation, {
+      params: { invitationId },
+    });
+  }
+
+  public declineBoxInvitation(invitationId: string) {
+    return this.call(apiRoutes.declineBoxInvitation, {
+      params: { invitationId },
+    });
   }
 
   /**

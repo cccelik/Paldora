@@ -1,0 +1,14 @@
+/* The vertical rhythm shared by Friends, Boxes, and a single Box. */
+.stack {
+  display: grid;
+  gap: var(--pal-space-8);
+  max-width: 44rem;
+}
+
+.cards {
+  display: grid;
+  gap: var(--pal-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

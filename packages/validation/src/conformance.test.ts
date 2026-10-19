@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import { errorEnvelopeSchema } from './errors.js';
+import { boxSchema, createBoxSchema } from './boxes.js';
 import { currentUserSchema, updateProfileSchema } from './identity.js';
+import { friendshipSchema } from './people.js';
 import { createMediaUploadSchema } from './media.js';
 import { cursorPageQuerySchema } from './primitives.js';
 
@@ -19,6 +21,9 @@ const schemas: Record<string, z.ZodType> = {
   CurrentUser: currentUserSchema,
   UpdateProfileRequest: updateProfileSchema,
   CreateMediaUploadRequest: createMediaUploadSchema,
+  Box: boxSchema,
+  Friendship: friendshipSchema,
+  CreateBoxRequest: createBoxSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

@@ -12,3 +12,7 @@ export type Brand<Value, Name extends string> = Value & {
 export type UserId = Brand<string, 'UserId'>;
 
 export type MediaAssetId = Brand<string, 'MediaAssetId'>;
+
+export type BoxId = Brand<string, 'BoxId'>;
+export type BoxInvitationId = Brand<string, 'BoxInvitationId'>;
+export type FriendshipId = Brand<string, 'FriendshipId'>;

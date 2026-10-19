@@ -32,6 +32,8 @@ export interface TestUser {
   readonly id: string;
   readonly subject: string;
   readonly token: string;
+  /** Empty for users who have not chosen a username yet. */
+  readonly username: string;
 }
 
 export interface TestApp {
@@ -50,6 +52,8 @@ export interface TestApp {
     path: string,
     init?: { method?: string; body?: unknown },
   ): Promise<Response>;
+  /** A fully onboarded person with a unique username. */
+  person(prefix?: string): Promise<TestUser>;
   close(): Promise<void>;
 }
 
@@ -125,7 +129,7 @@ export async function createTestApp(): Promise<TestApp> {
       );
   }
 
-  return {
+  const testApp: TestApp = {
     baseUrl,
     database: connection.database,
     storage,
@@ -158,7 +162,15 @@ export async function createTestApp(): Promise<TestApp> {
       await connection.database
         .insert(userPreferences)
         .values({ userId: user.id });
-      return { id: user.id, subject, token: await issuer.token(subject) };
+      return {
+        id: user.id,
+        subject,
+        token: await issuer.token(subject),
+        username: options.username ?? '',
+      };
+    },
+    person(prefix = 'person') {
+      return testApp.createUser({ username: uniqueUsername(prefix) });
     },
     request(user, path, init = {}) {
       const headers = new Headers();
@@ -177,6 +189,7 @@ export async function createTestApp(): Promise<TestApp> {
       await connection.close();
     },
   };
+  return testApp;
 }
 
 /** A unique, valid username for this run. */

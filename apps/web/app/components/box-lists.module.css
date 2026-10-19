@@ -1,0 +1,33 @@
+.cards {
+  display: grid;
+  gap: var(--pal-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-4) var(--pal-space-5);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 15%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+}
+
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  font-family: var(--pal-font-editorial);
+  font-size: 1.25rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-underline-offset: 0.2em;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}

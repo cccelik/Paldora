@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
 import styles from './button.module.css';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'danger';
@@ -16,6 +16,8 @@ export function buttonClassName(
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   block?: boolean;
+  /** React 19 passes `ref` as an ordinary prop. */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Button({

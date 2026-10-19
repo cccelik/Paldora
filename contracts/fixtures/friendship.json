@@ -1,0 +1,59 @@
+{
+  "schema": "Friendship",
+  "valid": [
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "user": {
+        "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+        "username": "grace",
+        "displayName": "Grace Hopper",
+        "avatarUrl": "https://media.example.com/media/x/thumbnail.webp?X-Amz-Signature=a"
+      },
+      "status": "pending",
+      "direction": "incoming",
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    },
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "user": {
+        "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+        "username": "grace",
+        "displayName": "grace",
+        "avatarUrl": null
+      },
+      "status": "accepted",
+      "direction": "established",
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    }
+  ],
+  "invalid": [
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "user": {
+        "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+        "username": "grace",
+        "displayName": "Grace",
+        "avatarUrl": null
+      },
+      "status": "blocked",
+      "direction": "established",
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    },
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "user": {
+        "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+        "username": "grace",
+        "displayName": "Grace",
+        "avatarUrl": "not a url"
+      },
+      "status": "pending",
+      "direction": "incoming",
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    }
+  ]
+}

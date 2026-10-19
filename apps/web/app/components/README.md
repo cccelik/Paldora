@@ -42,7 +42,10 @@ Shared form rhythm lives in `components/form-stack.module.css`.
 
 - `app/lib/session.ts` is the server-only data-access layer: `currentUser()`
   (cached per render), `completedUser()`, `userOnStep()`, `apiClient()`.
-- Server Actions live in `app/actions/*` and validate every argument.
+- Server Actions live in `app/actions/*` and validate every argument through
+  `runForm`/`runFormWithData` (`app/lib/action-runner.ts`). Turbopack requires
+  each export of a `'use server'` file to be an `async function` declaration.
+- `orNotFound` turns `BOX_NOT_FOUND` into the shared not-found page.
 
 ## Page-level styles
 

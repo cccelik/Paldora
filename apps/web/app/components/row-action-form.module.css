@@ -1,0 +1,25 @@
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.confirm {
+  display: grid;
+  gap: var(--pal-space-3);
+  padding: var(--pal-space-4);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+}
+
+.prompt {
+  font-weight: 600;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}

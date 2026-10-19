@@ -18,7 +18,28 @@ PostgreSQL 17 is the source of truth ([ADR 001](adr/001-postgresql-drizzle.md)).
 | `media_assets`     | One upload and its derivatives                  | Owner FK is **RESTRICT**: deleting a user must schedule storage cleanup first. Purpose, MIME, and size are checked against the policy table. `ready` requires all derivative keys and dimensions. Unique upload key; partial index on pending expiry for the reaper.   |
 | `media_job_outbox` | Durable media work                              | `pending → published → completed \| dead`; `completed` iff `completed_at`. Payload shape is checked per job type; deletion payloads snapshot object keys. Partial dispatch index on pending rows.                                                                      |
 
-Reviewed cascade policy:
+## Phase 2 tables (`0002_friendships_blocks_boxes`)
+
+| Table             | Purpose                              | Key invariants                                                                                                                                                                                                                               |
+| ----------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `friendships`     | One row per pair of people           | Canonical order (`user_low_id < user_high_id`) and a unique pair, so a pair can never exist twice. Initiator is one of the two. Status is only `pending`/`accepted`/`declined`: blocks are not here (ADR 013).                               |
+| `user_blocks`     | Directional blocks                   | PK `(blocker_id, blocked_id)`; the two IDs differ. A block in either direction hides both people from each other; each person's block is independent, so one unblocking never lifts the other's.                                             |
+| `boxes`           | A private circle                     | Name 1–80 characters; `privacy_mode` is checked to `private`. **No owner column:** ownership is the one active `owner` membership.                                                                                                           |
+| `box_memberships` | Who belongs, with role and lifecycle | PK `(box_id, user_id)`. A partial unique index allows exactly one active owner per Box. Only active members carry a role beyond `member` (check). `left`/`removed` rows are kept so history is clear; rejoining resets the role to `member`. |
+| `box_invitations` | Invitations by username              | Partial unique index: one pending invitation per `(box, invitee)`. Inviter and invitee differ. Pending rows have no `responded_at`; answered rows always do. Expiry is 7 days, retired lazily when re-inviting.                              |
+
+Cascades: friendships, blocks, memberships, and invitations cascade from their
+users; memberships and invitations cascade from the Box. **Box deletion today
+removes only these rows.** Phases that attach Box content (posts, media, Life
+Update deliveries) must write their storage deletions to the media outbox in
+the same transaction as the delete, before the cascade removes the metadata.
+
+Pair-level decisions (friend request, block, Box invitation, accepting one)
+take a transaction advisory lock on the pair first (`lockPair`), so a block can
+never commit between "is anyone blocked?" and "create the relationship".
+Tests prove this by disabling the lock and watching the race tests fail.
+
+Reviewed cascade policy (Phase 1):
 
 - `profiles.user_id`, `user_preferences.user_id`: cascade (no storage behind them).
 - `media_assets.owner_user_id`: restrict (storage behind it; Phase 9 account

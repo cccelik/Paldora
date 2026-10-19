@@ -29,12 +29,23 @@ export default async function HomePage() {
           Your corner is ready
         </h2>
         <p className={styles.noteDetail}>
-          Paldora is in private testing. Your profile is set up; Boxes for the
-          people you share with come next.
+          Paldora is in private testing. Add friends, then gather them in
+          private Boxes. Posts and photos for your Boxes come next.
         </p>
-        <Link className={buttonClassName('secondary')} href="/settings/account">
-          Edit your profile
-        </Link>
+        <div className={styles.actions}>
+          <Link className={buttonClassName('primary')} href="/boxes">
+            Your Boxes
+          </Link>
+          <Link className={buttonClassName('secondary')} href="/friends">
+            Friends
+          </Link>
+          <Link
+            className={buttonClassName('secondary')}
+            href="/settings/account"
+          >
+            Edit your profile
+          </Link>
+        </div>
       </section>
     </div>
   );

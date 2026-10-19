@@ -1,0 +1,22 @@
+.section {
+  display: grid;
+  gap: var(--pal-space-4);
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}
+
+.header {
+  display: grid;
+  gap: var(--pal-space-1);
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.description {
+  color: var(--pal-text-muted);
+}

@@ -182,3 +182,52 @@ describe('identity and media methods', () => {
     });
   });
 });
+
+describe('Box and friend methods', () => {
+  const emptyPage = { items: [], nextCursor: null };
+
+  it('sends paging options and decodes a page', async () => {
+    const fetch = vi.fn(async () => json(200, emptyPage));
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+    await expect(client.friends({ limit: 2, cursor: 'abc' })).resolves.toEqual(
+      emptyPage,
+    );
+    expect((fetch.mock.calls[0] as unknown as [string])[0]).toBe(
+      'https://api.test/api/v1/friends?limit=2&cursor=abc',
+    );
+  });
+
+  it('returns nothing for 204 responses and encodes the delete confirmation', async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 204 }));
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+    await expect(
+      client.deleteBox('b1', 'Weekend & crew'),
+    ).resolves.toBeUndefined();
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(
+      'https://api.test/api/v1/boxes/b1?confirmName=Weekend+%26+crew',
+    );
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('puts both path parameters in place', async () => {
+    const fetch = vi.fn(async () => json(200, { role: 'admin' }));
+    const client = new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+    await client.setBoxMemberRole('b1', 'u1', 'admin');
+    expect((fetch.mock.calls[0] as unknown as [string])[0]).toBe(
+      'https://api.test/api/v1/boxes/b1/members/u1',
+    );
+  });
+});

@@ -2,6 +2,8 @@ export * from './primitives.js';
 export * from './errors.js';
 export * from './health.js';
 export * from './identity.js';
+export * from './people.js';
+export * from './boxes.js';
 export * from './media.js';
 export * from './route.js';
 export * from './routes.js';

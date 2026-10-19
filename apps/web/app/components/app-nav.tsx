@@ -6,6 +6,8 @@ import styles from './app-shell.module.css';
 
 const links = [
   { href: '/home', label: 'Home' },
+  { href: '/friends', label: 'Friends' },
+  { href: '/boxes', label: 'Boxes' },
   { href: '/settings/account', label: 'Settings', section: '/settings' },
 ] as const;
 

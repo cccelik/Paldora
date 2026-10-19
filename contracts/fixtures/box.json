@@ -1,0 +1,52 @@
+{
+  "schema": "Box",
+  "valid": [
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "name": "Weekend crew",
+      "status": "active",
+      "currentUserRole": "owner",
+      "memberCount": 1,
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    },
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "name": "Arşivlenmiş ✦",
+      "status": "archived",
+      "currentUserRole": "member",
+      "memberCount": 12,
+      "createdAt": "2026-10-19T12:00:00+02:00",
+      "updatedAt": "2026-10-19T12:00:00+02:00"
+    }
+  ],
+  "invalid": [
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "name": "x",
+      "status": "deleted",
+      "currentUserRole": "owner",
+      "memberCount": 1,
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    },
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "name": "x",
+      "status": "active",
+      "currentUserRole": "superuser",
+      "memberCount": 1,
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    },
+    {
+      "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+      "name": "x",
+      "status": "active",
+      "currentUserRole": "owner",
+      "memberCount": -1,
+      "createdAt": "2026-10-19T12:00:00.000Z",
+      "updatedAt": "2026-10-19T12:00:00.000Z"
+    }
+  ]
+}

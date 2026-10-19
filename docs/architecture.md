@@ -12,21 +12,21 @@ Android (Compose) ──────┘                                         
 
 ## Workspaces
 
-| Workspace                | Owns                                                                                                                                                                                            |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`               | Responsive website. Pages compose data from the typed client; no business rules.                                                                                                                |
-| `apps/api`               | All authorization and orchestration. `PlatformModule` plus one module per product area: `identity` (account, profile, onboarding, preferences, avatar) and `media` (uploads for every purpose). |
-| `apps/worker`            | Outbox dispatcher, media processing and deletion, scheduled reaper.                                                                                                                             |
-| `packages/domain`        | Framework-neutral identifiers, error codes, identity types.                                                                                                                                     |
-| `packages/validation`    | Zod schemas and the route registry: the contract source.                                                                                                                                        |
-| `packages/api-client`    | Typed HTTP client that validates responses against the contract.                                                                                                                                |
-| `packages/config`        | Fail-fast environment parsers per runtime.                                                                                                                                                      |
-| `packages/database`      | Drizzle schema, migrations, pool factory.                                                                                                                                                       |
-| `packages/observability` | Redacting logger and correlation IDs.                                                                                                                                                           |
-| `packages/storage`       | `ObjectStorage` interface, S3 adapter, in-memory fake for tests.                                                                                                                                |
-| `packages/tokens`        | Generated design tokens (CSS, TS, Swift, Kotlin).                                                                                                                                               |
-| `contracts/`             | Generated OpenAPI document and cross-platform conformance fixtures.                                                                                                                             |
-| `design/tokens/`         | The design-token source.                                                                                                                                                                        |
+| Workspace                | Owns                                                                                                                                                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`               | Responsive website. Pages compose data from the typed client; no business rules.                                                                                                                                                                                                            |
+| `apps/api`               | All authorization and orchestration. `PlatformModule` plus one module per product area: `identity` (account, profile, onboarding, preferences, avatar, people lookups), `media` (uploads for every purpose), `social` (friendships, blocks), and `boxes` (lifecycle, members, invitations). |
+| `apps/worker`            | Outbox dispatcher, media processing and deletion, scheduled reaper.                                                                                                                                                                                                                         |
+| `packages/domain`        | Framework-neutral identifiers, error codes, identity types.                                                                                                                                                                                                                                 |
+| `packages/validation`    | Zod schemas and the route registry: the contract source.                                                                                                                                                                                                                                    |
+| `packages/api-client`    | Typed HTTP client that validates responses against the contract.                                                                                                                                                                                                                            |
+| `packages/config`        | Fail-fast environment parsers per runtime.                                                                                                                                                                                                                                                  |
+| `packages/database`      | Drizzle schema, migrations, pool factory.                                                                                                                                                                                                                                                   |
+| `packages/observability` | Redacting logger and correlation IDs.                                                                                                                                                                                                                                                       |
+| `packages/storage`       | `ObjectStorage` interface, S3 adapter, in-memory fake for tests.                                                                                                                                                                                                                            |
+| `packages/tokens`        | Generated design tokens (CSS, TS, Swift, Kotlin).                                                                                                                                                                                                                                           |
+| `contracts/`             | Generated OpenAPI document and cross-platform conformance fixtures.                                                                                                                                                                                                                         |
+| `design/tokens/`         | The design-token source.                                                                                                                                                                                                                                                                    |
 
 ## Dependency direction
 
@@ -41,6 +41,10 @@ apps/* ─> config, observability, database, storage, tokens
   server-only config.
 - **Feature modules.** In the API they never import each other's internals,
   only exported services.
+- **Module dependencies.** `social` and `boxes` import `identity` for people
+  summaries and username lookups; `social` imports `boxes` only so blocking can
+  withdraw invitations inside its own transaction. `boxes` never imports
+  `social`.
 - **Identity mapping is platform work.** The global guard verifies the JWT and
   resolves the internal user, so feature modules receive a principal and never
   see the identity provider.

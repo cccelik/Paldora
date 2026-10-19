@@ -38,3 +38,22 @@ Box and Home post feeds did not.
 
 An authorization-matrix integration test covers every content type in both
 block directions, plus unblock and re-block sequences.
+
+## What Phase 2 built
+
+- `user_blocks` (directional, PK per direction); `friendships` hold only
+  `pending/accepted/declined`.
+- `isBlockedBetween` and `hiddenByBlock` in `packages/database`: the single
+  symmetric definition later phases must use.
+- `lockPair`: an advisory transaction lock per pair, taken by friend requests,
+  accepting them, blocking, inviting, and accepting invitations. Disabling it
+  makes 7 of the 24 race tests fail, so it is not decorative.
+- Blocking is one transaction: record the block, delete any friendship or
+  request, revoke pending Box invitations between the two. Shared Boxes are
+  untouched.
+- Non-leaking outreach: reaching a person who blocked you returns
+  `USER_NOT_FOUND`, byte-for-byte the response for a username that does not
+  exist.
+
+Still to do by phase: posts (3), comments and reactions (5), Life Updates (6),
+Rooms and Top Friends (7), each adding rows to the matrix test.

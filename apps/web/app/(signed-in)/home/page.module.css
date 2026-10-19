@@ -55,3 +55,9 @@
 .noteDetail {
   color: var(--pal-text-muted);
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}

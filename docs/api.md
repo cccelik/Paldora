@@ -62,6 +62,42 @@ Every authenticated route can also return `ACCOUNT_NOT_PROVISIONED` (a valid
 identity with no Paldora account) and `ACCOUNT_BLOCKED` (a suspended or
 deleted account), both 403.
 
+### Friends, blocks, and Boxes
+
+| Operation              | Route                                    | Rate limit | Notes                                                                                                       |
+| ---------------------- | ---------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
+| `listFriends`          | `GET /friends`                           | none       | Paged                                                                                                       |
+| `listFriendRequests`   | `GET /friend-requests`                   | none       | Incoming and outgoing, see `direction`                                                                      |
+| `createFriendRequest`  | `POST /friend-requests`                  | 20/h       | `USER_NOT_FOUND`, `USER_BLOCKED`, `CANNOT_FRIEND_SELF`, `ALREADY_FRIENDS`, `FRIEND_REQUEST_ALREADY_PENDING` |
+| `acceptFriendRequest`  | `POST /friend-requests/{id}/accept`      | exempt     | Recipient only                                                                                              |
+| `declineFriendRequest` | `POST /friend-requests/{id}/decline`     | exempt     | 204                                                                                                         |
+| `cancelFriendRequest`  | `DELETE /friend-requests/{id}`           | exempt     | Sender only; 204                                                                                            |
+| `removeFriend`         | `DELETE /friends/{userId}`               | exempt     | 204; `FRIENDSHIP_NOT_FOUND`                                                                                 |
+| `listBlocks`           | `GET /blocks`                            | none       | Your own blocks only                                                                                        |
+| `createBlock`          | `POST /blocks`                           | 60/h       | Idempotent                                                                                                  |
+| `removeBlock`          | `DELETE /blocks/{userId}`                | exempt     | Idempotent; 204; removes only your own block                                                                |
+| `listBoxes`            | `GET /boxes`                             | none       | Paged                                                                                                       |
+| `createBox`            | `POST /boxes`                            | 20/h       |                                                                                                             |
+| `getBox`               | `GET /boxes/{boxId}`                     | none       | `BOX_NOT_FOUND` for every kind of non-access                                                                |
+| `updateBox`            | `PATCH /boxes/{boxId}`                   | 60/h       | Owner: name, `status` `active`/`archived`                                                                   |
+| `deleteBox`            | `DELETE /boxes/{boxId}?confirmName=`     | 20/h       | Owner; 204; `BOX_DELETE_CONFIRMATION_MISMATCH`                                                              |
+| `listBoxMembers`       | `GET /boxes/{boxId}/members`             | none       | Paged                                                                                                       |
+| `updateBoxMember`      | `PATCH /boxes/{boxId}/members/{userId}`  | 120/h      | Role `admin`/`member`                                                                                       |
+| `removeBoxMember`      | `DELETE /boxes/{boxId}/members/{userId}` | 120/h      | 204                                                                                                         |
+| `leaveBox`             | `DELETE /boxes/{boxId}/members/me`       | exempt     | 204; `BOX_OWNER_CANNOT_LEAVE`                                                                               |
+| `transferBoxOwnership` | `PUT /boxes/{boxId}/owner`               | 20/h       | You become an admin; atomic                                                                                 |
+| `createBoxInvitation`  | `POST /boxes/{boxId}/invitations`        | 60/h       | By username; no friendship needed; `BOX_ARCHIVED`, `ALREADY_BOX_MEMBER`, `INVITATION_ALREADY_PENDING`       |
+| `listBoxInvitations`   | `GET /boxes/{boxId}/invitations`         | none       | Owners and admins                                                                                           |
+| `revokeBoxInvitation`  | `DELETE /boxes/{boxId}/invitations/{id}` | exempt     | 204                                                                                                         |
+| `listMyBoxInvitations` | `GET /me/box-invitations`                | none       | Pending, unexpired                                                                                          |
+| `acceptBoxInvitation`  | `POST /box-invitations/{id}/accept`      | exempt     | Returns the Box; `INVITATION_EXPIRED` (410), `BOX_ARCHIVED`                                                 |
+| `declineBoxInvitation` | `POST /box-invitations/{id}/decline`     | exempt     | 204                                                                                                         |
+
+Lists return `{ items, nextCursor }`; pass `limit` (1–50, default 20) and the
+opaque `cursor`. People appear as `UserSummary`: `id`, `username`,
+`displayName` (falls back to the username), and a signed `avatarUrl`
+thumbnail or `null`.
+
 ## Uploading media
 
 1. `POST /media/uploads` with `{ purpose, contentType, contentLength }`.
