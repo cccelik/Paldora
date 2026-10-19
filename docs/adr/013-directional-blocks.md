@@ -1,6 +1,7 @@
 # ADR 013: Directional user_blocks table
 
-Status: proposed (Phase 2). Depends on product decision D1. Implements R8.
+Status: accepted (2026-10-19). Decision D1 confirmed by the owner: content from
+a blocked person is hidden in shared Boxes. Implements R8.
 
 ## Context
 
@@ -15,7 +16,7 @@ for a pair. That caused two problems:
 Block filtering was also inconsistent. Life Updates hid blocked authors, while
 Box and Home post feeds did not.
 
-## Proposed design
+## Design
 
 - **Schema.** A `user_blocks (blocker_id, blocked_id, created_at)` table,
   unique per direction, with a check constraint that the two IDs differ.
@@ -25,8 +26,13 @@ Box and Home post feeds did not.
   feeds, Memories, Rooms, notifications, invitations, search.
 - **Side effects.** Blocking removes the friendship and the Top Friends
   references in the same transaction.
-- **Shared Boxes (D1).** Recommended: hide each other's content in both
-  directions, with a neutral placeholder that never reveals who blocked whom.
+- **Shared Boxes (D1, confirmed).** Content is hidden in both directions
+  (a block by either person hides the other's posts, Life Updates, comments,
+  and reactions from the blocker's view and vice versa), with a neutral
+  placeholder that never reveals who blocked whom. Boxes stay intact: a block
+  never removes anyone from a Box, and Box owners and admins still see
+  membership. Each content phase (posts in 3, comments in 5, Life Updates in 6) applies the shared filter and adds its rows to the authorization matrix
+  test.
 
 ## Validation
 
