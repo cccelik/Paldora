@@ -46,7 +46,7 @@ export class PostsController {
     @Body(new ZodPipe(createPostSchema))
     body: z.output<typeof createPostSchema>,
   ) {
-    return this.posts.create(me.userId, boxId, body.content);
+    return this.posts.create(me.userId, boxId, body);
   }
 
   @Get('boxes/:boxId/posts')
@@ -71,8 +71,11 @@ export class PostsController {
     @CurrentPrincipal() me: Principal,
     @Param('postId', uuidParam) postId: string,
   ) {
-    const { context, author } = await this.queries.get(me.userId, postId);
-    return toPostView(context, author, me.userId);
+    const { context, author, media } = await this.queries.get(
+      me.userId,
+      postId,
+    );
+    return toPostView(context, author, me.userId, media);
   }
 
   @Patch('posts/:postId')

@@ -231,6 +231,17 @@ affected pages ([ADR 012](docs/adr/012-realtime.md)). Integration and
 full-stack tests now run in a dedicated `paldora_test` database
 (`scripts/with-test-database.mjs`). Still open: the first GitHub CI run.
 
+## Phase 4 delivery notes (2026-10-19)
+
+**Delivered:** photos on posts (up to 4), worker processing for the `post_image`
+purpose, a keyboard-accessible viewer, no-orphan cleanup on post and Box
+deletion, a hardened reaper (unclaimed photos, dead-deletion retries, outbox
+retention), and fault-injection tests ([ADR 011](docs/adr/011-media-pipeline.md)).
+
+**Not done:** D5 (production hosting) is still open. Nothing built here depends
+on it, but a managed storage lifecycle policy and metrics-based alerting wait for
+it. Alerts today are error logs.
+
 ## Phases 1–9: Web product (rebuild to parity, then beyond)
 
 Every phase delivers: migration(s), domain + Zod + OpenAPI entries, policy +
@@ -298,4 +309,5 @@ before it is designed.
 | 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending    |
 | 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                     |
 | 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green           |
-| 4–12  | Not started                                                                |
+| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open         |
+| 5–12  | Not started                                                                |

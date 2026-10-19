@@ -43,6 +43,17 @@ characters, deleted posts have **no content** and a `deleted_at`. Indexes:
 `(author_user_id, created_at desc, id desc)`. Phase 4 media must queue storage
 deletion before the Box cascade removes posts.
 
+## Phase 4 changes (`0004_post_media`)
+
+- `media_assets.box_id` (nullable, `SET NULL`) and purpose `post_image`. A check
+  ties scope to purpose: avatars have no Box; post photos name one unless the
+  asset is tombstoned (`deleted`). Partial indexes serve Box cleanup and the
+  unattached-photo reaper.
+- `post_media`: `(post_id, position 0–3)` primary key and a unique
+  `media_asset_id`, so a photo belongs to at most one post.
+- `posts.content` may be null for photo-only posts; the lifecycle check still
+  forbids text on deleted posts. The service requires text or a photo.
+
 Pair-level decisions (friend request, block, Box invitation, accepting one)
 take a transaction advisory lock on the pair first (`lockPair`), so a block can
 never commit between "is anyone blocked?" and "create the relationship".

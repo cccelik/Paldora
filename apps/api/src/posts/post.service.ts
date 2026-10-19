@@ -1,15 +1,33 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { boxes, posts, type PaldoraDatabase } from '@paldora/database';
-import type { PostView } from '@paldora/validation';
-import { and, eq } from 'drizzle-orm';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import {
+  boxes,
+  mediaAssets,
+  postMedia,
+  posts,
+  type DatabaseExecutor,
+  type PaldoraDatabase,
+} from '@paldora/database';
+import type { NewPost, PostView } from '@paldora/validation';
+import { and, eq, inArray } from 'drizzle-orm';
 import { boxArchived } from '../boxes/box-errors.js';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
+import { mediaNotFound, mediaNotReady } from '../media/media-errors.js';
+import { retireAssets } from '../media/media-retirement.js';
+import { ApiError } from '../platform/api-error.js';
+import { isUniqueViolation } from '../platform/database-errors.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
 import { postAccessDenied, postNotFound } from './post-errors.js';
 import { loadPostContext, PostQueryService } from './post-query.service.js';
 import { toPostView } from './post-views.js';
+
+const needsSomething = () =>
+  new ApiError(
+    HttpStatus.BAD_REQUEST,
+    'VALIDATION_FAILED',
+    'content: Write something or add a photo first.',
+  );
 
 @Injectable()
 export class PostService {
@@ -24,31 +42,102 @@ export class PostService {
     return this.infrastructure.database;
   }
 
-  /** The Box row is locked `FOR SHARE`, so archiving cannot slip in between. */
+  /**
+   * The Box row is locked `FOR SHARE`, so archiving cannot slip in between.
+   * Photos are claimed here, in the same transaction: each must be ready,
+   * yours, from this Box, and not used by another post (a unique index makes
+   * single use final, even against a race).
+   */
   public async create(
     authorId: string,
     boxId: string,
-    content: string,
+    input: NewPost,
   ): Promise<PostView> {
-    const created = await this.database.transaction(async (transaction) => {
-      await this.policy.membership(authorId, boxId, transaction);
-      const [box] = await transaction
-        .select({ status: boxes.status })
-        .from(boxes)
-        .where(eq(boxes.id, boxId))
-        .for('share')
-        .limit(1);
-      if (box?.status !== 'active') throw boxArchived();
-      const [post] = await transaction
-        .insert(posts)
-        .values({ boxId, authorUserId: authorId, content })
-        .returning({ id: posts.id });
-      return post;
-    });
-    if (!created) throw new Error('Post insert returned no row.');
+    const text = input.content.trim();
+    if (text.length === 0 && input.mediaAssetIds.length === 0) {
+      throw needsSomething();
+    }
+    const created = await this.database
+      .transaction(async (transaction) => {
+        await this.policy.membership(authorId, boxId, transaction);
+        const [box] = await transaction
+          .select({ status: boxes.status })
+          .from(boxes)
+          .where(eq(boxes.id, boxId))
+          .for('share')
+          .limit(1);
+        if (box?.status !== 'active') throw boxArchived();
+        await this.assertPhotosUsable(
+          transaction,
+          authorId,
+          boxId,
+          input.mediaAssetIds,
+        );
+        const [post] = await transaction
+          .insert(posts)
+          .values({ boxId, authorUserId: authorId, content: text || null })
+          .returning({ id: posts.id });
+        if (!post) throw new Error('Post insert returned no row.');
+        if (input.mediaAssetIds.length > 0) {
+          await transaction.insert(postMedia).values(
+            input.mediaAssetIds.map((mediaAssetId, position) => ({
+              postId: post.id,
+              mediaAssetId,
+              position,
+            })),
+          );
+        }
+        return post;
+      })
+      .catch((error: unknown) => {
+        // Two posts racing for one photo: the unique index picks the winner.
+        if (isUniqueViolation(error, 'post_media_asset_unique'))
+          throw mediaNotFound();
+        throw error;
+      });
     await this.announce('post.created', boxId, created.id);
-    const { context, author } = await this.queries.get(authorId, created.id);
-    return toPostView(context, author, authorId);
+    const { context, author, media } = await this.queries.get(
+      authorId,
+      created.id,
+    );
+    return toPostView(context, author, authorId, media);
+  }
+
+  /** Every unusable photo looks the same: not yours, not here, or already used. */
+  private async assertPhotosUsable(
+    executor: DatabaseExecutor,
+    authorId: string,
+    boxId: string,
+    ids: readonly string[],
+  ): Promise<void> {
+    if (ids.length === 0) return;
+    const assets = await executor
+      .select()
+      .from(mediaAssets)
+      .where(inArray(mediaAssets.id, [...ids]))
+      .for('update');
+    const byId = new Map(assets.map((asset) => [asset.id, asset]));
+    const attached = await executor
+      .select({ id: postMedia.mediaAssetId })
+      .from(postMedia)
+      .where(inArray(postMedia.mediaAssetId, [...ids]));
+    const used = new Set(attached.map((row) => row.id));
+    const usable = ids.map((id) => {
+      const asset = byId.get(id);
+      const valid =
+        asset !== undefined &&
+        asset.ownerUserId === authorId &&
+        asset.purpose === 'post_image' &&
+        asset.boxId === boxId &&
+        (asset.status === 'ready' ||
+          asset.status === 'pending' ||
+          asset.status === 'processing') &&
+        !used.has(id);
+      return valid ? asset : undefined;
+    });
+    if (usable.some((asset) => asset === undefined)) throw mediaNotFound();
+    if (usable.some((asset) => asset?.status !== 'ready'))
+      throw mediaNotReady();
   }
 
   public async update(
@@ -56,15 +145,22 @@ export class PostService {
     postId: string,
     content: string,
   ): Promise<PostView> {
-    const { context } = await this.queries.get(viewerId, postId);
+    const { context, media } = await this.queries.get(viewerId, postId);
     this.assertMayChange(
       context.post.authorUserId,
       viewerId,
       context.boxStatus,
     );
+    const text = content.trim();
+    // A post may drop its text only if photos remain.
+    if (text.length === 0 && media.length === 0) throw needsSomething();
     const changed = await this.database
       .update(posts)
-      .set({ content, editedAt: new Date(), updatedAt: new Date() })
+      .set({
+        content: text || null,
+        editedAt: new Date(),
+        updatedAt: new Date(),
+      })
       .where(
         and(
           eq(posts.id, postId),
@@ -77,10 +173,13 @@ export class PostService {
     if (changed.length === 0) throw postNotFound();
     await this.announce('post.updated', context.post.boxId, postId);
     const fresh = await this.queries.get(viewerId, postId);
-    return toPostView(fresh.context, fresh.author, viewerId);
+    return toPostView(fresh.context, fresh.author, viewerId, fresh.media);
   }
 
-  /** Idempotent for the author: deleting a deleted post succeeds. */
+  /**
+   * Idempotent for the author. The text is erased and the photos are retired
+   * in one transaction, so no photo outlives its post.
+   */
   public async remove(viewerId: string, postId: string): Promise<void> {
     const context = await loadPostContext(this.database, viewerId, postId);
     if (!context || context.hidden) throw postNotFound();
@@ -93,15 +192,30 @@ export class PostService {
       viewerId,
       context.boxStatus,
     );
-    await this.database
-      .update(posts)
-      .set({
-        status: 'deleted',
-        content: null,
-        deletedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(and(eq(posts.id, postId), eq(posts.status, 'active')));
+    await this.database.transaction(async (transaction) => {
+      const [deleted] = await transaction
+        .update(posts)
+        .set({
+          status: 'deleted',
+          content: null,
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(posts.id, postId), eq(posts.status, 'active')))
+        .returning({ id: posts.id });
+      if (!deleted) return;
+      const photos = await transaction
+        .select({ asset: mediaAssets })
+        .from(postMedia)
+        .innerJoin(mediaAssets, eq(mediaAssets.id, postMedia.mediaAssetId))
+        .where(eq(postMedia.postId, postId))
+        .for('update');
+      await transaction.delete(postMedia).where(eq(postMedia.postId, postId));
+      await retireAssets(
+        transaction,
+        photos.map((row) => row.asset),
+      );
+    });
     await this.announce('post.deleted', context.post.boxId, postId);
   }
 

@@ -1,5 +1,6 @@
 'use server';
 
+import { POST_MEDIA_MAX_ITEMS } from '@paldora/domain';
 import { postContentSchema, uuidSchema } from '@paldora/validation';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -8,15 +9,52 @@ import { runForm } from '../lib/action-runner';
 
 const feedPaths = ['/home', '/boxes/[boxId]', '/posts/[postId]'];
 
+/** The composer sends its ready photo IDs as one JSON field, in order. */
+const photoIds = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string' || value === '') return [];
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
+      return value;
+    }
+  },
+  z
+    .array(uuidSchema)
+    .max(POST_MEDIA_MAX_ITEMS, 'A post can have up to 4 photos.'),
+);
+
+const createForm = z
+  .object({
+    boxId: uuidSchema,
+    content: postContentSchema,
+    mediaAssetIds: photoIds,
+  })
+  .refine(
+    ({ content, mediaAssetIds }) =>
+      content.length > 0 || mediaAssetIds.length > 0,
+    {
+      message: 'Write something or add a photo first.',
+    },
+  );
+
 export async function createPostAction(
   _previous: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
   return runForm(
     formData,
-    z.object({ boxId: uuidSchema, content: postContentSchema }),
-    (api, { boxId, content }) => api.createPost(boxId, { content }),
-    { success: 'Posted.', paths: feedPaths },
+    createForm,
+    (api, { boxId, content, mediaAssetIds }) =>
+      api.createPost(boxId, { content, mediaAssetIds }),
+    {
+      success: 'Posted.',
+      paths: feedPaths,
+      copy: {
+        MEDIA_NOT_READY:
+          'A photo is still being prepared. Try again in a moment.',
+      },
+    },
   );
 }
 

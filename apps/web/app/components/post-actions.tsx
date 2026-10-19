@@ -17,10 +17,12 @@ import styles from './post-card.module.css';
 function EditForm({
   postId,
   initial,
+  hasPhotos,
   onDone,
 }: {
   postId: string;
   initial: string;
+  hasPhotos: boolean;
   onDone: () => void;
 }) {
   const [state, action] = useActionState(updatePostAction, idleResult);
@@ -37,7 +39,7 @@ function EditForm({
         rows={4}
         defaultValue={initial}
         maxLength={POST_CONTENT_MAX_LENGTH}
-        required
+        required={!hasPhotos}
       />
       <ActionFeedback state={state} />
       <div className={styles.row}>
@@ -54,10 +56,12 @@ function EditForm({
 export function PostActions({
   postId,
   content,
+  hasPhotos,
   leaveAfterDelete = false,
 }: {
   postId: string;
   content: string;
+  hasPhotos: boolean;
   /** On a post’s own page, deleting navigates away since the page is gone. */
   leaveAfterDelete?: boolean;
 }) {
@@ -67,6 +71,7 @@ export function PostActions({
       <EditForm
         postId={postId}
         initial={content}
+        hasPhotos={hasPhotos}
         onDone={() => setEditing(false)}
       />
     );

@@ -3,12 +3,15 @@ import {
   boxMemberships,
   boxes,
   hiddenByBlock,
+  mediaAssets,
+  postMedia,
   posts,
   type DatabaseExecutor,
 } from '@paldora/database';
-import type { FeedItemView } from '@paldora/validation';
-import { and, desc, eq, type SQL } from 'drizzle-orm';
+import type { FeedItemView, PostMediaView } from '@paldora/validation';
+import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
+import { MediaUrlService } from '../media/media-urls.service.js';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import {
@@ -20,7 +23,11 @@ import {
 } from '../platform/pagination.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { postNotFound } from './post-errors.js';
-import { toFeedItem, type PostContext } from './post-views.js';
+import {
+  toFeedItem,
+  type MediaByPost,
+  type PostContext,
+} from './post-views.js';
 
 export interface PageQuery {
   readonly cursor?: string | undefined;
@@ -66,6 +73,7 @@ export class PostQueryService {
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(ProfileSummaryService)
     private readonly summaries: ProfileSummaryService,
+    @Inject(MediaUrlService) private readonly mediaUrls: MediaUrlService,
   ) {}
 
   public async boxFeed(
@@ -125,8 +133,11 @@ export class PostQueryService {
     const authors = await this.summaries.summaries(
       rows.filter((row) => !row.hidden).map((row) => row.post.authorUserId),
     );
+    const media = await this.mediaFor(
+      rows.filter((row) => !row.hidden).map((row) => row.post.id),
+    );
     const items = rows.flatMap((row) => {
-      const item = toFeedItem(row, authors, viewerId);
+      const item = toFeedItem(row, authors, media, viewerId);
       return item ? [{ row, item }] : [];
     });
     return pageOf(
@@ -150,6 +161,46 @@ export class PostQueryService {
       await this.summaries.summaries([context.post.authorUserId])
     ).get(context.post.authorUserId);
     if (!author) throw postNotFound();
-    return { context, author };
+    const media = (await this.mediaFor([postId])).get(postId) ?? [];
+    return { context, author, media };
+  }
+
+  /**
+   * Signed URLs for the photos of posts the caller has already authorized.
+   * Only ready photos appear, and hidden (blocked) posts are never passed in.
+   */
+  public async mediaFor(postIds: readonly string[]): Promise<MediaByPost> {
+    if (postIds.length === 0) return new Map();
+    const rows = await this.infrastructure.database
+      .select({ postId: postMedia.postId, asset: mediaAssets })
+      .from(postMedia)
+      .innerJoin(mediaAssets, eq(mediaAssets.id, postMedia.mediaAssetId))
+      .where(
+        and(
+          inArray(postMedia.postId, [...postIds]),
+          eq(mediaAssets.status, 'ready'),
+        ),
+      )
+      .orderBy(asc(postMedia.postId), asc(postMedia.position));
+    const grouped = new Map<string, PostMediaView[]>();
+    const signed = await Promise.all(
+      rows.map(async ({ postId, asset }) => ({
+        postId,
+        asset,
+        urls: await this.mediaUrls.sign(asset),
+      })),
+    );
+    for (const { postId, asset, urls } of signed) {
+      if (!urls || !asset.width || !asset.height) continue;
+      const list = grouped.get(postId) ?? [];
+      list.push({
+        id: asset.id,
+        width: asset.width,
+        height: asset.height,
+        ...urls,
+      });
+      grouped.set(postId, list);
+    }
+    return grouped;
   }
 }

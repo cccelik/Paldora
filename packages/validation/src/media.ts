@@ -17,6 +17,8 @@ export const mediaContentTypeSchema = z.enum(MEDIA_CONTENT_TYPES);
 export const createMediaUploadSchema = z
   .object({
     purpose: mediaPurposeSchema,
+    /** Required for Box-scoped purposes (post photos), forbidden otherwise. */
+    boxId: uuidSchema.optional(),
     contentType: mediaContentTypeSchema,
     contentLength: z.number().int().min(1).max(largestUpload),
   })
@@ -25,6 +27,15 @@ export const createMediaUploadSchema = z
     ({ purpose, contentType }) =>
       MEDIA_PURPOSE_POLICIES[purpose].contentTypes.includes(contentType),
     { path: ['contentType'], message: 'This image type is not supported.' },
+  )
+  .refine(
+    ({ purpose, boxId }) =>
+      (MEDIA_PURPOSE_POLICIES[purpose].scope === 'box') ===
+      (boxId !== undefined),
+    {
+      path: ['boxId'],
+      message: 'Name a Box for post photos, and only for post photos.',
+    },
   )
   .refine(
     ({ purpose, contentLength }) =>

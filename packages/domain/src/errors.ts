@@ -50,6 +50,7 @@ export const API_ERROR_CODES = [
   // Posts (Phase 3). Absence, non-membership, and blocks share POST_NOT_FOUND.
   'POST_NOT_FOUND',
   'POST_ACCESS_DENIED',
+  'MEDIA_NOT_READY',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

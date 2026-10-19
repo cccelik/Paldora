@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  boxMemberships,
+  boxes,
   mediaAssets,
   mediaDeletionJob,
   mediaJobOutbox,
@@ -8,6 +10,7 @@ import {
   type PaldoraDatabase,
 } from '@paldora/database';
 import {
+  MEDIA_PURPOSE_POLICIES,
   SIGNED_UPLOAD_TTL_SECONDS,
   UPLOAD_COMPLETION_GRACE_SECONDS,
   type MediaAssetId,
@@ -22,6 +25,7 @@ import type {
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
+import { boxArchived, boxNotFound } from '../boxes/box-errors.js';
 import { INFRASTRUCTURE, OBJECT_STORAGE } from '../platform/tokens.js';
 import {
   mediaNotFound,
@@ -60,6 +64,7 @@ export class MediaUploadService {
     userId: UserId,
     input: CreateMediaUploadInput,
   ): Promise<MediaUpload> {
+    const boxId = await this.scopeFor(userId, input);
     // Random, non-identifying keys: signed URLs necessarily contain them.
     const uploadObjectKey = `uploads/${randomUUID()}`;
     let upload;
@@ -78,6 +83,7 @@ export class MediaUploadService {
       .values({
         ownerUserId: userId,
         purpose: input.purpose,
+        boxId,
         contentType: input.contentType,
         contentLength: input.contentLength,
         uploadObjectKey,
@@ -94,6 +100,34 @@ export class MediaUploadService {
         expiresAt: upload.expiresAt.toISOString(),
       },
     };
+  }
+
+  /**
+   * Box-scoped uploads (post photos) need an active membership in an open Box.
+   * A stranger's reservation looks the same as a missing Box.
+   */
+  private async scopeFor(
+    userId: UserId,
+    input: CreateMediaUploadInput,
+  ): Promise<string | null> {
+    if (MEDIA_PURPOSE_POLICIES[input.purpose].scope !== 'box') return null;
+    const boxId = input.boxId;
+    if (!boxId) throw boxNotFound();
+    const [row] = await this.database
+      .select({ status: boxes.status })
+      .from(boxMemberships)
+      .innerJoin(boxes, eq(boxes.id, boxMemberships.boxId))
+      .where(
+        and(
+          eq(boxMemberships.boxId, boxId),
+          eq(boxMemberships.userId, userId),
+          eq(boxMemberships.status, 'active'),
+        ),
+      )
+      .limit(1);
+    if (!row) throw boxNotFound();
+    if (row.status !== 'active') throw boxArchived();
+    return boxId;
   }
 
   public async get(

@@ -1,27 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { provisionAccount, type Account } from './accounts';
+import { provisionAccount } from './accounts';
 import {
   expectAccessible,
   expectNoOverflow,
   personOnOwnSession,
+  sharedBox,
   signedIn,
 } from './sessions';
-
-/** Ada makes a Box and Grace joins it, both through the real screens. */
-async function sharedBox(ada: Page, grace: Page, graceAccount: Account) {
-  await ada.goto('/boxes');
-  await ada.getByLabel('Box name').fill('Weekend crew');
-  await ada.getByRole('button', { name: 'Create Box' }).click();
-  await expect(ada).toHaveURL(/\/boxes\/[0-9a-f-]{36}$/);
-  const url = ada.url();
-  await ada.getByLabel('Their username').fill(graceAccount.username);
-  await ada.getByRole('button', { name: 'Send invitation' }).click();
-  await expect(ada.getByText('Invitation sent.')).toBeVisible();
-  await grace.goto('/boxes');
-  await grace.getByRole('button', { name: 'Join' }).click();
-  await expect(grace.getByRole('link', { name: 'Weekend crew' })).toBeVisible();
-  return url;
-}
 
 test('a post is written, seen, edited, and deleted', async ({
   page,
@@ -62,7 +47,9 @@ test('a post is written, seen, edited, and deleted', async ({
   await page.getByRole('button', { name: 'Edit' }).click();
   await page.getByLabel('Edit your post').fill('Edited light');
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('Edited light')).toBeVisible();
+  await expect(
+    page.getByRole('paragraph').filter({ hasText: 'Edited light' }),
+  ).toBeVisible();
   await expect(page.getByText('edited', { exact: true })).toBeVisible();
 
   // Permalink works for members and 404s for anyone else.

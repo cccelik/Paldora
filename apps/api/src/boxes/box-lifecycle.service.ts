@@ -1,8 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { boxMemberships, boxes, type PaldoraDatabase } from '@paldora/database';
+import {
+  boxMemberships,
+  boxes,
+  mediaAssets,
+  type PaldoraDatabase,
+} from '@paldora/database';
 import type { BoxView, UpdateBoxInput } from '@paldora/validation';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
+import { retireAssets } from '../media/media-retirement.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { boxNotFound, deleteConfirmationMismatch } from './box-errors.js';
@@ -95,6 +101,16 @@ export class BoxLifecycleService {
             eq(boxMemberships.status, 'active'),
           ),
         );
+      // Photos live outside the database: queue their deletion first, while
+      // the keys are still reachable, then let the Box cascade its rows.
+      const photos = await transaction
+        .select()
+        .from(mediaAssets)
+        .where(
+          and(eq(mediaAssets.boxId, boxId), ne(mediaAssets.status, 'deleted')),
+        )
+        .for('update');
+      await retireAssets(transaction, photos);
       await transaction.delete(boxes).where(eq(boxes.id, boxId));
       return affected.map((row) => row.userId);
     });

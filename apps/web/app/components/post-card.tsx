@@ -2,6 +2,7 @@ import type { FeedItemView, PostView } from '@paldora/validation';
 import Link from 'next/link';
 import { LocalTime } from './local-time';
 import { PostActions } from './post-actions';
+import { PostPhotos } from './post-photos';
 import { Avatar, Badge, EmptyState } from './ui';
 import styles from './post-card.module.css';
 
@@ -36,11 +37,13 @@ export function PostCard({
           </Link>
         ) : null}
       </header>
-      <p className={styles.body}>{post.content}</p>
+      {post.content ? <p className={styles.body}>{post.content}</p> : null}
+      <PostPhotos photos={post.media} authorName={post.author.displayName} />
       {post.canEdit ? (
         <PostActions
           postId={post.id}
           content={post.content}
+          hasPhotos={post.media.length > 0}
           leaveAfterDelete={leaveAfterDelete}
         />
       ) : null}

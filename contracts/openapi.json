@@ -1115,14 +1115,21 @@
                 "type": "object",
                 "properties": {
                   "content": {
+                    "default": "",
                     "type": "string",
-                    "minLength": 1,
                     "maxLength": 5000
+                  },
+                  "mediaAssetIds": {
+                    "default": [],
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
                   }
                 },
-                "required": [
-                  "content"
-                ],
                 "additionalProperties": false
               }
             }
@@ -2048,8 +2055,14 @@
                   "purpose": {
                     "type": "string",
                     "enum": [
-                      "avatar"
+                      "avatar",
+                      "post_image"
                     ]
+                  },
+                  "boxId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "contentType": {
                     "type": "string",
@@ -2257,23 +2270,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/$defs/CreatePostRequest",
-                "$defs": {
-                  "CreatePostRequest": {
-                    "type": "object",
-                    "properties": {
-                      "content": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 5000
-                      }
-                    },
-                    "required": [
-                      "content"
-                    ],
-                    "additionalProperties": false
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "maxLength": 5000
                   }
-                }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -3101,6 +3108,13 @@
               "content": {
                 "type": "string"
               },
+              "media": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/PostMedia"
+                }
+              },
               "createdAt": {
                 "type": "string",
                 "format": "date-time",
@@ -3127,6 +3141,7 @@
               "box",
               "author",
               "content",
+              "media",
               "createdAt",
               "editedAt",
               "canEdit"
@@ -3164,6 +3179,42 @@
               "username",
               "displayName",
               "avatarUrl"
+            ],
+            "additionalProperties": false
+          },
+          "PostMedia": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "width": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "height": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "width",
+              "height",
+              "url",
+              "thumbnailUrl"
             ],
             "additionalProperties": false
           },
@@ -3423,7 +3474,8 @@
           "purpose": {
             "type": "string",
             "enum": [
-              "avatar"
+              "avatar",
+              "post_image"
             ]
           },
           "status": {
@@ -3523,7 +3575,8 @@
               "purpose": {
                 "type": "string",
                 "enum": [
-                  "avatar"
+                  "avatar",
+                  "post_image"
                 ]
               },
               "status": {
@@ -3599,6 +3652,13 @@
           "content": {
             "type": "string"
           },
+          "media": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/PostMedia"
+            }
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -3625,6 +3685,7 @@
           "box",
           "author",
           "content",
+          "media",
           "createdAt",
           "editedAt",
           "canEdit"
@@ -3662,6 +3723,42 @@
               "username",
               "displayName",
               "avatarUrl"
+            ],
+            "additionalProperties": false
+          },
+          "PostMedia": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "width": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "height": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "width",
+              "height",
+              "url",
+              "thumbnailUrl"
             ],
             "additionalProperties": false
           }

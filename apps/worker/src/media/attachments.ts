@@ -59,7 +59,15 @@ const attachAvatar: AttachReadyAsset = async (transaction, asset) => {
   if (current) await retireAsset(transaction, current);
 };
 
+/**
+ * Post photos attach when the post is created (the API claims them in its own
+ * transaction), so becoming ready has nothing to do. A ready photo that no
+ * post claims is removed by the reaper.
+ */
+const attachPostImage: AttachReadyAsset = async () => undefined;
+
 /** What "ready" means for each purpose. Add a row with each new purpose. */
 export const attachments: Readonly<Record<MediaPurpose, AttachReadyAsset>> = {
   avatar: attachAvatar,
+  post_image: attachPostImage,
 };

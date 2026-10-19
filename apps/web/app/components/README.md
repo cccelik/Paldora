@@ -52,3 +52,16 @@ Shared form rhythm lives in `components/form-stack.module.css`.
 - `app/status-page.module.css` is shared by `not-found.tsx` and `error.tsx`.
   The not-found page doubles as the "missing or not yours" state, so private
   absence and denial look identical.
+
+## Posts, photos, and realtime
+
+| Component              | Owns                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| `PostFeed`, `PostCard` | Chronological posts; hidden (blocked) items render a neutral card with no author.         |
+| `PostComposer`         | Text plus up to 4 photos; Cmd/Ctrl+Enter posts; locked while photos are processing.       |
+| `usePhotoAttachments`  | Photo flow: reserve → PUT → complete → wait for the worker; polls one at a time.          |
+| `PostActions`          | The author's inline Edit and confirmed Delete.                                            |
+| `PostPhotos`           | Photo grid and full-screen viewer (native `<dialog>`: focus trap, Escape, arrows).        |
+| `LocalTime`            | UTC on the server, the viewer's timezone after mount; no hydration mismatch.              |
+| `MoreLink`             | "Show more" for keyset-paged lists: a plain link, no script.                              |
+| `RealtimeBridge`       | One event stream per tab; refreshes only the page a hint concerns; marks `data-realtime`. |

@@ -48,3 +48,19 @@ export async function personOnOwnSession(
   await signedIn(page, account);
   return { page, context };
 }
+
+/** Ada makes a Box and Grace joins it, both through the real screens. */
+export async function sharedBox(ada: Page, grace: Page, graceAccount: Account) {
+  await ada.goto('/boxes');
+  await ada.getByLabel('Box name').fill('Weekend crew');
+  await ada.getByRole('button', { name: 'Create Box' }).click();
+  await expect(ada).toHaveURL(/\/boxes\/[0-9a-f-]{36}$/);
+  const url = ada.url();
+  await ada.getByLabel('Their username').fill(graceAccount.username);
+  await ada.getByRole('button', { name: 'Send invitation' }).click();
+  await expect(ada.getByText('Invitation sent.')).toBeVisible();
+  await grace.goto('/boxes');
+  await grace.getByRole('button', { name: 'Join' }).click();
+  await expect(grace.getByRole('link', { name: 'Weekend crew' })).toBeVisible();
+  return url;
+}

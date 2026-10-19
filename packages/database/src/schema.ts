@@ -148,6 +148,13 @@ export const mediaAssets = paldoraSchema.table(
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
     purpose: text('purpose').notNull(),
+    /**
+     * Box-scoped purposes (post photos) name their Box. SET NULL, because Box
+     * deletion first tombstones these assets and queues storage cleanup.
+     */
+    boxId: uuid('box_id').references((): AnyPgColumn => boxes.id, {
+      onDelete: 'set null',
+    }),
     status: mediaStatus('status').notNull().default('pending'),
     contentType: text('content_type').notNull(),
     contentLength: bigint('content_length', { mode: 'number' }).notNull(),
@@ -176,7 +183,23 @@ export const mediaAssets = paldoraSchema.table(
     index('media_assets_pending_expiry_index')
       .on(table.uploadExpiresAt)
       .where(sql`${table.status} = 'pending'`),
-    check('media_assets_purpose_check', sql`${table.purpose} in ('avatar')`),
+    check(
+      'media_assets_purpose_check',
+      sql`${table.purpose} in ('avatar', 'post_image')`,
+    ),
+    check(
+      'media_assets_box_scope_check',
+      sql`(${table.purpose} = 'avatar' and ${table.boxId} is null)
+        or (${table.purpose} = 'post_image' and (${table.boxId} is not null or ${table.status} = 'deleted'))`,
+    ),
+    index('media_assets_box_index')
+      .on(table.boxId)
+      .where(sql`${table.boxId} is not null`),
+    index('media_assets_unattached_index')
+      .on(table.updatedAt)
+      .where(
+        sql`${table.purpose} = 'post_image' and ${table.status} = 'ready'`,
+      ),
     check(
       'media_assets_content_type_check',
       sql`${table.contentType} in ('image/jpeg', 'image/png', 'image/webp')`,
@@ -492,13 +515,36 @@ export const posts = paldoraSchema.table(
     ),
     check(
       'posts_content_lifecycle_check',
-      sql`(${table.status} = 'active' and ${table.content} is not null and char_length(${table.content}) between 1 and 5000)
+      sql`(${table.status} = 'active' and (${table.content} is null or char_length(${table.content}) between 1 and 5000))
         or (${table.status} = 'deleted' and ${table.content} is null and ${table.deletedAt} is not null)`,
     ),
   ],
 );
 
+/**
+ * Photos on a post, in display order. A photo belongs to at most one post
+ * (unique asset), and its position is unique within the post.
+ */
+export const postMedia = paldoraSchema.table(
+  'post_media',
+  {
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    mediaAssetId: uuid('media_asset_id')
+      .notNull()
+      .references(() => mediaAssets.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.postId, table.position] }),
+    uniqueIndex('post_media_asset_unique').on(table.mediaAssetId),
+    check('post_media_position_check', sql`${table.position} between 0 and 3`),
+  ],
+);
+
 export type PostRow = typeof posts.$inferSelect;
+export type PostMediaRow = typeof postMedia.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ProfileRow = typeof profiles.$inferSelect;
 export type MediaAssetRow = typeof mediaAssets.$inferSelect;

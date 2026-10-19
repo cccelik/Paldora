@@ -1,0 +1,1732 @@
+{
+  "id": "a6596baf-f736-4199-a5f9-bd6887c02ce2",
+  "prevId": "5f669e79-03cf-49a8-8d92-7c8ce514c893",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "paldora.box_invitations": {
+      "name": "box_invitations",
+      "schema": "paldora",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "box_id": {
+          "name": "box_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inviter_user_id": {
+          "name": "inviter_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invitee_user_id": {
+          "name": "invitee_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "box_invitation_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "box_invitations_pending_pair_unique": {
+          "name": "box_invitations_pending_pair_unique",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "invitee_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"paldora\".\"box_invitations\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "box_invitations_invitee_status_index": {
+          "name": "box_invitations_invitee_status_index",
+          "columns": [
+            {
+              "expression": "invitee_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "box_invitations_box_status_index": {
+          "name": "box_invitations_box_status_index",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "box_invitations_box_id_boxes_id_fk": {
+          "name": "box_invitations_box_id_boxes_id_fk",
+          "tableFrom": "box_invitations",
+          "tableTo": "boxes",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "box_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "box_invitations_inviter_user_id_users_id_fk": {
+          "name": "box_invitations_inviter_user_id_users_id_fk",
+          "tableFrom": "box_invitations",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "inviter_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "box_invitations_invitee_user_id_users_id_fk": {
+          "name": "box_invitations_invitee_user_id_users_id_fk",
+          "tableFrom": "box_invitations",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "invitee_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "box_invitations_distinct_users_check": {
+          "name": "box_invitations_distinct_users_check",
+          "value": "\"paldora\".\"box_invitations\".\"inviter_user_id\" <> \"paldora\".\"box_invitations\".\"invitee_user_id\""
+        },
+        "box_invitations_responded_check": {
+          "name": "box_invitations_responded_check",
+          "value": "case \"paldora\".\"box_invitations\".\"status\"\n        when 'pending' then \"paldora\".\"box_invitations\".\"responded_at\" is null\n        when 'expired' then true\n        else \"paldora\".\"box_invitations\".\"responded_at\" is not null\n      end"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.box_memberships": {
+      "name": "box_memberships",
+      "schema": "paldora",
+      "columns": {
+        "box_id": {
+          "name": "box_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "box_role",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'member'"
+        },
+        "status": {
+          "name": "status",
+          "type": "box_membership_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "box_memberships_one_owner_per_box": {
+          "name": "box_memberships_one_owner_per_box",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"paldora\".\"box_memberships\".\"role\" = 'owner' and \"paldora\".\"box_memberships\".\"status\" = 'active'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "box_memberships_user_status_index": {
+          "name": "box_memberships_user_status_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "box_memberships_box_status_index": {
+          "name": "box_memberships_box_status_index",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "box_memberships_box_id_boxes_id_fk": {
+          "name": "box_memberships_box_id_boxes_id_fk",
+          "tableFrom": "box_memberships",
+          "tableTo": "boxes",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "box_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "box_memberships_user_id_users_id_fk": {
+          "name": "box_memberships_user_id_users_id_fk",
+          "tableFrom": "box_memberships",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "box_memberships_box_id_user_id_pk": {
+          "name": "box_memberships_box_id_user_id_pk",
+          "columns": [
+            "box_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "box_memberships_inactive_role_check": {
+          "name": "box_memberships_inactive_role_check",
+          "value": "\"paldora\".\"box_memberships\".\"status\" = 'active' or \"paldora\".\"box_memberships\".\"role\" = 'member'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.boxes": {
+      "name": "boxes",
+      "schema": "paldora",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "privacy_mode": {
+          "name": "privacy_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "status": {
+          "name": "status",
+          "type": "box_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "boxes_name_length_check": {
+          "name": "boxes_name_length_check",
+          "value": "char_length(\"paldora\".\"boxes\".\"name\") between 1 and 80"
+        },
+        "boxes_private_check": {
+          "name": "boxes_private_check",
+          "value": "\"paldora\".\"boxes\".\"privacy_mode\" = 'private'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.friendships": {
+      "name": "friendships",
+      "schema": "paldora",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_low_id": {
+          "name": "user_low_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_high_id": {
+          "name": "user_high_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "initiated_by_user_id": {
+          "name": "initiated_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "friendship_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "friendships_pair_unique": {
+          "name": "friendships_pair_unique",
+          "columns": [
+            {
+              "expression": "user_low_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_high_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "friendships_low_status_index": {
+          "name": "friendships_low_status_index",
+          "columns": [
+            {
+              "expression": "user_low_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "friendships_high_status_index": {
+          "name": "friendships_high_status_index",
+          "columns": [
+            {
+              "expression": "user_high_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "friendships_user_low_id_users_id_fk": {
+          "name": "friendships_user_low_id_users_id_fk",
+          "tableFrom": "friendships",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "user_low_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "friendships_user_high_id_users_id_fk": {
+          "name": "friendships_user_high_id_users_id_fk",
+          "tableFrom": "friendships",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "user_high_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "friendships_initiated_by_user_id_users_id_fk": {
+          "name": "friendships_initiated_by_user_id_users_id_fk",
+          "tableFrom": "friendships",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "initiated_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "friendships_canonical_pair_check": {
+          "name": "friendships_canonical_pair_check",
+          "value": "\"paldora\".\"friendships\".\"user_low_id\" < \"paldora\".\"friendships\".\"user_high_id\""
+        },
+        "friendships_initiator_is_party_check": {
+          "name": "friendships_initiator_is_party_check",
+          "value": "\"paldora\".\"friendships\".\"initiated_by_user_id\" in (\"paldora\".\"friendships\".\"user_low_id\", \"paldora\".\"friendships\".\"user_high_id\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.media_assets": {
+      "name": "media_assets",
+      "schema": "paldora",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "box_id": {
+          "name": "box_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "media_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_length": {
+          "name": "content_length",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upload_object_key": {
+          "name": "upload_object_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upload_expires_at": {
+          "name": "upload_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "master_object_key": {
+          "name": "master_object_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_object_key": {
+          "name": "display_object_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thumbnail_object_key": {
+          "name": "thumbnail_object_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "width": {
+          "name": "width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "height": {
+          "name": "height",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failure_reason": {
+          "name": "failure_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "media_assets_upload_object_key_unique": {
+          "name": "media_assets_upload_object_key_unique",
+          "columns": [
+            {
+              "expression": "upload_object_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "media_assets_owner_purpose_index": {
+          "name": "media_assets_owner_purpose_index",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "purpose",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "media_assets_pending_expiry_index": {
+          "name": "media_assets_pending_expiry_index",
+          "columns": [
+            {
+              "expression": "upload_expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"paldora\".\"media_assets\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "media_assets_box_index": {
+          "name": "media_assets_box_index",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"paldora\".\"media_assets\".\"box_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "media_assets_unattached_index": {
+          "name": "media_assets_unattached_index",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"paldora\".\"media_assets\".\"purpose\" = 'post_image' and \"paldora\".\"media_assets\".\"status\" = 'ready'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "media_assets_owner_user_id_users_id_fk": {
+          "name": "media_assets_owner_user_id_users_id_fk",
+          "tableFrom": "media_assets",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "owner_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "media_assets_box_id_boxes_id_fk": {
+          "name": "media_assets_box_id_boxes_id_fk",
+          "tableFrom": "media_assets",
+          "tableTo": "boxes",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "box_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "media_assets_purpose_check": {
+          "name": "media_assets_purpose_check",
+          "value": "\"paldora\".\"media_assets\".\"purpose\" in ('avatar', 'post_image')"
+        },
+        "media_assets_box_scope_check": {
+          "name": "media_assets_box_scope_check",
+          "value": "(\"paldora\".\"media_assets\".\"purpose\" = 'avatar' and \"paldora\".\"media_assets\".\"box_id\" is null)\n        or (\"paldora\".\"media_assets\".\"purpose\" = 'post_image' and (\"paldora\".\"media_assets\".\"box_id\" is not null or \"paldora\".\"media_assets\".\"status\" = 'deleted'))"
+        },
+        "media_assets_content_type_check": {
+          "name": "media_assets_content_type_check",
+          "value": "\"paldora\".\"media_assets\".\"content_type\" in ('image/jpeg', 'image/png', 'image/webp')"
+        },
+        "media_assets_content_length_check": {
+          "name": "media_assets_content_length_check",
+          "value": "\"paldora\".\"media_assets\".\"content_length\" between 1 and 10485760"
+        },
+        "media_assets_ready_check": {
+          "name": "media_assets_ready_check",
+          "value": "\"paldora\".\"media_assets\".\"status\" <> 'ready' or (\"paldora\".\"media_assets\".\"master_object_key\" is not null and \"paldora\".\"media_assets\".\"display_object_key\" is not null and \"paldora\".\"media_assets\".\"thumbnail_object_key\" is not null and \"paldora\".\"media_assets\".\"width\" > 0 and \"paldora\".\"media_assets\".\"height\" > 0)"
+        },
+        "media_assets_failure_reason_check": {
+          "name": "media_assets_failure_reason_check",
+          "value": "\"paldora\".\"media_assets\".\"failure_reason\" is null or \"paldora\".\"media_assets\".\"failure_reason\" in ('upload_mismatch', 'undecodable', 'processing_exhausted', 'expired')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.media_job_outbox": {
+      "name": "media_job_outbox",
+      "schema": "paldora",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "job_type": {
+          "name": "job_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "outbox_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "available_at": {
+          "name": "available_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "media_job_outbox_dispatch_index": {
+          "name": "media_job_outbox_dispatch_index",
+          "columns": [
+            {
+              "expression": "available_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"paldora\".\"media_job_outbox\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "media_job_outbox_job_type_check": {
+          "name": "media_job_outbox_job_type_check",
+          "value": "\"paldora\".\"media_job_outbox\".\"job_type\" in ('media.process', 'media.delete')"
+        },
+        "media_job_outbox_payload_check": {
+          "name": "media_job_outbox_payload_check",
+          "value": "(\"paldora\".\"media_job_outbox\".\"job_type\" = 'media.process' and \"paldora\".\"media_job_outbox\".\"payload\" ? 'mediaAssetId') or (\"paldora\".\"media_job_outbox\".\"job_type\" = 'media.delete' and jsonb_typeof(\"paldora\".\"media_job_outbox\".\"payload\" -> 'objectKeys') = 'array')"
+        },
+        "media_job_outbox_attempts_check": {
+          "name": "media_job_outbox_attempts_check",
+          "value": "\"paldora\".\"media_job_outbox\".\"attempts\" >= 0"
+        },
+        "media_job_outbox_completed_check": {
+          "name": "media_job_outbox_completed_check",
+          "value": "(\"paldora\".\"media_job_outbox\".\"status\" = 'completed') = (\"paldora\".\"media_job_outbox\".\"completed_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.post_media": {
+      "name": "post_media",
+      "schema": "paldora",
+      "columns": {
+        "post_id": {
+          "name": "post_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "media_asset_id": {
+          "name": "media_asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "post_media_asset_unique": {
+          "name": "post_media_asset_unique",
+          "columns": [
+            {
+              "expression": "media_asset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "post_media_post_id_posts_id_fk": {
+          "name": "post_media_post_id_posts_id_fk",
+          "tableFrom": "post_media",
+          "tableTo": "posts",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_media_media_asset_id_media_assets_id_fk": {
+          "name": "post_media_media_asset_id_media_assets_id_fk",
+          "tableFrom": "post_media",
+          "tableTo": "media_assets",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "media_asset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "post_media_post_id_position_pk": {
+          "name": "post_media_post_id_position_pk",
+          "columns": [
+            "post_id",
+            "position"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "post_media_position_check": {
+          "name": "post_media_position_check",
+          "value": "\"paldora\".\"post_media\".\"position\" between 0 and 3"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.posts": {
+      "name": "posts",
+      "schema": "paldora",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "box_id": {
+          "name": "box_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_user_id": {
+          "name": "author_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "post_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "edited_at": {
+          "name": "edited_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "posts_box_feed_index": {
+          "name": "posts_box_feed_index",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"paldora\".\"posts\".\"status\" = 'active'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "posts_author_index": {
+          "name": "posts_author_index",
+          "columns": [
+            {
+              "expression": "author_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "posts_box_id_boxes_id_fk": {
+          "name": "posts_box_id_boxes_id_fk",
+          "tableFrom": "posts",
+          "tableTo": "boxes",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "box_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "posts_author_user_id_users_id_fk": {
+          "name": "posts_author_user_id_users_id_fk",
+          "tableFrom": "posts",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "author_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "posts_content_lifecycle_check": {
+          "name": "posts_content_lifecycle_check",
+          "value": "(\"paldora\".\"posts\".\"status\" = 'active' and (\"paldora\".\"posts\".\"content\" is null or char_length(\"paldora\".\"posts\".\"content\") between 1 and 5000))\n        or (\"paldora\".\"posts\".\"status\" = 'deleted' and \"paldora\".\"posts\".\"content\" is null and \"paldora\".\"posts\".\"deleted_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.profiles": {
+      "name": "profiles",
+      "schema": "paldora",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "username_normalized": {
+          "name": "username_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bio": {
+          "name": "bio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avatar_media_id": {
+          "name": "avatar_media_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "onboarding_state": {
+          "name": "onboarding_state",
+          "type": "onboarding_state",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'username'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "profiles_username_normalized_unique": {
+          "name": "profiles_username_normalized_unique",
+          "columns": [
+            {
+              "expression": "username_normalized",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"paldora\".\"profiles\".\"username_normalized\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "profiles_user_id_users_id_fk": {
+          "name": "profiles_user_id_users_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "profiles_avatar_media_id_media_assets_id_fk": {
+          "name": "profiles_avatar_media_id_media_assets_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "media_assets",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "avatar_media_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "profiles_username_pair_check": {
+          "name": "profiles_username_pair_check",
+          "value": "(\"paldora\".\"profiles\".\"username\" is null) = (\"paldora\".\"profiles\".\"username_normalized\" is null)"
+        },
+        "profiles_username_length_check": {
+          "name": "profiles_username_length_check",
+          "value": "\"paldora\".\"profiles\".\"username\" is null or char_length(\"paldora\".\"profiles\".\"username\") between 3 and 30"
+        },
+        "profiles_display_name_length_check": {
+          "name": "profiles_display_name_length_check",
+          "value": "\"paldora\".\"profiles\".\"display_name\" is null or char_length(\"paldora\".\"profiles\".\"display_name\") between 1 and 80"
+        },
+        "profiles_bio_length_check": {
+          "name": "profiles_bio_length_check",
+          "value": "\"paldora\".\"profiles\".\"bio\" is null or char_length(\"paldora\".\"profiles\".\"bio\") <= 500"
+        },
+        "profiles_onboarding_requirements_check": {
+          "name": "profiles_onboarding_requirements_check",
+          "value": "(\"paldora\".\"profiles\".\"onboarding_state\" = 'username' or \"paldora\".\"profiles\".\"username\" is not null) and (\"paldora\".\"profiles\".\"onboarding_state\" in ('username', 'profile') or \"paldora\".\"profiles\".\"display_name\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.user_blocks": {
+      "name": "user_blocks",
+      "schema": "paldora",
+      "columns": {
+        "blocker_id": {
+          "name": "blocker_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blocked_id": {
+          "name": "blocked_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "user_blocks_blocked_index": {
+          "name": "user_blocks_blocked_index",
+          "columns": [
+            {
+              "expression": "blocked_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_blocks_blocker_id_users_id_fk": {
+          "name": "user_blocks_blocker_id_users_id_fk",
+          "tableFrom": "user_blocks",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "blocker_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_blocks_blocked_id_users_id_fk": {
+          "name": "user_blocks_blocked_id_users_id_fk",
+          "tableFrom": "user_blocks",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "blocked_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_blocks_blocker_id_blocked_id_pk": {
+          "name": "user_blocks_blocker_id_blocked_id_pk",
+          "columns": [
+            "blocker_id",
+            "blocked_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "user_blocks_distinct_check": {
+          "name": "user_blocks_distinct_check",
+          "value": "\"paldora\".\"user_blocks\".\"blocker_id\" <> \"paldora\".\"user_blocks\".\"blocked_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "paldora.user_preferences": {
+      "name": "user_preferences",
+      "schema": "paldora",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "appearance": {
+          "name": "appearance",
+          "type": "appearance_preference",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'system'"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_preferences_user_id_users_id_fk": {
+          "name": "user_preferences_user_id_users_id_fk",
+          "tableFrom": "user_preferences",
+          "tableTo": "users",
+          "schemaTo": "paldora",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "paldora.users": {
+      "name": "users",
+      "schema": "paldora",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "auth_subject": {
+          "name": "auth_subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_normalized": {
+          "name": "email_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "user_status",
+          "typeSchema": "paldora",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "users_auth_subject_unique": {
+          "name": "users_auth_subject_unique",
+          "columns": [
+            {
+              "expression": "auth_subject",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "users_email_normalized_unique": {
+          "name": "users_email_normalized_unique",
+          "columns": [
+            {
+              "expression": "email_normalized",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "paldora.appearance_preference": {
+      "name": "appearance_preference",
+      "schema": "paldora",
+      "values": [
+        "light",
+        "dark",
+        "system"
+      ]
+    },
+    "paldora.box_invitation_status": {
+      "name": "box_invitation_status",
+      "schema": "paldora",
+      "values": [
+        "pending",
+        "accepted",
+        "declined",
+        "revoked",
+        "expired"
+      ]
+    },
+    "paldora.box_membership_status": {
+      "name": "box_membership_status",
+      "schema": "paldora",
+      "values": [
+        "active",
+        "left",
+        "removed"
+      ]
+    },
+    "paldora.box_role": {
+      "name": "box_role",
+      "schema": "paldora",
+      "values": [
+        "owner",
+        "admin",
+        "member"
+      ]
+    },
+    "paldora.box_status": {
+      "name": "box_status",
+      "schema": "paldora",
+      "values": [
+        "active",
+        "archived"
+      ]
+    },
+    "paldora.friendship_status": {
+      "name": "friendship_status",
+      "schema": "paldora",
+      "values": [
+        "pending",
+        "accepted",
+        "declined"
+      ]
+    },
+    "paldora.media_status": {
+      "name": "media_status",
+      "schema": "paldora",
+      "values": [
+        "pending",
+        "processing",
+        "ready",
+        "failed",
+        "deleted"
+      ]
+    },
+    "paldora.onboarding_state": {
+      "name": "onboarding_state",
+      "schema": "paldora",
+      "values": [
+        "username",
+        "profile",
+        "avatar",
+        "complete"
+      ]
+    },
+    "paldora.outbox_status": {
+      "name": "outbox_status",
+      "schema": "paldora",
+      "values": [
+        "pending",
+        "published",
+        "completed",
+        "dead"
+      ]
+    },
+    "paldora.post_status": {
+      "name": "post_status",
+      "schema": "paldora",
+      "values": [
+        "active",
+        "deleted"
+      ]
+    },
+    "paldora.user_status": {
+      "name": "user_status",
+      "schema": "paldora",
+      "values": [
+        "active",
+        "suspended",
+        "deleted"
+      ]
+    }
+  },
+  "schemas": {
+    "paldora": "paldora"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -104,6 +104,19 @@ deleted account), both 403.
 | `updatePost`   | `PATCH /posts/{postId}`     | 120/h      | Author only (`POST_ACCESS_DENIED` for other members)                                 |
 | `deletePost`   | `DELETE /posts/{postId}`    | 60/h       | Author only; 204; idempotent; text erased                                            |
 
+### Photos on posts
+
+1. `POST /media/uploads` with `{ purpose: "post_image", boxId, contentType,
+contentLength }`, then `PUT` the bytes and `POST …/complete` as for avatars.
+2. Poll `GET /media/{id}` until `ready` (or `failed`).
+3. `POST /boxes/{boxId}/posts` with `{ content?, mediaAssetIds: [≤4 ready IDs] }`.
+   Text may be empty if there is at least one photo. Photos cannot change after
+   posting; editing changes the text only. Unclaimed photos are removed after
+   24 hours.
+
+Posts in responses carry `media: [{ id, width, height, url, thumbnailUrl }]`
+with signed URLs that expire in 15 minutes; refetch rather than caching them.
+
 ### Realtime
 
 `GET /me/events` is a `text/event-stream` (operation `openEventStream`). Send

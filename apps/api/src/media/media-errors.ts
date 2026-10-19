@@ -36,3 +36,11 @@ export const storageUnavailable = () =>
     'STORAGE_UNAVAILABLE',
     'Photos are temporarily unavailable. Try again shortly.',
   );
+
+/** The photo exists and is yours, but processing has not finished. */
+export const mediaNotReady = () =>
+  new ApiError(
+    HttpStatus.CONFLICT,
+    'MEDIA_NOT_READY',
+    'A photo is still being prepared. Try again in a moment.',
+  );

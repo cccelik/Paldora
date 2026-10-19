@@ -1,0 +1,127 @@
+.grid {
+  display: grid;
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.two,
+.many {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tile {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+  cursor: zoom-in;
+}
+
+.tile:focus-visible {
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus);
+  outline-offset: 2px;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Several photos share a frame; one photo keeps its own proportions. */
+.two .image,
+.many .image {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.single .image {
+  max-height: 32rem;
+  object-fit: contain;
+}
+
+.dialog {
+  width: min(100vw, 72rem);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  /* Solid, not transparent: the backdrop is not part of the dialog's own
+     painted background, so contrast must hold against this surface. */
+  background: var(--pal-color-brand-obsidian);
+  color: var(--pal-color-text-dark-primary);
+}
+
+.dialog::backdrop {
+  background: color-mix(
+    in srgb,
+    var(--pal-color-brand-obsidian) 94%,
+    transparent
+  );
+}
+
+.stage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--pal-space-3);
+  height: 100%;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--pal-space-4))
+    max(var(--pal-space-4), env(safe-area-inset-right, 0px))
+    calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-4))
+    max(var(--pal-space-4), env(safe-area-inset-left, 0px));
+}
+
+.bar,
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pal-space-3);
+}
+
+.count {
+  color: var(--pal-color-text-dark-muted);
+}
+
+.full {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+}
+
+.full img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.control {
+  min-width: var(--pal-size-touch-target);
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border: 1px solid
+    color-mix(in srgb, var(--pal-color-text-dark-primary) 40%, transparent);
+  border-radius: var(--pal-radius-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.control:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.control:focus-visible {
+  outline: var(--pal-size-focus-ring) solid var(--pal-color-brand-lavender);
+  outline-offset: 2px;
+}

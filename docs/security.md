@@ -101,6 +101,13 @@ Posts (Phase 3, D1 applied):
 | Read one post  | ✓                                        | `POST_NOT_FOUND`             | `POST_NOT_FOUND`                                 |
 | Edit or delete | Author only; others `POST_ACCESS_DENIED` | `POST_NOT_FOUND`             | Author keeps access to their own post            |
 
+Photos follow post visibility exactly: signed display and thumbnail URLs
+appear only on posts the viewer may read, never on hidden (blocked) items, and
+masters and raw uploads are never signed. Reserving or claiming a photo needs
+an active membership in an open Box; every unusable photo answers
+`MEDIA_NOT_FOUND`. Deleting a post or a Box queues deletion of the stored files in
+the same transaction.
+
 Deleting erases the text (database check) and keeps a tombstone. Moderators
 cannot delete others' posts until Phase 9. Tests: `posts.integration.test.ts`
 (roles, archived, guesses, concurrency, paging, both block directions,

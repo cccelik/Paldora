@@ -49,3 +49,4 @@ export function mayRemoveMember(actor: BoxRole, target: BoxRole): boolean {
 }
 
 export const POST_CONTENT_MAX_LENGTH = 5_000;
+export const POST_MEDIA_MAX_ITEMS = 4;
