@@ -10,10 +10,11 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '@paldora/domain';
 import {
+  reactionPresetsSchema,
   updatePreferencesSchema,
   updateProfileSchema,
   usernameAvailabilityQuerySchema,
-  type Preferences,
+  type UpdatePreferencesInput,
   type UpdateProfileInput,
 } from '@paldora/validation';
 import type { z } from 'zod';
@@ -70,9 +71,19 @@ export class IdentityController {
   @RateLimit({ scope: 'preferences-update', limit: 120, windowSeconds: 3_600 })
   public updatePreferences(
     @CurrentPrincipal() principal: AuthenticatedPrincipal,
-    @Body(new ZodPipe(updatePreferencesSchema)) body: Preferences,
+    @Body(new ZodPipe(updatePreferencesSchema)) body: UpdatePreferencesInput,
   ) {
     return this.preferences.replace(principal.userId, body);
+  }
+
+  @Put('reaction-presets')
+  @RateLimit({ scope: 'reaction-presets', limit: 120, windowSeconds: 3_600 })
+  public setReactionPresets(
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
+    @Body(new ZodPipe(reactionPresetsSchema))
+    body: z.output<typeof reactionPresetsSchema>,
+  ) {
+    return this.preferences.replacePresets(principal.userId, body.presets);
   }
 
   @Delete('avatar')

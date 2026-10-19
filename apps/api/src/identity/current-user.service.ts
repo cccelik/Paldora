@@ -6,7 +6,7 @@ import {
   users,
   type PaldoraDatabase,
 } from '@paldora/database';
-import type { UserId } from '@paldora/domain';
+import { DEFAULT_REACTION_PRESETS, type UserId } from '@paldora/domain';
 import type { CurrentUser } from '@paldora/validation';
 import { and, eq, exists, gt, isNull, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -34,6 +34,7 @@ export class CurrentUserService {
         user: users,
         profile: profiles,
         appearance: userPreferences.appearance,
+        reactionPresets: userPreferences.reactionPresets,
         avatar: {
           id: mediaAssets.id,
           status: mediaAssets.status,
@@ -83,7 +84,11 @@ export class CurrentUserService {
         onboardingState: row.profile.onboardingState,
         updatedAt: row.profile.updatedAt.toISOString(),
       },
-      preferences: { appearance: row.appearance ?? 'system' },
+      // A missing preferences row means "all defaults".
+      preferences: {
+        appearance: row.appearance ?? 'system',
+        reactionPresets: row.reactionPresets ?? [...DEFAULT_REACTION_PRESETS],
+      },
     };
   }
 }

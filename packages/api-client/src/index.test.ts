@@ -132,7 +132,10 @@ describe('identity and media methods', () => {
       onboardingState: 'complete',
       updatedAt: '2026-10-18T12:00:00.000Z',
     },
-    preferences: { appearance: 'system' },
+    preferences: {
+      appearance: 'system',
+      reactionPresets: ['👍', '❤️', '😂', '😮', '😢'],
+    },
   };
 
   it('sends profile changes with the bearer token and parses the result', async () => {
@@ -259,5 +262,38 @@ describe('comment methods', () => {
     expect(url).toBe('https://api.test/api/v1/comments/c1');
     expect(init).toMatchObject({ method: 'DELETE' });
     expect(init.body).toBeUndefined();
+  });
+});
+
+describe('reaction methods', () => {
+  const client = (fetch: typeof globalThis.fetch) =>
+    new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+  const commentSummary = {
+    reactions: [{ kind: '🔥', count: 1 }],
+    reactionCount: 1,
+    viewerReaction: { kind: '🔥' },
+  };
+
+  it('puts set-state bodies on the reaction paths', async () => {
+    const fetch = vi.fn(async () => json(200, commentSummary));
+    await client(fetch).setCommentReaction('c1', '🔥');
+    await client(fetch).setCommentReaction('c1', null);
+    const calls = fetch.mock.calls as unknown as [string, RequestInit][];
+    expect(calls.map(([url, init]) => [url, init.method, init.body])).toEqual([
+      ['https://api.test/api/v1/comments/c1/reaction', 'PUT', '{"kind":"🔥"}'],
+      ['https://api.test/api/v1/comments/c1/reaction', 'PUT', '{"kind":null}'],
+    ]);
+  });
+
+  it('pages reactions with an optional kind filter', async () => {
+    const fetch = vi.fn(async () => json(200, { items: [], nextCursor: null }));
+    await client(fetch).postReactions('p1', { kind: 'real', limit: 10 });
+    expect((fetch.mock.calls[0] as unknown as [string])[0]).toBe(
+      'https://api.test/api/v1/posts/p1/reactions?kind=real&limit=10',
+    );
   });
 });

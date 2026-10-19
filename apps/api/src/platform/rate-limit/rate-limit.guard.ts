@@ -1,19 +1,18 @@
 import {
-  HttpStatus,
   Inject,
   Injectable,
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ApiError } from '../api-error.js';
 import type { PaldoraRequest } from '../request-context.js';
 import { RATE_LIMITER } from '../tokens.js';
+import { assertWithinLimit, userSubject } from './assert-within-limit.js';
 import {
   RATE_LIMIT_KEY,
   type RateLimitPolicy,
 } from './rate-limit.decorator.js';
-import type { RateLimitDecision, RateLimiter } from './rate-limiter.js';
+import type { RateLimiter } from './rate-limiter.js';
 
 /** Runs after the auth guard, so authenticated limits key on identity. */
 @Injectable()
@@ -31,26 +30,9 @@ export class RateLimitGuard implements CanActivate {
     if (!policy) return true;
     const request = context.switchToHttp().getRequest<PaldoraRequest>();
     const subject = request.principal
-      ? `user:${request.principal.userId}`
+      ? userSubject(request.principal.userId)
       : `ip:${request.ip ?? 'unknown'}`;
-    let decision: RateLimitDecision;
-    try {
-      decision = await this.limiter.consume(subject, policy);
-    } catch {
-      throw new ApiError(
-        HttpStatus.SERVICE_UNAVAILABLE,
-        'RATE_LIMIT_UNAVAILABLE',
-        'This action is temporarily unavailable. Try again shortly.',
-      );
-    }
-    if (!decision.allowed) {
-      throw new ApiError(
-        HttpStatus.TOO_MANY_REQUESTS,
-        'RATE_LIMITED',
-        'Too many requests. Try again later.',
-        { 'Retry-After': String(decision.retryAfterSeconds) },
-      );
-    }
+    await assertWithinLimit(this.limiter, subject, policy);
     return true;
   }
 }

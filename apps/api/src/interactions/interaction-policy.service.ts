@@ -31,6 +31,17 @@ export interface CommentContext {
 
 const root = alias(comments, 'root_comment');
 
+const toContext = (row: {
+  comment: CommentRow;
+  boxId: string;
+  boxStatus: BoxStatus;
+}): CommentContext => ({
+  comment: row.comment,
+  rootId: row.comment.parentCommentId ?? row.comment.id,
+  boxId: row.boxId,
+  boxStatus: row.boxStatus,
+});
+
 /**
  * The only place interaction access is decided. Every read starts from the
  * post's context (membership, Box status, block with the author), so "not
@@ -72,17 +83,58 @@ export class InteractionPolicyService {
     viewerId: string,
     commentId: string,
   ): Promise<CommentContext> {
+    const row = await this.loadComment(executor, viewerId, commentId);
+    if (!row || !row.postActive || row.postHidden || row.commentHidden) {
+      throw commentNotFound();
+    }
+    return toContext(row);
+  }
+
+  /**
+   * An active comment the viewer may react to, inside a transaction, in a
+   * Box that is still open. Per the authorization matrix a block with the
+   * post's author answers POST_NOT_FOUND (as every other route on that post
+   * does); everything else that hides the comment answers COMMENT_NOT_FOUND.
+   */
+  public async commentForReaction(
+    transaction: DatabaseExecutor,
+    viewerId: string,
+    commentId: string,
+  ): Promise<CommentContext> {
+    const row = await this.loadComment(transaction, viewerId, commentId);
+    if (row?.postActive && row.postHidden) throw postNotFound();
+    if (
+      !row ||
+      !row.postActive ||
+      row.commentHidden ||
+      row.comment.status !== 'active'
+    ) {
+      throw commentNotFound();
+    }
+    await this.lockOpenBox(transaction, row.boxId);
+    return toContext(row);
+  }
+
+  /** The comment, its post's state, and both block checks, in one query. */
+  private async loadComment(
+    executor: DatabaseExecutor,
+    viewerId: string,
+    commentId: string,
+  ) {
     const [row] = await executor
       .select({
         comment: comments,
         boxId: posts.boxId,
         boxStatus: boxes.status,
-        visible: sql<boolean>`(${posts.status} = 'active'
-          and not ${hiddenByBlock(viewerId, posts.authorUserId)}
-          and not ${hiddenByBlock(viewerId, comments.authorUserId)}
-          and (${root.id} is null or not ${hiddenByBlock(viewerId, root.authorUserId)}))`.mapWith(
+        postActive: sql<boolean>`(${posts.status} = 'active')`.mapWith(Boolean),
+        postHidden: hiddenByBlock(viewerId, posts.authorUserId).mapWith(
           Boolean,
         ),
+        commentHidden:
+          sql<boolean>`(${hiddenByBlock(viewerId, comments.authorUserId)}
+          or (${root.id} is not null and ${hiddenByBlock(viewerId, root.authorUserId)}))`.mapWith(
+            Boolean,
+          ),
       })
       .from(comments)
       .innerJoin(posts, eq(posts.id, comments.postId))
@@ -98,13 +150,7 @@ export class InteractionPolicyService {
       .leftJoin(root, eq(root.id, comments.parentCommentId))
       .where(eq(comments.id, commentId))
       .limit(1);
-    if (!row?.visible) throw commentNotFound();
-    return {
-      comment: row.comment,
-      rootId: row.comment.parentCommentId ?? row.comment.id,
-      boxId: row.boxId,
-      boxStatus: row.boxStatus,
-    };
+    return row;
   }
 
   /** Holds the Box row `FOR SHARE` until commit; archived Boxes are read-only. */

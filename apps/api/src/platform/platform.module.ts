@@ -83,6 +83,8 @@ import {
     INFRASTRUCTURE,
     ACCESS_TOKEN_VERIFIER,
     OBJECT_STORAGE,
+    // Services enforce body-dependent limits (e.g. camera uploads) directly.
+    RATE_LIMITER,
   ],
 })
 export class PlatformModule {}

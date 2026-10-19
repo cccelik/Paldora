@@ -3,6 +3,7 @@ import {
   BIO_MAX_LENGTH,
   DISPLAY_NAME_MAX_LENGTH,
   ONBOARDING_STATES,
+  REACTION_PRESET_COUNT,
   USER_STATUSES,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
@@ -103,7 +104,14 @@ export const updatePreferencesSchema = z
   .meta({ id: 'UpdatePreferencesRequest' });
 
 export const preferencesSchema = z
-  .object({ appearance: appearanceSchema })
+  .object({
+    appearance: appearanceSchema,
+    /**
+     * Five personal reaction shortcuts, in order. Shortcuts only: any single
+     * emoji is always allowed. Changed with `PUT /me/reaction-presets`.
+     */
+    reactionPresets: z.array(z.string()).length(REACTION_PRESET_COUNT),
+  })
   .meta({ id: 'Preferences' });
 
 /** Short-lived signed derivative URLs; never storage keys. */
@@ -139,4 +147,5 @@ export const currentUserSchema = z
 export type UpdateProfileInput = z.output<typeof updateProfileSchema>;
 export type UsernameAvailability = z.infer<typeof usernameAvailabilitySchema>;
 export type Preferences = z.infer<typeof preferencesSchema>;
+export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 export type CurrentUser = z.infer<typeof currentUserSchema>;

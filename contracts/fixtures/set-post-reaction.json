@@ -1,0 +1,49 @@
+{
+  "schema": "SetPostReactionRequest",
+  "valid": [
+    {
+      "kind": "👍"
+    },
+    {
+      "kind": "🏳️‍🌈"
+    },
+    {
+      "kind": null
+    },
+    {
+      "kind": "real",
+      "mediaAssetId": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10"
+    }
+  ],
+  "invalid": [
+    {},
+    {
+      "kind": "real"
+    },
+    {
+      "kind": "👍",
+      "mediaAssetId": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10"
+    },
+    {
+      "kind": null,
+      "mediaAssetId": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10"
+    },
+    {
+      "kind": "👍👍"
+    },
+    {
+      "kind": "ok"
+    },
+    {
+      "kind": " 👍"
+    },
+    {
+      "kind": "real",
+      "mediaAssetId": "not-a-uuid"
+    },
+    {
+      "kind": "👍",
+      "extra": true
+    }
+  ]
+}

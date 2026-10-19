@@ -70,6 +70,10 @@ test('sends baseline security headers without a framework fingerprint', async ({
   const headers = response!.headers();
   expect(headers['x-content-type-options']).toBe('nosniff');
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+  // Camera reactions need getUserMedia on this origin; nothing else is on.
+  expect(headers['permissions-policy']).toBe(
+    'camera=(self), microphone=(), geolocation=(), browsing-topics=()',
+  );
   expect(headers['x-powered-by']).toBeUndefined();
 });
 

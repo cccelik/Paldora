@@ -7,6 +7,7 @@ import {
   mediaJobOutbox,
   mediaProcessJob,
   postMedia,
+  postReactions,
   posts,
   profiles,
   users,
@@ -99,7 +100,11 @@ async function bigJpeg() {
 }
 
 /** A reserved, completed upload waiting for the worker. */
-async function queuedPhoto(storage: MemoryObjectStorage, bytes?: Uint8Array) {
+async function queuedPhoto(
+  storage: MemoryObjectStorage,
+  bytes?: Uint8Array,
+  purpose: 'post_image' | 'reaction_image' = 'post_image',
+) {
   const ownerId = await person();
   const boxId = await boxOf(ownerId);
   const body = bytes ?? (await bigJpeg());
@@ -110,7 +115,7 @@ async function queuedPhoto(storage: MemoryObjectStorage, bytes?: Uint8Array) {
     .values({
       ownerUserId: ownerId,
       boxId,
-      purpose: 'post_image',
+      purpose,
       status: 'processing',
       contentType: 'image/jpeg',
       contentLength: body.byteLength,
@@ -187,6 +192,74 @@ describe('processing a post photo', () => {
     expect(objectsOf(storage, asset).sort()).toEqual(
       Object.values(keys).sort(),
     );
+  });
+});
+
+describe('processing a camera capture', () => {
+  it('uses the reaction_image sizes and waits, unattached, for its reaction', async () => {
+    const { storage, run } = worker();
+    const { asset, outbox } = await queuedPhoto(
+      storage,
+      undefined,
+      'reaction_image',
+    );
+    await run(fakeJob(outbox));
+
+    const ready = await assetRow(asset.id);
+    expect(ready).toMatchObject({
+      status: 'ready',
+      width: 1280,
+      height: 853,
+      ...derivativeKeys(asset.id),
+    });
+    const keys = derivativeKeys(asset.id);
+    const sizes = await Promise.all(
+      [
+        keys.masterObjectKey,
+        keys.displayObjectKey,
+        keys.thumbnailObjectKey,
+      ].map(async (key) => {
+        const metadata = await sharp(storage.objects.get(key)?.body).metadata();
+        expect(metadata.exif).toBeUndefined();
+        return Math.max(metadata.width ?? 0, metadata.height ?? 0);
+      }),
+    );
+    expect(sizes).toEqual([1280, 1024, 320]);
+    await drainDeletions(run);
+    expect(objectsOf(storage, asset).sort()).toEqual(
+      Object.values(keys).sort(),
+    );
+  });
+
+  it('leaves nothing behind when its Box is deleted mid-processing', async () => {
+    const storage = new MemoryObjectStorage();
+    const { asset, outbox } = await queuedPhoto(
+      storage,
+      undefined,
+      'reaction_image',
+    );
+    const originalWrite = storage.write.bind(storage);
+    let written = 0;
+    storage.write = async (key, type, body) => {
+      await originalWrite(key, type, body);
+      written += 1;
+      if (written === 2) {
+        // Box deletion retires its camera captures by box_id, like photos.
+        await database
+          .update(mediaAssets)
+          .set({ status: 'deleted' })
+          .where(eq(mediaAssets.id, asset.id));
+        await database.insert(mediaJobOutbox).values({
+          jobType: 'media.delete',
+          payload: { objectKeys: [asset.uploadObjectKey] },
+        });
+      }
+    };
+    const { run } = worker(storage);
+    await run(fakeJob(outbox));
+    expect((await assetRow(asset.id))?.status).toBe('deleted');
+    await drainDeletions(run);
+    expect(objectsOf(storage, asset)).toEqual([]);
   });
 });
 
@@ -315,11 +388,16 @@ describe('fault injection: no orphaned objects', () => {
 });
 
 describe('reaper', () => {
-  async function readyPhoto(ageMs: number, attached = false) {
+  async function readyPhoto(
+    ageMs: number,
+    attached = false,
+    purpose: 'post_image' | 'reaction_image' = 'post_image',
+    at = new Date(Date.now() - ageMs),
+  ) {
     const ownerId = await person();
     const boxId = await boxOf(ownerId);
     const id = randomUUID();
-    const when = new Date(Date.now() - ageMs);
+    const when = at;
     const keys = derivativeKeys(id);
     const [asset] = await database
       .insert(mediaAssets)
@@ -327,7 +405,7 @@ describe('reaper', () => {
         id,
         ownerUserId: ownerId,
         boxId,
-        purpose: 'post_image',
+        purpose,
         status: 'ready',
         contentType: 'image/jpeg',
         contentLength: 10,
@@ -345,9 +423,16 @@ describe('reaper', () => {
         .insert(posts)
         .values({ boxId, authorUserId: ownerId, content: 'x' })
         .returning();
-      await database
-        .insert(postMedia)
-        .values({ postId: post!.id, mediaAssetId: id, position: 0 });
+      await (purpose === 'post_image'
+        ? database
+            .insert(postMedia)
+            .values({ postId: post!.id, mediaAssetId: id, position: 0 })
+        : database.insert(postReactions).values({
+            postId: post!.id,
+            userId: ownerId,
+            kind: 'real',
+            mediaAssetId: id,
+          }));
     }
     return asset!;
   }
@@ -368,6 +453,37 @@ describe('reaper', () => {
         sql`${mediaJobOutbox.payload} -> 'objectKeys' ? ${stale.masterObjectKey}`,
       );
     expect(jobs).toHaveLength(1);
+  });
+
+  it('removes camera captures no reaction claimed, with zero orphaned objects', async () => {
+    const { storage, run } = worker();
+    // Earlier than any leftover row (each run picks an earlier instant), so
+    // this run's reap reaches it whatever older test data exists.
+    const stale = await readyPhoto(
+      2 * DAY,
+      false,
+      'reaction_image',
+      new Date(-Date.now()),
+    );
+    const fresh = await readyPhoto(HOUR, false, 'reaction_image');
+    const kept = await readyPhoto(2 * DAY, true, 'reaction_image');
+    for (const asset of [stale, fresh, kept]) {
+      for (const key of Object.values(derivativeKeys(asset.id))) {
+        storage.put(key, 'image/webp', new Uint8Array([1]));
+      }
+    }
+    const result = await reap(database);
+    expect(result.expiredPhotos).toBeGreaterThanOrEqual(1);
+    expect((await assetRow(stale.id))?.status).toBe('deleted');
+    expect((await assetRow(fresh.id))?.status).toBe('ready');
+    expect((await assetRow(kept.id))?.status).toBe('ready');
+    await drainDeletions(run);
+    expect(objectsOf(storage, stale)).toEqual([]);
+    for (const asset of [fresh, kept]) {
+      expect(objectsOf(storage, asset).sort()).toEqual(
+        Object.values(derivativeKeys(asset.id)).sort(),
+      );
+    }
   });
 
   async function deadDeletion(attempts: number, ageMs: number) {

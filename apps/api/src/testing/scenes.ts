@@ -1,13 +1,11 @@
-import {
-  commentReactions,
-  mediaAssets,
-  postReactions,
-} from '@paldora/database';
+import { mediaAssets } from '@paldora/database';
 import {
   boxInvitationSchema,
   boxSchema,
+  commentInteractionSummarySchema,
   commentSchema,
   commentThreadPageSchema,
+  postInteractionSummarySchema,
   postSchema,
   type CommentView,
   type PostView,
@@ -18,8 +16,8 @@ import type { TestApp, TestUser } from './test-app.js';
 
 /**
  * Shared setup for interaction tests: Boxes with people in them, posts, and
- * comments made through the real API. Reactions are written straight to the
- * database until their setters exist, so read paths can be tested first.
+ * comments, and reactions made through the real API. Only a processed camera
+ * capture is written straight to the database, standing in for the worker.
  */
 export function scenes(app: TestApp) {
   const as = (user: TestUser) => client(app, user);
@@ -101,9 +99,9 @@ export function scenes(app: TestApp) {
   }
 
   async function reactToPost(user: TestUser, postId: string, kind = '👍') {
-    await app.database
-      .insert(postReactions)
-      .values({ postId, userId: user.id, kind });
+    return postInteractionSummarySchema.parse(
+      await json(await as(user).put(`/posts/${postId}/reaction`, { kind })),
+    );
   }
 
   async function reactToComment(
@@ -111,13 +109,22 @@ export function scenes(app: TestApp) {
     commentId: string,
     kind = '👍',
   ) {
-    await app.database
-      .insert(commentReactions)
-      .values({ commentId, userId: user.id, kind });
+    return commentInteractionSummarySchema.parse(
+      await json(
+        await as(user).put(`/comments/${commentId}/reaction`, { kind }),
+      ),
+    );
   }
 
-  /** A processed camera capture and the reaction that uses it. */
-  async function cameraReaction(user: TestUser, boxId: string, postId: string) {
+  /**
+   * A camera capture the worker has finished processing, as if uploaded by
+   * `user` for `boxId`. Its derivative keys exist only in the database.
+   */
+  async function cameraImage(
+    user: TestUser,
+    boxId: string,
+    overrides: Partial<typeof mediaAssets.$inferInsert> = {},
+  ) {
     const id = randomUUID();
     await app.database.insert(mediaAssets).values({
       id,
@@ -134,10 +141,20 @@ export function scenes(app: TestApp) {
       thumbnailObjectKey: `media/${id}/thumbnail.webp`,
       width: 1024,
       height: 768,
+      ...overrides,
     });
-    await app.database
-      .insert(postReactions)
-      .values({ postId, userId: user.id, kind: 'real', mediaAssetId: id });
+    return id;
+  }
+
+  /** A processed camera capture, set as `user`'s reaction through the API. */
+  async function cameraReaction(user: TestUser, boxId: string, postId: string) {
+    const id = await cameraImage(user, boxId);
+    await json(
+      await as(user).put(`/posts/${postId}/reaction`, {
+        kind: 'real',
+        mediaAssetId: id,
+      }),
+    );
     return id;
   }
 
@@ -152,6 +169,7 @@ export function scenes(app: TestApp) {
     postView,
     reactToPost,
     reactToComment,
+    cameraImage,
     cameraReaction,
   };
 }

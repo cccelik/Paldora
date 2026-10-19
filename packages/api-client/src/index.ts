@@ -5,7 +5,8 @@ import {
   type CreateCommentInput,
   type CreateMediaUploadInput,
   type CreatePostInput,
-  type Preferences,
+  type SetPostReactionInput,
+  type UpdatePreferencesInput,
   type UpdateBoxInput,
   type RouteDefinition,
   type RouteResponse,
@@ -125,7 +126,7 @@ export class PaldoraApiClient {
     });
   }
 
-  public updatePreferences(body: Preferences) {
+  public updatePreferences(body: UpdatePreferencesInput) {
     return this.call(apiRoutes.updatePreferences, { body });
   }
 
@@ -347,6 +348,42 @@ export class PaldoraApiClient {
 
   public deleteComment(commentId: string) {
     return this.call(apiRoutes.deleteComment, { params: { commentId } });
+  }
+
+  // --- Reactions -----------------------------------------------------------
+
+  /**
+   * Set-state: an emoji, `{ kind: 'real', mediaAssetId }` for a camera
+   * image, or `{ kind: null }` to remove. Returns the post's new summary.
+   */
+  public setPostReaction(postId: string, body: SetPostReactionInput) {
+    return this.call(apiRoutes.setPostReaction, { params: { postId }, body });
+  }
+
+  /** An emoji, or `null` to remove. Returns the comment's new summary. */
+  public setCommentReaction(commentId: string, kind: string | null) {
+    return this.call(apiRoutes.setCommentReaction, {
+      params: { commentId },
+      body: { kind },
+    });
+  }
+
+  /** Who reacted, newest first; `kind` narrows to one emoji or `real`. */
+  public postReactions(
+    postId: string,
+    options: PageOptions & { kind?: string | undefined } = {},
+  ) {
+    return this.call(apiRoutes.listPostReactions, {
+      params: { postId },
+      query: options,
+    });
+  }
+
+  /** Exactly five distinct emoji, in order. */
+  public setReactionPresets(presets: readonly string[]) {
+    return this.call(apiRoutes.setReactionPresets, {
+      body: { presets },
+    });
   }
 
   public declineBoxInvitation(invitationId: string) {

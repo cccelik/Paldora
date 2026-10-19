@@ -16,7 +16,7 @@ records the controls that are implemented and how each one is verified.
 | CORS                           | Exact `WEB_ORIGIN`, no credentials, explicit methods and headers                                                                                                                                                    | `platform.test.ts`                                                   |
 | API headers                    | helmet; CSP `default-src 'none'; frame-ancestors 'none'`                                                                                                                                                            | `platform.test.ts`                                                   |
 | Web CSP                        | One per-request nonce policy in `proxy.ts`; no inline script or style in production                                                                                                                                 | `csp.test.ts`, Playwright                                            |
-| Web headers                    | nosniff, `X-Frame-Options: DENY`, COOP, restrictive Permissions-Policy, HSTS when deployed                                                                                                                          | Playwright                                                           |
+| Web headers                    | nosniff, `X-Frame-Options: DENY`, COOP, restrictive Permissions-Policy (only `camera=(self)`, for camera reactions), HSTS when deployed                                                                             | Playwright                                                           |
 | Configuration                  | Zod parsers; HTTPS and no `*_dev_only` credentials in staging and production; errors name keys, never values                                                                                                        | `runtimes.test.ts`                                                   |
 | Log privacy                    | Redaction of auth headers, cookies, tokens, passwords, secrets, signed URLs, bodies, and content (three levels deep); paths logged without query strings                                                            | `logger.test.ts`, `platform.test.ts`                                 |
 | Bundle secrets                 | `scripts/scan-client-bundle.mjs` in CI                                                                                                                                                                              | CI `validate` job                                                    |
@@ -117,32 +117,60 @@ Known limits: suspended members stay in a Box's counts but vanish from its
 lists until Phase 9 defines suspension. Re-requesting after a decline is
 allowed and bounded only by the rate limit.
 
-## Authorization matrix: Phase 5 (comments, so far)
+## Authorization matrix: Phase 5 (comments and reactions, so far)
 
 Every comment check starts from the post's context (membership, Box status,
 block with the post author) in `InteractionPolicyService`; comment targets add
 the same block rule on the comment's author and its thread root's author.
 
-| Action                        | Owner / admin / member                                                   | Archived Box   | Former member, stranger, guessed ID | Block with the post author | Block with the comment (or root) author                         |
-| ----------------------------- | ------------------------------------------------------------------------ | -------------- | ----------------------------------- | -------------------------- | --------------------------------------------------------------- |
-| Read a post's comments        | ✓                                                                        | ✓              | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | `hidden` placeholder (id, time); a hidden root hides its thread |
-| Comment or reply              | ✓ (300/h)                                                                | `BOX_ARCHIVED` | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | Reply target hidden → `COMMENT_NOT_FOUND`                       |
-| Read one comment, replies     | ✓                                                                        | ✓              | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | `COMMENT_NOT_FOUND`                                             |
-| Edit or delete own comment    | ✓ (delete idempotent)                                                    | `BOX_ARCHIVED` | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | n/a                                                             |
-| Edit or delete someone else's | `COMMENT_ACCESS_DENIED` (no moderation until Phase 9)                    | `BOX_ARCHIVED` | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | `COMMENT_NOT_FOUND`                                             |
-| Counts on posts and comments  | Viewer-relative: blocked people's comments and reactions are not counted | ✓              | n/a                                 | n/a                        | not counted                                                     |
+| Action                        | Owner / admin / member                                                                                            | Archived Box   | Former member, stranger, guessed ID | Block with the post author | Block with the comment (or root) author                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------- | -------------------------- | --------------------------------------------------------------- |
+| Read a post's comments        | ✓                                                                                                                 | ✓              | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | `hidden` placeholder (id, time); a hidden root hides its thread |
+| Comment or reply              | ✓ (300/h)                                                                                                         | `BOX_ARCHIVED` | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | Reply target hidden → `COMMENT_NOT_FOUND`                       |
+| Read one comment, replies     | ✓                                                                                                                 | ✓              | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | `COMMENT_NOT_FOUND`                                             |
+| Edit or delete own comment    | ✓ (delete idempotent)                                                                                             | `BOX_ARCHIVED` | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | n/a                                                             |
+| Edit or delete someone else's | `COMMENT_ACCESS_DENIED` (no moderation until Phase 9)                                                             | `BOX_ARCHIVED` | `COMMENT_NOT_FOUND`                 | `COMMENT_NOT_FOUND`        | `COMMENT_NOT_FOUND`                                             |
+| Counts on posts and comments  | Viewer-relative: blocked people's comments and reactions are not counted                                          | ✓              | n/a                                 | n/a                        | not counted                                                     |
+| React, change, remove (post)  | ✓ (1,000/h, shared with comments)                                                                                 | `BOX_ARCHIVED` | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | n/a                                                             |
+| React (comment)               | ✓ (1,000/h, shared)                                                                                               | `BOX_ARCHIVED` | `COMMENT_NOT_FOUND`                 | `POST_NOT_FOUND`           | `COMMENT_NOT_FOUND`                                             |
+| Camera reaction               | Claim a ready `reaction_image` that is yours, from this post's Box, unused (`MEDIA_NOT_FOUND`, `MEDIA_NOT_READY`) | `BOX_ARCHIVED` | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | n/a                                                             |
+| List a post's reactions       | ✓; camera images signed only here and in summaries                                                                | ✓              | `POST_NOT_FOUND`                    | `POST_NOT_FOUND`           | Reactor omitted (no placeholder)                                |
+| Reserve a camera upload       | Active member of an open Box (120/h, `camera-upload`, fail-closed)                                                | `BOX_ARCHIVED` | `BOX_NOT_FOUND`                     | n/a                        | n/a                                                             |
+| Set reaction presets          | Self only (120/h)                                                                                                 | n/a            | n/a                                 | n/a                        | n/a                                                             |
 
 Block matrix rows (ADR 013), tested in both directions with unblock and
 re-block in `block.integration.test.ts`: comments become neutral placeholders,
 replies inside your thread become placeholders, reactions and camera previews
 are omitted and not counted, hidden comments cannot be fetched or replied to,
-and a comment racing a block never becomes visible to the blocker.
+and a comment racing a block never becomes visible to the blocker. Reaction
+block rows (`interactions/reactions.integration.test.ts`): reacting across a
+block with the post author answers `POST_NOT_FOUND` in both directions; with
+the comment's or its root's author `COMMENT_NOT_FOUND`; blocked reactors are
+omitted from `listPostReactions` and from counts and previews.
 
 Races decided by the database: an edit racing a delete (`UPDATE … WHERE
 status = 'active'`), a comment racing an archive (the Box row is held `FOR
 SHARE`), and reply depth (the composite self-reference). Deleting a post
 erases its comments, reactions, notifications, and camera images in the same
 transaction. Tests: `interactions/comments.integration.test.ts`.
+
+Reactions are set-state under a per-person, per-target advisory lock, with the
+primary key as the final word: five simultaneous sets by one person end as one
+row and one activity event. Two reactions racing for one camera capture are
+decided by the unique index on `post_reactions.media_asset_id` (the loser gets
+`MEDIA_NOT_FOUND`). Replacing or removing a camera reaction tombstones its
+capture and queues deletion of every object in the same transaction. The
+camera-upload limit lives in `MediaUploadService` (the purpose is in the
+body, so a second `@RateLimit` on the route cannot express it) and uses the
+guard's fail-closed helper `assertWithinLimit`. The web app sends
+`Permissions-Policy: camera=(self)` (microphone, geolocation, and
+browsing-topics stay off) so `getUserMedia` works on Paldora's own pages and
+in no embedded frame.
+
+Activity events (`comment.created`, `post.reaction.set`,
+`comment.reaction.set`) hold IDs only, are written in the same transaction as
+their cause, and carry the notification's dedupe key, so a retry, a changed
+emoji, or a re-react after removal never records a second one.
 
 ## Assumptions
 

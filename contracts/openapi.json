@@ -1310,6 +1310,79 @@
         }
       }
     },
+    "/comments/{commentId}/reaction": {
+      "put": {
+        "operationId": "setCommentReaction",
+        "summary": "Set your one emoji reaction on a comment (idempotent), or `null` to remove it. Comments take no camera reactions.",
+        "tags": [
+          "Reactions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentInteractionSummary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, COMMENT_NOT_FOUND, POST_NOT_FOUND, BOX_ARCHIVED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/comments/{commentId}/replies": {
       "get": {
         "operationId": "listReplies",
@@ -2157,6 +2230,67 @@
         }
       }
     },
+    "/me/reaction-presets": {
+      "put": {
+        "operationId": "setReactionPresets",
+        "summary": "Replace your five reaction shortcuts (idempotent). Shortcuts only: any single emoji is always allowed as a reaction.",
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "presets": {
+                    "minItems": 5,
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "presets"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/username-availability": {
       "get": {
         "operationId": "getUsernameAvailability",
@@ -2657,6 +2791,176 @@
           },
           "default": {
             "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, COMMENT_NOT_FOUND, BOX_ARCHIVED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{postId}/reaction": {
+      "put": {
+        "operationId": "setPostReaction",
+        "summary": "Set your one reaction on a post (idempotent): an emoji, a camera image (`kind: real` with a ready `reaction_image` upload from this post’s Box), or `null` to remove it. A camera image and an emoji replace each other; a replaced camera image is deleted.",
+        "tags": [
+          "Reactions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "string",
+                            "const": "real"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mediaAssetId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostInteractionSummary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, BOX_ARCHIVED, MEDIA_NOT_FOUND, MEDIA_NOT_READY, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{postId}/reactions": {
+      "get": {
+        "operationId": "listPostReactions",
+        "summary": "Who reacted to a post, newest first, optionally one `kind` only. People in a block relationship with you are omitted. Camera reactions carry short-lived signed image URLs.",
+        "tags": [
+          "Reactions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string",
+                  "const": "real"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostReactionPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3569,6 +3873,68 @@
           }
         }
       },
+      "CommentInteractionSummary": {
+        "type": "object",
+        "properties": {
+          "reactions": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ReactionCount"
+            }
+          },
+          "reactionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "viewerReaction": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "reactions",
+          "reactionCount",
+          "viewerReaction"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "ReactionCount": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "kind",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
       "CommentPage": {
         "type": "object",
         "properties": {
@@ -4364,10 +4730,19 @@
                   "dark",
                   "system"
                 ]
+              },
+              "reactionPresets": {
+                "minItems": 5,
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
-              "appearance"
+              "appearance",
+              "reactionPresets"
             ],
             "additionalProperties": false
           }
@@ -5351,6 +5726,251 @@
           }
         }
       },
+      "PostInteractionSummary": {
+        "type": "object",
+        "properties": {
+          "commentCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "reactions": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ReactionCount"
+            }
+          },
+          "reactionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "realCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "realPreview": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/RealReactionPreview"
+            }
+          },
+          "viewerReaction": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string"
+                  },
+                  "mediaAssetId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canInteract": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "commentCount",
+          "reactions",
+          "reactionCount",
+          "realCount",
+          "realPreview",
+          "viewerReaction",
+          "canInteract"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "ReactionCount": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "kind",
+              "count"
+            ],
+            "additionalProperties": false
+          },
+          "RealReactionPreview": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "$ref": "#/$defs/UserSummary"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "user",
+              "thumbnailUrl"
+            ],
+            "additionalProperties": false
+          },
+          "UserSummary": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "username": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "avatarUrl"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "PostReactionPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/PostReactionEntry"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "PostReactionEntry": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "$ref": "#/$defs/UserSummary"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "thumbnailUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "url",
+                  "thumbnailUrl"
+                ],
+                "additionalProperties": false
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "required": [
+              "user",
+              "kind",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          },
+          "UserSummary": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "username": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "avatarUrl"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
       "Preferences": {
         "type": "object",
         "properties": {
@@ -5361,10 +5981,19 @@
               "dark",
               "system"
             ]
+          },
+          "reactionPresets": {
+            "minItems": 5,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
-          "appearance"
+          "appearance",
+          "reactionPresets"
         ],
         "additionalProperties": false
       },

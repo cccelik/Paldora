@@ -2,15 +2,11 @@ import {
   mediaAssets,
   mediaDeletionJob,
   mediaJobOutbox,
-  postMedia,
-  storedObjectKeys,
   type PaldoraDatabase,
 } from '@paldora/database';
-import {
-  UNATTACHED_MEDIA_TTL_SECONDS,
-  UPLOAD_COMPLETION_GRACE_SECONDS,
-} from '@paldora/domain';
-import { and, count, eq, inArray, lt, notExists, sql } from 'drizzle-orm';
+import { UPLOAD_COMPLETION_GRACE_SECONDS } from '@paldora/domain';
+import { and, count, eq, inArray, lt } from 'drizzle-orm';
+import { expireUnattachedMedia } from './unattached-media.js';
 
 /** A published row whose job left Redis without finishing (e.g. a flush). */
 export const STALLED_PUBLISH_MS = 30 * 60 * 1_000;
@@ -24,6 +20,7 @@ const purgeBatchSize = 1_000;
 
 export interface ReapResult {
   readonly expiredUploads: number;
+  /** Unclaimed ready post photos and camera captures. */
   readonly expiredPhotos: number;
   readonly requeued: number;
   readonly retriedDeletions: number;
@@ -71,53 +68,6 @@ async function expireAbandonedUploads(
         abandoned.map((asset) => mediaDeletionJob([asset.uploadObjectKey])),
       );
     return abandoned.length;
-  });
-}
-
-/**
- * Ready post photos no post ever claimed (the author closed the composer, or
- * the post failed). They are removed with every object they own.
- */
-async function expireUnattachedPhotos(
-  database: PaldoraDatabase,
-  now: Date,
-): Promise<number> {
-  const cutoff = new Date(now.getTime() - UNATTACHED_MEDIA_TTL_SECONDS * 1_000);
-  return database.transaction(async (transaction) => {
-    const orphaned = await transaction
-      .select()
-      .from(mediaAssets)
-      .where(
-        and(
-          eq(mediaAssets.purpose, 'post_image'),
-          eq(mediaAssets.status, 'ready'),
-          lt(mediaAssets.updatedAt, cutoff),
-          notExists(
-            transaction
-              .select({ one: sql`1` })
-              .from(postMedia)
-              .where(eq(postMedia.mediaAssetId, mediaAssets.id)),
-          ),
-        ),
-      )
-      .limit(batchSize)
-      .for('update', { skipLocked: true });
-    if (orphaned.length === 0) return 0;
-    await transaction
-      .update(mediaAssets)
-      .set({ status: 'deleted', updatedAt: now })
-      .where(
-        inArray(
-          mediaAssets.id,
-          orphaned.map((asset) => asset.id),
-        ),
-      );
-    await transaction
-      .insert(mediaJobOutbox)
-      .values(
-        orphaned.map((asset) => mediaDeletionJob(storedObjectKeys(asset))),
-      );
-    return orphaned.length;
   });
 }
 
@@ -206,7 +156,7 @@ export async function reap(
   now = new Date(),
 ): Promise<ReapResult> {
   const expiredUploads = await expireAbandonedUploads(database, now);
-  const expiredPhotos = await expireUnattachedPhotos(database, now);
+  const expiredPhotos = await expireUnattachedMedia(database, now, batchSize);
   const requeued = await requeueStalled(database, now);
   const retriedDeletions = await retryDeadDeletions(database, now);
   const purged = await purgeFinished(database, now);

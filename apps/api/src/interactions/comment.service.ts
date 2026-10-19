@@ -11,6 +11,7 @@ import { boxArchived } from '../boxes/box-errors.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
+import { recordActivity } from './activity-events.js';
 import { CommentQueryService } from './comment-query.service.js';
 import { commentAccessDenied, commentNotFound } from './interaction-errors.js';
 import {
@@ -27,7 +28,8 @@ interface Placement {
 
 /**
  * Writing comments. Each write runs in one transaction holding the Box row
- * `FOR SHARE`, and every final decision (one reply level, a race between an
+ * `FOR SHARE`; a new comment records its `comment.created` activity event in
+ * that same transaction. Every final decision (one reply level, a race between an
  * edit and a delete) is made by the database, not by an earlier read.
  */
 @Injectable()
@@ -75,6 +77,13 @@ export class CommentService {
         })
         .returning();
       if (!row) throw new Error('Comment insert returned no row.');
+      await recordActivity(transaction, {
+        type: 'comment.created',
+        actorUserId: authorId,
+        postId,
+        commentId: row.id,
+        isReply: row.parentCommentId !== null,
+      });
       return { row, boxId: post.post.boxId, boxStatus: post.boxStatus };
     });
     await this.announce(

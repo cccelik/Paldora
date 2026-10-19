@@ -46,6 +46,20 @@ describe('createDerivatives', () => {
     expect(result.thumbnail).toMatchObject({ width: 160, height: 160 });
   });
 
+  it('bounds camera reactions to the reaction_image sizes, inside-fit', async () => {
+    const result = await createDerivatives(
+      await cameraJpeg(3000, 2000),
+      MEDIA_PURPOSE_POLICIES.reaction_image,
+    );
+    // Orientation 6: the 3000×2000 capture is stored portrait.
+    expect(result.master).toMatchObject({ width: 853, height: 1280 });
+    expect(result.display).toMatchObject({ width: 683, height: 1024 });
+    expect(result.thumbnail).toMatchObject({ width: 213, height: 320 });
+    for (const image of [result.master, result.display, result.thumbnail]) {
+      expect((await sharp(image.bytes).metadata()).exif).toBeUndefined();
+    }
+  });
+
   it('applies EXIF orientation before stripping it', async () => {
     const { master } = await createDerivatives(
       await cameraJpeg(1200, 800),

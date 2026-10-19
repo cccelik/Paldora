@@ -9,6 +9,7 @@ import { friendshipSchema } from './people.js';
 import { createMediaUploadSchema } from './media.js';
 import { commentItemSchema, createCommentSchema } from './comments.js';
 import { postSchema } from './posts.js';
+import { reactionPresetsSchema, setPostReactionSchema } from './reactions.js';
 import { cursorPageQuerySchema } from './primitives.js';
 
 interface Fixture {
@@ -29,6 +30,8 @@ const schemas: Record<string, z.ZodType> = {
   Post: postSchema,
   CommentItem: commentItemSchema,
   CreateCommentRequest: createCommentSchema,
+  SetPostReactionRequest: setPostReactionSchema,
+  ReactionPresetsRequest: reactionPresetsSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

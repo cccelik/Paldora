@@ -1,6 +1,6 @@
 # ADR 011: One media module with tracked outbox completion
 
-Status: accepted; built across Phases 1 and 4 (2026-10-19). Implements R4.
+Status: accepted; built across Phases 1, 4, and 5 (2026-10-19). Implements R4.
 D2 confirmed by the owner on 2026-10-18.
 
 ## Context
@@ -92,6 +92,48 @@ Fault-injection integration tests must end with zero orphaned objects:
   thumbnail URLs on posts the viewer may see. Hidden (blocked) posts carry no
   media. A native `<dialog>` lightbox provides focus handling and keyboard
   navigation.
+
+## Addendum: camera reactions (Phase 5)
+
+No new pipeline: camera reactions are one more row in the purpose table, and
+everything else follows from it.
+
+- **Purpose `reaction_image`.** Box-scoped like `post_image`. JPEG/PNG/WebP,
+  at most 5 MB and 25 MP. Derivatives: master 1280 px, display 1024 px,
+  thumbnail 320 px, all inside-fit, metadata-free WebP, no enlargement
+  (tested in `derivatives.test.ts` and the pipeline integration test).
+- **Purpose-specific rate limit.** Reservations go through the shared
+  `POST /media/uploads` and its flat 480/h limit. Camera captures also count
+  against 120/h (scope `camera-upload`). A route carries one `@RateLimit`, and
+  the purpose is in the body, so the limit is enforced in
+  `MediaUploadService.create` through `assertWithinLimit`, the same
+  fail-closed helper the guard now uses (`RATE_LIMIT_UNAVAILABLE` when Redis
+  cannot answer). Rejected alternatives: a separate camera route (duplicates
+  the upload flow R4 removed) and a guard reading the body (couples the guard
+  to one schema). Add further purpose limits to `PURPOSE_UPLOAD_LIMITS`.
+- **Claiming.** The reaction setter claims the capture in its own
+  transaction, as posts claim photos: the asset row is locked `FOR UPDATE`; it
+  must be the reactor's, from the post's Box, `ready`, and unused. Unusable is
+  `MEDIA_NOT_FOUND`, unfinished `MEDIA_NOT_READY`, and the partial unique
+  index on `post_reactions.media_asset_id` decides a race. Becoming ready has
+  nothing to attach (`attachReactionImage` is a no-op).
+- **Retirement.** Replacing a camera reaction with an emoji or another
+  capture, or removing it, tombstones the old capture and queues deletion of
+  every object it owns in the same transaction (`retireAssets`). Post
+  deletion (`erasePostInteractions`) and Box deletion (the Box-scoped asset
+  loop) do the same.
+- **Reaper.** "Unattached" is now one predicate per claimed purpose
+  (`maintenance/unattached-media.ts`): no `post_media` row for a post photo,
+  no `post_reactions` row for a capture. Ready, unattached assets older than
+  24 h are retired oldest first, skipping rows a claim holds locked. The
+  pipeline test ends with zero stored objects for an unclaimed capture and
+  keeps a claimed one.
+- **Visibility.** Captures are signed (display and thumbnail, 900 s) only in
+  post summaries and `listPostReactions`, after the post's authorization and
+  with blocked reactors omitted.
+- **Browser permission.** `Permissions-Policy` is `camera=(self)` with
+  microphone, geolocation, and browsing-topics still empty. `camera=()` would
+  make `getUserMedia` fail as if the person had denied access.
 
 ## Still open
 

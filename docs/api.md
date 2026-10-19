@@ -45,18 +45,19 @@ generated document lists the operations.
 
 ## Operations
 
-| Operation                 | Route                                         | Access        | Rate limit | Notes                                                                            |
-| ------------------------- | --------------------------------------------- | ------------- | ---------- | -------------------------------------------------------------------------------- |
-| `getLiveness`             | `GET /health`                                 | public        | none       | No I/O                                                                           |
-| `getReadiness`            | `GET /health/ready`                           | public        | none       | PostgreSQL + Redis; `SERVICE_UNAVAILABLE`                                        |
-| `getCurrentUser`          | `GET /me`                                     | authenticated | none       | Account, profile (signed avatar URLs, `avatarProcessing`), preferences           |
-| `updateProfile`           | `PATCH /me/profile`                           | authenticated | 60/h       | `USERNAME_UNAVAILABLE`, `ONBOARDING_INCOMPLETE`, `INVALID_ONBOARDING_TRANSITION` |
-| `getUsernameAvailability` | `GET /me/username-availability?username=`     | authenticated | 120/h      | Advisory; reasons `invalid`, `reserved`, `taken`                                 |
-| `updatePreferences`       | `PUT /me/preferences`                         | authenticated | 120/h      | Idempotent replacement of `{ appearance }`                                       |
-| `deleteAvatar`            | `DELETE /me/avatar`                           | authenticated | 60/h       | Idempotent; stored files deleted by the worker                                   |
-| `createMediaUpload`       | `POST /media/uploads`                         | authenticated | 480/h      | Returns a signed PUT (300 s) bound to type and size. `STORAGE_UNAVAILABLE`       |
-| `completeMediaUpload`     | `POST /media/uploads/{mediaAssetId}/complete` | authenticated | 480/h      | Single use. `MEDIA_NOT_FOUND`, `…_ALREADY_HANDLED`, `…_EXPIRED`, `…_MISMATCH`    |
-| `getMediaAsset`           | `GET /media/{mediaAssetId}`                   | authenticated | none       | Owner-only status; `MEDIA_NOT_FOUND` for anyone else                             |
+| Operation                 | Route                                         | Access        | Rate limit | Notes                                                                                                                                   |
+| ------------------------- | --------------------------------------------- | ------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `getLiveness`             | `GET /health`                                 | public        | none       | No I/O                                                                                                                                  |
+| `getReadiness`            | `GET /health/ready`                           | public        | none       | PostgreSQL + Redis; `SERVICE_UNAVAILABLE`                                                                                               |
+| `getCurrentUser`          | `GET /me`                                     | authenticated | none       | Account, profile (signed avatar URLs, `avatarProcessing`), preferences                                                                  |
+| `updateProfile`           | `PATCH /me/profile`                           | authenticated | 60/h       | `USERNAME_UNAVAILABLE`, `ONBOARDING_INCOMPLETE`, `INVALID_ONBOARDING_TRANSITION`                                                        |
+| `getUsernameAvailability` | `GET /me/username-availability?username=`     | authenticated | 120/h      | Advisory; reasons `invalid`, `reserved`, `taken`                                                                                        |
+| `updatePreferences`       | `PUT /me/preferences`                         | authenticated | 120/h      | Idempotent replacement of `{ appearance }`; returns all preferences                                                                     |
+| `setReactionPresets`      | `PUT /me/reaction-presets`                    | authenticated | 120/h      | `{ presets: [5 distinct single emoji] }`; idempotent; returns all preferences                                                           |
+| `deleteAvatar`            | `DELETE /me/avatar`                           | authenticated | 60/h       | Idempotent; stored files deleted by the worker                                                                                          |
+| `createMediaUpload`       | `POST /media/uploads`                         | authenticated | 480/h      | Returns a signed PUT (300 s) bound to type and size. `STORAGE_UNAVAILABLE`. Camera captures (`reaction_image`) also count against 120/h |
+| `completeMediaUpload`     | `POST /media/uploads/{mediaAssetId}/complete` | authenticated | 480/h      | Single use. `MEDIA_NOT_FOUND`, `…_ALREADY_HANDLED`, `…_EXPIRED`, `…_MISMATCH`                                                           |
+| `getMediaAsset`           | `GET /media/{mediaAssetId}`                   | authenticated | none       | Owner-only status; `MEDIA_NOT_FOUND` for anyone else                                                                                    |
 
 Every authenticated route can also return `ACCOUNT_NOT_PROVISIONED` (a valid
 identity with no Paldora account) and `ACCOUNT_BLOCKED` (a suspended or
@@ -138,7 +139,31 @@ by count, top 8), `reactionCount` (emoji and camera), `realCount`,
 `realPreview` (up to 4 latest camera thumbnails), `viewerReaction`, and
 `canInteract` (false in an archived Box). Comments carry the same reaction
 fields. Counts leave out anything by people in a block relationship with you.
-Setting reactions arrives with the next Phase 5 slice.
+
+### Reactions
+
+| Operation            | Route                                | Rate limit                      | Notes                                                                                                                                                             |
+| -------------------- | ------------------------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setPostReaction`    | `PUT /posts/{postId}/reaction`       | 1,000/h (shared `reaction-set`) | `{ kind: emoji }`, `{ kind: "real", mediaAssetId }`, or `{ kind: null }`; returns the post's `interactions`; `BOX_ARCHIVED`, `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY` |
+| `setCommentReaction` | `PUT /comments/{commentId}/reaction` | 1,000/h (shared `reaction-set`) | `{ kind: emoji }` or `{ kind: null }`; returns the comment's `interactions`; `COMMENT_NOT_FOUND`, `POST_NOT_FOUND` (block with the post author), `BOX_ARCHIVED`   |
+| `listPostReactions`  | `GET /posts/{postId}/reactions`      | none                            | Paged, newest first; `?kind=` narrows to one emoji or `real`; `{ user, kind, image?, createdAt }`; blocked reactors omitted                                       |
+
+- **Set-state.** One reaction per person per post and per comment. Repeating a
+  request changes nothing; `kind: null` removes it (idempotent). Any single
+  emoji grapheme is accepted (ZWJ sequences, flags, keycaps, skin tones); the
+  five presets are only shortcuts.
+- **Camera reactions** (posts only): reserve `POST /media/uploads` with
+  `{ purpose: "reaction_image", boxId: <the post's Box>, contentType,
+contentLength ≤ 5 MB }`, upload, complete, poll until `ready`, then set
+  `{ kind: "real", mediaAssetId }`. The capture must be yours, from that Box,
+  and unused; anything else is `MEDIA_NOT_FOUND`, an unfinished one
+  `MEDIA_NOT_READY`. A camera reaction and an emoji replace each other; the
+  replaced or removed capture is deleted. Unclaimed captures are removed after
+  24 hours. Images are signed only for people who may see the post
+  (display and thumbnail, 15 minutes).
+- **Notifications.** A new reaction (not a change of emoji, not a re-react
+  after removal) and every new comment record an activity event that the
+  worker turns into a notification for the person addressed.
 
 ### Realtime
 
@@ -150,6 +175,8 @@ most 5 open streams per person (`RATE_LIMITED` with `Retry-After` beyond that).
 Events are `{ type, boxId?, postId?, commentId?, notificationId?, at }`;
 see `RealtimeEvent` in the contract. Comment writes send `comment.created`,
 `comment.updated`, and `comment.deleted` to the post's Box with `commentId`.
+A reaction that changed something sends `reaction.changed` with `postId`
+(and `commentId` for a comment reaction); an idempotent repeat sends nothing.
 
 Lists return `{ items, nextCursor }`; pass `limit` (1–50, default 20) and the
 opaque `cursor`. People appear as `UserSummary`: `id`, `username`,

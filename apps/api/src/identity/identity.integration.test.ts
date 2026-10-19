@@ -1,4 +1,11 @@
-import { currentUserSchema, errorEnvelopeSchema } from '@paldora/validation';
+import { userPreferences } from '@paldora/database';
+import { DEFAULT_REACTION_PRESETS } from '@paldora/domain';
+import {
+  currentUserSchema,
+  errorEnvelopeSchema,
+  preferencesSchema,
+} from '@paldora/validation';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createTestApp,
@@ -191,5 +198,74 @@ describe('preferences', () => {
       body: { appearance: 'neon' },
     });
     expect(response.status).toBe(400);
+  });
+});
+
+describe('reaction presets', () => {
+  const current = async (user: Awaited<ReturnType<TestApp['createUser']>>) =>
+    currentUserSchema.parse(await (await app.request(user, '/me')).json())
+      .preferences;
+  const put = (
+    user: Awaited<ReturnType<TestApp['createUser']>>,
+    presets: unknown,
+  ) =>
+    app.request(user, '/me/reaction-presets', {
+      method: 'PUT',
+      body: { presets },
+    });
+
+  it('defaults to the standard five, even without a preferences row', async () => {
+    const user = await app.createUser();
+    expect((await current(user)).reactionPresets).toEqual([
+      ...DEFAULT_REACTION_PRESETS,
+    ]);
+    await app.database
+      .delete(userPreferences)
+      .where(eq(userPreferences.userId, user.id));
+    expect(await current(user)).toEqual({
+      appearance: 'system',
+      reactionPresets: [...DEFAULT_REACTION_PRESETS],
+    });
+  });
+
+  it('replaces them idempotently and keeps appearance separate', async () => {
+    const user = await app.createUser();
+    await app.database
+      .delete(userPreferences)
+      .where(eq(userPreferences.userId, user.id));
+    const presets = ['🔥', '🏳️‍🌈', '1️⃣', '👍🏽', '🎉'];
+    for (const attempt of [1, 2]) {
+      const response = await put(user, presets);
+      expect(response.status, `attempt ${attempt}`).toBe(200);
+      expect(preferencesSchema.parse(await response.json())).toEqual({
+        appearance: 'system',
+        reactionPresets: presets,
+      });
+    }
+    await app.request(user, '/me/preferences', {
+      method: 'PUT',
+      body: { appearance: 'dark' },
+    });
+    expect(await current(user)).toEqual({
+      appearance: 'dark',
+      reactionPresets: presets,
+    });
+  });
+
+  it.each([
+    ['four', ['👍', '❤️', '😂', '😮']],
+    ['six', ['👍', '❤️', '😂', '😮', '😢', '🎉']],
+    ['a duplicate', ['👍', '👍', '😂', '😮', '😢']],
+    ['text', ['👍', '❤️', '😂', '😮', 'ok']],
+    ['the camera marker', ['👍', '❤️', '😂', '😮', 'real']],
+    ['two emoji in one slot', ['👍👍', '❤️', '😂', '😮', '😢']],
+  ])('rejects %s', async (_name, presets) => {
+    const user = await app.createUser();
+    const response = await put(user, presets);
+    expect(response.status).toBe(400);
+    expect(await errorCode(response)).toBe('VALIDATION_FAILED');
+    expect((await current(user)).reactionPresets).toEqual([
+      ...DEFAULT_REACTION_PRESETS,
+    ]);
   });
 });

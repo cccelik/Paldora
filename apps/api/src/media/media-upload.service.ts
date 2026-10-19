@@ -14,6 +14,7 @@ import {
   SIGNED_UPLOAD_TTL_SECONDS,
   UPLOAD_COMPLETION_GRACE_SECONDS,
   type MediaAssetId,
+  type MediaPurpose,
   type UserId,
 } from '@paldora/domain';
 import type { ObjectStorage, StoredObject } from '@paldora/storage';
@@ -26,7 +27,17 @@ import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { boxArchived, boxNotFound } from '../boxes/box-errors.js';
-import { INFRASTRUCTURE, OBJECT_STORAGE } from '../platform/tokens.js';
+import {
+  assertWithinLimit,
+  userSubject,
+} from '../platform/rate-limit/assert-within-limit.js';
+import type { RateLimitPolicy } from '../platform/rate-limit/rate-limit.decorator.js';
+import type { RateLimiter } from '../platform/rate-limit/rate-limiter.js';
+import {
+  INFRASTRUCTURE,
+  OBJECT_STORAGE,
+  RATE_LIMITER,
+} from '../platform/tokens.js';
 import {
   mediaNotFound,
   storageUnavailable,
@@ -45,6 +56,18 @@ const matchesReservation = (
   stored.contentLength === asset.contentLength;
 
 /**
+ * Limits for one purpose, on top of the route's flat `media-upload` limit.
+ * They live here, not in a decorator, because the purpose is in the body and
+ * one route cannot carry two `@RateLimit` policies. Fail-closed like the
+ * guard (RATE_LIMIT_UNAVAILABLE).
+ */
+export const PURPOSE_UPLOAD_LIMITS: Readonly<
+  Partial<Record<MediaPurpose, RateLimitPolicy>>
+> = {
+  reaction_image: { scope: 'camera-upload', limit: 120, windowSeconds: 3_600 },
+};
+
+/**
  * The generic upload flow for every media purpose (R4): reserve, sign, verify,
  * queue. Purpose rules come from `MEDIA_PURPOSE_POLICIES`, already enforced
  * by the request schema; ownership is enforced here on every step.
@@ -54,6 +77,7 @@ export class MediaUploadService {
   public constructor(
     @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    @Inject(RATE_LIMITER) private readonly limiter: RateLimiter,
   ) {}
 
   private get database(): PaldoraDatabase {
@@ -64,6 +88,10 @@ export class MediaUploadService {
     userId: UserId,
     input: CreateMediaUploadInput,
   ): Promise<MediaUpload> {
+    const purposeLimit = PURPOSE_UPLOAD_LIMITS[input.purpose];
+    if (purposeLimit) {
+      await assertWithinLimit(this.limiter, userSubject(userId), purposeLimit);
+    }
     const boxId = await this.scopeFor(userId, input);
     // Random, non-identifying keys: signed URLs necessarily contain them.
     const uploadObjectKey = `uploads/${randomUUID()}`;
@@ -103,7 +131,8 @@ export class MediaUploadService {
   }
 
   /**
-   * Box-scoped uploads (post photos) need an active membership in an open Box.
+   * Box-scoped uploads (post photos, camera reactions) need an active
+   * membership in an open Box.
    * A stranger's reservation looks the same as a missing Box.
    */
   private async scopeFor(

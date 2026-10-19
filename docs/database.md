@@ -90,7 +90,8 @@ Phase 4 API and worker keep running against it.
   unique `dedupe_key`, `read_at`. Rows hold IDs only, never content.
 - `media_assets`: purpose `reaction_image` (Box-scoped like `post_image`);
   `media_assets_box_scope_check` and the unattached-media reaper index now
-  cover both Box purposes.
+  cover both Box purposes. The reaper treats a ready capture as unattached
+  while no `post_reactions` row names it (post photos: no `post_media` row).
 
 Cascades: Box deletion removes posts and with them comments, reactions,
 events, and notifications; it retires camera images first through the
@@ -103,6 +104,13 @@ Pair-level decisions (friend request, block, Box invitation, accepting one)
 take a transaction advisory lock on the pair first (`lockPair`), so a block can
 never commit between "is anyone blocked?" and "create the relationship".
 Tests prove this by disabling the lock and watching the race tests fail.
+
+Reaction writes take a transaction advisory lock on (target, person)
+(`lockReactor`) before reading the current reaction, so replacing it and
+retiring the camera image it used cannot interleave with a concurrent set by
+the same person. The primary key and the media-asset unique index stay the
+final authority. A new row is detected with `RETURNING (xmax = 0)`; only a new
+row records an activity event.
 
 Reviewed cascade policy (Phase 1):
 
