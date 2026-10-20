@@ -20,8 +20,12 @@ import { isUniqueViolation } from '../platform/database-errors.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
-import { loadPostContext } from './post-context.js';
-import { postAccessDenied, postNotFound } from './post-errors.js';
+import { loadPostContext, type PostContext } from './post-context.js';
+import {
+  postAccessDenied,
+  postManagedByLifeUpdate,
+  postNotFound,
+} from './post-errors.js';
 import { PostQueryService } from './post-query.service.js';
 import { toPostView } from './post-views.js';
 
@@ -121,11 +125,7 @@ export class PostService {
     content: string,
   ): Promise<PostView> {
     const { context, media } = await this.queries.get(viewerId, postId);
-    this.assertMayChange(
-      context.post.authorUserId,
-      viewerId,
-      context.boxStatus,
-    );
+    this.assertMayChange(context, viewerId);
     const text = content.trim();
     // A post may drop its text only if photos remain.
     if (text.length === 0 && media.length === 0) throw needsSomething();
@@ -170,14 +170,11 @@ export class PostService {
     const context = await loadPostContext(this.database, viewerId, postId);
     if (!context || context.hidden) throw postNotFound();
     if (context.post.status === 'deleted') {
-      if (context.post.authorUserId === viewerId) return;
-      throw postNotFound();
+      if (context.post.authorUserId !== viewerId) throw postNotFound();
+      if (context.post.kind === 'life_update') throw postManagedByLifeUpdate();
+      return;
     }
-    this.assertMayChange(
-      context.post.authorUserId,
-      viewerId,
-      context.boxStatus,
-    );
+    this.assertMayChange(context, viewerId);
     await this.database.transaction(async (transaction) => {
       const [deleted] = await transaction
         .update(posts)
@@ -215,12 +212,14 @@ export class PostService {
     return this.bus.publish(boxChannel(boxId), { type, boxId, postId });
   }
 
-  private assertMayChange(
-    authorId: string,
-    viewerId: string,
-    boxStatus: string,
-  ): void {
-    if (authorId !== viewerId) throw postAccessDenied();
-    if (boxStatus !== 'active') throw boxArchived();
+  /**
+   * Only for someone who can already see the post: other people get
+   * POST_ACCESS_DENIED, and the author of a Life Update's backing post
+   * POST_MANAGED_BY_LIFE_UPDATE (it changes only through the Life Update).
+   */
+  private assertMayChange(context: PostContext, viewerId: string): void {
+    if (context.post.authorUserId !== viewerId) throw postAccessDenied();
+    if (context.post.kind === 'life_update') throw postManagedByLifeUpdate();
+    if (context.boxStatus !== 'active') throw boxArchived();
   }
 }

@@ -2,6 +2,7 @@ import {
   boxMemberships,
   boxes,
   hiddenByBlock,
+  lifeUpdateDeliveries,
   posts,
   type DatabaseExecutor,
   type PostRow,
@@ -20,6 +21,8 @@ export interface PostContext {
   readonly boxStatus: BoxStatus;
   /** A block exists between the viewer and the author (either direction). */
   readonly hidden: boolean;
+  /** The Life Update this post delivers (a `life_update` backing post). */
+  readonly lifeUpdateId: string | null;
 }
 
 /**
@@ -38,6 +41,7 @@ export async function loadPostContext(
       boxName: boxes.name,
       boxStatus: boxes.status,
       hidden: hiddenByBlock(viewerId, posts.authorUserId).mapWith(Boolean),
+      lifeUpdateId: lifeUpdateDeliveries.lifeUpdateId,
     })
     .from(posts)
     .innerJoin(boxes, eq(boxes.id, posts.boxId))
@@ -49,6 +53,7 @@ export async function loadPostContext(
         eq(boxMemberships.status, 'active'),
       ),
     )
+    .leftJoin(lifeUpdateDeliveries, eq(lifeUpdateDeliveries.postId, posts.id))
     .where(eq(posts.id, postId))
     .limit(1);
   return row;

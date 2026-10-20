@@ -1,0 +1,52 @@
+{
+  "schema": "UpdateLifeUpdateRequest",
+  "valid": [
+    {
+      "sections": {
+        "travel": "Lisbon"
+      }
+    },
+    {
+      "mediaAssetIds": ["5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96"]
+    },
+    {
+      "sections": {
+        "travel": "Lisbon"
+      },
+      "mediaAssetIds": []
+    },
+    {
+      "sections": {},
+      "mediaAssetIds": ["5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96"]
+    },
+    {
+      "mediaAssetIds": []
+    }
+  ],
+  "invalid": [
+    {},
+    {
+      "sections": {},
+      "mediaAssetIds": []
+    },
+    {
+      "sections": {
+        "travel": "Lisbon"
+      },
+      "audience": {
+        "type": "only_me"
+      }
+    },
+    {
+      "sections": {
+        "favouriteColour": "blue"
+      }
+    },
+    {
+      "mediaAssetIds": [
+        "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96",
+        "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96"
+      ]
+    }
+  ]
+}

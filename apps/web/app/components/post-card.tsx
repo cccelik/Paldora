@@ -1,5 +1,6 @@
 import type { FeedItemView, PostView } from '@paldora/validation';
 import Link from 'next/link';
+import { LifeUpdateCard } from './life-update-card';
 import { LocalTime } from './local-time';
 import { PostActions } from './post-actions';
 import { PostInteractions } from './post-interactions';
@@ -77,6 +78,11 @@ function HiddenPostCard() {
   );
 }
 
+function feedItemKey(item: FeedItemView): string {
+  if (item.kind === 'post') return item.post.id;
+  return item.kind === 'life_update' ? item.lifeUpdate.id : item.hidden.id;
+}
+
 export function PostFeed({
   items,
   presets,
@@ -92,9 +98,11 @@ export function PostFeed({
   return (
     <ul className={styles.list} aria-label="Posts">
       {items.map((item) => (
-        <li key={item.kind === 'post' ? item.post.id : item.hidden.id}>
+        <li key={feedItemKey(item)}>
           {item.kind === 'post' ? (
             <PostCard post={item.post} presets={presets} showBox={showBox} />
+          ) : item.kind === 'life_update' ? (
+            <LifeUpdateCard lifeUpdate={item.lifeUpdate} presets={presets} />
           ) : (
             <HiddenPostCard />
           )}

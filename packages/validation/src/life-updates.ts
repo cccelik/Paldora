@@ -111,6 +111,34 @@ export const createLifeUpdateSchema = z
   .refine(hasSomething, needsSomething)
   .meta({ id: 'CreateLifeUpdateRequest' });
 
+/**
+ * A partial edit (strict): a field that is present replaces that part
+ * whole (`sections` the sections, `mediaAssetIds` the photos, in display
+ * order, kept and new alike); one left out stays as it is. There is no
+ * `audience` key: the audience is final. The result must keep at least one
+ * section or photo, which the service checks against what is stored.
+ */
+export const updateLifeUpdateSchema = z
+  .object({
+    sections: lifeUpdateSectionsSchema.optional(),
+    /** Every photo it should have afterwards, in display order. */
+    mediaAssetIds: lifeUpdateMediaIdsSchema.optional(),
+  })
+  .strict()
+  .refine(
+    ({ sections, mediaAssetIds }) =>
+      sections !== undefined || mediaAssetIds !== undefined,
+    { message: 'Change the sections or the photos.' },
+  )
+  .refine(
+    ({ sections, mediaAssetIds }) =>
+      sections === undefined ||
+      mediaAssetIds === undefined ||
+      hasSomething({ sections, mediaAssetIds }),
+    needsSomething,
+  )
+  .meta({ id: 'UpdateLifeUpdateRequest' });
+
 export const lifeUpdateSectionSchema = z
   .object({
     key: z.enum(LIFE_UPDATE_SECTION_KEYS),
@@ -162,6 +190,9 @@ export const lifeUpdatePageSchema = cursorPageSchema(lifeUpdateSchema).meta({
 export type CreateLifeUpdateInput = z.input<typeof createLifeUpdateSchema>;
 /** After defaults and trimming: what the service receives. */
 export type NewLifeUpdate = z.output<typeof createLifeUpdateSchema>;
+export type UpdateLifeUpdateInput = z.input<typeof updateLifeUpdateSchema>;
+/** After trimming: what the edit service receives. */
+export type LifeUpdateChanges = z.output<typeof updateLifeUpdateSchema>;
 export type LifeUpdateView = z.infer<typeof lifeUpdateSchema>;
 export type LifeUpdateContextView = z.infer<typeof lifeUpdateContextSchema>;
 export type LifeUpdateSectionView = z.infer<typeof lifeUpdateSectionSchema>;

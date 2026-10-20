@@ -4,6 +4,7 @@ import { InteractionsModule } from '../interactions/interactions.module.js';
 import { MediaModule } from '../media/media.module.js';
 import { RealtimeModule } from '../realtime/realtime.module.js';
 import { LifeUpdateDeleteService } from './life-update-delete.service.js';
+import { LifeUpdateEditService } from './life-update-edit.service.js';
 import { LifeUpdatePolicyService } from './life-update-policy.service.js';
 import { LifeUpdatePublishService } from './life-update-publish.service.js';
 import { LifeUpdateQueryService } from './life-update-query.service.js';
@@ -23,6 +24,7 @@ import { LifeUpdatesController } from './life-updates.controller.js';
     LifeUpdatePolicyService,
     LifeUpdateViewService,
     LifeUpdatePublishService,
+    LifeUpdateEditService,
     LifeUpdateDeleteService,
     LifeUpdateQueryService,
   ],

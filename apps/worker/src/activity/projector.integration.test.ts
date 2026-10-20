@@ -6,6 +6,8 @@ import {
   commentReactions,
   comments,
   createDatabaseConnection,
+  lifeUpdateDeliveries,
+  lifeUpdates,
   notifications,
   postReactions,
   posts,
@@ -695,5 +697,55 @@ describe('activity retention', () => {
       .where(inArray(notifications.id, [oldNotification, recentNotification]));
     // Purging an event never deletes its notification (SET NULL).
     expect(kept).toEqual([{ id: recentNotification, eventId: null }]);
+  });
+});
+
+describe('Life Update deliveries (Phase 6)', () => {
+  it('notifies the Life Update author of a comment or reaction on a backing post', async () => {
+    const [author, guest] = await Promise.all([person(), person()]);
+    const boxId = await boxWith(author, guest);
+    const postId = await database.transaction(async (transaction) => {
+      const [update] = await transaction
+        .insert(lifeUpdates)
+        .values({
+          authorUserId: author,
+          audience: 'boxes',
+          sections: { travel: 'Lisbon' },
+        })
+        .returning({ id: lifeUpdates.id });
+      const [post] = await transaction
+        .insert(posts)
+        .values({ boxId, authorUserId: author, kind: 'life_update' })
+        .returning({ id: posts.id });
+      if (!update || !post) throw new Error('life update insert failed');
+      await transaction.insert(lifeUpdateDeliveries).values({
+        lifeUpdateId: update.id,
+        audience: 'boxes',
+        authorUserId: author,
+        position: 0,
+        boxId,
+        postId: post.id,
+      });
+      return post.id;
+    });
+    const commentId = await commentBy(postId, guest);
+    const events = [
+      await recordEvent({
+        type: 'comment.created',
+        actor: guest,
+        postId,
+        commentId,
+        reply: false,
+      }),
+      await reactToPost(postId, guest),
+    ];
+    await projectAll(events.map((event) => event.id));
+    const rows = await notificationsFor(events.map((event) => event.dedupeKey));
+    expect(rows.map((row) => [row.type, row.recipientUserId]).sort()).toEqual(
+      [
+        ['post.comment', author],
+        ['post.reaction', author],
+      ].sort(),
+    );
   });
 });

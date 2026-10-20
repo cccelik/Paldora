@@ -120,12 +120,13 @@ with signed URLs that expire in 15 minutes; refetch rather than caching them.
 
 ### Life Updates
 
-| Operation           | Route                                 | Rate limit                | Notes                                                                                                                         |
-| ------------------- | ------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `createLifeUpdate`  | `POST /life-updates`                  | 30/h `life-update-create` | 201 `LifeUpdate`; `BOX_NOT_FOUND`, `BOX_ARCHIVED` (whole request fails), `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY`                 |
-| `getLifeUpdate`     | `GET /life-updates/{lifeUpdateId}`    | none                      | `LIFE_UPDATE_NOT_FOUND` for missing, deleted, outside your Boxes, Only Me of someone else, and blocked authors alike          |
-| `deleteLifeUpdate`  | `DELETE /life-updates/{lifeUpdateId}` | 30/h `life-update-delete` | Author only (`LIFE_UPDATE_ACCESS_DENIED` for other members); 204; idempotent; removes it from every Box and erases everything |
-| `listMyLifeUpdates` | `GET /me/life-updates`                | none                      | Your own, newest first, Only Me included; one you can no longer reach in any Box is left out, so a page may be short          |
+| Operation           | Route                                 | Rate limit                | Notes                                                                                                                                                   |
+| ------------------- | ------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createLifeUpdate`  | `POST /life-updates`                  | 30/h `life-update-create` | 201 `LifeUpdate`; `BOX_NOT_FOUND`, `BOX_ARCHIVED` (whole request fails), `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY`                                           |
+| `getLifeUpdate`     | `GET /life-updates/{lifeUpdateId}`    | none                      | `LIFE_UPDATE_NOT_FOUND` for missing, deleted, outside your Boxes, Only Me of someone else, and blocked authors alike                                    |
+| `updateLifeUpdate`  | `PATCH /life-updates/{lifeUpdateId}`  | 30/h `life-update-edit`   | Author only (`LIFE_UPDATE_ACCESS_DENIED` for other members); `BOX_ARCHIVED` once every Box you are in is archived; `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY` |
+| `deleteLifeUpdate`  | `DELETE /life-updates/{lifeUpdateId}` | 30/h `life-update-delete` | Author only (`LIFE_UPDATE_ACCESS_DENIED` for other members); 204; idempotent; removes it from every Box and erases everything                           |
+| `listMyLifeUpdates` | `GET /me/life-updates`                | none                      | Your own, newest first, Only Me included; one you can no longer reach in any Box is left out, so a page may be short                                    |
 
 The request is `{ audience, sections?, mediaAssetIds? }`:
 
@@ -159,8 +160,32 @@ own conversation. `canEdit` is true for the author while it is Only Me or one
 delivery Box is open. Publishing sends `post.created` (and deleting
 `post.deleted`) with `boxId` and the backing `postId` to each delivery Box;
 Only Me sends nothing. A backing post read through `GET /posts/{id}` has
-empty `content` and `media` (Phase 6 slice 4 adds `kind` and the Life Update
-link to posts and feeds).
+empty `content` and `media`, `kind: "life_update"`, `lifeUpdateId`, and
+`canEdit: false`; `PATCH`/`DELETE /posts/{id}` on it answer its author
+`POST_MANAGED_BY_LIFE_UPDATE` (409), other members `POST_ACCESS_DENIED`, and
+everyone else `POST_NOT_FOUND`. Ordinary posts carry `kind: "post"` and
+`lifeUpdateId: null`. Notifications carry `lifeUpdateId` (null unless the post
+is a backing post) so the link can open the Life Update in `box.id`.
+
+**Editing** (`PATCH`, strict body `{ sections?, mediaAssetIds? }`, at least
+one key): a key that is present replaces that part whole (`sections` with the
+same rules as publishing; `mediaAssetIds` is the full photo list afterwards,
+in display order, kept and new alike); a key left out stays. There is no
+`audience` key (`VALIDATION_FAILED`). The result must keep at least one
+section or photo (`VALIDATION_FAILED`). Removed photos are deleted; new ones
+are claimed like at publish time. It sets `editedAt`, never moves
+`createdAt`, and the change shows in every Box. It is allowed while the
+update is Only Me or one delivery Box you are in is open. It sends
+`post.updated` with each delivery's `boxId` and `postId`.
+
+**Feeds.** `FeedItem` is `{ kind: "post", post } | { kind: "life_update",
+lifeUpdate } | { kind: "hidden", hidden }`. In a Box feed a Life Update
+carries only that Box's context. On Home it appears **once**, however many of
+your Boxes it went to, with one context per Box you are in (alphabetical);
+the page position is its newest reachable backing post, so keyset paging
+never repeats or skips it. Only Me is never in a feed (no backing post). A
+Life Update by someone in a block relationship with you is one `hidden`
+placeholder (the ID and Box of one backing post, nothing else).
 
 ### Comments
 

@@ -8,6 +8,7 @@ import {
 import type { BoxView, UpdateBoxInput } from '@paldora/validation';
 import { and, eq, ne } from 'drizzle-orm';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
+import { tombstoneLifeUpdatesLosingLastBox } from '../life-updates/life-update-erasure.js';
 import { retireAssets } from '../media/media-retirement.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { RealtimeBus } from '../realtime/realtime-bus.js';
@@ -70,7 +71,10 @@ export class BoxLifecycleService {
   /**
    * Permanent. The owner must type the exact name. Phases that attach Box
    * content (posts, media) add their own cleanup here, writing storage
-   * deletions to the media outbox in this same transaction.
+   * deletions to the media outbox in this same transaction. Life Update
+   * photos are user-scoped (no `box_id`), so a Life Update losing its last
+   * Box is tombstoned and its photos retired explicitly; one with other
+   * Boxes only loses this delivery, by cascade.
    */
   public async remove(
     ownerId: string,
@@ -101,6 +105,8 @@ export class BoxLifecycleService {
             eq(boxMemberships.status, 'active'),
           ),
         );
+      // A Life Update delivered only here would be left with no Box.
+      await tombstoneLifeUpdatesLosingLastBox(transaction, boxId);
       // Photos live outside the database: queue their deletion first, while
       // the keys are still reachable, then let the Box cascade its rows.
       const photos = await transaction

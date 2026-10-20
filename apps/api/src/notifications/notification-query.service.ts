@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   boxes,
   commentReactions,
+  lifeUpdateDeliveries,
   mediaAssets,
   notifications,
   postReactions,
@@ -64,6 +65,7 @@ export class NotificationQueryService {
           notification: notifications,
           at: cursorTimestamp(notifications.createdAt),
           box: { id: boxes.id, name: boxes.name },
+          lifeUpdateId: lifeUpdateDeliveries.lifeUpdateId,
           postReactionKind: postReactions.kind,
           commentReactionKind: commentReactions.kind,
           image: {
@@ -75,6 +77,10 @@ export class NotificationQueryService {
         .from(notifications)
         .innerJoin(posts, eq(posts.id, notifications.postId))
         .innerJoin(boxes, eq(boxes.id, posts.boxId))
+        .leftJoin(
+          lifeUpdateDeliveries,
+          eq(lifeUpdateDeliveries.postId, notifications.postId),
+        )
         .leftJoin(
           postReactions,
           and(

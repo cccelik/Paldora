@@ -10,7 +10,12 @@ import { createMediaUploadSchema } from './media.js';
 import { commentItemSchema, createCommentSchema } from './comments.js';
 import { notificationSchema, unreadCountSchema } from './notifications.js';
 import { postSchema } from './posts.js';
-import { createLifeUpdateSchema, lifeUpdateSchema } from './life-updates.js';
+import {
+  createLifeUpdateSchema,
+  lifeUpdateSchema,
+  updateLifeUpdateSchema,
+} from './life-updates.js';
+import { feedItemSchema } from './feeds.js';
 import { reactionPresetsSchema, setPostReactionSchema } from './reactions.js';
 import { cursorPageQuerySchema } from './primitives.js';
 
@@ -38,6 +43,8 @@ const schemas: Record<string, z.ZodType> = {
   UnreadCount: unreadCountSchema,
   CreateLifeUpdateRequest: createLifeUpdateSchema,
   LifeUpdate: lifeUpdateSchema,
+  UpdateLifeUpdateRequest: updateLifeUpdateSchema,
+  FeedItem: feedItemSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

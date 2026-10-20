@@ -4,6 +4,8 @@ import type { NotificationView, UserSummary } from '@paldora/validation';
 export interface NotificationReadRow {
   readonly notification: NotificationRow;
   readonly box: { readonly id: string; readonly name: string };
+  /** Set when the post is a Life Update's backing post. */
+  readonly lifeUpdateId: string | null;
   readonly postReactionKind: string | null;
   readonly commentReactionKind: string | null;
   readonly actor: UserSummary;
@@ -24,7 +26,8 @@ function reactionOf(row: NotificationReadRow): NotificationView['reaction'] {
 
 /**
  * The recipient's view, built from live rows. Deep links come from the IDs:
- * `/posts/{postId}`, plus `?comment={commentId}` when there is a comment.
+ * `/posts/{postId}`, plus `?comment={commentId}` when there is a comment;
+ * for a Life Update's backing post, `/life-updates/{lifeUpdateId}?box=…`.
  */
 export function toNotificationView(row: NotificationReadRow): NotificationView {
   const { notification } = row;
@@ -33,6 +36,7 @@ export function toNotificationView(row: NotificationReadRow): NotificationView {
     type: notification.type as NotificationView['type'],
     actor: row.actor,
     postId: notification.postId,
+    lifeUpdateId: row.lifeUpdateId,
     commentId: notification.commentId,
     box: row.box,
     reaction: reactionOf(row),

@@ -21,6 +21,11 @@ export const notificationSchema = z
     type: z.enum(NOTIFICATION_TYPES),
     actor: userSummarySchema,
     postId: uuidSchema,
+    /**
+     * Set when `postId` is a Life Update's backing post, so the link can
+     * open the Life Update in that Box (`box.id`); null otherwise.
+     */
+    lifeUpdateId: uuidSchema.nullable(),
     commentId: uuidSchema.nullable(),
     box: z.object({ id: uuidSchema, name: z.string() }),
     reaction: z

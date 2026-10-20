@@ -334,6 +334,26 @@ describe('Life Update methods', () => {
     );
   });
 
+  it('patches only the parts being changed', async () => {
+    const failing = vi.fn(async () =>
+      json(409, {
+        error: { code: 'BOX_ARCHIVED', message: 'No.', requestId: 'r1' },
+      }),
+    );
+    await expect(
+      client(failing).updateLifeUpdate('l1', { sections: { travel: 'Rome' } }),
+    ).rejects.toMatchObject({ code: 'BOX_ARCHIVED', status: 409 });
+    const [url, init] = failing.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect([url, init.method, init.body]).toEqual([
+      'https://api.test/api/v1/life-updates/l1',
+      'PATCH',
+      '{"sections":{"travel":"Rome"}}',
+    ]);
+  });
+
   it('deletes by ID without a body', async () => {
     const fetch = vi.fn(async () => new Response(null, { status: 204 }));
     await expect(client(fetch).deleteLifeUpdate('l1')).resolves.toBeUndefined();

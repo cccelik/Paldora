@@ -172,6 +172,20 @@ backing posts take `created_at` from `now()` in the publishing transaction, so
 they share one instant (tested), which the Home feed dedupe relies on.
 
 Cascades: Box deletion removes that Box's backing post and delivery only.
+Before the Box row goes, `tombstoneLifeUpdatesLosingLastBox` (API, same
+transaction) locks the active Life Updates delivered there and tombstones
+those with no delivery in another Box, retiring their photos (user-scoped,
+`box_id` null, so the Box's own media sweep never sees them) with object keys
+snapshotted into the deletion outbox. The worker's
+`sweepDeliverylessLifeUpdates` tombstones any Box-audience Life Update left
+with no delivery after an hour (`FOR UPDATE SKIP LOCKED`), and counts backing
+posts with no delivery as a canary. Both use `tombstoneLifeUpdates` and
+`retireMediaAssets` from `@paldora/database`.
+
+Feeds use `representativeDelivery(viewerId)` (`packages/database/src/
+life-updates.ts`), a `WHERE` fragment that keeps an ordinary post, or the
+viewer's reachable backing post with the greatest ID per Life Update, so Home
+shows one row per Life Update on the existing `(created_at, id)` keyset.
 Deleting a Life Update is a soft delete in one transaction: the backing posts
 are tombstoned, `erasePostInteractions` (now taking a list of posts) erases
 every delivery's comments, reactions, camera images, and notifications, the

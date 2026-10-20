@@ -36,12 +36,8 @@ import {
   friendshipPageSchema,
   friendshipSchema,
 } from './people.js';
-import {
-  feedPageSchema,
-  postSchema,
-  createPostSchema,
-  updatePostSchema,
-} from './posts.js';
+import { feedPageSchema } from './feeds.js';
+import { postSchema, createPostSchema, updatePostSchema } from './posts.js';
 import {
   commentDetailSchema,
   commentPageSchema,
@@ -64,6 +60,7 @@ import {
   createLifeUpdateSchema,
   lifeUpdatePageSchema,
   lifeUpdateSchema,
+  updateLifeUpdateSchema,
 } from './life-updates.js';
 import { cursorPageQuerySchema } from './primitives.js';
 import { defineRoute, type RouteDefinition } from './route.js';
@@ -587,7 +584,7 @@ export const listBoxPosts = defineRoute({
   method: 'GET',
   path: '/boxes/{boxId}/posts',
   summary:
-    'A Box’s posts, newest first. Posts by people in a block relationship with you appear as hidden items.',
+    'A Box’s posts and Life Updates, newest first. A Life Update carries only this Box’s context. Content by people in a block relationship with you appears as hidden items.',
   tag: postsTag,
   access: 'authenticated',
   successStatus: 200,
@@ -601,7 +598,7 @@ export const getHomeFeed = defineRoute({
   method: 'GET',
   path: '/me/feed',
   summary:
-    'Posts from all your Boxes, newest first (chronological, never ranked).',
+    'Posts and Life Updates from all your Boxes, newest first (chronological, never ranked). A Life Update delivered to several of your Boxes appears once, with one context per Box you are in, alphabetically. Only Me Life Updates are not part of Home. Content by people in a block relationship with you appears as one hidden item each.',
   tag: postsTag,
   access: 'authenticated',
   successStatus: 200,
@@ -627,25 +624,37 @@ export const updatePost = defineRoute({
   operationId: 'updatePost',
   method: 'PATCH',
   path: '/posts/{postId}',
-  summary: 'Edit your own post.',
+  summary:
+    'Edit your own post. A Life Update’s backing post answers POST_MANAGED_BY_LIFE_UPDATE to its author: edit the Life Update instead.',
   tag: postsTag,
   access: 'authenticated',
   successStatus: 200,
   response: postSchema,
   body: updatePostSchema,
-  errors: ['POST_NOT_FOUND', 'POST_ACCESS_DENIED', 'BOX_ARCHIVED'],
+  errors: [
+    'POST_NOT_FOUND',
+    'POST_ACCESS_DENIED',
+    'POST_MANAGED_BY_LIFE_UPDATE',
+    'BOX_ARCHIVED',
+  ],
 });
 
 export const deletePost = defineRoute({
   operationId: 'deletePost',
   method: 'DELETE',
   path: '/posts/{postId}',
-  summary: 'Delete your own post (idempotent). The text is erased.',
+  summary:
+    'Delete your own post (idempotent). The text is erased. A Life Update’s backing post answers POST_MANAGED_BY_LIFE_UPDATE to its author: delete the Life Update instead.',
   tag: postsTag,
   access: 'authenticated',
   successStatus: 204,
   response: noContent,
-  errors: ['POST_NOT_FOUND', 'POST_ACCESS_DENIED', 'BOX_ARCHIVED'],
+  errors: [
+    'POST_NOT_FOUND',
+    'POST_ACCESS_DENIED',
+    'POST_MANAGED_BY_LIFE_UPDATE',
+    'BOX_ARCHIVED',
+  ],
 });
 
 const commentsTag = 'Comments';
@@ -895,6 +904,26 @@ export const getLifeUpdate = defineRoute({
   errors: ['LIFE_UPDATE_NOT_FOUND'],
 });
 
+export const updateLifeUpdate = defineRoute({
+  operationId: 'updateLifeUpdate',
+  method: 'PATCH',
+  path: '/life-updates/{lifeUpdateId}',
+  summary:
+    'Edit your Life Update: `sections` and `mediaAssetIds` each replace that part whole when present (photos in display order; removed ones are deleted). The change shows in every Box. The audience can never change (there is no field for it). It must keep at least one section or photo. Allowed while it is Only Me or one of its Boxes you are in is open; otherwise BOX_ARCHIVED.',
+  tag: lifeUpdatesTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: lifeUpdateSchema,
+  body: updateLifeUpdateSchema,
+  errors: [
+    'LIFE_UPDATE_NOT_FOUND',
+    'LIFE_UPDATE_ACCESS_DENIED',
+    'BOX_ARCHIVED',
+    'MEDIA_NOT_FOUND',
+    'MEDIA_NOT_READY',
+  ],
+});
+
 export const deleteLifeUpdate = defineRoute({
   operationId: 'deleteLifeUpdate',
   method: 'DELETE',
@@ -983,6 +1012,7 @@ export const apiRoutes = {
   markAllNotificationsRead,
   createLifeUpdate,
   getLifeUpdate,
+  updateLifeUpdate,
   deleteLifeUpdate,
   listMyLifeUpdates,
 } as const satisfies Record<string, RouteDefinition>;

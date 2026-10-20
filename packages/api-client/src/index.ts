@@ -4,6 +4,7 @@ import {
   type CreateBoxInput,
   type CreateCommentInput,
   type CreateLifeUpdateInput,
+  type UpdateLifeUpdateInput,
   type CreateMediaUploadInput,
   type CreatePostInput,
   type SetPostReactionInput,
@@ -403,6 +404,17 @@ export class PaldoraApiClient {
   /** With a context (conversation) per delivery Box you belong to. */
   public lifeUpdate(lifeUpdateId: string) {
     return this.call(apiRoutes.getLifeUpdate, { params: { lifeUpdateId } });
+  }
+
+  /**
+   * Author only. `sections` and `mediaAssetIds` each replace that part when
+   * present; the audience never changes.
+   */
+  public updateLifeUpdate(lifeUpdateId: string, body: UpdateLifeUpdateInput) {
+    return this.call(apiRoutes.updateLifeUpdate, {
+      params: { lifeUpdateId },
+      body,
+    });
   }
 
   /** Removes it from every Box at once (idempotent). */

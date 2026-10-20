@@ -210,7 +210,7 @@ double mark-read, realtime), the notification rows in
 skip rule, dedupe, concurrent projectors, poison events, crash before commit,
 Redis down at publish, retention).
 
-## Authorization matrix: Phase 6 (Life Updates; slices 1–2)
+## Authorization matrix: Phase 6 (Life Updates; slices 1–4)
 
 A Life Update is visible to a viewer when it is active, no block exists
 between the viewer and the author (either direction, the shared
@@ -221,23 +221,32 @@ delivery Box no longer sees it. `loadContexts` (one query joining the viewer's
 active membership) is the only definition of what a viewer reaches; responses
 list only those Boxes, never the others.
 
-| Action                         | Author                                                                            | Member of a delivery Box             | Archived Box                       | Former member, stranger, guessed ID           | Block with the author (either direction) |
-| ------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------- | --------------------------------------------- | ---------------------------------------- |
-| Publish to Boxes               | Active member of every named Box (30/h)                                           | n/a                                  | Whole publish fails `BOX_ARCHIVED` | Any non-member Box: `BOX_NOT_FOUND` (no hint) | n/a                                      |
-| Publish Only Me                | ✓                                                                                 | n/a                                  | n/a                                | n/a                                           | n/a                                      |
-| Read detail                    | ✓ (needs an active delivery Box, or Only Me)                                      | ✓, contexts for their own Boxes only | ✓ read-only (`canInteract` false)  | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
-| Read someone else's Only Me    | n/a                                                                               | `LIFE_UPDATE_NOT_FOUND`              | n/a                                | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
-| List mine                      | Own active updates only; unreachable ones dropped                                 | n/a                                  | ✓                                  | n/a                                           | n/a (own content)                        |
-| Delete                         | ✓, idempotent 204 (30/h), allowed in archived Boxes                               | `LIFE_UPDATE_ACCESS_DENIED`          | allowed                            | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
-| Change the audience            | Impossible: no route; the database refuses it (triggers)                          | same                                 | same                               | same                                          | same                                     |
-| Comment or react on a delivery | Phase 5 routes on the context's `postId`, unchanged                               | ✓                                    | `BOX_ARCHIVED`                     | `POST_NOT_FOUND`                              | `POST_NOT_FOUND`                         |
-| Reserve a `life_update_image`  | Any signed-in user (120/h `life-update-upload`, fail-closed, user-scoped, no Box) |                                      |                                    |                                               |                                          |
-| Claim photos                   | Ready, yours, `life_update_image`, unused (`MEDIA_NOT_FOUND` / `MEDIA_NOT_READY`) |                                      |                                    |                                               |                                          |
+| Action                          | Author                                                                            | Member of a delivery Box             | Archived Box                       | Former member, stranger, guessed ID           | Block with the author (either direction) |
+| ------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------- | --------------------------------------------- | ---------------------------------------- |
+| Publish to Boxes                | Active member of every named Box (30/h)                                           | n/a                                  | Whole publish fails `BOX_ARCHIVED` | Any non-member Box: `BOX_NOT_FOUND` (no hint) | n/a                                      |
+| Publish Only Me                 | ✓                                                                                 | n/a                                  | n/a                                | n/a                                           | n/a                                      |
+| Read detail                     | ✓ (needs an active delivery Box, or Only Me)                                      | ✓, contexts for their own Boxes only | ✓ read-only (`canInteract` false)  | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
+| Read someone else's Only Me     | n/a                                                                               | `LIFE_UPDATE_NOT_FOUND`              | n/a                                | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
+| List mine                       | Own active updates only; unreachable ones dropped                                 | n/a                                  | ✓                                  | n/a                                           | n/a (own content)                        |
+| Edit (sections, photos)         | ✓ (30/h); `BOX_ARCHIVED` once every delivery Box they are in is archived          | `LIFE_UPDATE_ACCESS_DENIED`          | allowed while one Box is open      | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
+| Home feed card                  | ✓ once, a context per own delivery Box; Only Me never in a feed                   | ✓ once, own Boxes' contexts only     | ✓ read-only                        | absent                                        | one neutral `hidden` placeholder         |
+| Box feed card                   | ✓ that Box's context only                                                         | ✓ that Box's context only            | ✓ read-only                        | `BOX_NOT_FOUND` for the feed                  | `hidden` placeholder (that Box's post)   |
+| `PATCH`/`DELETE` a backing post | `POST_MANAGED_BY_LIFE_UPDATE` (409)                                               | `POST_ACCESS_DENIED`                 | same                               | `POST_NOT_FOUND`                              | `POST_NOT_FOUND`                         |
+| Delete                          | ✓, idempotent 204 (30/h), allowed in archived Boxes                               | `LIFE_UPDATE_ACCESS_DENIED`          | allowed                            | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
+| Change the audience             | Impossible: no route; the database refuses it (triggers)                          | same                                 | same                               | same                                          | same                                     |
+| Comment or react on a delivery  | Phase 5 routes on the context's `postId`, unchanged                               | ✓                                    | `BOX_ARCHIVED`                     | `POST_NOT_FOUND`                              | `POST_NOT_FOUND`                         |
+| Reserve a `life_update_image`   | Any signed-in user (120/h `life-update-upload`, fail-closed, user-scoped, no Box) |                                      |                                    |                                               |                                          |
+| Claim photos                    | Ready, yours, `life_update_image`, unused (`MEDIA_NOT_FOUND` / `MEDIA_NOT_READY`) |                                      |                                    |                                               |                                          |
 
 Block rows (both directions, and unblock restoring access) are tested in
-`life-updates/life-updates.integration.test.ts`; the Home and Box feed
-placeholder rows join the ADR 013 matrix in `block.integration.test.ts` with
-the feed slice.
+`life-updates/life-updates.integration.test.ts`, and the feed rows (Home
+deduped to one placeholder, Box feed placeholder per Box, permalink and
+backing posts not found, nothing naming the author, content, photos, or
+Boxes, own Only Me unaffected, unblock and re-block) are in the ADR 013
+matrix in `social/block.integration.test.ts`. Edit authorization is in
+`life-update-edit.integration.test.ts`; feeds, backing-post guards, Box
+deletion, paging, and the fixed query count in
+`life-update-feeds.integration.test.ts`.
 
 Races decided by the database or by locks:
 
@@ -255,6 +264,16 @@ Races decided by the database or by locks:
   shared with posts); two publishes racing for one photo are decided by the
   unique `life_update_media.media_asset_id` (the loser gets
   `MEDIA_NOT_FOUND` and leaves no rows).
+- **Edit** takes the same Life Update row lock as delete, so edits and
+  deletes serialize (an edit after a delete is `LIFE_UPDATE_NOT_FOUND`; a
+  delete after an edit erases the edited content and any photo it claimed).
+  Photos in the new list are locked and claimed like at publish time
+  (another Life Update's photo is `MEDIA_NOT_FOUND`; the unique index decides
+  a race); dropped ones are retired in the same transaction.
+- **Box deletion** locks the Life Updates delivered in that Box (ID order)
+  after the Box row, then tombstones those with no other Box in a separate
+  statement, so deleting two of a Life Update's Boxes at once serializes and
+  the second tombstones it (tested); the worker sweep is the safety net.
 - **Delete** locks the Life Update row `FOR UPDATE`, then every backing post
   `FOR UPDATE`, tombstones them, and erases all interactions, notifications,
   camera images, and photos in the same transaction. Comment and reaction

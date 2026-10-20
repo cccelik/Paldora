@@ -15,9 +15,9 @@ import {
 } from '@paldora/validation';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { createRequire } from 'node:module';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { expectError, json, ok } from '../testing/http.js';
+import { countQueries } from '../testing/query-count.js';
 import { scenes } from '../testing/scenes.js';
 import {
   createTestApp,
@@ -510,28 +510,6 @@ describe('interaction summaries', () => {
     );
   });
 });
-
-/** Every query this process sends to PostgreSQL, counted while `run` runs. */
-async function countQueries(run: () => Promise<unknown>): Promise<number> {
-  const pg = createRequire(
-    new URL('../../../../packages/database/package.json', import.meta.url),
-  )('pg') as {
-    Client: { prototype: { query: (...args: unknown[]) => unknown } };
-  };
-  const prototype = pg.Client.prototype;
-  const original = prototype.query;
-  let count = 0;
-  prototype.query = function counted(this: unknown, ...args: unknown[]) {
-    count += 1;
-    return original.apply(this, args);
-  };
-  try {
-    await run();
-  } finally {
-    prototype.query = original;
-  }
-  return count;
-}
 
 describe('query budget', () => {
   it('serves a feed page with interactions in a constant number of queries', async () => {

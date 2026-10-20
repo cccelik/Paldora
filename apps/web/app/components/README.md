@@ -55,17 +55,18 @@ Shared form rhythm lives in `components/form-stack.module.css`.
 
 ## Posts, photos, and realtime
 
-| Component              | Owns                                                                                                                                                     |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PostFeed`, `PostCard` | Chronological posts; hidden (blocked) items render a neutral card with no author.                                                                        |
-| `PostComposer`         | Text plus up to 4 photos; Cmd/Ctrl+Enter posts; locked while photos are processing.                                                                      |
-| `usePhotoAttachments`  | Photo flow: reserve → PUT → complete → wait for the worker (`lib/media-polling.ts` `untilProcessed`, shared with the camera).                            |
-| `PostActions`          | The author's inline Edit and confirmed Delete.                                                                                                           |
-| `PostPhotos`           | Photo grid and full-screen viewer (native `<dialog>`: focus trap, Escape, arrows).                                                                       |
-| `LocalTime`            | UTC on the server, the viewer's timezone after mount; no hydration mismatch.                                                                             |
-| `MoreLink`             | "Show more" for keyset-paged lists: a plain link, no script.                                                                                             |
-| `RealtimeBridge`       | One event stream per tab; refreshes only the page a hint concerns; marks `data-realtime`; re-dispatches every hint as a window `paldora:realtime` event. |
-| `useRealtimeHint`      | Subscribes a component to `paldora:realtime` hints (cards, the bell).                                                                                    |
+| Component              | Owns                                                                                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PostFeed`, `PostCard` | Chronological posts; hidden (blocked) items render a neutral card with no author.                                                                         |
+| `LifeUpdateCard`       | Minimal Phase 6 feed rendering of a Life Update: shared sections and photos once, then `PostInteractions` per Box context (tabbed card comes in slice 6). |
+| `PostComposer`         | Text plus up to 4 photos; Cmd/Ctrl+Enter posts; locked while photos are processing.                                                                       |
+| `usePhotoAttachments`  | Photo flow: reserve → PUT → complete → wait for the worker (`lib/media-polling.ts` `untilProcessed`, shared with the camera).                             |
+| `PostActions`          | The author's inline Edit and confirmed Delete.                                                                                                            |
+| `PostPhotos`           | Photo grid and full-screen viewer (native `<dialog>`: focus trap, Escape, arrows).                                                                        |
+| `LocalTime`            | UTC on the server, the viewer's timezone after mount; no hydration mismatch.                                                                              |
+| `MoreLink`             | "Show more" for keyset-paged lists: a plain link, no script.                                                                                              |
+| `RealtimeBridge`       | One event stream per tab; refreshes only the page a hint concerns; marks `data-realtime`; re-dispatches every hint as a window `paldora:realtime` event.  |
+| `useRealtimeHint`      | Subscribes a component to `paldora:realtime` hints (cards, the bell).                                                                                     |
 
 ## Feedback
 

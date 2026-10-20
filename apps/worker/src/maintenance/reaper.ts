@@ -10,6 +10,10 @@ import {
   retainActivity,
   type ActivityRetentionResult,
 } from './activity-retention.js';
+import {
+  sweepDeliverylessLifeUpdates,
+  type DeliverylessResult,
+} from './deliveryless-life-updates.js';
 import { expireUnattachedMedia } from './unattached-media.js';
 
 /** A published row whose job left Redis without finishing (e.g. a flush). */
@@ -22,7 +26,8 @@ export const OUTBOX_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
 const batchSize = 200;
 const purgeBatchSize = 1_000;
 
-export interface ReapResult extends ActivityRetentionResult {
+export interface ReapResult
+  extends ActivityRetentionResult, DeliverylessResult {
   readonly expiredUploads: number;
   /** Unclaimed ready post photos and camera captures. */
   readonly expiredPhotos: number;
@@ -165,6 +170,11 @@ export async function reap(
   const retriedDeletions = await retryDeadDeletions(database, now);
   const purged = await purgeFinished(database, now);
   const activity = await retainActivity(database, now);
+  const lifeUpdates = await sweepDeliverylessLifeUpdates(
+    database,
+    now,
+    batchSize,
+  );
   const [deadRows] = await database
     .select({ value: count() })
     .from(mediaJobOutbox)
@@ -177,5 +187,6 @@ export async function reap(
     purged,
     dead: deadRows?.value ?? 0,
     ...activity,
+    ...lifeUpdates,
   };
 }

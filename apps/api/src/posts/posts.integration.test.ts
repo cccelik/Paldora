@@ -280,7 +280,11 @@ describe('feeds', () => {
       );
       seen.push(
         ...page.items.map((item) =>
-          item.kind === 'post' ? item.post.id : item.hidden.id,
+          item.kind === 'post'
+            ? item.post.id
+            : item.kind === 'hidden'
+              ? item.hidden.id
+              : item.lifeUpdate.id,
         ),
       );
       cursor = page.nextCursor;

@@ -1,4 +1,6 @@
-import type { MediaAssetRow, mediaJobOutbox } from './schema.js';
+import { inArray } from 'drizzle-orm';
+import type { DatabaseExecutor } from './index.js';
+import { mediaAssets, mediaJobOutbox, type MediaAssetRow } from './schema.js';
 
 type OutboxInsert = typeof mediaJobOutbox.$inferInsert;
 type StoredKeys = Pick<
@@ -34,3 +36,29 @@ export const mediaDeletionJob = (
   jobType: 'media.delete',
   payload: { objectKeys: [...new Set(objectKeys)] },
 });
+
+/**
+ * Tombstones assets and queues deletion of every object they own, in the
+ * caller's transaction. Keys are snapshotted now, so a later cascade or
+ * update cannot lose track of an object (R4). The caller locks the rows
+ * (`FOR UPDATE`) first. Shared by the API and the worker's reaper.
+ */
+export async function retireMediaAssets(
+  executor: DatabaseExecutor,
+  assets: readonly MediaAssetRow[],
+  now: Date = new Date(),
+): Promise<void> {
+  if (assets.length === 0) return;
+  await executor
+    .update(mediaAssets)
+    .set({ status: 'deleted', updatedAt: now })
+    .where(
+      inArray(
+        mediaAssets.id,
+        assets.map((asset) => asset.id),
+      ),
+    );
+  await executor
+    .insert(mediaJobOutbox)
+    .values(assets.map((asset) => mediaDeletionJob(storedObjectKeys(asset))));
+}

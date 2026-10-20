@@ -1021,7 +1021,7 @@
     "/boxes/{boxId}/posts": {
       "get": {
         "operationId": "listBoxPosts",
-        "summary": "A Box’s posts, newest first. Posts by people in a block relationship with you appear as hidden items.",
+        "summary": "A Box’s posts and Life Updates, newest first. A Life Update carries only this Box’s context. Content by people in a block relationship with you appears as hidden items.",
         "tags": [
           "Posts"
         ],
@@ -2087,6 +2087,115 @@
             }
           }
         }
+      },
+      "patch": {
+        "operationId": "updateLifeUpdate",
+        "summary": "Edit your Life Update: `sections` and `mediaAssetIds` each replace that part whole when present (photos in display order; removed ones are deleted). The change shows in every Box. The audience can never change (there is no field for it). It must keep at least one section or photo. Allowed while it is Only Me or one of its Boxes you are in is open; otherwise BOX_ARCHIVED.",
+        "tags": [
+          "Life Updates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lifeUpdateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sections": {
+                    "type": "object",
+                    "properties": {
+                      "lifeLately": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "workOrUniversity": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "travel": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "currentlyInto": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "listeningTo": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "watching": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "reading": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "excitedAbout": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "whatsNext": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "mediaAssetIds": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifeUpdate"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, LIFE_UPDATE_NOT_FOUND, LIFE_UPDATE_ACCESS_DENIED, BOX_ARCHIVED, MEDIA_NOT_FOUND, MEDIA_NOT_READY, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/me": {
@@ -2262,7 +2371,7 @@
     "/me/feed": {
       "get": {
         "operationId": "getHomeFeed",
-        "summary": "Posts from all your Boxes, newest first (chronological, never ranked).",
+        "summary": "Posts and Life Updates from all your Boxes, newest first (chronological, never ranked). A Life Update delivered to several of your Boxes appears once, with one context per Box you are in, alphabetically. Only Me Life Updates are not part of Home. Content by people in a block relationship with you appears as one hidden item each.",
         "tags": [
           "Posts"
         ],
@@ -2972,7 +3081,7 @@
     "/posts/{postId}": {
       "delete": {
         "operationId": "deletePost",
-        "summary": "Delete your own post (idempotent). The text is erased.",
+        "summary": "Delete your own post (idempotent). The text is erased. A Life Update’s backing post answers POST_MANAGED_BY_LIFE_UPDATE to its author: delete the Life Update instead.",
         "tags": [
           "Posts"
         ],
@@ -2997,7 +3106,7 @@
             "description": "No content."
           },
           "default": {
-            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, POST_ACCESS_DENIED, BOX_ARCHIVED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, POST_ACCESS_DENIED, POST_MANAGED_BY_LIFE_UPDATE, BOX_ARCHIVED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3055,7 +3164,7 @@
       },
       "patch": {
         "operationId": "updatePost",
-        "summary": "Edit your own post.",
+        "summary": "Edit your own post. A Life Update’s backing post answers POST_MANAGED_BY_LIFE_UPDATE to its author: edit the Life Update instead.",
         "tags": [
           "Posts"
         ],
@@ -3107,7 +3216,7 @@
             }
           },
           "default": {
-            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, POST_ACCESS_DENIED, BOX_ARCHIVED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, POST_ACCESS_DENIED, POST_MANAGED_BY_LIFE_UPDATE, BOX_ARCHIVED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5258,6 +5367,23 @@
                 "properties": {
                   "kind": {
                     "type": "string",
+                    "const": "life_update"
+                  },
+                  "lifeUpdate": {
+                    "$ref": "#/$defs/LifeUpdate"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "lifeUpdate"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
                     "const": "hidden"
                   },
                   "hidden": {
@@ -5333,6 +5459,25 @@
               },
               "interactions": {
                 "$ref": "#/$defs/PostInteractionSummary"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "post",
+                  "life_update"
+                ]
+              },
+              "lifeUpdateId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
@@ -5344,7 +5489,9 @@
               "createdAt",
               "editedAt",
               "canEdit",
-              "interactions"
+              "interactions",
+              "kind",
+              "lifeUpdateId"
             ],
             "additionalProperties": false
           },
@@ -5521,6 +5668,147 @@
             "required": [
               "user",
               "thumbnailUrl"
+            ],
+            "additionalProperties": false
+          },
+          "LifeUpdate": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "author": {
+                "$ref": "#/$defs/UserSummary"
+              },
+              "audience": {
+                "type": "string",
+                "enum": [
+                  "only_me",
+                  "boxes"
+                ]
+              },
+              "sections": {
+                "maxItems": 9,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/LifeUpdateSection"
+                }
+              },
+              "media": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/PostMedia"
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "editedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "canEdit": {
+                "type": "boolean"
+              },
+              "contexts": {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/LifeUpdateContext"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "author",
+              "audience",
+              "sections",
+              "media",
+              "createdAt",
+              "editedAt",
+              "canEdit",
+              "contexts"
+            ],
+            "additionalProperties": false
+          },
+          "LifeUpdateSection": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "enum": [
+                  "lifeLately",
+                  "workOrUniversity",
+                  "travel",
+                  "currentlyInto",
+                  "listeningTo",
+                  "watching",
+                  "reading",
+                  "excitedAbout",
+                  "whatsNext"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "label",
+              "content"
+            ],
+            "additionalProperties": false
+          },
+          "LifeUpdateContext": {
+            "type": "object",
+            "properties": {
+              "postId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              "interactions": {
+                "$ref": "#/$defs/PostInteractionSummary"
+              }
+            },
+            "required": [
+              "postId",
+              "box",
+              "interactions"
             ],
             "additionalProperties": false
           },
@@ -6651,6 +6939,18 @@
                 "format": "uuid",
                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
               },
+              "lifeUpdateId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "commentId": {
                 "anyOf": [
                   {
@@ -6718,6 +7018,7 @@
               "type",
               "actor",
               "postId",
+              "lifeUpdateId",
               "commentId",
               "box",
               "reaction",
@@ -6841,6 +7142,25 @@
           },
           "interactions": {
             "$ref": "#/$defs/PostInteractionSummary"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "post",
+              "life_update"
+            ]
+          },
+          "lifeUpdateId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -6852,7 +7172,9 @@
           "createdAt",
           "editedAt",
           "canEdit",
-          "interactions"
+          "interactions",
+          "kind",
+          "lifeUpdateId"
         ],
         "additionalProperties": false,
         "$defs": {

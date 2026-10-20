@@ -2,11 +2,7 @@ import { POST_CONTENT_MAX_LENGTH, POST_MEDIA_MAX_ITEMS } from '@paldora/domain';
 import { z } from 'zod';
 import { userSummarySchema } from './people.js';
 import { postInteractionSummarySchema } from './reactions.js';
-import {
-  cursorPageSchema,
-  isoTimestampSchema,
-  uuidSchema,
-} from './primitives.js';
+import { isoTimestampSchema, uuidSchema } from './primitives.js';
 
 /** Text may be empty when photos carry the post; the service enforces that. */
 export const postContentSchema = z
@@ -64,6 +60,14 @@ export const postSchema = z
     canEdit: z.boolean(),
     /** Counts, the viewer's reaction, and camera previews (Phase 5). */
     interactions: postInteractionSummarySchema,
+    /**
+     * `life_update` marks the backing post of one Life Update delivery: it
+     * has no content or photos of its own (show the Life Update instead),
+     * and it is changed only through its Life Update.
+     */
+    kind: z.enum(['post', 'life_update']),
+    /** The Life Update a backing post delivers; null for ordinary posts. */
+    lifeUpdateId: uuidSchema.nullable(),
   })
   .meta({ id: 'Post' });
 
@@ -75,19 +79,7 @@ export const hiddenPostSchema = z
   .object({ id: uuidSchema, boxId: uuidSchema, createdAt: isoTimestampSchema })
   .meta({ id: 'HiddenPost' });
 
-export const feedItemSchema = z
-  .discriminatedUnion('kind', [
-    z.object({ kind: z.literal('post'), post: postSchema }),
-    z.object({ kind: z.literal('hidden'), hidden: hiddenPostSchema }),
-  ])
-  .meta({ id: 'FeedItem' });
-
-export const feedPageSchema = cursorPageSchema(feedItemSchema).meta({
-  id: 'FeedPage',
-});
-
 export type PostView = z.infer<typeof postSchema>;
-export type FeedItemView = z.infer<typeof feedItemSchema>;
 export type CreatePostInput = z.input<typeof createPostSchema>;
 /** After defaults are applied: what the service receives. */
 export type NewPost = z.output<typeof createPostSchema>;

@@ -113,8 +113,20 @@ POST /life-updates ─ one tx:
   after commit: post.created → box:{id} per delivery Box (best effort, IDs only)
 GET /life-updates/{id}: rows + hiddenByBlock → viewer's contexts (active membership)
     → photos signed once, authors, interaction summaries per context post
+PATCH /life-updates/{id} ─ one tx: lock update (policy), mayEdit (archived rule),
+    claim the new photo list (FOR UPDATE), unlink + retire dropped photos,
+    replace sections, edited_at → post.updated per delivery Box after commit
 DELETE /life-updates/{id} ─ one tx: lock update, lock + tombstone backing posts,
-    erasePostInteractions(all), retire photos, tombstone update → post.deleted per Box
+    erasePostInteractions(all), tombstoneLifeUpdates (photos retired) → post.deleted per Box
+GET /me/feed, /boxes/{id}/posts: one keyset query over posts ⨝ viewer membership
+    ⟕ life_update_deliveries; Home adds representativeDelivery(viewer) (one row
+    per Life Update); ordinary rows → PostPageService, Life Update rows →
+    LifeUpdateViewService.byIds (scopeBoxId on a Box feed); blocked → hidden
+DELETE /boxes/{id} ─ in the Box-delete tx, before the cascade:
+    tombstoneLifeUpdatesLosingLastBox (lock updates delivered here, then those
+    with no other Box are tombstoned and their user-scoped photos retired)
+worker reaper: sweepDeliverylessLifeUpdates (safety net, SKIP LOCKED) and a
+    canary count of backing posts without a delivery (logged at error)
 ```
 
 Comments and reactions on a delivery are ordinary Phase 5 interactions on its

@@ -17,7 +17,10 @@ export function createJobHandlers(
   return {
     [MAINTENANCE_REAPER_JOB]: async (_job, { logger }) => {
       const result = await reap(dependencies.database);
-      const needsHuman = result.dead > 0 || result.deadActivityEvents > 0;
+      const needsHuman =
+        result.dead > 0 ||
+        result.deadActivityEvents > 0 ||
+        result.orphanedBackingPosts > 0;
       const log = needsHuman
         ? logger.error.bind(logger)
         : logger.info.bind(logger);

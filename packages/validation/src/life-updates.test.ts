@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { createLifeUpdateSchema } from './life-updates.js';
+import {
+  createLifeUpdateSchema,
+  updateLifeUpdateSchema,
+} from './life-updates.js';
 
 const boxes = (count: number) =>
   Array.from({ length: count }, () => randomUUID());
@@ -93,5 +96,45 @@ describe('createLifeUpdateSchema', () => {
     expect(parse({ audience, mediaAssetIds: boxes(5) }).success).toBe(false);
     const id = randomUUID();
     expect(parse({ audience, mediaAssetIds: [id, id] }).success).toBe(false);
+  });
+});
+
+describe('updateLifeUpdateSchema', () => {
+  const photo = randomUUID();
+  const update = (body: unknown) => updateLifeUpdateSchema.safeParse(body);
+
+  it('takes either part alone, trimmed, and lowercases photo IDs', () => {
+    const sections = update({ sections: { travel: '  Rome ', reading: ' ' } });
+    expect(sections.success && sections.data).toEqual({
+      sections: { travel: 'Rome' },
+    });
+    const photos = update({ mediaAssetIds: [photo.toUpperCase()] });
+    expect(photos.success && photos.data).toEqual({ mediaAssetIds: [photo] });
+    // Clearing one part is allowed here; the service checks what is left.
+    expect(update({ mediaAssetIds: [] }).success).toBe(true);
+    expect(update({ sections: {} }).success).toBe(true);
+  });
+
+  it('rejects an empty body, an empty result, and any audience', () => {
+    for (const body of [
+      {},
+      { sections: {}, mediaAssetIds: [] },
+      { sections: { travel: '   ' }, mediaAssetIds: [] },
+      { sections: { travel: 'x' }, audience: { type: 'only_me' } },
+      { audience: { type: 'boxes', boxIds: [randomUUID()] } },
+    ]) {
+      expect(update(body).success, JSON.stringify(body)).toBe(false);
+    }
+  });
+
+  it('keeps the create limits on sections and photos', () => {
+    for (const body of [
+      { sections: { travel: 'x'.repeat(2001) } },
+      { sections: { favouriteColour: 'blue' } },
+      { mediaAssetIds: [photo, photo] },
+      { mediaAssetIds: Array.from({ length: 5 }, () => randomUUID()) },
+    ]) {
+      expect(update(body).success, JSON.stringify(body)).toBe(false);
+    }
   });
 });

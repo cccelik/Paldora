@@ -1,16 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   lifeUpdateDeliveries,
-  lifeUpdateMedia,
-  lifeUpdates,
-  mediaAssets,
   posts,
+  tombstoneLifeUpdates,
   type DatabaseTransaction,
   type PaldoraDatabase,
 } from '@paldora/database';
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import { erasePostInteractions } from '../interactions/interaction-erasure.js';
-import { retireAssets } from '../media/media-retirement.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
@@ -51,17 +48,8 @@ export class LifeUpdateDeleteService {
         transaction,
         deliveries.map((delivery) => delivery.postId),
       );
-      await this.retirePhotos(transaction, lifeUpdateId);
-      const now = new Date();
-      await transaction
-        .update(lifeUpdates)
-        .set({
-          status: 'deleted',
-          sections: {},
-          deletedAt: now,
-          updatedAt: now,
-        })
-        .where(eq(lifeUpdates.id, lifeUpdateId));
+      // Photos are stored once, so they are retired once for every Box.
+      await tombstoneLifeUpdates(transaction, [lifeUpdateId]);
       return deliveries;
     });
     await Promise.all(
@@ -112,25 +100,5 @@ export class LifeUpdateDeleteService {
         ),
       );
     return rows;
-  }
-
-  /** Each photo is stored once, so it is retired once for every Box. */
-  private async retirePhotos(
-    transaction: DatabaseTransaction,
-    lifeUpdateId: string,
-  ): Promise<void> {
-    const linked = transaction
-      .select({ id: lifeUpdateMedia.mediaAssetId })
-      .from(lifeUpdateMedia)
-      .where(eq(lifeUpdateMedia.lifeUpdateId, lifeUpdateId));
-    const photos = await transaction
-      .select()
-      .from(mediaAssets)
-      .where(inArray(mediaAssets.id, linked))
-      .for('update');
-    await transaction
-      .delete(lifeUpdateMedia)
-      .where(eq(lifeUpdateMedia.lifeUpdateId, lifeUpdateId));
-    await retireAssets(transaction, photos);
   }
 }
