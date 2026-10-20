@@ -69,6 +69,10 @@ import {
   memorySummarySchema,
 } from './memories.js';
 import {
+  roomContentQuerySchema,
+  roomContentSummaryQuerySchema,
+  roomPhotoPageSchema,
+  roomPhotoQuerySchema,
   roomSchema,
   updateRoomSchema,
   updateRoomTopFriendsSchema,
@@ -1049,6 +1053,48 @@ export const getRoom = defineRoute({
   errors: ['ROOM_NOT_FOUND'],
 });
 
+export const listRoomContent = defineRoute({
+  operationId: 'listRoomContent',
+  method: 'GET',
+  path: '/rooms/{username}/content',
+  summary:
+    'The Room owner’s posts and Life Updates that you can reach today, newest first, as Memories items: only what is in Boxes you are in right now (a Life Update shows only your Boxes’ contexts), never Only Me (not even in your own Room), and nothing about what you cannot see. Without `year` it spans every year; `month` needs `year`. Any Room you may not see answers ROOM_NOT_FOUND, exactly like `GET /rooms/{username}`.',
+  tag: roomsTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: memoryPageSchema,
+  query: roomContentQuerySchema,
+  errors: ['ROOM_NOT_FOUND'],
+});
+
+export const getRoomContentSummary = defineRoute({
+  operationId: 'getRoomContentSummary',
+  method: 'GET',
+  path: '/rooms/{username}/content/summary',
+  summary:
+    'How many of the Room owner’s posts and Life Updates you can reach per UTC year, and per month of `year` (default: the newest): counted over exactly what `listRoomContent` lists, so it reveals nothing more. Any Room you may not see answers ROOM_NOT_FOUND.',
+  tag: roomsTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: memorySummarySchema,
+  query: roomContentSummaryQuerySchema,
+  errors: ['ROOM_NOT_FOUND'],
+});
+
+export const listRoomPhotos = defineRoute({
+  operationId: 'listRoomPhotos',
+  method: 'GET',
+  path: '/rooms/{username}/photos',
+  summary:
+    'Photos from the Room owner’s posts and Life Updates that you can reach today, newest first, with signed URLs and a link target for each. `limit` counts the items that carry photos (up to 12, each with up to 4 photos), and the cursor is the item’s. Same reach rules as `listRoomContent`. Any Room you may not see answers ROOM_NOT_FOUND.',
+  tag: roomsTag,
+  access: 'authenticated',
+  successStatus: 200,
+  response: roomPhotoPageSchema,
+  query: roomPhotoQuerySchema,
+  errors: ['ROOM_NOT_FOUND'],
+});
+
 export const updateMyRoom = defineRoute({
   operationId: 'updateMyRoom',
   method: 'PATCH',
@@ -1166,6 +1212,9 @@ export const apiRoutes = {
   getBoxMemorySummary,
   getMyRoom,
   getRoom,
+  listRoomContent,
+  getRoomContentSummary,
+  listRoomPhotos,
   updateMyRoom,
   updateMyRoomWidgets,
   updateMyRoomTopFriends,

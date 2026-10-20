@@ -145,7 +145,7 @@ Comments and reactions on a delivery are ordinary Phase 5 interactions on its
 backing post, so each Box keeps its own conversation and the projector needs
 no change.
 
-## Room flow (Phase 7, slices 3–4)
+## Room flow (Phase 7, slices 3–5)
 
 ```text
 GET /rooms/{username}, GET /me/room ─ RoomAccessService: ONE statement
@@ -161,11 +161,19 @@ PATCH /me/room, PUT /me/room/widgets, PUT /me/room/top-friends ─ one tx
     → section step (settings + banner claim/retire | widgets delete+insert |
       pair locks → friendships FOR SHARE → size → rows delete+insert)
   after commit: RoomViewService.forOwner (no realtime event)
+GET /rooms/{username}/content | /content/summary | /photos ─ RoomContentService
+    → RoomAccessService.resolve (same denial) → scope {authorId: owner,
+      includeOnlyMe: false, withPhotos?} → MemoryQueryService.page /
+      MemorySummaryService.summary → memoryCandidates (viewer's memberships,
+      hiddenByBlock) → itemsForPosts / LifeUpdateViewService.byIds (re-auth,
+      sign) → photos: flatten each item's media
 ```
 
-RoomsModule imports IdentityModule and MediaModule only; Top Friends removal
-on unfriend and block is database triggers, so SocialModule has no Room
-code. Content previews (slice 5) are not built yet.
+RoomsModule imports IdentityModule, MediaModule, and MemoriesModule (which
+exports its page and summary services); Top Friends removal on unfriend and
+block is database triggers, so SocialModule has no Room code. Previews reuse
+the Memories candidate query, so the Room shows nothing the viewer could not
+already find in their own Memories.
 
 ## Principles
 

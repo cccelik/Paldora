@@ -21,6 +21,7 @@ import { memoryQuerySchema, memorySummaryQuerySchema } from './memories.js';
 import { userSummarySchema } from './people.js';
 import { postMediaSchema } from './posts.js';
 import {
+  cursorPageQuerySchema,
   cursorPageSchema,
   isoTimestampSchema,
   uuidSchema,
@@ -306,11 +307,35 @@ export const roomSchema = z
   })
   .meta({ id: 'Room' });
 
-/** Room previews page like Memories, but `year` is optional (all years). */
-export const roomContentQuerySchema = memoryQuerySchema.extend({
-  year: memoryQuerySchema.shape.year.optional(),
-});
+/**
+ * Room previews page like Memories, but `year` is optional (every year,
+ * newest first). A `month` needs a `year`.
+ */
+export const roomContentQuerySchema = memoryQuerySchema
+  .extend({ year: memoryQuerySchema.shape.year.optional() })
+  .refine((query) => query.month === undefined || query.year !== undefined, {
+    path: ['month'],
+    message: 'Choose a year for the month.',
+  });
 export const roomContentSummaryQuerySchema = memorySummaryQuerySchema;
+
+/** Items with photos per page: at most 4 photos each, so ≤ 48 photos. */
+export const ROOM_PHOTO_PAGE_MAX_ITEMS = 12;
+export const ROOM_PHOTO_PAGE_DEFAULT_ITEMS = 6;
+
+/**
+ * A page of Room photos counts the posts and Life Updates that carry them
+ * (newest first), not single photos: every photo of an item arrives on the
+ * same page, and the cursor is the item's.
+ */
+export const roomPhotoQuerySchema = cursorPageQuerySchema.extend({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(ROOM_PHOTO_PAGE_MAX_ITEMS)
+    .default(ROOM_PHOTO_PAGE_DEFAULT_ITEMS),
+});
 
 export const roomPhotoSchema = z
   .object({
@@ -345,5 +370,8 @@ export type UpdateRoomTopFriendsRequest = z.input<
 >;
 export type RoomView = z.infer<typeof roomSchema>;
 export type RoomContentQuery = z.output<typeof roomContentQuerySchema>;
+export type RoomContentQueryInput = z.input<typeof roomContentQuerySchema>;
+export type RoomPhotoQuery = z.output<typeof roomPhotoQuerySchema>;
+export type RoomPhotoQueryInput = z.input<typeof roomPhotoQuerySchema>;
 export type RoomPhotoView = z.infer<typeof roomPhotoSchema>;
 export type RoomPhotoPage = z.infer<typeof roomPhotoPageSchema>;

@@ -1,0 +1,25 @@
+{
+  "schema": "RoomPhotoQuery",
+  "description": "A Room photo page as it arrives in a query string: `limit` counts the items that carry photos, 1-12 (default 6).",
+  "valid": [
+    {},
+    {
+      "limit": "12"
+    },
+    {
+      "limit": "1",
+      "cursor": "abc"
+    }
+  ],
+  "invalid": [
+    {
+      "limit": "13"
+    },
+    {
+      "limit": "0"
+    },
+    {
+      "cursor": ""
+    }
+  ]
+}

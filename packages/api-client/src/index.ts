@@ -57,6 +57,12 @@ export type MemoryOptions = PageOptions & {
   type?: MemoryType | undefined;
 };
 
+export type RoomContentOptions = PageOptions & {
+  year?: number | undefined;
+  month?: number | undefined;
+  type?: MemoryType | undefined;
+};
+
 /** The profile fields a client may send; see `updateProfileSchema`. */
 export type ProfileChanges = z.input<typeof apiRoutes.updateProfile.body>;
 
@@ -481,6 +487,33 @@ export class PaldoraApiClient {
   /** Someone's Room as you may see it; any denial is ROOM_NOT_FOUND. */
   public room(username: string) {
     return this.call(apiRoutes.getRoom, { params: { username } });
+  }
+
+  /**
+   * The owner's posts and Life Updates you can reach today, newest first
+   * (every year without `year`). Keep the query when following `nextCursor`.
+   */
+  public roomContent(username: string, query: RoomContentOptions = {}) {
+    return this.call(apiRoutes.listRoomContent, {
+      params: { username },
+      query,
+    });
+  }
+
+  /** Counts per year, and per month of `year`, over `roomContent`. */
+  public roomContentSummary(username: string, year?: number) {
+    return this.call(apiRoutes.getRoomContentSummary, {
+      params: { username },
+      query: { year },
+    });
+  }
+
+  /** Photos you can reach; `limit` counts the items carrying them (≤ 12). */
+  public roomPhotos(username: string, page: PageOptions = {}) {
+    return this.call(apiRoutes.listRoomPhotos, {
+      params: { username },
+      query: page,
+    });
   }
 
   /** A partial change; returns the Room with its new `updatedAt`. */

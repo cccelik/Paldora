@@ -293,6 +293,16 @@ transactions, and tests that disable the guard or the removal trigger show
 that they, not the services, enforce the rules. Because the removal lives in
 the database, `FriendshipService` and `BlockService` need no Room code.
 
+**Room previews (slice 5)** add no schema. They query through
+`memoryCandidates` with an author filter, which starts from the viewer's
+active `box_memberships` and reads posts per Box (`posts_box_feed_index`);
+`posts_author_index` `(author_user_id, created_at desc, id desc)` is also
+available to the planner. The photo page adds an `EXISTS` on `post_media` /
+`life_update_media` joined to ready `media_assets`, using their existing
+primary keys `(parent, position)`. No plan at current scale justified a new
+index, so there is no migration 0008; measure with `EXPLAIN` before adding
+one.
+
 Cascades and lifecycle: deleting a user cascades the Room, its widgets, and
 its Top Friends rows (and removes them from other people's Top Friends via
 the `friend_user_id` cascade). The banner asset's owner key is RESTRICT, so

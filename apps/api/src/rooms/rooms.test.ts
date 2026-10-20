@@ -1,7 +1,13 @@
 import { DEFAULT_ROOM_WIDGETS } from '@paldora/domain';
-import { updateRoomSchema } from '@paldora/validation';
+import {
+  updateRoomSchema,
+  type LifeUpdateView,
+  type MemoryItemView,
+  type PostView,
+} from '@paldora/validation';
 import { describe, expect, it } from 'vitest';
 import { relationshipFor, type AccessFacts } from './room-access.service.js';
+import { isShareable, toRoomPhotos } from './room-content-views.js';
 import { assertFresh, DEFAULT_ROOM_STATE } from './room-records.js';
 import { settingsChanges } from './room-settings.js';
 import { sameTopFriends } from './room-top-friends.service.js';
@@ -177,5 +183,61 @@ describe('toRoomView', () => {
     expect(mayViewTopFriends('friends', 'friend')).toBe(true);
     expect(mayViewTopFriends('friends', 'member')).toBe(false);
     expect(mayViewTopFriends('hidden', 'friend')).toBe(false);
+  });
+});
+
+describe('room content views', () => {
+  const photo = (id: string) => ({
+    id,
+    width: 4,
+    height: 3,
+    url: `https://media.test/${id}`,
+    thumbnailUrl: `https://media.test/${id}/t`,
+  });
+  const postItem = (id: string, media: string[]): MemoryItemView => ({
+    kind: 'post',
+    occurredAt: '2026-10-20T10:00:00.000Z',
+    post: { id, media: media.map(photo) } as unknown as PostView,
+  });
+  const lifeUpdateItem = (
+    id: string,
+    audience: 'boxes' | 'only_me',
+    boxIds: string[],
+    media: string[],
+  ): MemoryItemView => ({
+    kind: 'life_update',
+    occurredAt: '2026-10-19T10:00:00.000Z',
+    lifeUpdate: {
+      id,
+      audience,
+      media: media.map(photo),
+      contexts: boxIds.map((boxId) => ({ box: { id: boxId, name: boxId } })),
+    } as unknown as LifeUpdateView,
+  });
+
+  it('expands items to their photos in order, linking a Life Update through the viewer’s first Box', () => {
+    expect(
+      toRoomPhotos([
+        postItem('p1', ['a', 'b']),
+        lifeUpdateItem('l1', 'boxes', ['box-a', 'box-b'], ['c']),
+        postItem('p2', []),
+      ]).map(({ photo: { id }, source }) => ({ id, source })),
+    ).toEqual([
+      { id: 'a', source: { kind: 'post', postId: 'p1' } },
+      { id: 'b', source: { kind: 'post', postId: 'p1' } },
+      {
+        id: 'c',
+        source: { kind: 'life_update', lifeUpdateId: 'l1', boxId: 'box-a' },
+      },
+    ]);
+  });
+
+  it('never shows an Only Me Life Update or one without a context of the viewer', () => {
+    const onlyMe = lifeUpdateItem('l2', 'only_me', [], ['x']);
+    expect(isShareable(onlyMe)).toBe(false);
+    expect(isShareable(postItem('p1', []))).toBe(true);
+    expect(
+      toRoomPhotos([onlyMe, lifeUpdateItem('l3', 'boxes', [], ['y'])]),
+    ).toEqual([]);
   });
 });

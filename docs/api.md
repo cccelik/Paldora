@@ -226,13 +226,16 @@ count }] }`: every year with content (newest first) and the months of
 
 ### Rooms
 
-| Operation                | Route                      | Rate limit                   | Notes                                                             |
-| ------------------------ | -------------------------- | ---------------------------- | ----------------------------------------------------------------- |
-| `getMyRoom`              | `GET /me/room`             | none (read)                  | `Room` with owner-only fields; roomless default, `updatedAt` null |
-| `getRoom`                | `GET /rooms/{username}`    | none (read)                  | `ROOM_NOT_FOUND` for every denial                                 |
-| `updateMyRoom`           | `PATCH /me/room`           | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`, `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY`         |
-| `updateMyRoomWidgets`    | `PUT /me/room/widgets`     | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`                                               |
-| `updateMyRoomTopFriends` | `PUT /me/room/top-friends` | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`, `TOP_FRIEND_NOT_ELIGIBLE`                    |
+| Operation                | Route                                   | Rate limit                   | Notes                                                             |
+| ------------------------ | --------------------------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| `getMyRoom`              | `GET /me/room`                          | none (read)                  | `Room` with owner-only fields; roomless default, `updatedAt` null |
+| `getRoom`                | `GET /rooms/{username}`                 | none (read)                  | `ROOM_NOT_FOUND` for every denial                                 |
+| `listRoomContent`        | `GET /rooms/{username}/content`         | none (read)                  | `MemoryPage`; `ROOM_NOT_FOUND` for every denial                   |
+| `getRoomContentSummary`  | `GET /rooms/{username}/content/summary` | none (read)                  | `MemorySummary`; `ROOM_NOT_FOUND` for every denial                |
+| `listRoomPhotos`         | `GET /rooms/{username}/photos`          | none (read)                  | `RoomPhotoPage`; `ROOM_NOT_FOUND` for every denial                |
+| `updateMyRoom`           | `PATCH /me/room`                        | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`, `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY`         |
+| `updateMyRoomWidgets`    | `PUT /me/room/widgets`                  | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`                                               |
+| `updateMyRoomTopFriends` | `PUT /me/room/top-friends`              | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`, `TOP_FRIEND_NOT_ELIGIBLE`                    |
 
 - **Access** (one query in `RoomAccessService`): `hidden` = owner only,
   `friends` = owner + accepted friends, `members` = friends + anyone with an
@@ -270,6 +273,24 @@ count }] }`: every year with content (newest first) and the months of
   automatically (database triggers).
 - Banner uploads use `POST /media/uploads` with purpose `room_banner`
   (20/h). No Room write emits a realtime event.
+- **Content previews** run the same access query first, then list only the
+  owner's posts and Life Updates that the viewer can reach today, through
+  the Memories candidates (`authorId` = owner, no Only Me): items in Boxes
+  the viewer is in right now, a Life Update with only the viewer's
+  contexts, nothing by blocked people, nothing deleted. Only Me never
+  appears, not even in your own Room. Nothing counts or hints at hidden
+  items, and the answers do not depend on widget switches.
+  - `content?type&year&month&cursor&limit`: `MemoryPage` items, newest
+    first. `year` is optional (every year); `month` needs `year`
+    (`VALIDATION_FAILED`). `limit` ≤ 50.
+  - `content/summary?year`: `MemorySummary` counted over exactly what
+    `content` lists (the Room's Memories year chips).
+  - `photos?cursor&limit`: `{ items: [{ photo: PostMedia, source:
+{kind:'post', postId} | {kind:'life_update', lifeUpdateId, boxId},
+occurredAt }], nextCursor }`. `limit` (1–12, default 6) counts the
+    items carrying ready photos, so a page has at most 48 photos; every
+    photo of an item is on the same page, and the cursor is the item's.
+    `boxId` is one of the viewer's Boxes to open the Life Update in.
 
 ### Comments
 

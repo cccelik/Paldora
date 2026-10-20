@@ -1,0 +1,102 @@
+{
+  "schema": "RoomPhotoPage",
+  "description": "Photos from a Room owner's reachable posts and Life Updates, newest item first. A Life Update photo names one of the viewer's Boxes to open it in.",
+  "valid": [
+    {
+      "items": [],
+      "nextCursor": null
+    },
+    {
+      "items": [
+        {
+          "photo": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "width": 1600,
+            "height": 1200,
+            "url": "https://media.example.com/display.webp?sig=x",
+            "thumbnailUrl": "https://media.example.com/thumbnail.webp?sig=x"
+          },
+          "source": {
+            "kind": "post",
+            "postId": "22222222-2222-4222-8222-222222222222"
+          },
+          "occurredAt": "2026-10-20T10:00:00.123Z"
+        },
+        {
+          "photo": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "width": 1600,
+            "height": 1200,
+            "url": "https://media.example.com/display.webp?sig=x",
+            "thumbnailUrl": "https://media.example.com/thumbnail.webp?sig=x"
+          },
+          "source": {
+            "kind": "life_update",
+            "lifeUpdateId": "22222222-2222-4222-8222-222222222222",
+            "boxId": "33333333-3333-4333-8333-333333333333"
+          },
+          "occurredAt": "2026-10-19T10:00:00.000Z"
+        }
+      ],
+      "nextCursor": "abc"
+    }
+  ],
+  "invalid": [
+    {
+      "items": []
+    },
+    {
+      "items": [
+        {
+          "photo": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "width": 1600,
+            "height": 1200,
+            "url": "https://media.example.com/display.webp?sig=x",
+            "thumbnailUrl": "https://media.example.com/thumbnail.webp?sig=x"
+          },
+          "source": {
+            "kind": "life_update",
+            "lifeUpdateId": "22222222-2222-4222-8222-222222222222"
+          },
+          "occurredAt": "2026-10-19T10:00:00.000Z"
+        }
+      ],
+      "nextCursor": null
+    },
+    {
+      "items": [
+        {
+          "photo": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "width": 1600,
+            "height": 1200,
+            "url": "https://media.example.com/display.webp?sig=x",
+            "thumbnailUrl": "https://media.example.com/thumbnail.webp?sig=x"
+          },
+          "source": {
+            "kind": "comment",
+            "postId": "22222222-2222-4222-8222-222222222222"
+          },
+          "occurredAt": "2026-10-19T10:00:00.000Z"
+        }
+      ],
+      "nextCursor": null
+    },
+    {
+      "items": [
+        {
+          "photo": {
+            "id": "11111111-1111-4111-8111-111111111111"
+          },
+          "source": {
+            "kind": "post",
+            "postId": "22222222-2222-4222-8222-222222222222"
+          },
+          "occurredAt": "2026-10-19T10:00:00.000Z"
+        }
+      ],
+      "nextCursor": null
+    }
+  ]
+}

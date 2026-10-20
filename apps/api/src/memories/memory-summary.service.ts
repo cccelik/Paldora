@@ -5,6 +5,7 @@ import { BoxPolicyService } from '../boxes/box-policy.service.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { memoryCandidates } from './memory-candidates.js';
+import type { MemoryPageScope } from './memory-query.service.js';
 
 interface MonthCount extends Record<string, unknown> {
   readonly year: number;
@@ -45,7 +46,7 @@ export class MemorySummaryService {
   ) {}
 
   public mine(viewerId: string, year?: number): Promise<MemorySummaryView> {
-    return this.summary(viewerId, undefined, year);
+    return this.summary(viewerId, {}, year);
   }
 
   /** A Box the viewer is not in right now answers BOX_NOT_FOUND. */
@@ -55,15 +56,19 @@ export class MemorySummaryService {
     year?: number,
   ): Promise<MemorySummaryView> {
     await this.boxes.membership(viewerId, boxId);
-    return this.summary(viewerId, boxId, year);
+    return this.summary(viewerId, { boxId }, year);
   }
 
-  private async summary(
+  /**
+   * Counts over the scoped candidates. The caller has already decided the
+   * viewer may ask for this scope (a Box membership, a Room access).
+   */
+  public async summary(
     viewerId: string,
-    boxId: string | undefined,
+    scope: Omit<MemoryPageScope, 'withPhotos'>,
     year: number | undefined,
   ): Promise<MemorySummaryView> {
-    const candidates = memoryCandidates({ viewerId, boxId, type: 'all' });
+    const candidates = memoryCandidates({ ...scope, viewerId, type: 'all' });
     const { rows } = await this.infrastructure.database.execute<MonthCount>(
       sql`select
           extract(year from c.at at time zone 'utc')::int as year,

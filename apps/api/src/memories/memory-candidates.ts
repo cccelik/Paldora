@@ -2,7 +2,10 @@ import {
   boxMemberships,
   hiddenByBlock,
   lifeUpdateDeliveries,
+  lifeUpdateMedia,
   lifeUpdates,
+  mediaAssets,
+  postMedia,
   posts,
 } from '@paldora/database';
 import type { MemoryType } from '@paldora/validation';
@@ -14,6 +17,16 @@ export interface MemoryScope {
   readonly viewerId: string;
   /** Box Memories: that Box only, and no Only Me. */
   readonly boxId?: string | undefined;
+  /** One author's content only (Room previews); absent: everyone's. */
+  readonly authorId?: string | undefined;
+  /**
+   * Whether the viewer's own Only Me Life Updates may appear. Absent keeps
+   * the Memories rule (everywhere but Box Memories and posts-only); Rooms
+   * pass false, because a Room is a shareable surface (plan B1).
+   */
+  readonly includeOnlyMe?: boolean | undefined;
+  /** Only items with at least one ready photo (Room photo previews). */
+  readonly withPhotos?: boolean | undefined;
   readonly type: MemoryType;
   /** Absent for the summary, which counts every year. */
   readonly window?: MemoryWindow | undefined;
@@ -24,6 +37,18 @@ const all = (conditions: readonly (SQL | undefined)[]): SQL =>
     conditions.filter((condition): condition is SQL => condition !== undefined),
     sql` and `,
   );
+
+/** A ready photo is attached to the post, or to the Life Update. */
+const hasReadyPhoto = (postId: SQL, lifeUpdateId: SQL): SQL => sql`(
+  exists (
+    select 1 from ${postMedia} pm
+    join ${mediaAssets} ma on ma.id = pm.media_asset_id and ma.status = 'ready'
+    where pm.post_id = ${postId}
+  ) or exists (
+    select 1 from ${lifeUpdateMedia} lm
+    join ${mediaAssets} ma on ma.id = lm.media_asset_id and ma.status = 'ready'
+    where lm.life_update_id = ${lifeUpdateId}
+  ))`;
 
 /**
  * Posts and Life Updates delivered to the viewer's Boxes, one row per item.
@@ -54,6 +79,12 @@ function boxContent(scope: MemoryScope): SQL {
       sql`(p.kind = 'post' or lu.status = 'active')`,
       sql`not ${hiddenByBlock(scope.viewerId, sql.raw('p.author_user_id'))}`,
       scope.boxId === undefined ? undefined : sql`p.box_id = ${scope.boxId}`,
+      scope.authorId === undefined
+        ? undefined
+        : sql`p.author_user_id = ${scope.authorId}`,
+      scope.withPhotos
+        ? hasReadyPhoto(sql.raw('p.id'), sql.raw('d.life_update_id'))
+        : undefined,
       scope.type === 'posts' ? sql`p.kind = 'post'` : undefined,
       scope.type === 'life_updates' ? sql`p.kind = 'life_update'` : undefined,
       scope.window ? withinWindow(at, scope.window) : undefined,
@@ -70,6 +101,9 @@ function onlyMe(scope: MemoryScope): SQL {
       sql`lu.author_user_id = ${scope.viewerId}`,
       sql`lu.audience = 'only_me'`,
       sql`lu.status = 'active'`,
+      scope.withPhotos
+        ? hasReadyPhoto(sql`null::uuid`, sql.raw('lu.id'))
+        : undefined,
       scope.window ? withinWindow(at, scope.window) : undefined,
     ])}`;
 }
@@ -81,7 +115,11 @@ function onlyMe(scope: MemoryScope): SQL {
  * authorization is decided here, on every query.
  */
 export function memoryCandidates(scope: MemoryScope): SQL {
-  const withOnlyMe = scope.boxId === undefined && scope.type !== 'posts';
+  const withOnlyMe =
+    scope.includeOnlyMe !== false &&
+    scope.boxId === undefined &&
+    scope.type !== 'posts' &&
+    (scope.authorId === undefined || scope.authorId === scope.viewerId);
   return withOnlyMe
     ? sql`${boxContent(scope)} union all ${onlyMe(scope)}`
     : boxContent(scope);

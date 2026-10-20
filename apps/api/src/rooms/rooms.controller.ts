@@ -6,12 +6,19 @@ import {
   Param,
   Patch,
   Put,
+  Query,
 } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '@paldora/domain';
 import {
+  roomContentQuerySchema,
+  roomContentSummaryQuerySchema,
+  roomPhotoQuerySchema,
   updateRoomSchema,
   updateRoomTopFriendsSchema,
   updateRoomWidgetsSchema,
+  type MemorySummaryQuery,
+  type RoomContentQuery,
+  type RoomPhotoQuery,
   type UpdateRoomInput,
   type UpdateRoomTopFriendsInput,
   type UpdateRoomWidgetsInput,
@@ -22,12 +29,16 @@ import {
   type RateLimitPolicy,
 } from '../platform/rate-limit/rate-limit.decorator.js';
 import { ZodPipe } from '../platform/zod.pipe.js';
+import { RoomContentService } from './room-content.service.js';
 import { RoomTopFriendsService } from './room-top-friends.service.js';
 import { RoomUpdateService } from './room-update.service.js';
 import { RoomViewService } from './room-view.service.js';
 import { RoomWidgetService } from './room-widget.service.js';
 
 type Principal = AuthenticatedPrincipal;
+const contentQuery = new ZodPipe(roomContentQuerySchema);
+const summaryQuery = new ZodPipe(roomContentSummaryQuerySchema);
+const photoQuery = new ZodPipe(roomPhotoQuerySchema);
 
 /** One counter for every Room section, so the editor's saves share it. */
 const roomWrites: RateLimitPolicy = {
@@ -37,15 +48,17 @@ const roomWrites: RateLimitPolicy = {
 };
 
 /**
- * Rooms (Phase 7, ADR 017). Reads are unlimited like every other GET:
- * every denial is the same ROOM_NOT_FOUND, so probing names learns
- * nothing. Writes exist only under `/me/room`: there is no route that
+ * Rooms (Phase 7, ADR 017). Reads, the content previews included, are
+ * unlimited like every other GET (plan §E, K8): every denial is the same
+ * ROOM_NOT_FOUND, so probing names learns nothing, and previews are derived
+ * per request from what the viewer can already read elsewhere. Writes exist only under `/me/room`: there is no route that
  * names another person's Room.
  */
 @Controller()
 export class RoomsController {
   public constructor(
     @Inject(RoomViewService) private readonly views: RoomViewService,
+    @Inject(RoomContentService) private readonly content: RoomContentService,
     @Inject(RoomUpdateService) private readonly settings: RoomUpdateService,
     @Inject(RoomWidgetService) private readonly widgets: RoomWidgetService,
     @Inject(RoomTopFriendsService)
@@ -64,6 +77,38 @@ export class RoomsController {
     @Param('username') username: string,
   ) {
     return this.views.forViewer(me.userId, username);
+  }
+
+  /**
+   * Room previews. The username is unpiped like `GET /rooms/{username}`;
+   * a malformed query is a VALIDATION_FAILED whatever the name, so it says
+   * nothing about the Room either.
+   */
+  @Get('rooms/:username/content')
+  public listContent(
+    @CurrentPrincipal() me: Principal,
+    @Param('username') username: string,
+    @Query(contentQuery) query: RoomContentQuery,
+  ) {
+    return this.content.content(me.userId, username, query);
+  }
+
+  @Get('rooms/:username/content/summary')
+  public contentSummary(
+    @CurrentPrincipal() me: Principal,
+    @Param('username') username: string,
+    @Query(summaryQuery) query: MemorySummaryQuery,
+  ) {
+    return this.content.summary(me.userId, username, query.year);
+  }
+
+  @Get('rooms/:username/photos')
+  public listPhotos(
+    @CurrentPrincipal() me: Principal,
+    @Param('username') username: string,
+    @Query(photoQuery) query: RoomPhotoQuery,
+  ) {
+    return this.content.photos(me.userId, username, query);
   }
 
   @Patch('me/room')

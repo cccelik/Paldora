@@ -922,7 +922,7 @@ describe('Rooms and Top Friends across a block (Phase 7)', () => {
     async (_case, index) => {
       const [owner, viewer] = [await app.person('o'), await app.person('v')];
       await befriend(owner, viewer);
-      await sharedBox(owner, viewer);
+      const box = await sharedBox(owner, viewer);
       const { updatedAt } = roomSchema.parse(
         await json(await as(owner).get('/me/room')),
       );
@@ -935,16 +935,32 @@ describe('Rooms and Top Friends across a block (Phase 7)', () => {
       const [from, target] = (
         index === 0 ? [owner, viewer] : [viewer, owner]
       ) as [TestUser, TestUser];
+      const post = await scenes(app).say(owner, box.id, 'in the shared Box');
+      // The Room and every preview route answer alike.
+      const routes = ['', '/content', '/content/summary', '/photos'];
+      const hidden = async (from: TestUser, of: TestUser) => {
+        for (const path of routes) {
+          await expectError(
+            await as(from).get(`/rooms/${of.username}${path}`),
+            404,
+            'ROOM_NOT_FOUND',
+          );
+        }
+      };
       await block(from, target);
-      await expectError(await room(viewer, owner), 404, 'ROOM_NOT_FOUND');
-      await expectError(await room(owner, viewer), 404, 'ROOM_NOT_FOUND');
+      await hidden(viewer, owner);
+      await hidden(owner, viewer);
       // The block ended the friendship; the shared Box admits them again.
       await ok(await as(from).delete(`/blocks/${target.id}`));
       expect(
         roomSchema.parse(await json(await room(viewer, owner))).relationship,
       ).toBe('member');
+      const content = (await json(
+        await as(viewer).get(`/rooms/${owner.username}/content`),
+      )) as { items: { post?: { id: string } }[] };
+      expect(content.items.map((item) => item.post?.id)).toEqual([post.id]);
       await block(from, target);
-      await expectError(await room(viewer, owner), 404, 'ROOM_NOT_FOUND');
+      await hidden(viewer, owner);
     },
   );
 

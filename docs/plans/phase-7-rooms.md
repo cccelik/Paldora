@@ -449,8 +449,8 @@ New:
 
 ## J. Ordered work breakdown (strictly sequential; each slice ends green and committable)
 
-**Progress (2026-10-20).** Slices 1–2 committed (`a9d8096`). Slices 3–4 built
-(uncommitted): `packages/database/src/rooms.ts`, `apps/api/src/rooms/*`,
+**Progress (2026-10-20).** Slices 1–2 committed (`a9d8096`), slices 3–4
+committed (`d8bb345`). Slices 3–4 built: `packages/database/src/rooms.ts`, `apps/api/src/rooms/*`,
 routes `getMyRoom`, `getRoom`, `updateMyRoom`, `updateMyRoomWidgets`,
 `updateMyRoomTopFriends`, client methods, regenerated contract. Deviations:
 `room-row.ts` is `room-records.ts`, and one `RoomWriteService` runs the write
@@ -461,7 +461,21 @@ unchanged request on a roomless account writes nothing; `GET /me/room` and
 the writes return `ROOM_NOT_FOUND` until the caller has a username; a Top
 Friends save takes sorted `lockPair` locks and the friendships `FOR SHARE`
 before touching rows (no deadlock with unfriend/block, so no 40P01 retry);
-OpenAPI path parameters not ending in `Id` are plain strings. Next: slice 5.
+OpenAPI path parameters not ending in `Id` are plain strings. Slice 5 built
+(uncommitted): `memoryCandidates` gains `authorId`, `includeOnlyMe` and
+`withPhotos` (defaults keep Memories unchanged; the Memories tests pass
+unmodified), `MemoryQueryService.page` and `MemorySummaryService.summary`
+are public with a scope, `MemoriesModule` exports both, and
+`room-content.service.ts` serves `listRoomContent`, `getRoomContentSummary`
+and `listRoomPhotos` (client `roomContent`, `roomContentSummary`,
+`roomPhotos`). Deviations: the photo query is `roomPhotoQuerySchema`
+(`limit` 1–12 items, default 6, so a page holds at most 48 photos within
+the 50-item page cap); `roomContentQuerySchema` rejects `month` without
+`year`; Life Update photos link through the viewer's first context (the
+`boxId` of `source`); data routes ignore widget switches (they reveal
+nothing about them; the web fetches only for enabled widgets). Reads have
+no rate limit (K8 unchanged). No index or migration was needed. Next:
+slice 6.
 
 Run `pnpm typecheck`, `pnpm lint` and the unit tests in every slice. Run integration tests through `scripts/with-test-database.mjs`.
 

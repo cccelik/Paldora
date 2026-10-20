@@ -10,11 +10,13 @@ import { MemorySummaryService } from './memory-summary.service.js';
  * Memories (Phase 6): a derived chronological view of the posts and Life
  * Updates a viewer can still access, by UTC year and month. Nothing is
  * stored; every request re-authorizes. Imports PostsModule and
- * LifeUpdatesModule; neither imports this one.
+ * LifeUpdatesModule; neither imports this one. RoomsModule imports it.
  */
 @Module({
   imports: [BoxesModule, PostsModule, LifeUpdatesModule],
   controllers: [MemoriesController],
   providers: [MemoryQueryService, MemorySummaryService],
+  // Rooms page and count one author's content through the same candidates.
+  exports: [MemoryQueryService, MemorySummaryService],
 })
 export class MemoriesModule {}

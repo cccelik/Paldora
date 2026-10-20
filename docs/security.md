@@ -325,7 +325,7 @@ not-found decision. Full-stack tests in `apps/web/e2e/full-stack/
 memories.spec.ts` cover dedupe with tabs, deletion, removal, a stranger, a
 block, and Only Me at desktop and 390px.
 
-## Authorization matrix: Phase 7 (Rooms, slices 3–4)
+## Authorization matrix: Phase 7 (Rooms, slices 3–5)
 
 Every Room route starts at `RoomAccessService` (`apps/api/src/rooms/`), one
 statement that resolves the owner (active, with a username), the Room row or
@@ -367,6 +367,40 @@ and reuses `assertPhotosUsable`; the replaced banner is retired through
 120/h `room-update` limit (fail-closed). Covered by
 `rooms/room-{access,writes,top-friends}.integration.test.ts` and the Phase 7
 rows of `social/block.integration.test.ts`.
+
+**Content previews** (`GET /rooms/{username}/content`, `/content/summary`,
+`/photos`; slice 5). Each route runs the same access statement first, so
+every denial is the same `ROOM_NOT_FOUND` as `GET /rooms/{username}` (a
+parity test compares eight denial reasons across all four routes against
+the Room's own denial). Access to the Room never widens access to content:
+the items come from `memoryCandidates` with `authorId` = the owner and
+`includeOnlyMe: false`, which starts from the **viewer's** current active
+memberships, drops blocked authors (the shared `hiddenByBlock`), deleted
+posts, and deleted Life Updates, and then each item is re-authorized by the
+Memories page loaders (`PostPageService.itemsForPosts`,
+`LifeUpdateViewService.byIds`), which sign photos only for survivors.
+`apps/api/src/rooms/` contains no query of `posts`.
+
+| Viewer of an accessible Room                  | Sees                                                                   |
+| --------------------------------------------- | ---------------------------------------------------------------------- |
+| Owner                                         | Their posts and Box Life Updates in every Box they are in; no Only Me  |
+| Friend or member in some of the owner's Boxes | Only those Boxes' items; a Life Update with only those Boxes' contexts |
+| Friend who shares no Box                      | Empty pages and an empty summary (no count, no hint)                   |
+| Left or removed member                        | That Box's items disappear on the next request                         |
+| Archived shared Box                           | Its items stay readable                                                |
+| Deleted post or Life Update                   | Gone at once from items, counts, and photos                            |
+| Block either way                              | `ROOM_NOT_FOUND` on every route; unblock restores the normal rules     |
+
+Only Me never appears, even to the owner (a Room is a shareable surface,
+plan B1). The summary counts exactly the candidates the pages list, so it
+reveals nothing more; nothing reports how many items are hidden. Photos are
+the ready, signed photos of reachable items; a Life Update photo names one
+of the viewer's own Boxes as its link target. Widget switches are
+presentation only: the data routes answer the same whether a widget is on
+or off, so they reveal nothing about the owner's layout. These are reads
+and have no rate limit (plan §E, K8). Covered by
+`rooms/room-content.integration.test.ts` and the Room rows of
+`social/block.integration.test.ts`.
 
 ## Assumptions
 

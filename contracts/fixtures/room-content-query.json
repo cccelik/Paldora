@@ -1,0 +1,41 @@
+{
+  "schema": "RoomContentQuery",
+  "description": "A Room content page as it arrives in a query string: like a Memories page, but `year` is optional (every year). A `month` needs a `year`.",
+  "valid": [
+    {},
+    {
+      "type": "posts",
+      "limit": "3"
+    },
+    {
+      "year": "2026"
+    },
+    {
+      "year": "2026",
+      "month": "12",
+      "type": "life_updates",
+      "cursor": "eyJhIjoiMjAyNi0xMi0zMVQyMzo1OTo1OS45OTk5OTlaIiwiaSI6IngifQ"
+    }
+  ],
+  "invalid": [
+    {
+      "month": "1"
+    },
+    {
+      "year": "1969"
+    },
+    {
+      "year": "2026",
+      "month": "13"
+    },
+    {
+      "type": "comments"
+    },
+    {
+      "limit": "51"
+    },
+    {
+      "limit": "0"
+    }
+  ]
+}

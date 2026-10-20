@@ -23,6 +23,9 @@ import {
 } from './memories.js';
 import { reactionPresetsSchema, setPostReactionSchema } from './reactions.js';
 import {
+  roomContentQuerySchema,
+  roomPhotoPageSchema,
+  roomPhotoQuerySchema,
   roomSchema,
   updateRoomSchema,
   updateRoomTopFriendsSchema,
@@ -63,6 +66,9 @@ const schemas: Record<string, z.ZodType> = {
   UpdateRoomWidgetsRequest: updateRoomWidgetsSchema,
   UpdateRoomTopFriendsRequest: updateRoomTopFriendsSchema,
   Room: roomSchema,
+  RoomContentQuery: roomContentQuerySchema,
+  RoomPhotoQuery: roomPhotoQuerySchema,
+  RoomPhotoPage: roomPhotoPageSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

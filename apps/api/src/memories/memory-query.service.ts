@@ -13,8 +13,23 @@ import {
 } from '../platform/pagination.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
 import { PostPageService } from '../posts/post-page.service.js';
-import { memoryCandidates } from './memory-candidates.js';
+import { memoryCandidates, type MemoryScope } from './memory-candidates.js';
 import { memoryWindow } from './memory-window.js';
+
+/** Which Memories a page draws from, beyond the viewer (see MemoryScope). */
+export type MemoryPageScope = Pick<
+  MemoryScope,
+  'boxId' | 'authorId' | 'includeOnlyMe' | 'withPhotos'
+>;
+
+/** A page request; without `year` the page spans every year. */
+export interface MemoryPageQuery {
+  readonly type: MemoryQuery['type'];
+  readonly year?: number | undefined;
+  readonly month?: number | undefined;
+  readonly cursor?: string | undefined;
+  readonly limit: number;
+}
 
 interface CandidateRow extends Record<string, unknown> {
   readonly item_kind: 'post' | 'life_update';
@@ -44,7 +59,7 @@ export class MemoryQueryService {
     viewerId: string,
     query: MemoryQuery,
   ): Promise<Page<MemoryItemView>> {
-    return this.page(viewerId, undefined, query);
+    return this.page(viewerId, {}, query);
   }
 
   /** A Box the viewer is not in right now answers BOX_NOT_FOUND. */
@@ -54,19 +69,27 @@ export class MemoryQueryService {
     query: MemoryQuery,
   ): Promise<Page<MemoryItemView>> {
     await this.boxes.membership(viewerId, boxId);
-    return this.page(viewerId, boxId, query);
+    return this.page(viewerId, { boxId }, query);
   }
 
-  private async page(
+  /**
+   * One page over the scoped candidates. The caller has already decided
+   * the viewer may ask for this scope (a Box membership, a Room access).
+   */
+  public async page(
     viewerId: string,
-    boxId: string | undefined,
-    query: MemoryQuery,
+    scope: MemoryPageScope,
+    query: MemoryPageQuery,
   ): Promise<Page<MemoryItemView>> {
+    const { boxId } = scope;
     const candidates = memoryCandidates({
+      ...scope,
       viewerId,
-      boxId,
       type: query.type,
-      window: memoryWindow(query.year, query.month),
+      window:
+        query.year === undefined
+          ? undefined
+          : memoryWindow(query.year, query.month),
     });
     const after = afterCursor(
       sql`c.at`,

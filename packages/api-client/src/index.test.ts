@@ -408,3 +408,47 @@ describe('Memories methods', () => {
     });
   });
 });
+
+describe('Room preview methods', () => {
+  const client = (fetch: typeof globalThis.fetch) =>
+    new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+  const urls = (fetch: ReturnType<typeof vi.fn>) =>
+    fetch.mock.calls.map((call) => (call as unknown as [string])[0]);
+
+  it('pages content and photos under the encoded username', async () => {
+    const fetch = vi.fn(async () => json(200, { items: [], nextCursor: null }));
+    await client(fetch).roomContent('Ada Lovelace', {
+      type: 'posts',
+      limit: 3,
+    });
+    await client(fetch).roomContent('ada', { year: 2026, month: 2 });
+    await client(fetch).roomPhotos('ada', { limit: 6, cursor: 'c' });
+    expect(urls(fetch)).toEqual([
+      'https://api.test/api/v1/rooms/Ada%20Lovelace/content?type=posts&limit=3',
+      'https://api.test/api/v1/rooms/ada/content?year=2026&month=2',
+      'https://api.test/api/v1/rooms/ada/photos?limit=6&cursor=c',
+    ]);
+  });
+
+  it('reads the content summary, against the contract', async () => {
+    const fetch = vi.fn(async () =>
+      json(200, { years: [{ year: 2026, count: 1 }], year: 2026, months: [] }),
+    );
+    await client(fetch).roomContentSummary('ada');
+    await client(fetch).roomContentSummary('ada', 2025);
+    expect(urls(fetch)).toEqual([
+      'https://api.test/api/v1/rooms/ada/content/summary',
+      'https://api.test/api/v1/rooms/ada/content/summary?year=2025',
+    ]);
+    const malformed = vi.fn(async () =>
+      json(200, { items: [{ photo: {} }], nextCursor: null }),
+    );
+    await expect(client(malformed).roomPhotos('ada')).rejects.toMatchObject({
+      code: 'UNEXPECTED_RESPONSE',
+    });
+  });
+});
