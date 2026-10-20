@@ -20,9 +20,17 @@ export default async function LifeUpdatesPage({
         title="Your Life Updates"
         description="What’s been going on, shared once with the Boxes you choose, or kept to yourself."
         meta={
-          <Link className={buttonClassName('primary')} href="/life-updates/new">
-            New Life Update
-          </Link>
+          <div className={styles.actions}>
+            <Link
+              className={buttonClassName('primary')}
+              href="/life-updates/new"
+            >
+              New Life Update
+            </Link>
+            <Link className={buttonClassName('secondary')} href="/memories">
+              Memories
+            </Link>
+          </div>
         }
       />
       {page.items.length === 0 ? (

@@ -1,0 +1,118 @@
+/*
+ * Room decorations: static, decorative, inside the banner only. No z-index
+ * (the canvas isolates its own stacking), no pointer events, and nothing
+ * outside the canvas (the canvas clips).
+ */
+.layer {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cluster {
+  inset-block-start: var(--pal-space-3);
+  inset-inline-end: var(--pal-space-4);
+  display: flex;
+  gap: var(--pal-space-2);
+  color: var(--room-accent);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.glyph:nth-child(2) {
+  font-size: 0.75em;
+  transform: translateY(0.6em);
+}
+
+.tape {
+  inset: 0;
+}
+
+.strip {
+  position: absolute;
+  width: 5.5rem;
+  height: 1.25rem;
+  border: 1px solid var(--room-border);
+  background: var(--room-surface);
+  opacity: 0.85;
+}
+
+.strip:first-child {
+  inset-block-start: var(--pal-space-2);
+  inset-inline-start: calc(-1 * var(--pal-space-4));
+  transform: rotate(-12deg);
+}
+
+.strip:last-child {
+  inset-block-start: var(--pal-space-2);
+  inset-inline-end: calc(-1 * var(--pal-space-4));
+  transform: rotate(12deg);
+}
+
+.sparkles {
+  inset: 0;
+  color: var(--room-accent);
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.sparkle {
+  position: absolute;
+}
+
+.sparkle:nth-child(1) {
+  inset-block-start: 18%;
+  inset-inline-start: 8%;
+}
+
+.sparkle:nth-child(2) {
+  inset-block-start: 62%;
+  inset-inline-start: 18%;
+}
+
+.sparkle:nth-child(3) {
+  inset-block-start: 30%;
+  inset-inline-start: 41%;
+}
+
+.sparkle:nth-child(4) {
+  inset-block-start: 70%;
+  inset-inline-start: 58%;
+}
+
+.sparkle:nth-child(5) {
+  inset-block-start: 22%;
+  inset-inline-start: 74%;
+}
+
+.sparkle:nth-child(6) {
+  inset-block-start: 58%;
+  inset-inline-start: 90%;
+}
+
+/* A slow fade (one cycle every 3 s or slower), never a flash. */
+@media (prefers-reduced-motion: no-preference) {
+  .sparkle {
+    animation: room-twinkle 3.2s ease-in-out infinite alternate;
+  }
+
+  .sparkle:nth-child(even) {
+    animation-delay: 1.6s;
+  }
+}
+
+@keyframes room-twinkle {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .layer {
+    display: none;
+  }
+}

@@ -85,6 +85,8 @@ test('signed-out visitors are sent from protected pages to sign-in', async ({
     '/memories',
     '/memories/2026',
     '/memories/2026/3',
+    '/rooms/someone',
+    '/rooms/someone/memories',
   ]) {
     await page.goto(path);
     await expect(page, path).toHaveURL(/\/sign-in$/);

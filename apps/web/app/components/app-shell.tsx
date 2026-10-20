@@ -2,7 +2,8 @@ import type { CurrentUser, UnreadCount } from '@paldora/validation';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { signOutAction } from '../actions/auth';
-import { AppNav } from './app-nav';
+import { primaryNavigation } from '../lib/navigation';
+import { AppNav, BottomNav } from './app-nav';
 import { NotificationBell } from './notification-bell';
 import { SubmitButton } from './submit-button';
 import { Avatar, Wordmark } from './ui';
@@ -10,7 +11,8 @@ import styles from './app-shell.module.css';
 
 /**
  * The trusted frame around signed-in pages. Navigation and account actions
- * live here, outside any user-customized content.
+ * live here, outside any user-customized content (a Room canvas sits in
+ * `main`, below the header and the bottom nav).
  */
 export function AppShell({
   user,
@@ -23,6 +25,8 @@ export function AppShell({
   children: ReactNode;
 }) {
   const name = user.profile.displayName ?? user.profile.username;
+  const links = primaryNavigation(user.profile.username);
+  const avatar = <Avatar url={user.profile.avatar?.thumbnailUrl} name={name} />;
   return (
     <>
       <header className={styles.header}>
@@ -30,10 +34,18 @@ export function AppShell({
           <Link href="/home" className={styles.brand} aria-label="Paldora home">
             <Wordmark />
           </Link>
-          <AppNav />
+          <AppNav links={links} />
           <div className={styles.account}>
             <NotificationBell initial={unread} />
-            <Avatar url={user.profile.avatar?.thumbnailUrl} name={name} />
+            {/* Below 768px Settings lives here, as the avatar. */}
+            <Link
+              href="/settings/account"
+              className={styles.avatarLink}
+              aria-label="Settings"
+            >
+              {avatar}
+            </Link>
+            <span className={styles.avatarPlain}>{avatar}</span>
             <form action={signOutAction} className={styles.signOut}>
               <SubmitButton variant="quiet" pendingLabel="Signing out…">
                 Sign out
@@ -45,6 +57,7 @@ export function AppShell({
       <main id="main" className={styles.main}>
         {children}
       </main>
+      <BottomNav links={links} />
     </>
   );
 }

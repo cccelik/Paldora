@@ -57,6 +57,15 @@ function isPersonalMemories(path: string): boolean {
 }
 
 /**
+ * A Room and its Memories: access depends on shared Boxes, and previews can
+ * hold the owner's content from any Box the viewer is in. Its pages show no
+ * interaction controls that need a page refresh.
+ */
+function isRoom(path: string): boolean {
+  return path.startsWith('/rooms/');
+}
+
+/**
  * Targeted invalidation: a page refetches only when the hint concerns what it
  * shows. `resync` is handled by the caller (it means "anything may differ").
  */
@@ -69,7 +78,8 @@ export function shouldRefresh(pathname: string, hint: RealtimeHint): boolean {
       path.startsWith('/boxes/') ||
       path === '/life-updates' ||
       path.startsWith('/life-updates/') ||
-      isPersonalMemories(path)
+      isPersonalMemories(path) ||
+      isRoom(path)
     );
   }
   if (isNotificationHint(hint)) return path === '/notifications';
@@ -88,6 +98,7 @@ function showsPost(path: string, hint: RealtimeHint): boolean {
     path === '/home' ||
     path === '/life-updates' ||
     isPersonalMemories(path) ||
+    isRoom(path) ||
     (box !== null && (path === box || path === `${box}/memories`)) ||
     (hint.postId !== undefined && path === `/posts/${hint.postId}`)
   );

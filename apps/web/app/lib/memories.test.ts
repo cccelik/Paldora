@@ -58,6 +58,14 @@ describe('memoryHref', () => {
       `/boxes/${BOX}/memories?year=2025&month=12`,
     );
   });
+
+  it('builds Room queries with the username encoded', () => {
+    const scope = { kind: 'room', username: 'çelik' } as const;
+    expect(memoryHref(scope, {})).toBe('/rooms/%C3%A7elik/memories');
+    expect(
+      memoryHref(scope, { year: 2025, month: 2, type: 'life_updates' }),
+    ).toBe('/rooms/%C3%A7elik/memories?year=2025&month=2&type=life_updates');
+  });
 });
 
 describe('UTC months', () => {

@@ -33,12 +33,15 @@ export default async function HomePage({ searchParams }: PageProps<'/home'>) {
         title="Your feed"
         description="Posts from your Boxes, newest first. No ranking, ever."
       >
-        <div>
+        <div className={pageStyles.actions}>
           <Link
             className={buttonClassName('secondary')}
             href="/life-updates/new"
           >
             New Life Update
+          </Link>
+          <Link className={buttonClassName('quiet')} href="/memories">
+            Memories
           </Link>
         </div>
         <PostFeed

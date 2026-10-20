@@ -1,0 +1,143 @@
+/*
+ * The Room canvas. `.room-canvas` (global) receives the theme variables
+ * from `@paldora/tokens/room-themes.css`; this module only lays it out.
+ * The canvas isolates its stacking context, contains its paint, and clips,
+ * so nothing inside can cover the app's header, bottom nav, or dialogs.
+ * No rule here or in any Room module sets a z-index (a test checks it).
+ */
+.canvas {
+  position: relative;
+  isolation: isolate;
+  contain: layout paint;
+  overflow: clip;
+  display: grid;
+  gap: var(--pal-space-6);
+  padding-bottom: var(--pal-space-6);
+  border: 1px solid var(--room-border);
+  border-radius: var(--pal-radius-xl);
+  background: var(--room-canvas);
+  color: var(--room-text);
+  color-scheme: light;
+}
+
+.canvas[data-room-scheme='dark'] {
+  color-scheme: dark;
+}
+
+.canvas a {
+  color: var(--room-text);
+  text-decoration-color: var(--room-text-muted);
+  text-underline-offset: 0.2em;
+}
+
+.canvas :focus-visible {
+  outline: var(--pal-size-focus-ring) solid var(--room-text);
+  outline-offset: 2px;
+}
+
+.banner {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 6 / 1;
+  border-bottom: 1px solid var(--room-border);
+  background: var(--room-surface);
+}
+
+/* With a banner photo, the band takes the photo's 3:1 shape. */
+.banner:has(.bannerImage) {
+  aspect-ratio: 3 / 1;
+}
+
+.bannerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--pal-space-4);
+  padding-inline: var(--pal-space-4);
+}
+
+/* Only the photo reaches up into the banner; text never sits on it. */
+.avatar {
+  display: inline-flex;
+  margin-top: calc(-1 * var(--pal-space-12));
+  border: 4px solid var(--room-canvas);
+  border-radius: 50%;
+  background: var(--room-canvas);
+}
+
+.names {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: var(--pal-space-1);
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--room-font);
+  font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.username,
+.location {
+  color: var(--room-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.bio {
+  max-width: var(--pal-size-reading-column);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.single,
+.sidebar,
+.main {
+  display: grid;
+  gap: var(--pal-space-4);
+  align-content: start;
+  min-width: 0;
+}
+
+.single,
+.columns {
+  padding-inline: var(--pal-space-4);
+}
+
+/* Narrow screens: one column in the saved global order (`order` per widget). */
+.columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pal-space-4);
+}
+
+.columns > .sidebar,
+.columns > .main {
+  display: contents;
+}
+
+@media (min-width: 768px) {
+  .identity,
+  .single,
+  .columns {
+    padding-inline: var(--pal-space-6);
+  }
+
+  .columns {
+    display: grid;
+    grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .columns > .sidebar,
+  .columns > .main {
+    display: grid;
+  }
+}

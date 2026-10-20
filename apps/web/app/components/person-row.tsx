@@ -1,4 +1,7 @@
+import type { Route } from 'next';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { roomHref } from '../lib/room-theme';
 import { Avatar } from './ui';
 import styles from './person-row.module.css';
 
@@ -26,9 +29,15 @@ export function PersonList({
 export function PersonRow({
   person,
   note,
+  room = false,
   children,
 }: {
   person: PersonLike;
+  /**
+   * Link the name to their Room. The Room decides who may see it; a link
+   * never widens access (a denied visit is the shared not-found page).
+   */
+  room?: boolean;
   /** Extra context shown with the name, such as a role badge. */
   note?: ReactNode;
   /** The row's actions. */
@@ -39,7 +48,17 @@ export function PersonRow({
       <div className={styles.who}>
         <Avatar url={person.avatarUrl} name={person.displayName} />
         <div className={styles.names}>
-          <span className={styles.name}>{person.displayName}</span>
+          {room ? (
+            <Link
+              className={`${styles.name} ${styles.roomLink}`}
+              href={roomHref(person.username) as Route}
+              aria-label={`${person.displayName}’s Room`}
+            >
+              {person.displayName}
+            </Link>
+          ) : (
+            <span className={styles.name}>{person.displayName}</span>
+          )}
           <span className={styles.username}>@{person.username}</span>
         </div>
         {note}

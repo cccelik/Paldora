@@ -474,8 +474,21 @@ the 50-item page cap); `roomContentQuerySchema` rejects `month` without
 `year`; Life Update photos link through the viewer's first context (the
 `boxId` of `source`); data routes ignore widget switches (they reveal
 nothing about them; the web fetches only for enabled widgets). Reads have
-no rate limit (K8 unchanged). No index or migration was needed. Next:
-slice 6.
+no rate limit (K8 unchanged). No index or migration was needed. Slice 6 built (uncommitted): `lib/room-theme.ts`
+(attributes, columns, music link, username param; its test also confirms
+every domain preset scheme matches the token canvas/text luminance),
+`lib/navigation.ts`, `RoomCanvas`, `room-widgets`, `room-decoration`,
+`RoomOwnerStrip`, `/rooms/[username]` and `/rooms/[username]/memories`
+(`MemoryScope` gains `room`), the bottom nav, Room links on friend and Box
+member rows, Memories links on Home and Life Updates, the appearance copy,
+`/rooms/*` realtime rules, and `rooms.spec.ts`. Deviations: `BottomNav`
+lives in `app-nav.tsx` (one shared link renderer); the z-index scan is in
+`components/room-canvas.test.tsx` with the canvas DOM tests; the photos
+widget links each thumbnail to its post or Life Update instead of opening a
+lightbox (no dialog inside the canvas); in two columns the DOM is grouped by
+column and narrow screens restore the global order with CSS `order`, so
+focus follows column order when an owner interleaves positions. Next:
+slice 7.
 
 Run `pnpm typecheck`, `pnpm lint` and the unit tests in every slice. Run integration tests through `scripts/with-test-database.mjs`.
 

@@ -37,6 +37,14 @@
   overflow-wrap: anywhere;
 }
 
+.roomLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
 .username {
   color: var(--pal-text-muted);
   font-size: 0.875rem;

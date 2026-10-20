@@ -1,3 +1,16 @@
 {
-  "telemetry": false
+  "telemetry": false,
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": ["apps/web/app/components/room-canvas.test.tsx"],
+        "createdAt": "2026-10-20T21:42:30.295Z",
+        "reason": "agent: false positive, the match is a regex inside a unit test asserting the banner img, not markup"
+      }
+    ]
+  }
 }

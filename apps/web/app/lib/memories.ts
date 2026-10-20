@@ -11,10 +11,11 @@ import {
  * grouping. Which items exist is the API's decision; nothing here filters.
  */
 
-/** Personal Memories, or one Box's. */
+/** Personal Memories, one Box's, or what a Room's owner shared that you can see. */
 export type MemoryScope =
   | { readonly kind: 'personal' }
-  | { readonly kind: 'box'; readonly boxId: string };
+  | { readonly kind: 'box'; readonly boxId: string }
+  | { readonly kind: 'room'; readonly username: string };
 
 export interface MemoryPlace {
   readonly year?: number | undefined;
@@ -68,7 +69,11 @@ export function memoryHref(scope: MemoryScope, place: MemoryPlace): string {
   const where: Array<readonly [string, string | number]> = [];
   if (year) where.push(['year', year]);
   if (year && month) where.push(['month', month]);
-  return `/boxes/${scope.boxId}/memories${queryOf([...where, ...filters])}`;
+  const path =
+    scope.kind === 'box'
+      ? `/boxes/${scope.boxId}/memories`
+      : `/rooms/${encodeURIComponent(scope.username)}/memories`;
+  return `${path}${queryOf([...where, ...filters])}`;
 }
 
 const monthFormat = new Intl.DateTimeFormat('en', {

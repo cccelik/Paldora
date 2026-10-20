@@ -101,6 +101,28 @@ describe('shouldRefresh', () => {
     ).toBe(false);
   });
 
+  it('refreshes Room pages on membership and post changes, never on interactions', () => {
+    for (const path of ['/rooms/ada', '/rooms/ada/memories']) {
+      expect(shouldRefresh(path, { type: 'memberships.changed' }), path).toBe(
+        true,
+      );
+      expect(
+        shouldRefresh(path, { type: 'post.deleted', boxId: BOX, postId: POST }),
+        path,
+      ).toBe(true);
+      expect(
+        shouldRefresh(path, { type: 'reaction.changed', postId: POST }),
+        path,
+      ).toBe(false);
+      expect(shouldRefresh(path, { type: 'notification.created' }), path).toBe(
+        false,
+      );
+    }
+    expect(shouldRefresh('/roomsx', { type: 'memberships.changed' })).toBe(
+      false,
+    );
+  });
+
   it('refreshes membership-shaped pages on membership changes and nothing else', () => {
     for (const path of ['/home', '/boxes', `/boxes/${BOX}`]) {
       expect(shouldRefresh(path, { type: 'memberships.changed' })).toBe(true);

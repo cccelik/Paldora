@@ -57,14 +57,21 @@ test('Memories gather posts and Life Updates once, by year and month, from the k
     boxes: ['Book club', 'Weekend crew'],
   });
 
-  // Grace gets there with the keyboard only: nav, year, then month.
+  // Grace gets there with the keyboard only: nav (Home's link below 768px,
+  // where the bottom nav has no Memories), year, then month.
   await grace.page.goto('/home');
-  const nav = grace.page.getByRole('navigation', { name: 'Primary' });
-  const memories = nav.getByRole('link', { name: 'Memories' });
+  const desktop = test.info().project.name === 'desktop';
+  const memories = desktop
+    ? grace.page
+        .getByRole('navigation', { name: 'Primary', exact: true })
+        .getByRole('link', { name: 'Memories' })
+    : grace.page
+        .getByRole('main')
+        .getByRole('link', { name: 'Memories', exact: true });
   await tabTo(grace.page, memories);
   await grace.page.keyboard.press('Enter');
   await expect(grace.page).toHaveURL(/\/memories$/);
-  await expect(memories).toHaveAttribute('aria-current', 'page');
+  if (desktop) await expect(memories).toHaveAttribute('aria-current', 'page');
   const yearLink = grace.page
     .getByRole('navigation', { name: 'Years' })
     .getByRole('link', { name: `${year} 2 memories` });

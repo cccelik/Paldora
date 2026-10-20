@@ -81,6 +81,7 @@ export function MemberList({
         <PersonRow
           key={member.user.id}
           person={member.user}
+          room
           note={
             <>
               <Badge tone={member.role === 'owner' ? 'accent' : 'neutral'}>

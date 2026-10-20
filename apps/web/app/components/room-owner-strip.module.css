@@ -1,0 +1,21 @@
+/* App chrome (shell tokens), never Room tokens. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pal-space-3) var(--pal-space-4);
+}
+
+.audience {
+  display: flex;
+  flex: 1 1 18rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.detail {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}

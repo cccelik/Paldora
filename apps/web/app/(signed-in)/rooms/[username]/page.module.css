@@ -1,0 +1,4 @@
+.page {
+  display: grid;
+  gap: var(--pal-space-6);
+}

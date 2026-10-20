@@ -71,7 +71,7 @@ export function FriendList({ items }: { items: readonly FriendshipView[] }) {
   return (
     <PersonList label="Friends">
       {items.map((friendship) => (
-        <PersonRow key={friendship.id} person={friendship.user}>
+        <PersonRow key={friendship.id} person={friendship.user} room>
           <ConfirmAction
             action={removeFriendAction}
             fields={{ userId: friendship.user.id }}
