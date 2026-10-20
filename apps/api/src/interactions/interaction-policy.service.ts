@@ -70,6 +70,7 @@ export class InteractionPolicyService {
   ): Promise<PostContext> {
     const context = await this.postForRead(transaction, viewerId, postId);
     await this.lockOpenBox(transaction, context.post.boxId);
+    await this.lockActivePost(transaction, postId, postNotFound);
     return context;
   }
 
@@ -112,6 +113,7 @@ export class InteractionPolicyService {
       throw commentNotFound();
     }
     await this.lockOpenBox(transaction, row.boxId);
+    await this.lockActivePost(transaction, row.comment.postId, commentNotFound);
     return toContext(row);
   }
 
@@ -151,6 +153,26 @@ export class InteractionPolicyService {
       .where(eq(comments.id, commentId))
       .limit(1);
     return row;
+  }
+
+  /**
+   * Holds the post row `FOR SHARE` until commit. Deleting a post (or a Life
+   * Update's backing posts) locks the row and erases its interactions in one
+   * transaction, so a write either waits and then sees the tombstone, or
+   * commits first and is erased: nothing can land on a deleted post.
+   */
+  private async lockActivePost(
+    transaction: DatabaseExecutor,
+    postId: string,
+    gone: () => Error,
+  ): Promise<void> {
+    const [post] = await transaction
+      .select({ status: posts.status })
+      .from(posts)
+      .where(eq(posts.id, postId))
+      .for('share')
+      .limit(1);
+    if (post?.status !== 'active') throw gone();
   }
 
   /** Holds the Box row `FOR SHARE` until commit; archived Boxes are read-only. */

@@ -118,6 +118,50 @@ contentLength }`, then `PUT` the bytes and `POST …/complete` as for avatars.
 Posts in responses carry `media: [{ id, width, height, url, thumbnailUrl }]`
 with signed URLs that expire in 15 minutes; refetch rather than caching them.
 
+### Life Updates
+
+| Operation           | Route                                 | Rate limit                | Notes                                                                                                                         |
+| ------------------- | ------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `createLifeUpdate`  | `POST /life-updates`                  | 30/h `life-update-create` | 201 `LifeUpdate`; `BOX_NOT_FOUND`, `BOX_ARCHIVED` (whole request fails), `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY`                 |
+| `getLifeUpdate`     | `GET /life-updates/{lifeUpdateId}`    | none                      | `LIFE_UPDATE_NOT_FOUND` for missing, deleted, outside your Boxes, Only Me of someone else, and blocked authors alike          |
+| `deleteLifeUpdate`  | `DELETE /life-updates/{lifeUpdateId}` | 30/h `life-update-delete` | Author only (`LIFE_UPDATE_ACCESS_DENIED` for other members); 204; idempotent; removes it from every Box and erases everything |
+| `listMyLifeUpdates` | `GET /me/life-updates`                | none                      | Your own, newest first, Only Me included; one you can no longer reach in any Box is left out, so a page may be short          |
+
+The request is `{ audience, sections?, mediaAssetIds? }`:
+
+- `audience` is `{ type: "only_me" }` or `{ type: "boxes", boxIds: [1–20
+distinct IDs] }`. Every Box must be one you belong to now; a Box you are
+  not in (or that does not exist) fails the whole request with
+  `BOX_NOT_FOUND`, without saying which, and an archived one with
+  `BOX_ARCHIVED`. Nothing is partly published. **The audience can never be
+  changed**: there is no route for it and the database refuses it.
+- `sections` has only the nine fixed keys (`lifeLately`, `workOrUniversity`,
+  `travel`, `currentlyInto`, `listeningTo`, `watching`, `reading`,
+  `excitedAbout`, `whatsNext`), each up to 2,000 characters and 10,000 in
+  total. Text is trimmed and empty sections are dropped. At least one section
+  or one photo is required.
+- `mediaAssetIds`: up to 4 distinct ready `life_update_image` uploads of
+  yours that no other Life Update uses (anything else is `MEDIA_NOT_FOUND`;
+  one still processing is `MEDIA_NOT_READY`). Reserve them with
+  `POST /media/uploads` and `{ purpose: "life_update_image", contentType,
+contentLength ≤ 10 MB }` and no `boxId` (120/h `life-update-upload`, on
+  top of the route limit, failing closed). Unclaimed photos are removed after
+  24 hours.
+
+A `LifeUpdate` is `{ id, author, audience, sections: [{ key, label, content
+}] (canonical order), media, createdAt, editedAt|null, canEdit, contexts }`.
+Content and photos are stored once. Each delivery Box has its own backing
+post, so `contexts` is `[{ postId, box: { id, name }, interactions }]`, one
+per delivery Box **you belong to now** (never other Boxes), sorted by Box
+name ignoring case, then ID; it is empty for Only Me. Comments and reactions
+use the normal post routes with the context's `postId`, so each Box keeps its
+own conversation. `canEdit` is true for the author while it is Only Me or one
+delivery Box is open. Publishing sends `post.created` (and deleting
+`post.deleted`) with `boxId` and the backing `postId` to each delivery Box;
+Only Me sends nothing. A backing post read through `GET /posts/{id}` has
+empty `content` and `media` (Phase 6 slice 4 adds `kind` and the Life Update
+link to posts and feeds).
+
 ### Comments
 
 | Operation       | Route                           | Rate limit | Notes                                                                                                                      |

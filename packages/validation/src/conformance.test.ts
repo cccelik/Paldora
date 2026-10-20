@@ -10,6 +10,7 @@ import { createMediaUploadSchema } from './media.js';
 import { commentItemSchema, createCommentSchema } from './comments.js';
 import { notificationSchema, unreadCountSchema } from './notifications.js';
 import { postSchema } from './posts.js';
+import { createLifeUpdateSchema, lifeUpdateSchema } from './life-updates.js';
 import { reactionPresetsSchema, setPostReactionSchema } from './reactions.js';
 import { cursorPageQuerySchema } from './primitives.js';
 
@@ -35,6 +36,8 @@ const schemas: Record<string, z.ZodType> = {
   ReactionPresetsRequest: reactionPresetsSchema,
   Notification: notificationSchema,
   UnreadCount: unreadCountSchema,
+  CreateLifeUpdateRequest: createLifeUpdateSchema,
+  LifeUpdate: lifeUpdateSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

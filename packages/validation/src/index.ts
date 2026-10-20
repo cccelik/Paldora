@@ -10,6 +10,7 @@ export * from './reactions.js';
 export * from './comments.js';
 export * from './notifications.js';
 export * from './media.js';
+export * from './life-updates.js';
 export * from './route.js';
 export * from './routes.js';
 export * from './openapi.js';

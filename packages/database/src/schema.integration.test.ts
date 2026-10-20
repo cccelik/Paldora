@@ -10,12 +10,16 @@ import {
   commentReactions,
   comments,
   createDatabaseConnection,
+  lifeUpdateDeliveries,
+  lifeUpdateMedia,
+  lifeUpdates,
   mediaAssets,
   notifications,
   postReactions,
   posts,
   userPreferences,
   users,
+  type DatabaseTransaction,
 } from './index.js';
 
 const { DATABASE_URL } = requireEnvironmentVariables(
@@ -172,7 +176,7 @@ describe('migrated database', () => {
       migrationsTable: '__drizzle_migrations',
     });
     expect(await count()).toBe(before);
-    expect(before).toBeGreaterThanOrEqual(6);
+    expect(before).toBeGreaterThanOrEqual(7);
   });
 });
 
@@ -516,5 +520,589 @@ describe('reaction presets', () => {
         .where(eq(userPreferences.userId, userId)),
     );
     expect(failure.constraint).toBe('user_preferences_reaction_presets_check');
+  });
+});
+
+// --- Life Updates (Phase 6) -------------------------------------------------
+
+const INTEGRITY = '23000';
+const IMMUTABLE = 'life_update_audience_immutable';
+
+async function newBox(name = 'Life') {
+  const [box] = await database
+    .insert(boxes)
+    .values({ name })
+    .returning({ id: boxes.id });
+  if (!box) throw new Error('box insert failed');
+  return box.id;
+}
+
+async function insertUpdate(
+  tx: DatabaseTransaction,
+  authorUserId: string,
+  audience: 'boxes' | 'only_me' = 'boxes',
+  sections: Record<string, string> = { travel: 'Lisbon' },
+) {
+  const [update] = await tx
+    .insert(lifeUpdates)
+    .values({ authorUserId, audience, sections })
+    .returning({ id: lifeUpdates.id });
+  if (!update) throw new Error('life update insert failed');
+  return update.id;
+}
+
+async function backingPost(
+  tx: DatabaseTransaction,
+  boxId: string,
+  authorUserId: string,
+) {
+  const [post] = await tx
+    .insert(posts)
+    .values({ boxId, authorUserId, kind: 'life_update' })
+    .returning({ id: posts.id });
+  if (!post) throw new Error('backing post insert failed');
+  return post.id;
+}
+
+/** A Life Update delivered to each Box, the way the publish service writes it. */
+async function publish(author: string, boxIds: readonly string[]) {
+  return database.transaction(async (tx) => {
+    const lifeUpdateId = await insertUpdate(tx, author);
+    const postIds: string[] = [];
+    for (const [position, boxId] of boxIds.entries()) {
+      // Sequential on one transaction connection.
+      const postId = await backingPost(tx, boxId, author);
+      await tx.insert(lifeUpdateDeliveries).values({
+        lifeUpdateId,
+        audience: 'boxes',
+        authorUserId: author,
+        position,
+        boxId,
+        postId,
+      });
+      postIds.push(postId);
+    }
+    return { lifeUpdateId, postIds };
+  });
+}
+
+async function publishOnlyMe(author: string) {
+  return database.transaction(async (tx) => {
+    const lifeUpdateId = await insertUpdate(tx, author, 'only_me');
+    await tx.insert(lifeUpdateDeliveries).values({
+      lifeUpdateId,
+      audience: 'only_me',
+      authorUserId: author,
+      position: 0,
+    });
+    return lifeUpdateId;
+  });
+}
+
+async function lifeUpdatePhoto(ownerUserId: string, boxId: string | null) {
+  const key = `test/${randomUUID()}`;
+  const [asset] = await database
+    .insert(mediaAssets)
+    .values({
+      ownerUserId,
+      purpose: 'life_update_image',
+      boxId,
+      status: 'ready',
+      contentType: 'image/jpeg',
+      contentLength: 1024,
+      uploadObjectKey: key,
+      uploadExpiresAt: new Date(Date.now() + 60_000),
+      masterObjectKey: `${key}/master`,
+      displayObjectKey: `${key}/display`,
+      thumbnailObjectKey: `${key}/thumbnail`,
+      width: 10,
+      height: 10,
+    })
+    .returning({ id: mediaAssets.id });
+  if (!asset) throw new Error('asset insert failed');
+  return asset.id;
+}
+
+describe('Life Update publishing', () => {
+  it('gives the update, its backing posts, and deliveries one created_at', async () => {
+    const author = await newUser();
+    const boxIds = [await newBox(), await newBox()];
+    const { lifeUpdateId, postIds } = await publish(author, boxIds);
+    const times = await database.execute<{ at: string }>(sql`
+      select created_at::text as at from paldora.life_updates where id = ${lifeUpdateId}
+      union all select created_at::text from paldora.posts where id in (${sql.join(
+        postIds.map((id) => sql`${id}::uuid`),
+        sql`, `,
+      )})
+      union all select created_at::text from paldora.life_update_deliveries where life_update_id = ${lifeUpdateId}
+    `);
+    expect(times.rows).toHaveLength(5);
+    expect(new Set(times.rows.map((row) => row.at)).size).toBe(1);
+    const [delivery] = await database
+      .select({ postKind: lifeUpdateDeliveries.postKind })
+      .from(lifeUpdateDeliveries)
+      .where(eq(lifeUpdateDeliveries.lifeUpdateId, lifeUpdateId))
+      .limit(1);
+    expect(delivery?.postKind).toBe('life_update');
+  });
+
+  it('accepts 20 Boxes and an Only Me row, and rejects position 20', async () => {
+    const author = await newUser();
+    const twenty = await Promise.all(
+      Array.from({ length: 20 }, () => newBox()),
+    );
+    const { postIds } = await publish(author, twenty);
+    expect(postIds).toHaveLength(20);
+    await expect(publishOnlyMe(author)).resolves.toBeDefined();
+    const boxId = await newBox();
+    const failure = await failureOf(
+      database.transaction(async (tx) => {
+        const lifeUpdateId = await insertUpdate(tx, author);
+        await tx.insert(lifeUpdateDeliveries).values({
+          lifeUpdateId,
+          audience: 'boxes',
+          authorUserId: author,
+          position: 20,
+          boxId,
+          postId: await backingPost(tx, boxId, author),
+        });
+      }),
+    );
+    expect(failure).toEqual({
+      code: CHECK,
+      constraint: 'life_update_deliveries_position_check',
+    });
+  });
+
+  it('rejects the same Box twice', async () => {
+    const author = await newUser();
+    const boxId = await newBox();
+    const failure = await failureOf(publish(author, [boxId, boxId]));
+    expect(failure).toEqual({
+      code: UNIQUE,
+      constraint: 'life_update_deliveries_box_unique',
+    });
+  });
+
+  it.each([
+    ['a Box delivery without a Box', 'boxes', false],
+    ['an Only Me delivery with a Box', 'only_me', true],
+  ] as const)('rejects %s', async (_name, audience, withBox) => {
+    const author = await newUser();
+    const boxId = await newBox();
+    const failure = await failureOf(
+      database.transaction(async (tx) => {
+        const lifeUpdateId = await insertUpdate(tx, author, audience);
+        await tx.insert(lifeUpdateDeliveries).values({
+          lifeUpdateId,
+          audience,
+          authorUserId: author,
+          position: 0,
+          boxId: withBox ? boxId : null,
+          postId: withBox ? await backingPost(tx, boxId, author) : null,
+        });
+      }),
+    );
+    expect(failure).toEqual({
+      code: CHECK,
+      constraint: 'life_update_deliveries_shape_check',
+    });
+  });
+
+  it('rejects a delivery whose audience differs from its Life Update', async () => {
+    const author = await newUser();
+    const failure = await failureOf(
+      database.transaction(async (tx) => {
+        const lifeUpdateId = await insertUpdate(tx, author, 'boxes');
+        await tx.insert(lifeUpdateDeliveries).values({
+          lifeUpdateId,
+          audience: 'only_me',
+          authorUserId: author,
+          position: 0,
+        });
+      }),
+    );
+    expect(failure).toEqual({
+      code: FOREIGN_KEY,
+      constraint: 'life_update_deliveries_audience_fk',
+    });
+  });
+
+  it.each([
+    ['a delivery author who is not the Life Update author', 'delivery'],
+    ['a backing post by someone else', 'post'],
+    ['a backing post in another Box', 'box'],
+    ['an ordinary post as the backing post', 'kind'],
+  ] as const)('rejects %s', async (_name, mismatch) => {
+    const author = await newUser();
+    const other = await newUser();
+    const boxId = await newBox();
+    const otherBox = await newBox();
+    const failure = await failureOf(
+      database.transaction(async (tx) => {
+        const lifeUpdateId = await insertUpdate(tx, author);
+        const postId =
+          mismatch === 'kind'
+            ? await newPost(boxId, author)
+            : await backingPost(
+                tx,
+                mismatch === 'box' ? otherBox : boxId,
+                mismatch === 'post' ? other : author,
+              );
+        await tx.insert(lifeUpdateDeliveries).values({
+          lifeUpdateId,
+          audience: 'boxes',
+          authorUserId: mismatch === 'delivery' ? other : author,
+          position: 0,
+          boxId,
+          postId,
+        });
+      }),
+    );
+    expect(failure.code).toBe(FOREIGN_KEY);
+    expect(failure.constraint).toBe(
+      mismatch === 'delivery'
+        ? 'life_update_deliveries_author_fk'
+        : 'life_update_deliveries_post_fk',
+    );
+  });
+
+  it('allows one delivery per backing post', async () => {
+    const author = await newUser();
+    const boxId = await newBox();
+    const { postIds } = await publish(author, [boxId]);
+    const failure = await failureOf(
+      database.transaction(async (tx) => {
+        const lifeUpdateId = await insertUpdate(tx, author);
+        await tx.insert(lifeUpdateDeliveries).values({
+          lifeUpdateId,
+          audience: 'boxes',
+          authorUserId: author,
+          position: 0,
+          boxId,
+          postId: postIds[0] ?? '',
+        });
+      }),
+    );
+    expect(failure).toEqual({
+      code: UNIQUE,
+      constraint: 'life_update_deliveries_post_unique',
+    });
+  });
+
+  it('keeps text off backing posts', async () => {
+    const author = await newUser();
+    const boxId = await newBox();
+    const failure = await failureOf(
+      database.insert(posts).values({
+        boxId,
+        authorUserId: author,
+        kind: 'life_update',
+        content: 'x',
+      }),
+    );
+    expect(failure).toEqual({
+      code: CHECK,
+      constraint: 'posts_life_update_content_check',
+    });
+    const unknown = await failureOf(
+      database
+        .insert(posts)
+        .values({ boxId, authorUserId: author, kind: 'poll', content: 'x' }),
+    );
+    expect(unknown.constraint).toBe('posts_kind_check');
+  });
+});
+
+describe('Life Update sections', () => {
+  const section = (length: number) => 'x'.repeat(length);
+
+  it.each([
+    ['exactly 2,000 characters', { travel: section(2000) }],
+    [
+      'exactly 10,000 characters in total',
+      Object.fromEntries(
+        ['lifeLately', 'travel', 'reading', 'watching', 'whatsNext'].map(
+          (key) => [key, section(2000)],
+        ),
+      ),
+    ],
+    ['no sections at all', {}],
+  ])('accepts %s', async (_name, sections) => {
+    const author = await newUser();
+    await expect(
+      database.transaction(async (tx) => {
+        const lifeUpdateId = await insertUpdate(
+          tx,
+          author,
+          'only_me',
+          sections,
+        );
+        await tx.insert(lifeUpdateDeliveries).values({
+          lifeUpdateId,
+          audience: 'only_me',
+          authorUserId: author,
+          position: 0,
+        });
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it.each([
+    [
+      'a 2,001-character section',
+      sql`jsonb_build_object('travel', repeat('x', 2001))`,
+    ],
+    ['an empty section', sql`'{"travel": ""}'::jsonb`],
+    [
+      'more than 10,000 characters in total',
+      sql`jsonb_build_object('a', repeat('x', 2000), 'b', repeat('x', 2000), 'c', repeat('x', 2000), 'd', repeat('x', 2000), 'e', repeat('x', 2000), 'f', 'x')`,
+    ],
+    ['a non-string value', sql`'{"travel": 1}'::jsonb`],
+    ['a key that is not letters', sql`'{"travel_1": "x"}'::jsonb`],
+    ['an array', sql`'["x"]'::jsonb`],
+    [
+      'more than 20 keys',
+      sql`(select jsonb_object_agg(repeat('k', n), 'x') from generate_series(1, 21) as n)`,
+    ],
+  ])('rejects %s', async (_name, sections) => {
+    const author = await newUser();
+    const failure = await failureOf(
+      database.execute(
+        sql`insert into paldora.life_updates (author_user_id, audience, sections) values (${author}, 'only_me', ${sections})`,
+      ),
+    );
+    expect(failure).toEqual({
+      code: CHECK,
+      constraint: 'life_updates_sections_check',
+    });
+  });
+
+  it.each([
+    [
+      'deleted with sections left',
+      { status: 'deleted', deletedAt: new Date() },
+    ],
+    ['deleted without a time', { status: 'deleted', sections: {} }],
+    ['active with a deletion time', { deletedAt: new Date() }],
+  ] as const)('enforces the lifecycle: %s', async (_name, values) => {
+    const author = await newUser();
+    const failure = await failureOf(
+      database.insert(lifeUpdates).values({
+        authorUserId: author,
+        audience: 'only_me',
+        sections: { travel: 'x' },
+        ...values,
+      }),
+    );
+    expect(failure).toEqual({
+      code: CHECK,
+      constraint: 'life_updates_lifecycle_check',
+    });
+  });
+});
+
+describe('Life Update immutability triggers', () => {
+  it('rejects a delivery added in a later transaction', async () => {
+    const author = await newUser();
+    const { lifeUpdateId } = await publish(author, [await newBox()]);
+    const boxId = await newBox();
+    const failure = await failureOf(
+      database.transaction(async (tx) => {
+        await tx.insert(lifeUpdateDeliveries).values({
+          lifeUpdateId,
+          audience: 'boxes',
+          authorUserId: author,
+          position: 1,
+          boxId,
+          postId: await backingPost(tx, boxId, author),
+        });
+      }),
+    );
+    expect(failure).toEqual({ code: INTEGRITY, constraint: IMMUTABLE });
+  });
+
+  it('rejects changing or directly removing a delivery', async () => {
+    const author = await newUser();
+    const { lifeUpdateId } = await publish(author, [await newBox()]);
+    const where = eq(lifeUpdateDeliveries.lifeUpdateId, lifeUpdateId);
+    const update = await failureOf(
+      database.update(lifeUpdateDeliveries).set({ position: 1 }).where(where),
+    );
+    expect(update).toEqual({ code: INTEGRITY, constraint: IMMUTABLE });
+    const removal = await failureOf(
+      database.delete(lifeUpdateDeliveries).where(where),
+    );
+    expect(removal).toEqual({ code: INTEGRITY, constraint: IMMUTABLE });
+  });
+
+  it.each([
+    ['the audience', { audience: 'boxes' }],
+    ['the author', { authorUserId: 'other' }],
+    ['the publish time', { createdAt: new Date(0) }],
+  ] as const)('rejects changing %s', async (_name, change) => {
+    const author = await newUser();
+    const other = await newUser();
+    const lifeUpdateId = await publishOnlyMe(author);
+    const values = 'authorUserId' in change ? { authorUserId: other } : change;
+    const failure = await failureOf(
+      database
+        .update(lifeUpdates)
+        .set(values)
+        .where(eq(lifeUpdates.id, lifeUpdateId)),
+    );
+    expect(failure).toEqual({ code: INTEGRITY, constraint: IMMUTABLE });
+  });
+
+  it('allows editing sections and tombstoning', async () => {
+    const author = await newUser();
+    const lifeUpdateId = await publishOnlyMe(author);
+    await database
+      .update(lifeUpdates)
+      .set({ sections: { reading: 'Dune' }, editedAt: new Date() })
+      .where(eq(lifeUpdates.id, lifeUpdateId));
+    await database
+      .update(lifeUpdates)
+      .set({ status: 'deleted', sections: {}, deletedAt: new Date() })
+      .where(eq(lifeUpdates.id, lifeUpdateId));
+    const [row] = await database
+      .select({ status: lifeUpdates.status })
+      .from(lifeUpdates)
+      .where(eq(lifeUpdates.id, lifeUpdateId));
+    expect(row?.status).toBe('deleted');
+  });
+
+  it('rejects committing a Life Update with no delivery', async () => {
+    const author = await newUser();
+    const failure = await failureOf(
+      database.transaction(async (tx) => {
+        await insertUpdate(tx, author);
+      }),
+    );
+    expect(failure).toEqual({
+      code: INTEGRITY,
+      constraint: 'life_update_requires_delivery',
+    });
+  });
+
+  it('rejects committing a backing post with no delivery', async () => {
+    const author = await newUser();
+    const boxId = await newBox();
+    const failure = await failureOf(
+      database
+        .insert(posts)
+        .values({ boxId, authorUserId: author, kind: 'life_update' }),
+    );
+    expect(failure).toEqual({
+      code: INTEGRITY,
+      constraint: 'posts_life_update_requires_delivery',
+    });
+  });
+
+  it('rejects changing a post’s kind in either direction', async () => {
+    const author = await newUser();
+    const boxId = await newBox();
+    const { postIds } = await publish(author, [boxId]);
+    const ordinary = await newPost(boxId, author);
+    for (const [postId, kind] of [
+      [postIds[0] ?? '', 'post'],
+      [ordinary, 'life_update'],
+    ] as const) {
+      const failure = await failureOf(
+        database
+          .update(posts)
+          .set({ kind, content: null })
+          .where(eq(posts.id, postId)),
+      );
+      expect(failure).toEqual({
+        code: INTEGRITY,
+        constraint: 'posts_kind_immutable',
+      });
+    }
+  });
+});
+
+describe('Life Update media', () => {
+  it('belongs to one Life Update, at positions 0–3', async () => {
+    const author = await newUser();
+    const first = await publishOnlyMe(author);
+    const second = await publishOnlyMe(author);
+    const photo = await lifeUpdatePhoto(author, null);
+    await database
+      .insert(lifeUpdateMedia)
+      .values({ lifeUpdateId: first, mediaAssetId: photo, position: 0 });
+    const reused = await failureOf(
+      database
+        .insert(lifeUpdateMedia)
+        .values({ lifeUpdateId: second, mediaAssetId: photo, position: 0 }),
+    );
+    expect(reused).toEqual({
+      code: UNIQUE,
+      constraint: 'life_update_media_asset_unique',
+    });
+    const fifth = await failureOf(
+      database.insert(lifeUpdateMedia).values({
+        lifeUpdateId: second,
+        mediaAssetId: await lifeUpdatePhoto(author, null),
+        position: 4,
+      }),
+    );
+    expect(fifth.constraint).toBe('life_update_media_position_check');
+  });
+
+  it('is user-scoped: a Life Update photo never names a Box', async () => {
+    const author = await newUser();
+    const boxId = await newBox();
+    const failure = await failureOf(lifeUpdatePhoto(author, boxId));
+    expect(failure).toEqual({
+      code: CHECK,
+      constraint: 'media_assets_box_scope_check',
+    });
+    const unknown = await failureOf(
+      database.insert(mediaAssets).values({
+        ownerUserId: author,
+        purpose: 'banner_image',
+        contentType: 'image/jpeg',
+        contentLength: 10,
+        uploadObjectKey: `test/${randomUUID()}`,
+        uploadExpiresAt: new Date(),
+      }),
+    );
+    // Either check may report first; both reject an unknown purpose.
+    expect(unknown.code).toBe(CHECK);
+    expect([
+      'media_assets_purpose_check',
+      'media_assets_box_scope_check',
+    ]).toContain(unknown.constraint);
+  });
+});
+
+describe('Box deletion with Life Updates', () => {
+  it('cascades that Box’s delivery and backing post only', async () => {
+    const author = await newUser();
+    const doomed = await newBox();
+    const kept = await newBox();
+    const { lifeUpdateId, postIds } = await publish(author, [doomed, kept]);
+    await database.delete(boxes).where(eq(boxes.id, doomed));
+    const deliveries = await database
+      .select({ boxId: lifeUpdateDeliveries.boxId })
+      .from(lifeUpdateDeliveries)
+      .where(eq(lifeUpdateDeliveries.lifeUpdateId, lifeUpdateId));
+    expect(deliveries).toEqual([{ boxId: kept }]);
+    const remaining = await database
+      .select({ id: posts.id })
+      .from(posts)
+      .where(
+        sql`${posts.id} in (${sql.join(
+          postIds.map((id) => sql`${id}::uuid`),
+          sql`, `,
+        )})`,
+      );
+    expect(remaining).toEqual([{ id: postIds[1] }]);
+    const [update] = await database
+      .select({ status: lifeUpdates.status })
+      .from(lifeUpdates)
+      .where(eq(lifeUpdates.id, lifeUpdateId));
+    expect(update?.status).toBe('active');
   });
 });

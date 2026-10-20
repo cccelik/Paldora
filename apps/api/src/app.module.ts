@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BoxesModule } from './boxes/boxes.module.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { InteractionsModule } from './interactions/interactions.module.js';
+import { LifeUpdatesModule } from './life-updates/life-updates.module.js';
 import { MediaModule } from './media/media.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
@@ -26,6 +27,7 @@ import { SocialModule } from './social/social.module.js';
     InteractionsModule,
     NotificationsModule,
     RealtimeModule,
+    LifeUpdatesModule,
   ],
 })
 export class AppModule {}

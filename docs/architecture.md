@@ -49,6 +49,11 @@ apps/* ─> config, observability, database, storage, tokens
   never imports `posts` as a module, only the plain `posts/post-context.ts`
   function every interaction check starts from, and `PostService.remove`
   calls the plain `erasePostInteractions` function inside its transaction.
+  `life-updates` imports `identity`, `media`, `realtime`, and `interactions`
+  and never `posts`: it writes backing posts directly and reuses the plain
+  `erasePostInteractions` and `media/photo-claim.ts` functions (the photo
+  claim is shared with `PostService`). It exports its view and policy
+  services so feeds (and later Memories) can import it, never the reverse.
 - **Identity mapping is platform work.** The global guard verifies the JWT and
   resolves the internal user, so feature modules receive a principal and never
   see the identity provider.
@@ -94,6 +99,27 @@ prepareReactionImage (reaction_image, post's Box) → PUT signed URL → complet
 poll media status (lib/media-polling.ts) → ready
 setCameraReactionAction (PUT /posts/{id}/reaction, kind real) → summary replaces the optimistic one
 ```
+
+## Life Update flow (Phase 6)
+
+```text
+POST /life-updates ─ one tx:
+    author's active membership in every Box → Box rows FOR SHARE (ascending id)
+    claim photos (FOR UPDATE; life_update_image, owner, unused)
+    life_updates row ─ one posts row (kind life_update, no text) per Box
+                     ─ one life_update_deliveries row per Box (or one only-me row)
+                     ─ life_update_media rows       (all created_at = now())
+    commit: deferred triggers check every update and backing post has a delivery
+  after commit: post.created → box:{id} per delivery Box (best effort, IDs only)
+GET /life-updates/{id}: rows + hiddenByBlock → viewer's contexts (active membership)
+    → photos signed once, authors, interaction summaries per context post
+DELETE /life-updates/{id} ─ one tx: lock update, lock + tombstone backing posts,
+    erasePostInteractions(all), retire photos, tombstone update → post.deleted per Box
+```
+
+Comments and reactions on a delivery are ordinary Phase 5 interactions on its
+backing post, so each Box keeps its own conversation and the projector needs
+no change.
 
 ## Principles
 

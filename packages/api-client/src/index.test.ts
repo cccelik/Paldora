@@ -297,3 +297,51 @@ describe('reaction methods', () => {
     );
   });
 });
+
+describe('Life Update methods', () => {
+  const client = (fetch: typeof globalThis.fetch) =>
+    new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+
+  it('posts the audience and sections, and pages your own updates', async () => {
+    const fetch = vi.fn(async () => json(200, { items: [], nextCursor: null }));
+    await client(fetch).myLifeUpdates({ limit: 5 });
+    const failing = vi.fn(async () =>
+      json(404, {
+        error: { code: 'BOX_NOT_FOUND', message: 'No.', requestId: 'r1' },
+      }),
+    );
+    await expect(
+      client(failing).createLifeUpdate({
+        audience: { type: 'only_me' },
+        sections: { travel: 'Lisbon' },
+      }),
+    ).rejects.toMatchObject({ code: 'BOX_NOT_FOUND', status: 404 });
+    const [url, init] = failing.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect([url, init.method, init.body]).toEqual([
+      'https://api.test/api/v1/life-updates',
+      'POST',
+      '{"audience":{"type":"only_me"},"sections":{"travel":"Lisbon"}}',
+    ]);
+    expect((fetch.mock.calls[0] as unknown as [string])[0]).toBe(
+      'https://api.test/api/v1/me/life-updates?limit=5',
+    );
+  });
+
+  it('deletes by ID without a body', async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 204 }));
+    await expect(client(fetch).deleteLifeUpdate('l1')).resolves.toBeUndefined();
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect([url, init.method, init.body]).toEqual([
+      'https://api.test/api/v1/life-updates/l1',
+      'DELETE',
+      undefined,
+    ]);
+  });
+});

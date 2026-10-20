@@ -56,6 +56,12 @@ export const API_ERROR_CODES = [
   'COMMENT_NOT_FOUND',
   'COMMENT_ACCESS_DENIED',
   'NOTIFICATION_NOT_FOUND',
+  // Life Updates (Phase 6). Absence, deletion, no shared Box, and blocks
+  // share LIFE_UPDATE_NOT_FOUND; a backing post is changed only through its
+  // Life Update (POST_MANAGED_BY_LIFE_UPDATE).
+  'LIFE_UPDATE_NOT_FOUND',
+  'LIFE_UPDATE_ACCESS_DENIED',
+  'POST_MANAGED_BY_LIFE_UPDATE',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

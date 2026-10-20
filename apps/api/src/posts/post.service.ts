@@ -12,7 +12,8 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { boxArchived } from '../boxes/box-errors.js';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
 import { erasePostInteractions } from '../interactions/interaction-erasure.js';
-import { mediaNotFound, mediaNotReady } from '../media/media-errors.js';
+import { mediaNotFound } from '../media/media-errors.js';
+import { assertPhotosUsable } from '../media/photo-claim.js';
 import { retireAssets } from '../media/media-retirement.js';
 import { ApiError } from '../platform/api-error.js';
 import { isUniqueViolation } from '../platform/database-errors.js';
@@ -23,6 +24,18 @@ import { loadPostContext } from './post-context.js';
 import { postAccessDenied, postNotFound } from './post-errors.js';
 import { PostQueryService } from './post-query.service.js';
 import { toPostView } from './post-views.js';
+
+/** Photos another post already claimed. */
+const usedByPosts = async (
+  executor: DatabaseExecutor,
+  ids: readonly string[],
+): Promise<ReadonlySet<string>> => {
+  const rows = await executor
+    .select({ id: postMedia.mediaAssetId })
+    .from(postMedia)
+    .where(inArray(postMedia.mediaAssetId, [...ids]));
+  return new Set(rows.map((row) => row.id));
+};
 
 const needsSomething = () =>
   new ApiError(
@@ -69,12 +82,13 @@ export class PostService {
           .for('share')
           .limit(1);
         if (box?.status !== 'active') throw boxArchived();
-        await this.assertPhotosUsable(
-          transaction,
-          authorId,
+        await assertPhotosUsable(transaction, {
+          ownerId: authorId,
+          purpose: 'post_image',
           boxId,
-          input.mediaAssetIds,
-        );
+          ids: input.mediaAssetIds,
+          findUsed: usedByPosts,
+        });
         const [post] = await transaction
           .insert(posts)
           .values({ boxId, authorUserId: authorId, content: text || null })
@@ -99,43 +113,6 @@ export class PostService {
       });
     await this.announce('post.created', boxId, created.id);
     return this.view(authorId, created.id);
-  }
-
-  /** Every unusable photo looks the same: not yours, not here, or already used. */
-  private async assertPhotosUsable(
-    executor: DatabaseExecutor,
-    authorId: string,
-    boxId: string,
-    ids: readonly string[],
-  ): Promise<void> {
-    if (ids.length === 0) return;
-    const assets = await executor
-      .select()
-      .from(mediaAssets)
-      .where(inArray(mediaAssets.id, [...ids]))
-      .for('update');
-    const byId = new Map(assets.map((asset) => [asset.id, asset]));
-    const attached = await executor
-      .select({ id: postMedia.mediaAssetId })
-      .from(postMedia)
-      .where(inArray(postMedia.mediaAssetId, [...ids]));
-    const used = new Set(attached.map((row) => row.id));
-    const usable = ids.map((id) => {
-      const asset = byId.get(id);
-      const valid =
-        asset !== undefined &&
-        asset.ownerUserId === authorId &&
-        asset.purpose === 'post_image' &&
-        asset.boxId === boxId &&
-        (asset.status === 'ready' ||
-          asset.status === 'pending' ||
-          asset.status === 'processing') &&
-        !used.has(id);
-      return valid ? asset : undefined;
-    });
-    if (usable.some((asset) => asset === undefined)) throw mediaNotFound();
-    if (usable.some((asset) => asset?.status !== 'ready'))
-      throw mediaNotReady();
   }
 
   public async update(
@@ -224,7 +201,7 @@ export class PostService {
         transaction,
         photos.map((row) => row.asset),
       );
-      await erasePostInteractions(transaction, postId);
+      await erasePostInteractions(transaction, [postId]);
     });
     await this.announce('post.deleted', context.post.boxId, postId);
   }

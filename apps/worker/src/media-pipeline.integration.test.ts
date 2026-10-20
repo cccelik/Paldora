@@ -3,6 +3,9 @@ import {
   boxMemberships,
   boxes,
   createDatabaseConnection,
+  lifeUpdateDeliveries,
+  lifeUpdateMedia,
+  lifeUpdates,
   mediaAssets,
   mediaJobOutbox,
   mediaProcessJob,
@@ -100,13 +103,16 @@ async function bigJpeg() {
 }
 
 /** A reserved, completed upload waiting for the worker. */
+type Purpose = 'post_image' | 'reaction_image' | 'life_update_image';
+
 async function queuedPhoto(
   storage: MemoryObjectStorage,
   bytes?: Uint8Array,
-  purpose: 'post_image' | 'reaction_image' = 'post_image',
+  purpose: Purpose = 'post_image',
 ) {
   const ownerId = await person();
-  const boxId = await boxOf(ownerId);
+  // Life Update photos are user-scoped: they never name a Box.
+  const boxId = purpose === 'life_update_image' ? null : await boxOf(ownerId);
   const body = bytes ?? (await bigJpeg());
   const uploadObjectKey = `uploads/${randomUUID()}`;
   storage.put(uploadObjectKey, 'image/jpeg', body);
@@ -263,6 +269,44 @@ describe('processing a camera capture', () => {
   });
 });
 
+describe('processing a Life Update photo', () => {
+  it('uses the post photo sizes, needs no Box, and waits unattached', async () => {
+    const { storage, run } = worker();
+    const { asset, outbox } = await queuedPhoto(
+      storage,
+      undefined,
+      'life_update_image',
+    );
+    expect(asset.boxId).toBeNull();
+    await run(fakeJob(outbox));
+    const ready = await assetRow(asset.id);
+    expect(ready).toMatchObject({
+      status: 'ready',
+      boxId: null,
+      width: 2560,
+      height: 1707,
+      ...derivativeKeys(asset.id),
+    });
+    const keys = derivativeKeys(asset.id);
+    const sizes = await Promise.all(
+      [
+        keys.masterObjectKey,
+        keys.displayObjectKey,
+        keys.thumbnailObjectKey,
+      ].map(async (key) => {
+        const metadata = await sharp(storage.objects.get(key)?.body).metadata();
+        expect(metadata.exif).toBeUndefined();
+        return Math.max(metadata.width ?? 0, metadata.height ?? 0);
+      }),
+    );
+    expect(sizes).toEqual([2560, 1600, 640]);
+    await drainDeletions(run);
+    expect(objectsOf(storage, asset).sort()).toEqual(
+      Object.values(keys).sort(),
+    );
+  });
+});
+
 describe('fault injection: no orphaned objects', () => {
   it('survives a storage failure halfway through writing derivatives', async () => {
     const { storage, run } = worker();
@@ -388,14 +432,37 @@ describe('fault injection: no orphaned objects', () => {
 });
 
 describe('reaper', () => {
+  /** Claims a Life Update photo the way the API's publish transaction does. */
+  async function onlyMeLifeUpdate(ownerId: string, mediaAssetId: string) {
+    await database.transaction(async (transaction) => {
+      const [update] = await transaction
+        .insert(lifeUpdates)
+        .values({
+          authorUserId: ownerId,
+          audience: 'only_me',
+          sections: { travel: 'x' },
+        })
+        .returning({ id: lifeUpdates.id });
+      await transaction.insert(lifeUpdateDeliveries).values({
+        lifeUpdateId: update!.id,
+        audience: 'only_me',
+        authorUserId: ownerId,
+        position: 0,
+      });
+      await transaction
+        .insert(lifeUpdateMedia)
+        .values({ lifeUpdateId: update!.id, mediaAssetId, position: 0 });
+    });
+  }
+
   async function readyPhoto(
     ageMs: number,
     attached = false,
-    purpose: 'post_image' | 'reaction_image' = 'post_image',
+    purpose: Purpose = 'post_image',
     at = new Date(Date.now() - ageMs),
   ) {
     const ownerId = await person();
-    const boxId = await boxOf(ownerId);
+    const boxId = purpose === 'life_update_image' ? null : await boxOf(ownerId);
     const id = randomUUID();
     const when = at;
     const keys = derivativeKeys(id);
@@ -418,7 +485,9 @@ describe('reaper', () => {
         updatedAt: when,
       })
       .returning();
-    if (attached) {
+    if (attached && purpose === 'life_update_image') {
+      await onlyMeLifeUpdate(ownerId, id);
+    } else if (attached && boxId) {
       const [post] = await database
         .insert(posts)
         .values({ boxId, authorUserId: ownerId, content: 'x' })
@@ -484,6 +553,29 @@ describe('reaper', () => {
         Object.values(derivativeKeys(asset.id)).sort(),
       );
     }
+  });
+
+  it('removes Life Update photos no Life Update claimed, and only those', async () => {
+    const stale = await readyPhoto(
+      2 * DAY,
+      false,
+      'life_update_image',
+      new Date(-Date.now()),
+    );
+    const fresh = await readyPhoto(HOUR, false, 'life_update_image');
+    const kept = await readyPhoto(2 * DAY, true, 'life_update_image');
+    const result = await reap(database);
+    expect(result.expiredPhotos).toBeGreaterThanOrEqual(1);
+    expect((await assetRow(stale.id))?.status).toBe('deleted');
+    expect((await assetRow(fresh.id))?.status).toBe('ready');
+    expect((await assetRow(kept.id))?.status).toBe('ready');
+    const jobs = await database
+      .select()
+      .from(mediaJobOutbox)
+      .where(
+        sql`${mediaJobOutbox.payload} -> 'objectKeys' ? ${stale.masterObjectKey}`,
+      );
+    expect(jobs).toHaveLength(1);
   });
 
   async function deadDeletion(attempts: number, ageMs: number) {

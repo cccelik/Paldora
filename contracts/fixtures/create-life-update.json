@@ -1,0 +1,46 @@
+{
+  "schema": "CreateLifeUpdateRequest",
+  "valid": [
+    { "audience": { "type": "only_me" }, "sections": { "travel": "Lisbon" } },
+    {
+      "audience": {
+        "type": "boxes",
+        "boxIds": [
+          "4a1c1b8e-5f0e-4a5f-9d2a-0f2b5c6d7e81",
+          "4a1c1b8e-5f0e-4a5f-9d2a-0f2b5c6d7e82"
+        ]
+      },
+      "sections": { "lifeLately": "Busy", "whatsNext": "Rest" },
+      "mediaAssetIds": ["4a1c1b8e-5f0e-4a5f-9d2a-0f2b5c6d7e83"]
+    },
+    {
+      "audience": { "type": "only_me" },
+      "mediaAssetIds": ["4a1c1b8e-5f0e-4a5f-9d2a-0f2b5c6d7e84"]
+    }
+  ],
+  "invalid": [
+    { "audience": { "type": "only_me" } },
+    { "audience": { "type": "only_me" }, "sections": { "travel": "   " } },
+    {
+      "audience": { "type": "boxes", "boxIds": [] },
+      "sections": { "travel": "x" }
+    },
+    {
+      "audience": {
+        "type": "boxes",
+        "boxIds": [
+          "4a1c1b8e-5f0e-4a5f-9d2a-0f2b5c6d7e81",
+          "4a1c1b8e-5f0e-4a5f-9d2a-0f2b5c6d7e81"
+        ]
+      },
+      "sections": { "travel": "x" }
+    },
+    { "audience": { "type": "everyone" }, "sections": { "travel": "x" } },
+    { "audience": { "type": "only_me" }, "sections": { "mood": "x" } },
+    {
+      "audience": { "type": "only_me" },
+      "sections": { "travel": "x" },
+      "status": "deleted"
+    }
+  ]
+}

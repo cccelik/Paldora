@@ -210,6 +210,59 @@ double mark-read, realtime), the notification rows in
 skip rule, dedupe, concurrent projectors, poison events, crash before commit,
 Redis down at publish, retention).
 
+## Authorization matrix: Phase 6 (Life Updates; slices 1–2)
+
+A Life Update is visible to a viewer when it is active, no block exists
+between the viewer and the author (either direction, the shared
+`hiddenByBlock`), and either it is the viewer's own Only Me update or the
+viewer is an **active member now** of at least one delivery Box whose backing
+post is active. This holds for the author too: an author who left every
+delivery Box no longer sees it. `loadContexts` (one query joining the viewer's
+active membership) is the only definition of what a viewer reaches; responses
+list only those Boxes, never the others.
+
+| Action                         | Author                                                                            | Member of a delivery Box             | Archived Box                       | Former member, stranger, guessed ID           | Block with the author (either direction) |
+| ------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------- | --------------------------------------------- | ---------------------------------------- |
+| Publish to Boxes               | Active member of every named Box (30/h)                                           | n/a                                  | Whole publish fails `BOX_ARCHIVED` | Any non-member Box: `BOX_NOT_FOUND` (no hint) | n/a                                      |
+| Publish Only Me                | ✓                                                                                 | n/a                                  | n/a                                | n/a                                           | n/a                                      |
+| Read detail                    | ✓ (needs an active delivery Box, or Only Me)                                      | ✓, contexts for their own Boxes only | ✓ read-only (`canInteract` false)  | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
+| Read someone else's Only Me    | n/a                                                                               | `LIFE_UPDATE_NOT_FOUND`              | n/a                                | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
+| List mine                      | Own active updates only; unreachable ones dropped                                 | n/a                                  | ✓                                  | n/a                                           | n/a (own content)                        |
+| Delete                         | ✓, idempotent 204 (30/h), allowed in archived Boxes                               | `LIFE_UPDATE_ACCESS_DENIED`          | allowed                            | `LIFE_UPDATE_NOT_FOUND`                       | `LIFE_UPDATE_NOT_FOUND`                  |
+| Change the audience            | Impossible: no route; the database refuses it (triggers)                          | same                                 | same                               | same                                          | same                                     |
+| Comment or react on a delivery | Phase 5 routes on the context's `postId`, unchanged                               | ✓                                    | `BOX_ARCHIVED`                     | `POST_NOT_FOUND`                              | `POST_NOT_FOUND`                         |
+| Reserve a `life_update_image`  | Any signed-in user (120/h `life-update-upload`, fail-closed, user-scoped, no Box) |                                      |                                    |                                               |                                          |
+| Claim photos                   | Ready, yours, `life_update_image`, unused (`MEDIA_NOT_FOUND` / `MEDIA_NOT_READY`) |                                      |                                    |                                               |                                          |
+
+Block rows (both directions, and unblock restoring access) are tested in
+`life-updates/life-updates.integration.test.ts`; the Home and Box feed
+placeholder rows join the ADR 013 matrix in `block.integration.test.ts` with
+the feed slice.
+
+Races decided by the database or by locks:
+
+- **Audience.** The delivery rows are the audience. Triggers allow inserting
+  deliveries only in the transaction that created the Life Update, forbid
+  updating them or deleting them directly (only a Box-deletion cascade), and
+  freeze `audience`, `author_user_id`, and `created_at`; deferred triggers
+  require a delivery per Life Update and per backing post at commit. Box
+  count (≤ 20), distinct Boxes, one delivery per backing post, and the
+  delivery's audience/author/Box/post agreement are keys and checks.
+- **Publishing** checks the author's active membership in every Box, then
+  holds every Box row `FOR SHARE` in ascending ID order, so a Box cannot be
+  archived mid-publish and concurrent publishes cannot deadlock.
+- **Photos** are locked `FOR UPDATE` while claimed (`media/photo-claim.ts`,
+  shared with posts); two publishes racing for one photo are decided by the
+  unique `life_update_media.media_asset_id` (the loser gets
+  `MEDIA_NOT_FOUND` and leaves no rows).
+- **Delete** locks the Life Update row `FOR UPDATE`, then every backing post
+  `FOR UPDATE`, tombstones them, and erases all interactions, notifications,
+  camera images, and photos in the same transaction. Comment and reaction
+  writes now also hold the post row `FOR SHARE` (`InteractionPolicyService`),
+  so a write racing a delete either commits first and is erased, or waits and
+  finds the post gone; nothing survives on a deleted delivery (raced in tests
+  for posts and Life Updates alike).
+
 ## Assumptions
 
 - TLS terminates at the deployment edge, which enforces HTTPS.

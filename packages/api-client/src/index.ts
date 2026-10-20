@@ -3,6 +3,7 @@ import {
   errorEnvelopeSchema,
   type CreateBoxInput,
   type CreateCommentInput,
+  type CreateLifeUpdateInput,
   type CreateMediaUploadInput,
   type CreatePostInput,
   type SetPostReactionInput,
@@ -390,6 +391,28 @@ export class PaldoraApiClient {
     return this.call(apiRoutes.declineBoxInvitation, {
       params: { invitationId },
     });
+  }
+
+  // --- Life Updates --------------------------------------------------------
+
+  /** The audience (`only_me` or 1–20 Boxes) is final once published. */
+  public createLifeUpdate(body: CreateLifeUpdateInput) {
+    return this.call(apiRoutes.createLifeUpdate, { body });
+  }
+
+  /** With a context (conversation) per delivery Box you belong to. */
+  public lifeUpdate(lifeUpdateId: string) {
+    return this.call(apiRoutes.getLifeUpdate, { params: { lifeUpdateId } });
+  }
+
+  /** Removes it from every Box at once (idempotent). */
+  public deleteLifeUpdate(lifeUpdateId: string) {
+    return this.call(apiRoutes.deleteLifeUpdate, { params: { lifeUpdateId } });
+  }
+
+  /** Your own, newest first, including Only Me. */
+  public myLifeUpdates(page: PageOptions = {}) {
+    return this.call(apiRoutes.listMyLifeUpdates, { query: page });
   }
 
   // --- Notifications -------------------------------------------------------

@@ -7,11 +7,12 @@ import {
   postMedia,
   posts,
 } from '@paldora/database';
-import type { FeedItemView, PostMediaView } from '@paldora/validation';
+import type { FeedItemView } from '@paldora/validation';
 import { and, asc, desc, eq, inArray, type SQL } from 'drizzle-orm';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
 import { InteractionSummaryService } from '../interactions/interaction-summary.service.js';
 import { MediaUrlService } from '../media/media-urls.service.js';
+import { signPhotos } from '../media/signed-photos.js';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import {
@@ -164,25 +165,9 @@ export class PostQueryService {
         ),
       )
       .orderBy(asc(postMedia.postId), asc(postMedia.position));
-    const grouped = new Map<string, PostMediaView[]>();
-    const signed = await Promise.all(
-      rows.map(async ({ postId, asset }) => ({
-        postId,
-        asset,
-        urls: await this.mediaUrls.sign(asset),
-      })),
+    return signPhotos(
+      this.mediaUrls,
+      rows.map(({ postId, asset }) => ({ ownerId: postId, asset })),
     );
-    for (const { postId, asset, urls } of signed) {
-      if (!urls || !asset.width || !asset.height) continue;
-      const list = grouped.get(postId) ?? [];
-      list.push({
-        id: asset.id,
-        width: asset.width,
-        height: asset.height,
-        ...urls,
-      });
-      grouped.set(postId, list);
-    }
-    return grouped;
   }
 }

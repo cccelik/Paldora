@@ -1859,6 +1859,236 @@
         }
       }
     },
+    "/life-updates": {
+      "post": {
+        "operationId": "createLifeUpdate",
+        "summary": "Publish a Life Update: sections and photos stored once, delivered to 1–20 Boxes you belong to (each Box gets its own conversation) or kept Only Me. The audience can never be changed. Any Box you are not in fails the whole request with BOX_NOT_FOUND, and any archived Box with BOX_ARCHIVED; nothing is partly published.",
+        "tags": [
+          "Life Updates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "audience": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "only_me"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "boxes"
+                          },
+                          "boxIds": {
+                            "minItems": 1,
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "boxIds"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "sections": {
+                    "type": "object",
+                    "properties": {
+                      "lifeLately": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "workOrUniversity": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "travel": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "currentlyInto": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "listeningTo": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "watching": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "reading": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "excitedAbout": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "whatsNext": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "mediaAssetIds": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "audience"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifeUpdate"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, BOX_NOT_FOUND, BOX_ARCHIVED, MEDIA_NOT_FOUND, MEDIA_NOT_READY, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/life-updates/{lifeUpdateId}": {
+      "delete": {
+        "operationId": "deleteLifeUpdate",
+        "summary": "Delete your Life Update from every Box (idempotent). Its text and photos, and every comment, reaction, and notification on each delivery, are erased.",
+        "tags": [
+          "Life Updates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lifeUpdateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content."
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, LIFE_UPDATE_NOT_FOUND, LIFE_UPDATE_ACCESS_DENIED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getLifeUpdate",
+        "summary": "One Life Update, with a context for each delivery Box you belong to. Missing, deleted, outside your Boxes, and blocked authors all answer LIFE_UPDATE_NOT_FOUND.",
+        "tags": [
+          "Life Updates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lifeUpdateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifeUpdate"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, LIFE_UPDATE_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me": {
       "get": {
         "operationId": "getCurrentUser",
@@ -2071,6 +2301,65 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FeedPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/life-updates": {
+      "get": {
+        "operationId": "listMyLifeUpdates",
+        "summary": "Your own Life Updates, newest first, including Only Me. One you can no longer see in any Box (you left them all) is left out, so a page may be short.",
+        "tags": [
+          "Life Updates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifeUpdatePage"
                 }
               }
             }
@@ -2576,7 +2865,8 @@
                     "enum": [
                       "avatar",
                       "post_image",
-                      "reaction_image"
+                      "reaction_image",
+                      "life_update_image"
                     ]
                   },
                   "boxId": {
@@ -5455,6 +5745,671 @@
           }
         }
       },
+      "LifeUpdate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "author": {
+            "$ref": "#/$defs/UserSummary"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "only_me",
+              "boxes"
+            ]
+          },
+          "sections": {
+            "maxItems": 9,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/LifeUpdateSection"
+            }
+          },
+          "media": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/PostMedia"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "editedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "contexts": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/LifeUpdateContext"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "author",
+          "audience",
+          "sections",
+          "media",
+          "createdAt",
+          "editedAt",
+          "canEdit",
+          "contexts"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "UserSummary": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "username": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "avatarUrl"
+            ],
+            "additionalProperties": false
+          },
+          "LifeUpdateSection": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "enum": [
+                  "lifeLately",
+                  "workOrUniversity",
+                  "travel",
+                  "currentlyInto",
+                  "listeningTo",
+                  "watching",
+                  "reading",
+                  "excitedAbout",
+                  "whatsNext"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "label",
+              "content"
+            ],
+            "additionalProperties": false
+          },
+          "PostMedia": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "width": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "height": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "width",
+              "height",
+              "url",
+              "thumbnailUrl"
+            ],
+            "additionalProperties": false
+          },
+          "LifeUpdateContext": {
+            "type": "object",
+            "properties": {
+              "postId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              "interactions": {
+                "$ref": "#/$defs/PostInteractionSummary"
+              }
+            },
+            "required": [
+              "postId",
+              "box",
+              "interactions"
+            ],
+            "additionalProperties": false
+          },
+          "PostInteractionSummary": {
+            "type": "object",
+            "properties": {
+              "commentCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "reactions": {
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ReactionCount"
+                }
+              },
+              "reactionCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "realCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "realPreview": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/RealReactionPreview"
+                }
+              },
+              "viewerReaction": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string"
+                      },
+                      "mediaAssetId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "canInteract": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "commentCount",
+              "reactions",
+              "reactionCount",
+              "realCount",
+              "realPreview",
+              "viewerReaction",
+              "canInteract"
+            ],
+            "additionalProperties": false
+          },
+          "ReactionCount": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "kind",
+              "count"
+            ],
+            "additionalProperties": false
+          },
+          "RealReactionPreview": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "$ref": "#/$defs/UserSummary"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "user",
+              "thumbnailUrl"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "LifeUpdatePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/LifeUpdate"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "LifeUpdate": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "author": {
+                "$ref": "#/$defs/UserSummary"
+              },
+              "audience": {
+                "type": "string",
+                "enum": [
+                  "only_me",
+                  "boxes"
+                ]
+              },
+              "sections": {
+                "maxItems": 9,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/LifeUpdateSection"
+                }
+              },
+              "media": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/PostMedia"
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "editedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "canEdit": {
+                "type": "boolean"
+              },
+              "contexts": {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/LifeUpdateContext"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "author",
+              "audience",
+              "sections",
+              "media",
+              "createdAt",
+              "editedAt",
+              "canEdit",
+              "contexts"
+            ],
+            "additionalProperties": false
+          },
+          "UserSummary": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "username": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "avatarUrl"
+            ],
+            "additionalProperties": false
+          },
+          "LifeUpdateSection": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "enum": [
+                  "lifeLately",
+                  "workOrUniversity",
+                  "travel",
+                  "currentlyInto",
+                  "listeningTo",
+                  "watching",
+                  "reading",
+                  "excitedAbout",
+                  "whatsNext"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "label",
+              "content"
+            ],
+            "additionalProperties": false
+          },
+          "PostMedia": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "width": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "height": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "width",
+              "height",
+              "url",
+              "thumbnailUrl"
+            ],
+            "additionalProperties": false
+          },
+          "LifeUpdateContext": {
+            "type": "object",
+            "properties": {
+              "postId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              "interactions": {
+                "$ref": "#/$defs/PostInteractionSummary"
+              }
+            },
+            "required": [
+              "postId",
+              "box",
+              "interactions"
+            ],
+            "additionalProperties": false
+          },
+          "PostInteractionSummary": {
+            "type": "object",
+            "properties": {
+              "commentCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "reactions": {
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ReactionCount"
+                }
+              },
+              "reactionCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "realCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "realPreview": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/RealReactionPreview"
+                }
+              },
+              "viewerReaction": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string"
+                      },
+                      "mediaAssetId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "canInteract": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "commentCount",
+              "reactions",
+              "reactionCount",
+              "realCount",
+              "realPreview",
+              "viewerReaction",
+              "canInteract"
+            ],
+            "additionalProperties": false
+          },
+          "ReactionCount": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "kind",
+              "count"
+            ],
+            "additionalProperties": false
+          },
+          "RealReactionPreview": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "$ref": "#/$defs/UserSummary"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "user",
+              "thumbnailUrl"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
       "Liveness": {
         "type": "object",
         "properties": {
@@ -5492,7 +6447,8 @@
             "enum": [
               "avatar",
               "post_image",
-              "reaction_image"
+              "reaction_image",
+              "life_update_image"
             ]
           },
           "status": {
@@ -5594,7 +6550,8 @@
                 "enum": [
                   "avatar",
                   "post_image",
-                  "reaction_image"
+                  "reaction_image",
+                  "life_update_image"
                 ]
               },
               "status": {

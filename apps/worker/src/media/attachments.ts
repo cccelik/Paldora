@@ -73,9 +73,17 @@ const attachPostImage: AttachReadyAsset = async () => undefined;
  */
 const attachReactionImage: AttachReadyAsset = async () => undefined;
 
+/**
+ * Life Update photos are claimed by the API in the publish (or edit)
+ * transaction, like post photos. Becoming ready has nothing to do; an
+ * unclaimed one is removed by the reaper.
+ */
+const attachLifeUpdateImage: AttachReadyAsset = async () => undefined;
+
 /** What "ready" means for each purpose. Add a row with each new purpose. */
 export const attachments: Readonly<Record<MediaPurpose, AttachReadyAsset>> = {
   avatar: attachAvatar,
   post_image: attachPostImage,
   reaction_image: attachReactionImage,
+  life_update_image: attachLifeUpdateImage,
 };

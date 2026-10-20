@@ -65,6 +65,11 @@ export const PURPOSE_UPLOAD_LIMITS: Readonly<
   Partial<Record<MediaPurpose, RateLimitPolicy>>
 > = {
   reaction_image: { scope: 'camera-upload', limit: 120, windowSeconds: 3_600 },
+  life_update_image: {
+    scope: 'life-update-upload',
+    limit: 120,
+    windowSeconds: 3_600,
+  },
 };
 
 /**
@@ -132,7 +137,8 @@ export class MediaUploadService {
 
   /**
    * Box-scoped uploads (post photos, camera reactions) need an active
-   * membership in an open Box.
+   * membership in an open Box. User-scoped ones (avatars, Life Update
+   * photos) name no Box.
    * A stranger's reservation looks the same as a missing Box.
    */
   private async scopeFor(

@@ -81,3 +81,32 @@ describe('camera upload limit', () => {
     expect(limiter.consume).not.toHaveBeenCalled();
   });
 });
+
+describe('Life Update photo upload limit', () => {
+  const lifeUpdatePhoto = {
+    purpose: 'life_update_image',
+    contentType: 'image/jpeg',
+    contentLength: 1_000,
+  } as CreateMediaUploadInput;
+
+  it('counts reservations under their own scope, failing closed', async () => {
+    const { uploads, limiter } = service(async () => ({
+      allowed: false,
+      retryAfterSeconds: 30,
+    }));
+    expect(await codeOf(uploads.create(userId, lifeUpdatePhoto))).toBe(
+      'RATE_LIMITED',
+    );
+    expect(limiter.consume).toHaveBeenCalledWith(`user:${userId}`, {
+      scope: 'life-update-upload',
+      limit: 120,
+      windowSeconds: 3_600,
+    });
+    const down = service(async () => {
+      throw new Error('redis down');
+    });
+    expect(await codeOf(down.uploads.create(userId, lifeUpdatePhoto))).toBe(
+      'RATE_LIMIT_UNAVAILABLE',
+    );
+  });
+});

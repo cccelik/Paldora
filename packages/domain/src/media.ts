@@ -52,6 +52,7 @@ export const MEDIA_PURPOSES = [
   'avatar',
   'post_image',
   'reaction_image',
+  'life_update_image',
 ] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
@@ -88,6 +89,20 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     master: { size: 1280, fit: 'inside', quality: 86 },
     display: { size: 1024, fit: 'inside', quality: 82 },
     thumbnail: { size: 320, fit: 'inside', quality: 78 },
+  },
+  /**
+   * Life Update photos (Phase 6): stored once and shown in every delivery
+   * Box, so they belong to their owner, not to a Box. Same limits and
+   * derivatives as post photos.
+   */
+  life_update_image: {
+    scope: 'user',
+    contentTypes: MEDIA_CONTENT_TYPES,
+    maxBytes: megabytes(10),
+    maxInputPixels: 40_000_000,
+    master: { size: 2560, fit: 'inside', quality: 86 },
+    display: { size: 1600, fit: 'inside', quality: 82 },
+    thumbnail: { size: 640, fit: 'inside', quality: 78 },
   },
 };
 
