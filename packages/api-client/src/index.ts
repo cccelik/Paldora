@@ -6,6 +6,7 @@ import {
   type CreateLifeUpdateInput,
   type UpdateLifeUpdateInput,
   type CreateMediaUploadInput,
+  type MemoryType,
   type CreatePostInput,
   type SetPostReactionInput,
   type UpdatePreferencesInput,
@@ -44,6 +45,13 @@ export interface PaldoraApiClientOptions {
 export type PageOptions = {
   cursor?: string | undefined;
   limit?: number | undefined;
+};
+
+/** A Memories page: `year` is required, `month` and `type` optional. */
+export type MemoryOptions = PageOptions & {
+  year: number;
+  month?: number | undefined;
+  type?: MemoryType | undefined;
 };
 
 /** The profile fields a client may send; see `updateProfileSchema`. */
@@ -425,6 +433,36 @@ export class PaldoraApiClient {
   /** Your own, newest first, including Only Me. */
   public myLifeUpdates(page: PageOptions = {}) {
     return this.call(apiRoutes.listMyLifeUpdates, { query: page });
+  }
+
+  // --- Memories ------------------------------------------------------------
+
+  /**
+   * One UTC year (or month) of what you can still access, newest first.
+   * Keep `year`, `month`, and `type` the same when following `nextCursor`.
+   */
+  public myMemories(query: MemoryOptions) {
+    return this.call(apiRoutes.listMyMemories, { query });
+  }
+
+  /** Counts per year, and per month of `year` (default: the newest). */
+  public myMemorySummary(year?: number) {
+    return this.call(apiRoutes.getMyMemorySummary, { query: { year } });
+  }
+
+  /** One Box's Memories; each Life Update carries only this Box's context. */
+  public boxMemories(boxId: string, query: MemoryOptions) {
+    return this.call(apiRoutes.listBoxMemories, {
+      params: { boxId },
+      query,
+    });
+  }
+
+  public boxMemorySummary(boxId: string, year?: number) {
+    return this.call(apiRoutes.getBoxMemorySummary, {
+      params: { boxId },
+      query: { year },
+    });
   }
 
   // --- Notifications -------------------------------------------------------

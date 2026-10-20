@@ -1,0 +1,58 @@
+{
+  "schema": "MemoryQuery",
+  "description": "A Memories page as it arrives in a query string: a UTC year (1970-9999), an optional month (1-12), a type, and the usual cursor and limit.",
+  "valid": [
+    {
+      "year": "2026"
+    },
+    {
+      "year": "2026",
+      "month": "12",
+      "type": "life_updates",
+      "limit": "50"
+    },
+    {
+      "year": "1970",
+      "month": "1",
+      "type": "posts"
+    },
+    {
+      "year": "9999",
+      "month": "12",
+      "type": "all",
+      "cursor": "eyJhIjoiMjAyNi0xMi0zMVQyMzo1OTo1OS45OTk5OTlaIiwiaSI6IngifQ"
+    }
+  ],
+  "invalid": [
+    {},
+    {
+      "month": "1"
+    },
+    {
+      "year": "1969"
+    },
+    {
+      "year": "10000"
+    },
+    {
+      "year": "2026",
+      "month": "0"
+    },
+    {
+      "year": "2026",
+      "month": "13"
+    },
+    {
+      "year": "2026",
+      "type": "comments"
+    },
+    {
+      "year": "2026",
+      "limit": "51"
+    },
+    {
+      "year": "2026",
+      "cursor": ""
+    }
+  ]
+}

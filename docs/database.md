@@ -192,6 +192,19 @@ every delivery's comments, reactions, camera images, and notifications, the
 photos are retired once, and the row keeps `status='deleted'` with empty
 sections.
 
+Memories (slice 5) add **no table, column, or migration**: they are derived
+at query time from `posts`, `life_update_deliveries`, `life_updates`, and
+`box_memberships`. The candidate query is driven by the viewer's memberships
+(`box_memberships_user_status_index`) into the existing
+`posts_box_feed_index (box_id, created_at desc, id desc) where status =
+'active'` with the UTC month or year as a range condition, then the unique
+`post_id` index of `life_update_deliveries` and the `life_updates` primary
+key; Only Me uses `life_updates_author_index`. `EXPLAIN` on the test database
+shows exactly that plan, so a partial index on `posts.kind` was not added
+(`kind` is a cheap filter on rows the range already narrowed). Revisit when
+a single viewer's month or year holds enough rows that the per-page
+`DISTINCT` and sort show up in measurements.
+
 Pair-level decisions (friend request, block, Box invitation, accepting one)
 take a transaction advisory lock on the pair first (`lockPair`), so a block can
 never commit between "is anyone blocked?" and "create the relationship".

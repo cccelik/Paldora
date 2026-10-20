@@ -4,6 +4,7 @@ import { IdentityModule } from './identity/identity.module.js';
 import { InteractionsModule } from './interactions/interactions.module.js';
 import { LifeUpdatesModule } from './life-updates/life-updates.module.js';
 import { MediaModule } from './media/media.module.js';
+import { MemoriesModule } from './memories/memories.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { PostsModule } from './posts/posts.module.js';
@@ -28,6 +29,7 @@ import { SocialModule } from './social/social.module.js';
     NotificationsModule,
     RealtimeModule,
     LifeUpdatesModule,
+    MemoriesModule,
   ],
 })
 export class AppModule {}

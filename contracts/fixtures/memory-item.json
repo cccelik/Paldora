@@ -1,0 +1,279 @@
+{
+  "schema": "MemoryItem",
+  "description": "One Memory: the live post or Life Update (never a stored copy) and its publish time, which decides its UTC month. There is no hidden kind: blocked content is omitted.",
+  "valid": [
+    {
+      "kind": "post",
+      "occurredAt": "2026-10-19T12:00:00.000Z",
+      "post": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "box": {
+          "id": "1c9e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+          "name": "Crew"
+        },
+        "author": {
+          "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+          "username": "grace",
+          "displayName": "Grace Hopper",
+          "avatarUrl": null
+        },
+        "content": "hello",
+        "media": [],
+        "createdAt": "2026-10-19T12:00:00.000Z",
+        "editedAt": null,
+        "canEdit": true,
+        "interactions": {
+          "commentCount": 3,
+          "reactions": [
+            {
+              "kind": "😂",
+              "count": 2
+            },
+            {
+              "kind": "👨‍👩‍👧",
+              "count": 1
+            }
+          ],
+          "reactionCount": 4,
+          "realCount": 1,
+          "realPreview": [
+            {
+              "user": {
+                "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+                "username": "grace",
+                "displayName": "Grace Hopper",
+                "avatarUrl": null
+              },
+              "thumbnailUrl": "https://media.example.com/media/x/thumbnail.webp?X-Amz-Signature=a"
+            }
+          ],
+          "viewerReaction": {
+            "kind": "real",
+            "mediaAssetId": "5b1f0c3a-9e2d-4f7a-8c61-3d2e1f0a9b84"
+          },
+          "canInteract": true
+        },
+        "kind": "post",
+        "lifeUpdateId": null
+      }
+    },
+    {
+      "kind": "life_update",
+      "occurredAt": "2026-10-20T08:00:00.000Z",
+      "lifeUpdate": {
+        "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f91",
+        "author": {
+          "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f92",
+          "username": "ada",
+          "displayName": "Ada",
+          "avatarUrl": null
+        },
+        "audience": "boxes",
+        "sections": [
+          {
+            "key": "lifeLately",
+            "label": "Life lately",
+            "content": "Busy"
+          }
+        ],
+        "media": [],
+        "createdAt": "2026-10-20T08:00:00.000Z",
+        "editedAt": null,
+        "canEdit": true,
+        "contexts": [
+          {
+            "postId": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f93",
+            "box": {
+              "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f94",
+              "name": "Crew"
+            },
+            "interactions": {
+              "commentCount": 0,
+              "reactions": [],
+              "reactionCount": 0,
+              "realCount": 0,
+              "realPreview": [],
+              "viewerReaction": null,
+              "canInteract": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "kind": "hidden",
+      "occurredAt": "2026-10-19T12:00:00.000Z",
+      "hidden": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "boxId": "1c9e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+        "createdAt": "2026-10-19T12:00:00.000Z"
+      }
+    },
+    {
+      "kind": "post",
+      "post": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "box": {
+          "id": "1c9e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+          "name": "Crew"
+        },
+        "author": {
+          "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+          "username": "grace",
+          "displayName": "Grace Hopper",
+          "avatarUrl": null
+        },
+        "content": "hello",
+        "media": [],
+        "createdAt": "2026-10-19T12:00:00.000Z",
+        "editedAt": null,
+        "canEdit": true,
+        "interactions": {
+          "commentCount": 3,
+          "reactions": [
+            {
+              "kind": "😂",
+              "count": 2
+            },
+            {
+              "kind": "👨‍👩‍👧",
+              "count": 1
+            }
+          ],
+          "reactionCount": 4,
+          "realCount": 1,
+          "realPreview": [
+            {
+              "user": {
+                "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+                "username": "grace",
+                "displayName": "Grace Hopper",
+                "avatarUrl": null
+              },
+              "thumbnailUrl": "https://media.example.com/media/x/thumbnail.webp?X-Amz-Signature=a"
+            }
+          ],
+          "viewerReaction": {
+            "kind": "real",
+            "mediaAssetId": "5b1f0c3a-9e2d-4f7a-8c61-3d2e1f0a9b84"
+          },
+          "canInteract": true
+        },
+        "kind": "post",
+        "lifeUpdateId": null
+      }
+    },
+    {
+      "kind": "post",
+      "occurredAt": "December 2026",
+      "post": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "box": {
+          "id": "1c9e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+          "name": "Crew"
+        },
+        "author": {
+          "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+          "username": "grace",
+          "displayName": "Grace Hopper",
+          "avatarUrl": null
+        },
+        "content": "hello",
+        "media": [],
+        "createdAt": "2026-10-19T12:00:00.000Z",
+        "editedAt": null,
+        "canEdit": true,
+        "interactions": {
+          "commentCount": 3,
+          "reactions": [
+            {
+              "kind": "😂",
+              "count": 2
+            },
+            {
+              "kind": "👨‍👩‍👧",
+              "count": 1
+            }
+          ],
+          "reactionCount": 4,
+          "realCount": 1,
+          "realPreview": [
+            {
+              "user": {
+                "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+                "username": "grace",
+                "displayName": "Grace Hopper",
+                "avatarUrl": null
+              },
+              "thumbnailUrl": "https://media.example.com/media/x/thumbnail.webp?X-Amz-Signature=a"
+            }
+          ],
+          "viewerReaction": {
+            "kind": "real",
+            "mediaAssetId": "5b1f0c3a-9e2d-4f7a-8c61-3d2e1f0a9b84"
+          },
+          "canInteract": true
+        },
+        "kind": "post",
+        "lifeUpdateId": null
+      }
+    },
+    {
+      "kind": "life_update",
+      "occurredAt": "2026-10-20T08:00:00.000Z",
+      "post": {
+        "id": "7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10",
+        "box": {
+          "id": "1c9e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+          "name": "Crew"
+        },
+        "author": {
+          "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+          "username": "grace",
+          "displayName": "Grace Hopper",
+          "avatarUrl": null
+        },
+        "content": "hello",
+        "media": [],
+        "createdAt": "2026-10-19T12:00:00.000Z",
+        "editedAt": null,
+        "canEdit": true,
+        "interactions": {
+          "commentCount": 3,
+          "reactions": [
+            {
+              "kind": "😂",
+              "count": 2
+            },
+            {
+              "kind": "👨‍👩‍👧",
+              "count": 1
+            }
+          ],
+          "reactionCount": 4,
+          "realCount": 1,
+          "realPreview": [
+            {
+              "user": {
+                "id": "0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22",
+                "username": "grace",
+                "displayName": "Grace Hopper",
+                "avatarUrl": null
+              },
+              "thumbnailUrl": "https://media.example.com/media/x/thumbnail.webp?X-Amz-Signature=a"
+            }
+          ],
+          "viewerReaction": {
+            "kind": "real",
+            "mediaAssetId": "5b1f0c3a-9e2d-4f7a-8c61-3d2e1f0a9b84"
+          },
+          "canInteract": true
+        },
+        "kind": "post",
+        "lifeUpdateId": null
+      }
+    }
+  ]
+}

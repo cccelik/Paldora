@@ -187,6 +187,43 @@ never repeats or skips it. Only Me is never in a feed (no backing post). A
 Life Update by someone in a block relationship with you is one `hidden`
 placeholder (the ID and Box of one backing post, nothing else).
 
+### Memories
+
+| Operation             | Route                                           | Rate limit  | Notes                                                               |
+| --------------------- | ----------------------------------------------- | ----------- | ------------------------------------------------------------------- |
+| `listMyMemories`      | `GET /me/memories?year&month&type&cursor&limit` | none (read) | `MemoryPage`; everything you can still access                       |
+| `getMyMemorySummary`  | `GET /me/memories/summary?year`                 | none (read) | `MemorySummary`                                                     |
+| `listBoxMemories`     | `GET /boxes/{boxId}/memories?…`                 | none (read) | `BOX_NOT_FOUND` unless you belong to the Box now (archived is fine) |
+| `getBoxMemorySummary` | `GET /boxes/{boxId}/memories/summary?year`      | none (read) | `BOX_NOT_FOUND` as above                                            |
+
+Memories are a **derived** view, never a stored copy: there is no Memories
+table, and every request re-authorizes against current membership, blocks,
+and status. Editing shows at once; deleting, leaving or being removed from a
+Box, and blocking remove content at once.
+
+- Query: `year` (required, 1970–9999), `month` (optional, 1–12; without it
+  the whole year), `type` (`all` default, `posts`, `life_updates`), `cursor`,
+  `limit` (≤ 50). Months are **UTC**, by publish time (`createdAt`; edits
+  never move it): `[first instant of the month, first instant of the next)`.
+  Keep `year`, `month`, and `type` unchanged while following `nextCursor`.
+- `MemoryItem` is `{ kind: "post", occurredAt, post: Post } | { kind:
+"life_update", occurredAt, lifeUpdate: LifeUpdate }`, newest first (keyset
+  on publish time, then ID). `occurredAt` is the item's `createdAt`.
+- A Life Update appears **once**. In personal Memories it has a context per
+  delivery Box you are in now (alphabetical, like Home); in Box Memories only
+  that Box's context. Only Me Life Updates appear only in their author's
+  personal Memories, never in Box Memories.
+- Content by someone in a block relationship with you (either direction) is
+  **omitted**: there is no `hidden` item and it is not counted (Phase 6
+  decision 15; feeds keep the placeholder). Archived Boxes' content stays,
+  read-only (`canInteract: false`).
+- `MemorySummary` is `{ years: [{ year, count }], year, months: [{ month,
+count }] }`: every year with content (newest first) and the months of
+  `year` (the requested one or, by default, the newest; `null` when there is
+  nothing), newest first. It counts exactly what the list would show for
+  `type=all`. Both lists are bounded by the calendar, so they are not
+  paginated.
+
 ### Comments
 
 | Operation       | Route                           | Rate limit | Notes                                                                                                                      |

@@ -17,7 +17,7 @@ const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** Select this beside a row to get its exact cursor timestamp. */
-export const cursorTimestamp = (column: AnyColumn) =>
+export const cursorTimestamp = (column: AnyColumn | SQL) =>
   sql<string>`to_char(${column} at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 
 export const encodeCursor = (position: CursorPosition): string =>
@@ -58,8 +58,8 @@ export function decodeCursor(
 
 /** `WHERE` condition for rows strictly after the cursor in sort order. */
 export function afterCursor(
-  timestamp: AnyColumn,
-  id: AnyColumn,
+  timestamp: AnyColumn | SQL,
+  id: AnyColumn | SQL,
   cursor: CursorPosition | undefined,
   direction: 'asc' | 'desc',
 ): SQL | undefined {

@@ -365,3 +365,46 @@ describe('Life Update methods', () => {
     ]);
   });
 });
+
+describe('Memories methods', () => {
+  const client = (fetch: typeof globalThis.fetch) =>
+    new PaldoraApiClient({
+      baseUrl: 'https://api.test/api/v1',
+      getAccessToken: async () => 't',
+      fetch,
+    });
+  const urls = (fetch: ReturnType<typeof vi.fn>) =>
+    fetch.mock.calls.map((call) => (call as unknown as [string])[0]);
+
+  it('pages one UTC month of your Memories or a Box’s', async () => {
+    const fetch = vi.fn(async () => json(200, { items: [], nextCursor: null }));
+    await client(fetch).myMemories({ year: 2026, month: 12, type: 'posts' });
+    await client(fetch).boxMemories('b1', {
+      year: 2025,
+      cursor: 'c',
+      limit: 5,
+    });
+    expect(urls(fetch)).toEqual([
+      'https://api.test/api/v1/me/memories?year=2026&month=12&type=posts',
+      'https://api.test/api/v1/boxes/b1/memories?year=2025&cursor=c&limit=5',
+    ]);
+  });
+
+  it('reads summaries with an optional year, against the contract', async () => {
+    const fetch = vi.fn(async () =>
+      json(200, { years: [{ year: 2026, count: 2 }], year: 2026, months: [] }),
+    );
+    await expect(client(fetch).myMemorySummary()).resolves.toMatchObject({
+      year: 2026,
+    });
+    await client(fetch).boxMemorySummary('b1', 2024);
+    expect(urls(fetch)).toEqual([
+      'https://api.test/api/v1/me/memories/summary',
+      'https://api.test/api/v1/boxes/b1/memories/summary?year=2024',
+    ]);
+    const malformed = vi.fn(async () => json(200, { years: [] }));
+    await expect(client(malformed).myMemorySummary()).rejects.toMatchObject({
+      code: 'UNEXPECTED_RESPONSE',
+    });
+  });
+});

@@ -210,7 +210,7 @@ double mark-read, realtime), the notification rows in
 skip rule, dedupe, concurrent projectors, poison events, crash before commit,
 Redis down at publish, retention).
 
-## Authorization matrix: Phase 6 (Life Updates; slices 1–4)
+## Authorization matrix: Phase 6 (Life Updates and Memories; slices 1–5)
 
 A Life Update is visible to a viewer when it is active, no block exists
 between the viewer and the author (either direction, the shared
@@ -281,6 +281,40 @@ Races decided by the database or by locks:
   so a write racing a delete either commits first and is erased, or waits and
   finds the post gone; nothing survives on a deleted delivery (raced in tests
   for posts and Life Updates alike).
+
+### Memories (slice 5)
+
+Memories are derived on every request from one candidate query
+(`memories/memory-candidates.ts`) shared by the page and the summary; nothing
+is copied or stored. The candidates start from the viewer's **active
+memberships now**, join active posts, keep a backing post only when its Life
+Update is active, and drop anyone in a block relationship with the viewer
+through the shared `hiddenByBlock`; Only Me comes from a second branch
+restricted to `author_user_id = viewer`. The page's posts and Life Updates
+are then loaded through `PostPageService.itemsForPosts` and
+`LifeUpdateViewService.byIds`, which authorize again, so anything that
+changed in between is dropped rather than shown.
+
+| Viewer / situation                          | Personal Memories                                             | Box Memories                                     | Summary counts      |
+| ------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------ | ------------------- |
+| Author                                      | own posts, Life Updates once (a context per own Box), Only Me | that Box's content, its context only, no Only Me | match the list      |
+| Member of a delivery Box                    | ✓, contexts for own Boxes only; never others' Only Me         | ✓ that Box's context only                        | match               |
+| Archived Box                                | ✓ read-only (`canInteract` false)                             | ✓ read-only                                      | counted             |
+| Former member (left) or removed member      | that Box's content gone at once                               | `BOX_NOT_FOUND`                                  | not counted         |
+| Stranger, guessed Box ID                    | nothing                                                       | `BOX_NOT_FOUND`                                  | nothing             |
+| Block, viewer blocked the author            | **omitted** (no placeholder, decision 15)                     | omitted                                          | not counted         |
+| Block, author blocked the viewer            | omitted                                                       | omitted                                          | not counted         |
+| Unblock                                     | content returns                                               | returns                                          | counted again       |
+| Deleted post or Life Update                 | gone at once                                                  | gone                                             | not counted         |
+| Malformed year, month, type, cursor, Box ID | `VALIDATION_FAILED`                                           | `VALIDATION_FAILED`                              | `VALIDATION_FAILED` |
+
+Months are UTC, bounded with `make_timestamptz(..., 'UTC')` on both ends
+(never `+ interval`, which PostgreSQL computes in the session time zone).
+All of this is tested in `memories/memories.integration.test.ts`, including
+both block directions, UTC edges (`23:59:59.999999` on Dec 31 and Feb 29
+against midnight), identical timestamps across pages, deletion removing an
+item at once, and a fixed query count per page. The routes are reads and
+carry no rate limit.
 
 ## Assumptions
 

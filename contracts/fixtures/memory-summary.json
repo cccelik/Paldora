@@ -1,0 +1,70 @@
+{
+  "schema": "MemorySummary",
+  "description": "Memory counts per UTC year (newest first) and per month of `year` (newest first). `year` is null when there is nothing.",
+  "valid": [
+    {
+      "years": [
+        {
+          "year": 2026,
+          "count": 7
+        },
+        {
+          "year": 2025,
+          "count": 2
+        }
+      ],
+      "year": 2026,
+      "months": [
+        {
+          "month": 12,
+          "count": 3
+        },
+        {
+          "month": 1,
+          "count": 4
+        }
+      ]
+    },
+    {
+      "years": [],
+      "year": null,
+      "months": []
+    }
+  ],
+  "invalid": [
+    {
+      "years": [
+        {
+          "year": 2026,
+          "count": 0
+        }
+      ],
+      "year": 2026,
+      "months": []
+    },
+    {
+      "years": [],
+      "months": []
+    },
+    {
+      "years": [],
+      "year": null,
+      "months": [
+        {
+          "month": 13,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "years": [
+        {
+          "year": 1969,
+          "count": 1
+        }
+      ],
+      "year": 1969,
+      "months": []
+    }
+  ]
+}

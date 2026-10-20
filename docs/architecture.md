@@ -53,7 +53,9 @@ apps/* ─> config, observability, database, storage, tokens
   and never `posts`: it writes backing posts directly and reuses the plain
   `erasePostInteractions` and `media/photo-claim.ts` functions (the photo
   claim is shared with `PostService`). It exports its view and policy
-  services so feeds (and later Memories) can import it, never the reverse.
+  services so feeds and Memories can import it, never the reverse.
+  `memories` imports `boxes`, `posts` (which exports `PostPageService`), and
+  `life-updates`; nothing imports `memories`.
 - **Identity mapping is platform work.** The global guard verifies the JWT and
   resolves the internal user, so feature modules receive a principal and never
   see the identity provider.
@@ -127,6 +129,13 @@ DELETE /boxes/{id} ─ in the Box-delete tx, before the cascade:
     with no other Box are tombstoned and their user-scoped photos retired)
 worker reaper: sweepDeliverylessLifeUpdates (safety net, SKIP LOCKED) and a
     canary count of backing posts without a delivery (logged at error)
+GET /me/memories, /boxes/{id}/memories (Box: BoxPolicyService.membership first):
+    one keyset query over memoryCandidates = posts ⨝ viewer's active membership
+    ⟕ deliveries ⟕ life_updates, DISTINCT (one row per Life Update), not
+    hiddenByBlock, UTC month/year range  ∪ the viewer's own Only Me
+    → PostPageService.itemsForPosts + LifeUpdateViewService.byIds (re-authorize,
+    batch; scopeBoxId for a Box) → items in candidate order; nothing stored
+GET …/memories/summary: same candidates, counted per UTC year and month
 ```
 
 Comments and reactions on a delivery are ordinary Phase 5 interactions on its

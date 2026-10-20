@@ -563,6 +563,7 @@ Run `pnpm typecheck`, `pnpm lint` and the unit tests in every slice. Run the int
    - After this slice the API is functionally complete for Life Updates.
 5. **Memories API.**
    - Files: `apps/api/src/memories/*`, `PostQueryService.itemsForPosts`, `validation/memories.ts`, routes, client, and the memories integration tests.
+     Progress: slice 5 implemented (not yet committed). Notes: `itemsForPosts` lives on `PostPageService` (exported by `PostsModule`) and re-authorizes; one candidate builder (`memories/memory-candidates.ts`) serves pages and summaries; Life Updates are reached through their backing posts and collapsed with `DISTINCT`, Only Me through a second branch; month bounds use `make_timestamptz(…, 'UTC')` on both ends, never `+ interval`; `MemorySummary` also returns the chosen `year` (null when empty), additive to the plan's shape; blocked content is omitted per decision 15; no migration (EXPLAIN shows `posts_box_feed_index` range scans, so no `posts.kind` index).
 6. **Web: Life Updates.**
    - Files: `use-photo-attachments.ts` refactor, `photo-attachment-list.tsx`, `life-update-{composer,card,contexts,actions}.tsx`, `post-card.tsx` feed branch, actions, `lib/pinned-thread.ts`, `life-updates/**` pages, the `posts/[postId]` redirect, `app-nav.tsx`, the Box page links, notification links, and `life-updates.spec.ts` with axe at 390px.
 7. **Web: Memories and close-out.**

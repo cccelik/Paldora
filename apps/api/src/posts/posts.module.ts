@@ -26,5 +26,6 @@ import { PostsController } from './posts.controller.js';
   ],
   controllers: [PostsController],
   providers: [PostService, PostPageService, PostQueryService],
+  exports: [PostPageService],
 })
 export class PostsModule {}

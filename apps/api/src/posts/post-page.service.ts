@@ -1,14 +1,26 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { mediaAssets, postMedia } from '@paldora/database';
+import {
+  boxMemberships,
+  boxes,
+  hiddenByBlock,
+  mediaAssets,
+  postMedia,
+  posts,
+} from '@paldora/database';
 import type { BoxStatus } from '@paldora/domain';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import type { PostView } from '@paldora/validation';
+import { and, asc, eq, inArray, not } from 'drizzle-orm';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
 import { InteractionSummaryService } from '../interactions/interaction-summary.service.js';
 import { MediaUrlService } from '../media/media-urls.service.js';
 import { signPhotos } from '../media/signed-photos.js';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { INFRASTRUCTURE } from '../platform/tokens.js';
-import type { MediaByPost, PostPageData } from './post-views.js';
+import {
+  toPostView,
+  type MediaByPost,
+  type PostPageData,
+} from './post-views.js';
 
 /** What a page needs to know about each ordinary post it shows. */
 export interface PagePost {
@@ -49,6 +61,63 @@ export class PostPageService {
       ),
     ]);
     return { authors, media, interactions };
+  }
+
+  /**
+   * Views of ordinary posts by ID (Memories), authorized again here: only
+   * active posts in a Box the viewer belongs to right now, by someone with
+   * no block either way. Anything else is simply absent from the map. A
+   * fixed number of queries whatever the number of IDs.
+   */
+  public async itemsForPosts(
+    viewerId: string,
+    postIds: readonly string[],
+  ): Promise<Map<string, PostView>> {
+    if (postIds.length === 0) return new Map();
+    const rows = await this.infrastructure.database
+      .select({ post: posts, boxName: boxes.name, boxStatus: boxes.status })
+      .from(posts)
+      .innerJoin(boxes, eq(boxes.id, posts.boxId))
+      .innerJoin(
+        boxMemberships,
+        and(
+          eq(boxMemberships.boxId, posts.boxId),
+          eq(boxMemberships.userId, viewerId),
+          eq(boxMemberships.status, 'active'),
+        ),
+      )
+      .where(
+        and(
+          inArray(posts.id, [...new Set(postIds)]),
+          eq(posts.status, 'active'),
+          eq(posts.kind, 'post'),
+          not(hiddenByBlock(viewerId, posts.authorUserId)),
+        ),
+      );
+    const data = await this.forPosts(
+      viewerId,
+      rows.map((row) => ({
+        id: row.post.id,
+        authorUserId: row.post.authorUserId,
+        boxStatus: row.boxStatus,
+      })),
+    );
+    const views = new Map<string, PostView>();
+    for (const row of rows) {
+      const author = data.authors.get(row.post.authorUserId);
+      if (!author) continue;
+      views.set(
+        row.post.id,
+        toPostView(
+          { ...row, hidden: false, lifeUpdateId: null },
+          author,
+          viewerId,
+          data.media.get(row.post.id) ?? [],
+          data.interactions.get(row.post.id),
+        ),
+      );
+    }
+    return views;
   }
 
   /** Signed URLs for the ready photos of already-authorized posts. */

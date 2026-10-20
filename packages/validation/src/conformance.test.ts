@@ -16,6 +16,11 @@ import {
   updateLifeUpdateSchema,
 } from './life-updates.js';
 import { feedItemSchema } from './feeds.js';
+import {
+  memoryItemSchema,
+  memoryQuerySchema,
+  memorySummarySchema,
+} from './memories.js';
 import { reactionPresetsSchema, setPostReactionSchema } from './reactions.js';
 import { cursorPageQuerySchema } from './primitives.js';
 
@@ -45,6 +50,9 @@ const schemas: Record<string, z.ZodType> = {
   LifeUpdate: lifeUpdateSchema,
   UpdateLifeUpdateRequest: updateLifeUpdateSchema,
   FeedItem: feedItemSchema,
+  MemoryItem: memoryItemSchema,
+  MemoryQuery: memoryQuerySchema,
+  MemorySummary: memorySummarySchema,
 };
 
 const fixtureDirectory = fileURLToPath(
