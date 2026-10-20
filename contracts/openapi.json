@@ -3155,6 +3155,495 @@
         }
       }
     },
+    "/me/room": {
+      "get": {
+        "operationId": "getMyRoom",
+        "summary": "Your own Room with every owner-only field: `visibility`, `updatedAt` (the version every Room write must name as `expectedUpdatedAt`), the banner’s media id, the Top Friends size and audience, and disabled widgets. A Room you never saved is the default configuration with `updatedAt: null`; reading never creates it. ROOM_NOT_FOUND until you have a username.",
+        "tags": [
+          "Rooms"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, ROOM_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateMyRoom",
+        "summary": "Change any of your Room’s settings; fields left out stay as they are, a null `accent`/`font`/`decorationPack` follows the theme again, `music: null` removes the music card, and `bannerMediaId` attaches a ready `room_banner` upload of yours (null removes it; the previous banner is deleted). `expectedUpdatedAt` must be the `updatedAt` you loaded (null for a never-saved Room), else ROOM_UPDATE_STALE. A request that changes nothing returns your Room unchanged. Shares a 120-per-hour limit with the other Room writes.",
+        "tags": [
+          "Rooms"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "friends",
+                      "members",
+                      "hidden"
+                    ]
+                  },
+                  "themePreset": {
+                    "type": "string",
+                    "enum": [
+                      "obsidian_gold",
+                      "cream_paper",
+                      "lavender_dream",
+                      "ocean_glow",
+                      "daisy_day",
+                      "neon_night",
+                      "y2k_glitter",
+                      "dark_academia",
+                      "frutiger_aero",
+                      "tumblr_2014",
+                      "retro_windows",
+                      "cyberpunk",
+                      "minimal_editorial",
+                      "polaroid_scrapbook"
+                    ]
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "single",
+                      "two_column"
+                    ]
+                  },
+                  "accent": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "gold",
+                          "lavender",
+                          "ocean",
+                          "daisy",
+                          "pink",
+                          "emerald",
+                          "cyan",
+                          "crimson"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "font": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "editorial",
+                          "modern",
+                          "rounded",
+                          "mono",
+                          "handwritten"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "decorationPack": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "stars",
+                          "flowers",
+                          "stickers",
+                          "tape",
+                          "pixels"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sparkles": {
+                    "type": "boolean"
+                  },
+                  "location": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "currently": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "music": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/RoomMusicInput"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "bannerMediaId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expectedUpdatedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "expectedUpdatedAt"
+                ],
+                "additionalProperties": false,
+                "$defs": {
+                  "RoomMusicInput": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string",
+                        "maxLength": 2048
+                      },
+                      "title": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "artist": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "url"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, ROOM_NOT_FOUND, ROOM_UPDATE_STALE, MEDIA_NOT_FOUND, MEDIA_NOT_READY, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/room/top-friends": {
+      "put": {
+        "operationId": "updateMyRoomTopFriends",
+        "summary": "Replace your Top Friends: the people in display order (no more than `size`), the size (4, 8, or 12), and who sees them (`visible`: everyone who can see your Room, `friends`: your friends, `hidden`: you). Everyone listed must be an accepted friend with no block either way, else TOP_FRIEND_NOT_ELIGIBLE (one answer for every reason). Unfriending or blocking removes a person automatically. Same `expectedUpdatedAt` rule and shared limit as the other Room writes.",
+        "tags": [
+          "Rooms"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userIds": {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "size": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "const": 4
+                      },
+                      {
+                        "type": "number",
+                        "const": 8
+                      },
+                      {
+                        "type": "number",
+                        "const": 12
+                      }
+                    ]
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "visible",
+                      "friends",
+                      "hidden"
+                    ]
+                  },
+                  "expectedUpdatedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "userIds",
+                  "size",
+                  "visibility",
+                  "expectedUpdatedAt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, ROOM_NOT_FOUND, ROOM_UPDATE_STALE, TOP_FRIEND_NOT_ELIGIBLE, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/room/widgets": {
+      "put": {
+        "operationId": "updateMyRoomWidgets",
+        "summary": "Replace your Room’s widget arrangement: all seven widgets, each once, with positions 0–6 each once. Same `expectedUpdatedAt` rule and shared limit as the other Room writes; an identical arrangement returns your Room unchanged.",
+        "tags": [
+          "Rooms"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "widgets": {
+                    "minItems": 7,
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/RoomWidget"
+                    }
+                  },
+                  "expectedUpdatedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "widgets",
+                  "expectedUpdatedAt"
+                ],
+                "additionalProperties": false,
+                "$defs": {
+                  "RoomWidget": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "currently",
+                          "music",
+                          "top_friends",
+                          "photos",
+                          "life_updates",
+                          "posts",
+                          "memories"
+                        ]
+                      },
+                      "placement": {
+                        "type": "string",
+                        "enum": [
+                          "main",
+                          "sidebar"
+                        ]
+                      },
+                      "position": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 6
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "placement",
+                      "position",
+                      "enabled"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, ROOM_NOT_FOUND, ROOM_UPDATE_STALE, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/username-availability": {
       "get": {
         "operationId": "getUsernameAvailability",
@@ -3827,6 +4316,52 @@
           },
           "default": {
             "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{username}": {
+      "get": {
+        "operationId": "getRoom",
+        "summary": "The Room of the person with this username (case-insensitive), as you may see it: `hidden` is the owner only, `friends` adds accepted friends, `members` adds people who share a Box with the owner. A block in either direction hides it. Missing, not visible, blocked, an unavailable owner, a former username, and a malformed name all answer the same ROOM_NOT_FOUND. Visitors get no owner-only fields (they are null) and no disabled widgets; Top Friends follow their own audience (`items: null` when not yours to see).",
+        "tags": [
+          "Rooms"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, ROOM_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8568,6 +9103,445 @@
           "at"
         ],
         "additionalProperties": false
+      },
+      "Room": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "username": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "bio": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "avatarUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "bio",
+              "avatarUrl"
+            ],
+            "additionalProperties": false
+          },
+          "relationship": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "friend",
+              "member"
+            ]
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "themePreset": {
+                "type": "string",
+                "enum": [
+                  "obsidian_gold",
+                  "cream_paper",
+                  "lavender_dream",
+                  "ocean_glow",
+                  "daisy_day",
+                  "neon_night",
+                  "y2k_glitter",
+                  "dark_academia",
+                  "frutiger_aero",
+                  "tumblr_2014",
+                  "retro_windows",
+                  "cyberpunk",
+                  "minimal_editorial",
+                  "polaroid_scrapbook"
+                ]
+              },
+              "layout": {
+                "type": "string",
+                "enum": [
+                  "single",
+                  "two_column"
+                ]
+              },
+              "accent": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "gold",
+                      "lavender",
+                      "ocean",
+                      "daisy",
+                      "pink",
+                      "emerald",
+                      "cyan",
+                      "crimson"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "font": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "editorial",
+                      "modern",
+                      "rounded",
+                      "mono",
+                      "handwritten"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "decorationPack": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "stars",
+                      "flowers",
+                      "stickers",
+                      "tape",
+                      "pixels"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sparkles": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "themePreset",
+              "layout",
+              "accent",
+              "font",
+              "decorationPack",
+              "sparkles"
+            ],
+            "additionalProperties": false
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currently": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "music": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "title": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "artist": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "url",
+                  "title",
+                  "artist"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "banner": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "bannerMediaId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "url",
+                  "bannerMediaId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "widgets": {
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "currently",
+                    "music",
+                    "top_friends",
+                    "photos",
+                    "life_updates",
+                    "posts",
+                    "memories"
+                  ]
+                },
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "main",
+                    "sidebar"
+                  ]
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "placement",
+                "position",
+                "enabled"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "topFriends": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "const": 4
+                      },
+                      {
+                        "type": "number",
+                        "const": 8
+                      },
+                      {
+                        "type": "number",
+                        "const": 12
+                      }
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "visible",
+                      "friends",
+                      "hidden"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "items": {
+                "anyOf": [
+                  {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/UserSummary"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "size",
+              "visibility",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "friends",
+                  "members",
+                  "hidden"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "configurationVersion": {
+            "type": "number",
+            "const": 1
+          }
+        },
+        "required": [
+          "owner",
+          "relationship",
+          "style",
+          "location",
+          "currently",
+          "music",
+          "banner",
+          "widgets",
+          "topFriends",
+          "visibility",
+          "updatedAt",
+          "configurationVersion"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "UserSummary": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "username": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "avatarUrl"
+            ],
+            "additionalProperties": false
+          }
+        }
       },
       "UnreadCount": {
         "type": "object",

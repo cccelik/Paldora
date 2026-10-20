@@ -336,7 +336,11 @@ export type UpdateRoomInput = z.output<typeof updateRoomSchema>;
 export type UpdateRoomRequest = z.input<typeof updateRoomSchema>;
 export type RoomWidgetInput = z.output<typeof roomWidgetSchema>;
 export type UpdateRoomWidgetsInput = z.output<typeof updateRoomWidgetsSchema>;
+export type UpdateRoomWidgetsRequest = z.input<typeof updateRoomWidgetsSchema>;
 export type UpdateRoomTopFriendsInput = z.output<
+  typeof updateRoomTopFriendsSchema
+>;
+export type UpdateRoomTopFriendsRequest = z.input<
   typeof updateRoomTopFriendsSchema
 >;
 export type RoomView = z.infer<typeof roomSchema>;

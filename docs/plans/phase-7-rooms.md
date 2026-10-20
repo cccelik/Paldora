@@ -449,6 +449,20 @@ New:
 
 ## J. Ordered work breakdown (strictly sequential; each slice ends green and committable)
 
+**Progress (2026-10-20).** Slices 1–2 committed (`a9d8096`). Slices 3–4 built
+(uncommitted): `packages/database/src/rooms.ts`, `apps/api/src/rooms/*`,
+routes `getMyRoom`, `getRoom`, `updateMyRoom`, `updateMyRoomWidgets`,
+`updateMyRoomTopFriends`, client methods, regenerated contract. Deviations:
+`room-row.ts` is `room-records.ts`, and one `RoomWriteService` runs the write
+protocol for all three sections; the lazy row is created by locking first
+(`SELECT … FOR UPDATE`, then `INSERT … ON CONFLICT DO NOTHING RETURNING`
+only on a real change, a lost insert race is `ROOM_UPDATE_STALE`), so an
+unchanged request on a roomless account writes nothing; `GET /me/room` and
+the writes return `ROOM_NOT_FOUND` until the caller has a username; a Top
+Friends save takes sorted `lockPair` locks and the friendships `FOR SHARE`
+before touching rows (no deadlock with unfriend/block, so no 40P01 retry);
+OpenAPI path parameters not ending in `Id` are plain strings. Next: slice 5.
+
 Run `pnpm typecheck`, `pnpm lint` and the unit tests in every slice. Run integration tests through `scripts/with-test-database.mjs`.
 
 1. **Tokens, domain registry and validation (no DB, no routes).**

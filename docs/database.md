@@ -335,3 +335,15 @@ Image bytes never enter PostgreSQL.
 The legacy Phase 7 data model, used as a behavioral reference, is summarized
 in [CLAUDE.md §F](../CLAUDE.md) and defined in
 `legacy/packages/database/src/schema.ts`.
+
+API use (slices 3–4): `packages/database/src/rooms.ts` exports
+`roomAccessConditions(viewerId, ownerColumn)` (the `isFriend`, `sharesBox`,
+and shared `hiddenByBlock` fragments of the Room access query) and
+`ROOM_DEFAULTS` (the column defaults, tested equal to the domain's
+`DEFAULT_ROOM`). The API never writes `updated_at` meaningfully: every write
+issues an UPDATE (the `rooms_touch` trigger sets the version), and an
+unchanged request issues none. Versions travel as `to_char(... 'US')` text,
+never as JavaScript dates. Trigger errors are recognized by SQLSTATE `23000`
+plus the constraint name (`isTriggerViolation`); `rooms_banner_media_unique`
+(23505) and `rooms_banner_media_fk` (23503) map to `MEDIA_NOT_FOUND`. No
+migration was added in these slices.

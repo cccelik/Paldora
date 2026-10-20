@@ -11,6 +11,9 @@ import {
   type SetPostReactionInput,
   type UpdatePreferencesInput,
   type UpdateBoxInput,
+  type UpdateRoomRequest,
+  type UpdateRoomTopFriendsRequest,
+  type UpdateRoomWidgetsRequest,
   type RouteDefinition,
   type RouteResponse,
 } from '@paldora/validation';
@@ -463,6 +466,36 @@ export class PaldoraApiClient {
       params: { boxId },
       query: { year },
     });
+  }
+
+  // --- Rooms ---------------------------------------------------------------
+
+  /**
+   * Your own Room with the owner-only fields. `updatedAt` is the version to
+   * send as `expectedUpdatedAt` on your next Room write (null: never saved).
+   */
+  public myRoom() {
+    return this.call(apiRoutes.getMyRoom);
+  }
+
+  /** Someone's Room as you may see it; any denial is ROOM_NOT_FOUND. */
+  public room(username: string) {
+    return this.call(apiRoutes.getRoom, { params: { username } });
+  }
+
+  /** A partial change; returns the Room with its new `updatedAt`. */
+  public updateMyRoom(body: UpdateRoomRequest) {
+    return this.call(apiRoutes.updateMyRoom, { body });
+  }
+
+  /** All seven widgets, each once, positions 0–6. */
+  public updateMyRoomWidgets(body: UpdateRoomWidgetsRequest) {
+    return this.call(apiRoutes.updateMyRoomWidgets, { body });
+  }
+
+  /** The full Top Friends list in order, its size, and its audience. */
+  public updateMyRoomTopFriends(body: UpdateRoomTopFriendsRequest) {
+    return this.call(apiRoutes.updateMyRoomTopFriends, { body });
   }
 
   // --- Notifications -------------------------------------------------------

@@ -50,12 +50,18 @@ function queryParameters(schema: z.ZodType | undefined): JsonObject[] {
   }));
 }
 
+/**
+ * `…Id` parameters are UUIDs. Any other name (a Room's `{username}`) is a
+ * plain string the server accepts leniently and answers "not found" for.
+ */
 function pathParameters(path: string): JsonObject[] {
-  return [...path.matchAll(/\{(\w+)\}/g)].map(([, name]) => ({
+  return [...path.matchAll(/\{(\w+)\}/g)].map(([, name = '']) => ({
     name,
     in: 'path',
     required: true,
-    schema: { type: 'string', format: 'uuid' },
+    schema: name.endsWith('Id')
+      ? { type: 'string', format: 'uuid' }
+      : { type: 'string' },
   }));
 }
 

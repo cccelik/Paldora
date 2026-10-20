@@ -325,6 +325,49 @@ not-found decision. Full-stack tests in `apps/web/e2e/full-stack/
 memories.spec.ts` cover dedupe with tabs, deletion, removal, a stranger, a
 block, and Only Me at desktop and 390px.
 
+## Authorization matrix: Phase 7 (Rooms, slices 3–4)
+
+Every Room route starts at `RoomAccessService` (`apps/api/src/rooms/`), one
+statement that resolves the owner (active, with a username), the Room row or
+the defaults, and every relationship fact (`roomAccessConditions` in
+`packages/database/src/rooms.ts`, whose block fragment is the shared
+`hiddenByBlock`), whatever the outcome; `relationshipFor` decides, and one
+`roomNotFound()` is the only denial.
+
+| Viewer / situation                             | `friends`        | `members`                | `hidden`         |
+| ---------------------------------------------- | ---------------- | ------------------------ | ---------------- |
+| Owner                                          | 200 owner        | 200 owner                | 200 owner        |
+| Accepted friend                                | 200 friend       | 200 friend               | `ROOM_NOT_FOUND` |
+| Shares an active or archived Box               | `ROOM_NOT_FOUND` | 200 member               | `ROOM_NOT_FOUND` |
+| Left, removed, or Box deleted                  | `ROOM_NOT_FOUND` | `ROOM_NOT_FOUND` at once | `ROOM_NOT_FOUND` |
+| Stranger, pending or declined request          | `ROOM_NOT_FOUND` | `ROOM_NOT_FOUND`         | `ROOM_NOT_FOUND` |
+| Block, either direction (even friend + Box)    | `ROOM_NOT_FOUND` | `ROOM_NOT_FOUND`         | `ROOM_NOT_FOUND` |
+| Suspended or username-less owner, old username | `ROOM_NOT_FOUND` | `ROOM_NOT_FOUND`         | `ROOM_NOT_FOUND` |
+| Guessed, malformed, over-long username         | `ROOM_NOT_FOUND` | `ROOM_NOT_FOUND`         | `ROOM_NOT_FOUND` |
+
+A parity test (`rooms/room-access.integration.test.ts`) compares nine denial
+reasons and requires identical status, body (minus `requestId`) and headers
+(minus `x-request-id`, `date`, and `etag`, which is a hash of a body carrying
+the request ID). Visitors never receive owner-only fields. Top Friends follow
+their own audience and are re-filtered per read (accepted friendship, active,
+username, no block owner↔friend or viewer↔friend), so even a missed trigger
+cannot show a stranger.
+
+Writes exist only under `/me/room`. The shared `RoomWriteService` locks the
+Room row, short-circuits an unchanged request, compares `expectedUpdatedAt`
+with the microsecond version string, and creates the row lazily; the
+database stays the final authority (trigger and constraint errors map to
+`TOP_FRIEND_NOT_ELIGIBLE`, `VALIDATION_FAILED`, and `MEDIA_NOT_FOUND`). A Top
+Friends save takes, in order, the Room row, the sorted pair locks
+(`lockPair`, as `BlockService` does), and the requested friendships
+`FOR SHARE` before touching any Top Friend row, so it serializes with an
+unfriend or a block instead of deadlocking. The banner claim locks the asset
+and reuses `assertPhotosUsable`; the replaced banner is retired through
+`retireMediaAssets` in the same transaction. Every Room write shares the
+120/h `room-update` limit (fail-closed). Covered by
+`rooms/room-{access,writes,top-friends}.integration.test.ts` and the Phase 7
+rows of `social/block.integration.test.ts`.
+
 ## Assumptions
 
 - TLS terminates at the deployment edge, which enforces HTTPS.

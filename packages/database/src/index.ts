@@ -50,3 +50,4 @@ export * from './schema.js';
 export * from './media-outbox.js';
 export * from './blocks.js';
 export * from './life-updates.js';
+export * from './rooms.js';

@@ -145,6 +145,28 @@ Comments and reactions on a delivery are ordinary Phase 5 interactions on its
 backing post, so each Box keeps its own conversation and the projector needs
 no change.
 
+## Room flow (Phase 7, slices 3–4)
+
+```text
+GET /rooms/{username}, GET /me/room ─ RoomAccessService: ONE statement
+    profiles ⨝ users(active, username) ⟕ rooms ⟕ avatar ⟕ banner asset
+    + isFriend, sharesBox, hiddenByBlock (roomAccessConditions)
+    → relationshipFor → owner | friend | member, else ROOM_NOT_FOUND
+  → RoomViewService: widgets (or defaults), visible Top Friend ids
+    (re-filtered) → ProfileSummaryService → sign avatar, banner display
+    → toRoomView (strips owner-only fields for visitors)
+PATCH /me/room, PUT /me/room/widgets, PUT /me/room/top-friends ─ one tx
+    (RoomWriteService): username check → rooms row FOR UPDATE (or defaults)
+    → unchanged? return → expectedUpdatedAt === version? → create row lazily
+    → section step (settings + banner claim/retire | widgets delete+insert |
+      pair locks → friendships FOR SHARE → size → rows delete+insert)
+  after commit: RoomViewService.forOwner (no realtime event)
+```
+
+RoomsModule imports IdentityModule and MediaModule only; Top Friends removal
+on unfriend and block is database triggers, so SocialModule has no Room
+code. Content previews (slice 5) are not built yet.
+
 ## Principles
 
 - **PostgreSQL is canonical.** Redis is disposable and never holds the only

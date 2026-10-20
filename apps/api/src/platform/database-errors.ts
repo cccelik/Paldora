@@ -31,3 +31,28 @@ export function isCheckViolation(error: unknown, constraint?: string): boolean {
     (constraint === undefined || postgres.constraint === constraint)
   );
 }
+
+/** True when a foreign key (optionally a specific one) rejected a write. */
+export function isForeignKeyViolation(
+  error: unknown,
+  constraint?: string,
+): boolean {
+  const postgres = postgresErrorOf(error);
+  return (
+    postgres?.code === '23503' &&
+    (constraint === undefined || postgres.constraint === constraint)
+  );
+}
+
+/**
+ * True when a trigger raised a named integrity violation (SQLSTATE 23000
+ * with `CONSTRAINT = name`), the way the Room triggers of migration 0007
+ * report a rule they enforce.
+ */
+export function isTriggerViolation(
+  error: unknown,
+  constraint: string,
+): boolean {
+  const postgres = postgresErrorOf(error);
+  return postgres?.code === '23000' && postgres.constraint === constraint;
+}

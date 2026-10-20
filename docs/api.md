@@ -224,6 +224,53 @@ count }] }`: every year with content (newest first) and the months of
   `type=all`. Both lists are bounded by the calendar, so they are not
   paginated.
 
+### Rooms
+
+| Operation                | Route                      | Rate limit                   | Notes                                                             |
+| ------------------------ | -------------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| `getMyRoom`              | `GET /me/room`             | none (read)                  | `Room` with owner-only fields; roomless default, `updatedAt` null |
+| `getRoom`                | `GET /rooms/{username}`    | none (read)                  | `ROOM_NOT_FOUND` for every denial                                 |
+| `updateMyRoom`           | `PATCH /me/room`           | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`, `MEDIA_NOT_FOUND`, `MEDIA_NOT_READY`         |
+| `updateMyRoomWidgets`    | `PUT /me/room/widgets`     | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`                                               |
+| `updateMyRoomTopFriends` | `PUT /me/room/top-friends` | 120/h `room-update` (shared) | `ROOM_UPDATE_STALE`, `TOP_FRIEND_NOT_ELIGIBLE`                    |
+
+- **Access** (one query in `RoomAccessService`): `hidden` = owner only,
+  `friends` = owner + accepted friends, `members` = friends + anyone with an
+  active membership in the same existing (active or archived) Box. A block in
+  either direction denies at every tier. Missing, not visible, blocked,
+  suspended or username-less owner, a former username, and a malformed or
+  over-long name all return the same `ROOM_NOT_FOUND` (404, same message and
+  headers). The `{username}` parameter is lenient (no pipe), normalized like
+  every username lookup, so case variants resolve.
+- **Visitor shape**: `visibility`, `updatedAt`, `banner.bannerMediaId`,
+  `topFriends.size`, and `topFriends.visibility` are `null`, and disabled
+  widgets are absent. `topFriends.items` is `null` when the Top Friends
+  audience excludes the viewer (`friends`: only the owner's friends;
+  `hidden`: owner only); otherwise it lists only active friends with no block
+  with the owner or the viewer. The banner is a signed display derivative,
+  only while its asset is `ready`.
+- **Writes** are owner-only (no route names another person's Room). Every
+  body carries `expectedUpdatedAt` (required, nullable): the exact
+  microsecond string from the last `Room` (null for a never-saved Room),
+  else `ROOM_UPDATE_STALE` (409). A request equal to the stored state returns
+  the current Room with no write and no version change, whatever version it
+  names (safe retries). The first real change creates the Room row; reads
+  never do. All sections share one version, so a stale tab cannot overwrite a
+  newer save of another section.
+- `PATCH /me/room` is partial (strict: unknown keys such as `css` or
+  `backgroundUrl` are `VALIDATION_FAILED`). `accent`/`font`/`decorationPack`
+  null follows the preset; `location`/`currently` empty become null; `music`
+  replaces or (null) removes the card, HTTPS only, re-checked server-side;
+  `bannerMediaId` attaches your own ready `room_banner` upload (processing:
+  `MEDIA_NOT_READY`; anything else: `MEDIA_NOT_FOUND`) or removes it with
+  null. The replaced or removed banner is retired in the same transaction.
+- `PUT /me/room/top-friends` lists accepted, active friends with a username
+  and no block either way, in order, no more than `size`; anyone else is one
+  `TOP_FRIEND_NOT_ELIGIBLE` (422). Unfriend and block remove entries
+  automatically (database triggers).
+- Banner uploads use `POST /media/uploads` with purpose `room_banner`
+  (20/h). No Room write emits a realtime event.
+
 ### Comments
 
 | Operation       | Route                           | Rate limit | Notes                                                                                                                      |
