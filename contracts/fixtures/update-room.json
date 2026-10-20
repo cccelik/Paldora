@@ -1,0 +1,63 @@
+{
+  "schema": "UpdateRoomRequest",
+  "valid": [
+    {
+      "themePreset": "cyberpunk",
+      "expectedUpdatedAt": null
+    },
+    {
+      "accent": null,
+      "font": "mono",
+      "decorationPack": null,
+      "sparkles": true,
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "music": {
+        "url": "https://example.com/song",
+        "title": "Song",
+        "artist": null
+      },
+      "location": "",
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "bannerMediaId": null,
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    }
+  ],
+  "invalid": [
+    {},
+    {
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "visibility": "friends"
+    },
+    {
+      "css": "body{}",
+      "sparkles": true,
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "background": "#000000",
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "music": {
+        "url": "http://example.com/song"
+      },
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "music": {
+        "url": "javascript:alert(1)"
+      },
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "accent": "#ff00ff",
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    }
+  ]
+}

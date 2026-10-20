@@ -62,6 +62,13 @@ export const API_ERROR_CODES = [
   'LIFE_UPDATE_NOT_FOUND',
   'LIFE_UPDATE_ACCESS_DENIED',
   'POST_MANAGED_BY_LIFE_UPDATE',
+  // Rooms (Phase 7). A missing, hidden, inaccessible, or blocked Room and
+  // an unavailable owner all share ROOM_NOT_FOUND; any ineligible Top
+  // Friend (stranger, pending, blocked, suspended, self, unknown) shares
+  // TOP_FRIEND_NOT_ELIGIBLE.
+  'ROOM_NOT_FOUND',
+  'ROOM_UPDATE_STALE',
+  'TOP_FRIEND_NOT_ELIGIBLE',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

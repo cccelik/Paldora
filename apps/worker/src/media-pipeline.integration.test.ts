@@ -13,9 +13,11 @@ import {
   postReactions,
   posts,
   profiles,
+  rooms,
   users,
   type MediaJobOutboxRow,
 } from '@paldora/database';
+import { MEDIA_PURPOSES } from '@paldora/domain';
 import { createLogger } from '@paldora/observability';
 import { MemoryObjectStorage } from '@paldora/storage';
 import type { Job, Queue } from 'bullmq';
@@ -31,6 +33,7 @@ import {
   OUTBOX_RETENTION_MS,
   reap,
 } from './maintenance/reaper.js';
+import { CLAIMED_PURPOSES } from './maintenance/unattached-media.js';
 import { derivativeKeys } from './media/process-media.js';
 import { dispatchOnce } from './outbox/dispatcher.js';
 import { recordJobFailure } from './outbox/failures.js';
@@ -103,7 +106,12 @@ async function bigJpeg() {
 }
 
 /** A reserved, completed upload waiting for the worker. */
-type Purpose = 'post_image' | 'reaction_image' | 'life_update_image';
+type Purpose =
+  'post_image' | 'reaction_image' | 'life_update_image' | 'room_banner';
+
+/** User-scoped purposes never name a Box. */
+const userScoped = (purpose: Purpose) =>
+  purpose === 'life_update_image' || purpose === 'room_banner';
 
 async function queuedPhoto(
   storage: MemoryObjectStorage,
@@ -111,8 +119,8 @@ async function queuedPhoto(
   purpose: Purpose = 'post_image',
 ) {
   const ownerId = await person();
-  // Life Update photos are user-scoped: they never name a Box.
-  const boxId = purpose === 'life_update_image' ? null : await boxOf(ownerId);
+  // Life Update photos and Room banners are user-scoped: no Box.
+  const boxId = userScoped(purpose) ? null : await boxOf(ownerId);
   const body = bytes ?? (await bigJpeg());
   const uploadObjectKey = `uploads/${randomUUID()}`;
   storage.put(uploadObjectKey, 'image/jpeg', body);
@@ -307,6 +315,49 @@ describe('processing a Life Update photo', () => {
   });
 });
 
+describe('processing a Room banner', () => {
+  it('writes a whole master and exact 3:1 covers, metadata-free, and waits unattached', async () => {
+    const { storage, run } = worker();
+    const { asset, outbox } = await queuedPhoto(
+      storage,
+      undefined,
+      'room_banner',
+    );
+    expect(asset.boxId).toBeNull();
+    await run(fakeJob(outbox));
+    const ready = await assetRow(asset.id);
+    expect(ready).toMatchObject({
+      status: 'ready',
+      boxId: null,
+      width: 2560,
+      height: 1707,
+      ...derivativeKeys(asset.id),
+    });
+    const keys = derivativeKeys(asset.id);
+    const sizes = await Promise.all(
+      [
+        keys.masterObjectKey,
+        keys.displayObjectKey,
+        keys.thumbnailObjectKey,
+      ].map(async (key) => {
+        const metadata = await sharp(storage.objects.get(key)?.body).metadata();
+        expect(metadata.format).toBe('webp');
+        expect(metadata.exif).toBeUndefined();
+        return [metadata.width, metadata.height];
+      }),
+    );
+    expect(sizes).toEqual([
+      [2560, 1707],
+      [1600, 533],
+      [640, 213],
+    ]);
+    await drainDeletions(run);
+    expect(objectsOf(storage, asset).sort()).toEqual(
+      Object.values(keys).sort(),
+    );
+  });
+});
+
 describe('fault injection: no orphaned objects', () => {
   it('survives a storage failure halfway through writing derivatives', async () => {
     const { storage, run } = worker();
@@ -462,7 +513,7 @@ describe('reaper', () => {
     at = new Date(Date.now() - ageMs),
   ) {
     const ownerId = await person();
-    const boxId = purpose === 'life_update_image' ? null : await boxOf(ownerId);
+    const boxId = userScoped(purpose) ? null : await boxOf(ownerId);
     const id = randomUUID();
     const when = at;
     const keys = derivativeKeys(id);
@@ -487,6 +538,11 @@ describe('reaper', () => {
       .returning();
     if (attached && purpose === 'life_update_image') {
       await onlyMeLifeUpdate(ownerId, id);
+    } else if (attached && purpose === 'room_banner') {
+      // The API claims a banner by saving it on the owner's Room.
+      await database
+        .insert(rooms)
+        .values({ userId: ownerId, bannerMediaId: id });
     } else if (attached && boxId) {
       const [post] = await database
         .insert(posts)
@@ -564,6 +620,44 @@ describe('reaper', () => {
     );
     const fresh = await readyPhoto(HOUR, false, 'life_update_image');
     const kept = await readyPhoto(2 * DAY, true, 'life_update_image');
+    const result = await reap(database);
+    expect(result.expiredPhotos).toBeGreaterThanOrEqual(1);
+    expect((await assetRow(stale.id))?.status).toBe('deleted');
+    expect((await assetRow(fresh.id))?.status).toBe('ready');
+    expect((await assetRow(kept.id))?.status).toBe('ready');
+    const jobs = await database
+      .select()
+      .from(mediaJobOutbox)
+      .where(
+        sql`${mediaJobOutbox.payload} -> 'objectKeys' ? ${stale.masterObjectKey}`,
+      );
+    expect(jobs).toHaveLength(1);
+  });
+
+  it('sweeps exactly the purposes of media_assets_unattached_index', async () => {
+    const result = await database.execute<{ definition: string }>(sql`
+      select indexdef as definition from pg_indexes
+      where schemaname = 'paldora' and indexname = 'media_assets_unattached_index'`);
+    const definition = result.rows[0]?.definition ?? '';
+    const indexed = [...definition.matchAll(/'([a-z_]+)'::text/g)]
+      .map((match) => match[1])
+      .filter((value) => value !== 'ready');
+    expect(indexed.sort()).toEqual([...CLAIMED_PURPOSES].sort());
+    // Every purpose an API transaction claims; avatars attach in the worker.
+    expect([...CLAIMED_PURPOSES].sort()).toEqual(
+      MEDIA_PURPOSES.filter((purpose) => purpose !== 'avatar').sort(),
+    );
+  });
+
+  it('removes Room banners no Room claimed, and never a claimed one', async () => {
+    const stale = await readyPhoto(
+      2 * DAY,
+      false,
+      'room_banner',
+      new Date(-Date.now()),
+    );
+    const fresh = await readyPhoto(HOUR, false, 'room_banner');
+    const kept = await readyPhoto(2 * DAY, true, 'room_banner');
     const result = await reap(database);
     expect(result.expiredPhotos).toBeGreaterThanOrEqual(1);
     expect((await assetRow(stale.id))?.status).toBe('deleted');

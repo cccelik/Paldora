@@ -22,6 +22,12 @@ import {
   memorySummarySchema,
 } from './memories.js';
 import { reactionPresetsSchema, setPostReactionSchema } from './reactions.js';
+import {
+  roomSchema,
+  updateRoomSchema,
+  updateRoomTopFriendsSchema,
+  updateRoomWidgetsSchema,
+} from './rooms.js';
 import { cursorPageQuerySchema } from './primitives.js';
 
 interface Fixture {
@@ -53,6 +59,10 @@ const schemas: Record<string, z.ZodType> = {
   MemoryItem: memoryItemSchema,
   MemoryQuery: memoryQuerySchema,
   MemorySummary: memorySummarySchema,
+  UpdateRoomRequest: updateRoomSchema,
+  UpdateRoomWidgetsRequest: updateRoomWidgetsSchema,
+  UpdateRoomTopFriendsRequest: updateRoomTopFriendsSchema,
+  Room: roomSchema,
 };
 
 const fixtureDirectory = fileURLToPath(

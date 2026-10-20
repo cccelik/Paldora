@@ -5,7 +5,8 @@ function channel(value: number): number {
     : ((normalized + 0.055) / 1.055) ** 2.4;
 }
 
-function relativeLuminance(hex: string): number {
+/** WCAG relative luminance of an opaque #RRGGBB color, from 0 to 1. */
+export function relativeLuminance(hex: string): number {
   const match = /^#([0-9a-f]{6})$/i.exec(hex);
   if (!match?.[1]) throw new Error(`Expected #RRGGBB color, received ${hex}.`);
   const value = match[1];

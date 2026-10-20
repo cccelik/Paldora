@@ -236,6 +236,9 @@ importers:
         specifier: 8.16.3
         version: 8.16.3
     devDependencies:
+      '@paldora/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@types/pg':
         specifier: 8.15.5
         version: 8.15.5

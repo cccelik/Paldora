@@ -110,3 +110,30 @@ describe('Life Update photo upload limit', () => {
     );
   });
 });
+
+describe('Room banner upload limit', () => {
+  const banner = {
+    purpose: 'room_banner',
+    contentType: 'image/png',
+    contentLength: 1_000,
+  } as CreateMediaUploadInput;
+
+  it('counts reservations under their own scope, failing closed', async () => {
+    const { uploads, limiter } = service(async () => ({
+      allowed: false,
+      retryAfterSeconds: 30,
+    }));
+    expect(await codeOf(uploads.create(userId, banner))).toBe('RATE_LIMITED');
+    expect(limiter.consume).toHaveBeenCalledWith(`user:${userId}`, {
+      scope: 'room-banner-upload',
+      limit: 20,
+      windowSeconds: 3_600,
+    });
+    const down = service(async () => {
+      throw new Error('redis down');
+    });
+    expect(await codeOf(down.uploads.create(userId, banner))).toBe(
+      'RATE_LIMIT_UNAVAILABLE',
+    );
+  });
+});

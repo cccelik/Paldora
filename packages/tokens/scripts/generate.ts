@@ -1,7 +1,13 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { emitCss, emitKotlin, emitSwift, emitTypeScript } from '../src/emit.js';
+import {
+  emitCss,
+  emitKotlin,
+  emitRoomCss,
+  emitSwift,
+  emitTypeScript,
+} from '../src/emit.js';
 import { resolveTokens } from '../src/resolve.js';
 
 const fromPackage = (path: string) =>
@@ -15,6 +21,7 @@ const tokens = resolveTokens(source);
 const outputs: Record<string, string> = {
   'src/generated/tokens.ts': emitTypeScript(tokens),
   'generated/css/tokens.css': emitCss(tokens),
+  'generated/css/room-themes.css': emitRoomCss(tokens),
   'generated/swift/PaldoraTokens.swift': emitSwift(tokens),
   'generated/kotlin/PaldoraTokens.kt': emitKotlin(tokens),
 };

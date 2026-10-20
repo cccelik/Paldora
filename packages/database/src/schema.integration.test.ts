@@ -176,7 +176,7 @@ describe('migrated database', () => {
       migrationsTable: '__drizzle_migrations',
     });
     expect(await count()).toBe(before);
-    expect(before).toBeGreaterThanOrEqual(7);
+    expect(before).toBeGreaterThanOrEqual(8);
   });
 });
 

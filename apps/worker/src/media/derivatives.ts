@@ -24,20 +24,35 @@ export class UndecodableImageError extends Error {
 /** Decoded formats we accept, regardless of the declared MIME type. */
 const allowedFormats = new Set(['jpeg', 'png', 'webp']);
 
+/**
+ * `square` and `cover` crop to exact dimensions around the most detailed
+ * region (a small input is upscaled to fill them); `inside` only shrinks.
+ */
+function resize(source: Sharp, spec: DerivativeSpec): Sharp {
+  switch (spec.fit) {
+    case 'square':
+      return source.resize(spec.size, spec.size, {
+        fit: 'cover',
+        position: sharp.strategy.attention,
+      });
+    case 'cover':
+      return source.resize(spec.size, spec.height, {
+        fit: 'cover',
+        position: sharp.strategy.attention,
+      });
+    case 'inside':
+      return source.resize(spec.size, spec.size, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
+  }
+}
+
 async function encode(
   source: Sharp,
   spec: DerivativeSpec,
 ): Promise<EncodedImage> {
-  const resized =
-    spec.fit === 'square'
-      ? source.resize(spec.size, spec.size, {
-          fit: 'cover',
-          position: sharp.strategy.attention,
-        })
-      : source.resize(spec.size, spec.size, {
-          fit: 'inside',
-          withoutEnlargement: true,
-        });
+  const resized = resize(source, spec);
   // Sharp writes no EXIF, XMP, IPTC, or ICC metadata unless asked to, so
   // GPS and camera details never survive into stored derivatives.
   const { data, info } = await resized

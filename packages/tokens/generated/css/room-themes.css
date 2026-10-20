@@ -1,0 +1,204 @@
+/* Generated from design/tokens/paldora.tokens.json by `pnpm tokens:generate`. Do not edit. */
+.room-canvas[data-room-theme='obsidian_gold'] {
+  --room-canvas: #14110D;
+  --room-surface: #211B14;
+  --room-text: #F7EFD9;
+  --room-text-muted: #8D887A;
+  --room-border: #726C5F;
+}
+
+.room-canvas[data-room-theme='cream_paper'] {
+  --room-canvas: #F8F0DF;
+  --room-surface: #FFFAF0;
+  --room-text: #241D16;
+  --room-text-muted: #6F685D;
+  --room-border: #8B857C;
+}
+
+.room-canvas[data-room-theme='lavender_dream'] {
+  --room-canvas: #EEE6FA;
+  --room-surface: #FAF7FF;
+  --room-text: #2E2140;
+  --room-text-muted: #6B607C;
+  --room-border: #867D92;
+}
+
+.room-canvas[data-room-theme='ocean_glow'] {
+  --room-canvas: #DFF5F4;
+  --room-surface: #F5FFFF;
+  --room-text: #102F39;
+  --room-text-muted: #526E75;
+  --room-border: #74898F;
+}
+
+.room-canvas[data-room-theme='daisy_day'] {
+  --room-canvas: #FFF4C9;
+  --room-surface: #FFFBED;
+  --room-text: #3A3115;
+  --room-text-muted: #746B4A;
+  --room-border: #8F8872;
+}
+
+.room-canvas[data-room-theme='neon_night'] {
+  --room-canvas: #100D20;
+  --room-surface: #211839;
+  --room-text: #F8F2FF;
+  --room-text-muted: #8C8897;
+  --room-border: #716982;
+}
+
+.room-canvas[data-room-theme='y2k_glitter'] {
+  --room-canvas: #F2E8FA;
+  --room-surface: #FFF7FF;
+  --room-text: #352044;
+  --room-text-muted: #71607E;
+  --room-border: #8C7C94;
+}
+
+.room-canvas[data-room-theme='dark_academia'] {
+  --room-canvas: #211B14;
+  --room-surface: #30271C;
+  --room-text: #F1DFBD;
+  --room-text-muted: #A0937B;
+  --room-border: #817460;
+}
+
+.room-canvas[data-room-theme='frutiger_aero'] {
+  --room-canvas: #DFF7FF;
+  --room-surface: #F7FFFF;
+  --room-text: #12374A;
+  --room-text-muted: #4D6F7E;
+  --room-border: #728B96;
+}
+
+.room-canvas[data-room-theme='tumblr_2014'] {
+  --room-canvas: #263247;
+  --room-surface: #34445F;
+  --room-text: #F5F7FB;
+  --room-text-muted: #B1B6C0;
+  --room-border: #8A94A4;
+}
+
+.room-canvas[data-room-theme='retro_windows'] {
+  --room-canvas: #C0C0C0;
+  --room-surface: #ECECEC;
+  --room-text: #101010;
+  --room-text-muted: #4A4A4A;
+  --room-border: #656565;
+}
+
+.room-canvas[data-room-theme='cyberpunk'] {
+  --room-canvas: #110B1B;
+  --room-surface: #21122D;
+  --room-text: #F4FF52;
+  --room-text-muted: #878A38;
+  --room-border: #706B3B;
+}
+
+.room-canvas[data-room-theme='minimal_editorial'] {
+  --room-canvas: #F7F5F0;
+  --room-surface: #FFFFFF;
+  --room-text: #151515;
+  --room-text-muted: #6D6C6A;
+  --room-border: #898989;
+}
+
+.room-canvas[data-room-theme='polaroid_scrapbook'] {
+  --room-canvas: #EEE3CC;
+  --room-surface: #FFFDF8;
+  --room-text: #292118;
+  --room-text-muted: #696053;
+  --room-border: #827C75;
+}
+
+.room-canvas[data-room-scheme='light'] {
+  color-scheme: light;
+}
+
+.room-canvas[data-room-scheme='dark'] {
+  color-scheme: dark;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='gold'] {
+  --room-accent: #8C5F1A;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='lavender'] {
+  --room-accent: #7F51B5;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='ocean'] {
+  --room-accent: #127282;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='daisy'] {
+  --room-accent: #915D0F;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='pink'] {
+  --room-accent: #AF398A;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='emerald'] {
+  --room-accent: #267647;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='cyan'] {
+  --room-accent: #007287;
+}
+
+.room-canvas[data-room-scheme='light'][data-room-accent='crimson'] {
+  --room-accent: #A23C2D;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='gold'] {
+  --room-accent: #C4933F;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='lavender'] {
+  --room-accent: #A281CA;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='ocean'] {
+  --room-accent: #7FA4D8;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='daisy'] {
+  --room-accent: #DB8D16;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='pink'] {
+  --room-accent: #DC49FF;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='emerald'] {
+  --room-accent: #34A362;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='cyan'] {
+  --room-accent: #00E5FF;
+}
+
+.room-canvas[data-room-scheme='dark'][data-room-accent='crimson'] {
+  --room-accent: #D57566;
+}
+
+.room-canvas[data-room-font='editorial'] {
+  --room-font: Newsreader, 'Iowan Old Style', Georgia, serif;
+}
+
+.room-canvas[data-room-font='modern'] {
+  --room-font: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.room-canvas[data-room-font='rounded'] {
+  --room-font: ui-rounded, 'SF Pro Rounded', 'Arial Rounded MT Bold', Nunito, sans-serif;
+}
+
+.room-canvas[data-room-font='mono'] {
+  --room-font: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.room-canvas[data-room-font='handwritten'] {
+  --room-font: 'Bradley Hand', 'Segoe Print', Noteworthy, cursive;
+}

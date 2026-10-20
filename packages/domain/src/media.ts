@@ -21,12 +21,25 @@ export const MEDIA_STATUSES = [
 ] as const;
 export type MediaStatus = (typeof MEDIA_STATUSES)[number];
 
-export interface DerivativeSpec {
-  /** Longest edge in pixels for `inside`; edge length for `square`. */
-  readonly size: number;
-  readonly fit: 'inside' | 'square';
-  readonly quality: number;
-}
+/**
+ * `inside` bounds the longest edge (never enlarging), `square` crops to a
+ * `size` square, and `cover` crops to exactly `size` × `height` (Room
+ * banners, 3:1), choosing the region with the most detail.
+ */
+export type DerivativeSpec =
+  | {
+      /** Longest edge in pixels for `inside`; edge length for `square`. */
+      readonly size: number;
+      readonly fit: 'inside' | 'square';
+      readonly quality: number;
+    }
+  | {
+      /** Output width in pixels. */
+      readonly size: number;
+      readonly height: number;
+      readonly fit: 'cover';
+      readonly quality: number;
+    };
 
 /** Where an upload lives: with its owner alone, or inside one Box. */
 export type MediaScope = 'user' | 'box';
@@ -53,6 +66,7 @@ export const MEDIA_PURPOSES = [
   'post_image',
   'reaction_image',
   'life_update_image',
+  'room_banner',
 ] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
@@ -103,6 +117,20 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     master: { size: 2560, fit: 'inside', quality: 86 },
     display: { size: 1600, fit: 'inside', quality: 82 },
     thumbnail: { size: 640, fit: 'inside', quality: 78 },
+  },
+  /**
+   * Room banners (Phase 7): one per Room, user-scoped, same upload limits
+   * as avatars. The master keeps the whole picture; display and thumbnail
+   * are 3:1 cover crops. The API claims a banner when the Room is saved.
+   */
+  room_banner: {
+    scope: 'user',
+    contentTypes: MEDIA_CONTENT_TYPES,
+    maxBytes: megabytes(10),
+    maxInputPixels: 40_000_000,
+    master: { size: 2560, fit: 'inside', quality: 86 },
+    display: { size: 1600, height: 533, fit: 'cover', quality: 82 },
+    thumbnail: { size: 640, height: 213, fit: 'cover', quality: 78 },
   },
 };
 

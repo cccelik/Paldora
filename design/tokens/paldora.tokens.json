@@ -141,5 +141,180 @@
         "sans-serif"
       ]
     }
+  },
+  "room": {
+    "$description": "Room themes (Phase 7, ADR 017). Scoped to `.room-canvas` by generated room-themes.css and never used by the app shell. Canvas, surface, and text are the legacy seeds; textMuted and border are new solid colors (legacy used the accent at 40% alpha). Each accent has a value for light presets and one for dark presets, so every accent meets 3:1 on every preset; legacy accents were nudged where they failed (ADR 017 lists every change). Preset keys are the camelCase form of the domain ids (obsidianGold = obsidian_gold, tumblr2014 = tumblr_2014).",
+    "preset": {
+      "$type": "color",
+      "obsidianGold": {
+        "canvas": { "$value": "#14110D" },
+        "surface": { "$value": "#211B14" },
+        "text": { "$value": "#F7EFD9" },
+        "textMuted": { "$value": "#8D887A" },
+        "border": { "$value": "#726C5F" }
+      },
+      "creamPaper": {
+        "canvas": { "$value": "#F8F0DF" },
+        "surface": { "$value": "#FFFAF0" },
+        "text": { "$value": "#241D16" },
+        "textMuted": { "$value": "#6F685D" },
+        "border": { "$value": "#8B857C" }
+      },
+      "lavenderDream": {
+        "canvas": { "$value": "#EEE6FA" },
+        "surface": { "$value": "#FAF7FF" },
+        "text": { "$value": "#2E2140" },
+        "textMuted": { "$value": "#6B607C" },
+        "border": { "$value": "#867D92" }
+      },
+      "oceanGlow": {
+        "canvas": { "$value": "#DFF5F4" },
+        "surface": { "$value": "#F5FFFF" },
+        "text": { "$value": "#102F39" },
+        "textMuted": { "$value": "#526E75" },
+        "border": { "$value": "#74898F" }
+      },
+      "daisyDay": {
+        "canvas": { "$value": "#FFF4C9" },
+        "surface": { "$value": "#FFFBED" },
+        "text": { "$value": "#3A3115" },
+        "textMuted": { "$value": "#746B4A" },
+        "border": { "$value": "#8F8872" }
+      },
+      "neonNight": {
+        "canvas": { "$value": "#100D20" },
+        "surface": { "$value": "#211839" },
+        "text": { "$value": "#F8F2FF" },
+        "textMuted": { "$value": "#8C8897" },
+        "border": { "$value": "#716982" }
+      },
+      "y2kGlitter": {
+        "canvas": { "$value": "#F2E8FA" },
+        "surface": { "$value": "#FFF7FF" },
+        "text": { "$value": "#352044" },
+        "textMuted": { "$value": "#71607E" },
+        "border": { "$value": "#8C7C94" }
+      },
+      "darkAcademia": {
+        "canvas": { "$value": "#211B14" },
+        "surface": { "$value": "#30271C" },
+        "text": { "$value": "#F1DFBD" },
+        "textMuted": { "$value": "#A0937B" },
+        "border": { "$value": "#817460" }
+      },
+      "frutigerAero": {
+        "canvas": { "$value": "#DFF7FF" },
+        "surface": { "$value": "#F7FFFF" },
+        "text": { "$value": "#12374A" },
+        "textMuted": { "$value": "#4D6F7E" },
+        "border": { "$value": "#728B96" }
+      },
+      "tumblr2014": {
+        "canvas": { "$value": "#263247" },
+        "surface": { "$value": "#34445F" },
+        "text": { "$value": "#F5F7FB" },
+        "textMuted": { "$value": "#B1B6C0" },
+        "border": { "$value": "#8A94A4" }
+      },
+      "retroWindows": {
+        "canvas": { "$value": "#C0C0C0" },
+        "surface": { "$value": "#ECECEC" },
+        "text": { "$value": "#101010" },
+        "textMuted": { "$value": "#4A4A4A" },
+        "border": { "$value": "#656565" }
+      },
+      "cyberpunk": {
+        "canvas": { "$value": "#110B1B" },
+        "surface": { "$value": "#21122D" },
+        "text": { "$value": "#F4FF52" },
+        "textMuted": { "$value": "#878A38" },
+        "border": { "$value": "#706B3B" }
+      },
+      "minimalEditorial": {
+        "canvas": { "$value": "#F7F5F0" },
+        "surface": { "$value": "#FFFFFF" },
+        "text": { "$value": "#151515" },
+        "textMuted": { "$value": "#6D6C6A" },
+        "border": { "$value": "#898989" }
+      },
+      "polaroidScrapbook": {
+        "canvas": { "$value": "#EEE3CC" },
+        "surface": { "$value": "#FFFDF8" },
+        "text": { "$value": "#292118" },
+        "textMuted": { "$value": "#696053" },
+        "border": { "$value": "#827C75" }
+      }
+    },
+    "accent": {
+      "$type": "color",
+      "gold": {
+        "onLight": { "$value": "#8C5F1A" },
+        "onDark": { "$value": "#C4933F" }
+      },
+      "lavender": {
+        "onLight": { "$value": "#7F51B5" },
+        "onDark": { "$value": "#A281CA" }
+      },
+      "ocean": {
+        "onLight": { "$value": "#127282" },
+        "onDark": { "$value": "#7FA4D8" }
+      },
+      "daisy": {
+        "onLight": { "$value": "#915D0F" },
+        "onDark": { "$value": "#DB8D16" }
+      },
+      "pink": {
+        "onLight": { "$value": "#AF398A" },
+        "onDark": { "$value": "#DC49FF" }
+      },
+      "emerald": {
+        "onLight": { "$value": "#267647" },
+        "onDark": { "$value": "#34A362" }
+      },
+      "cyan": {
+        "onLight": { "$value": "#007287" },
+        "onDark": { "$value": "#00E5FF" }
+      },
+      "crimson": {
+        "onLight": { "$value": "#A23C2D" },
+        "onDark": { "$value": "#D57566" }
+      }
+    },
+    "font": {
+      "$type": "fontFamily",
+      "$description": "System font stacks only: no font URLs and no new font-src.",
+      "editorial": { "$value": "{font.editorial}" },
+      "modern": {
+        "$value": [
+          "Inter",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "sans-serif"
+        ]
+      },
+      "rounded": {
+        "$value": [
+          "ui-rounded",
+          "SF Pro Rounded",
+          "Arial Rounded MT Bold",
+          "Nunito",
+          "sans-serif"
+        ]
+      },
+      "mono": {
+        "$value": [
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Consolas",
+          "monospace"
+        ]
+      },
+      "handwritten": {
+        "$value": ["Bradley Hand", "Segoe Print", "Noteworthy", "cursive"]
+      }
+    }
   }
 }

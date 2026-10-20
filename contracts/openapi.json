@@ -3275,7 +3275,8 @@
                       "avatar",
                       "post_image",
                       "reaction_image",
-                      "life_update_image"
+                      "life_update_image",
+                      "room_banner"
                     ]
                   },
                   "boxId": {
@@ -7036,7 +7037,8 @@
               "avatar",
               "post_image",
               "reaction_image",
-              "life_update_image"
+              "life_update_image",
+              "room_banner"
             ]
           },
           "status": {
@@ -7139,7 +7141,8 @@
                   "avatar",
                   "post_image",
                   "reaction_image",
-                  "life_update_image"
+                  "life_update_image",
+                  "room_banner"
                 ]
               },
               "status": {

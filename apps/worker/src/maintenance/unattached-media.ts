@@ -5,6 +5,7 @@ import {
   mediaJobOutbox,
   postMedia,
   postReactions,
+  rooms,
   storedObjectKeys,
   type PaldoraDatabase,
 } from '@paldora/database';
@@ -30,12 +31,14 @@ export const CLAIMED_PURPOSES = [
   'post_image',
   'reaction_image',
   'life_update_image',
+  'room_banner',
 ] as const;
 
 /**
  * Uploads that only become someone's when an API transaction claims them: a
  * post photo by `post_media`, a camera capture by `post_reactions`, a Life
- * Update photo by `life_update_media`. Anything else is unattached. Add a
+ * Update photo by `life_update_media`, a Room banner by `rooms`. Anything
+ * else is unattached. Add a
  * branch here with each new claimed purpose (and widen
  * `media_assets_unattached_index`).
  */
@@ -52,10 +55,15 @@ export function unattachedMedia(executor: Executor): SQL {
     .select({ one: sql`1` })
     .from(lifeUpdateMedia)
     .where(eq(lifeUpdateMedia.mediaAssetId, mediaAssets.id));
+  const inRoom = executor
+    .select({ one: sql`1` })
+    .from(rooms)
+    .where(eq(rooms.bannerMediaId, mediaAssets.id));
   const predicate = or(
     and(eq(mediaAssets.purpose, 'post_image'), notExists(inPost)),
     and(eq(mediaAssets.purpose, 'reaction_image'), notExists(inReaction)),
     and(eq(mediaAssets.purpose, 'life_update_image'), notExists(inLifeUpdate)),
+    and(eq(mediaAssets.purpose, 'room_banner'), notExists(inRoom)),
   );
   if (!predicate) throw new Error('Unattached-media predicate is empty.');
   return predicate;

@@ -24,3 +24,4 @@ accepted when their phase is built.
 | [014](014-release-topology.md)                    | Migrations run as a release job, separate services                                         | Proposed (Phase 4)               |
 | [015](015-interactions-and-activity-projector.md) | One reaction per target; activity outbox projected by the worker; ID-only notifications    | Accepted (Phase 5)               |
 | [016](016-life-updates-and-memories.md)           | Life Updates stored once with a backing post per Box; immutable audience; derived Memories | Accepted (Phase 6)               |
+| [017](017-rooms.md)                               | Lazy Room rows, closed widget registry, token-only themes, DB-enforced Top Friends         | Accepted (Phase 7)               |

@@ -9,7 +9,8 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./tokens.css": "./generated/css/tokens.css"
+    "./tokens.css": "./generated/css/tokens.css",
+    "./room-themes.css": "./generated/css/room-themes.css"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

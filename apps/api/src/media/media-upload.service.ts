@@ -70,6 +70,7 @@ export const PURPOSE_UPLOAD_LIMITS: Readonly<
     limit: 120,
     windowSeconds: 3_600,
   },
+  room_banner: { scope: 'room-banner-upload', limit: 20, windowSeconds: 3_600 },
 };
 
 /**
@@ -138,7 +139,7 @@ export class MediaUploadService {
   /**
    * Box-scoped uploads (post photos, camera reactions) need an active
    * membership in an open Box. User-scoped ones (avatars, Life Update
-   * photos) name no Box.
+   * photos, Room banners) name no Box.
    * A stranger's reservation looks the same as a missing Box.
    */
   private async scopeFor(

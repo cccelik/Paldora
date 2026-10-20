@@ -13,6 +13,7 @@ export * from './media.js';
 export * from './life-updates.js';
 export * from './feeds.js';
 export * from './memories.js';
+export * from './rooms.js';
 export * from './route.js';
 export * from './routes.js';
 export * from './openapi.js';

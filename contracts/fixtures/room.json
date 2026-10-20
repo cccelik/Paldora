@@ -1,0 +1,400 @@
+{
+  "schema": "Room",
+  "valid": [
+    {
+      "owner": {
+        "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96",
+        "username": "ada",
+        "displayName": "Ada",
+        "bio": null,
+        "avatarUrl": null
+      },
+      "relationship": "friend",
+      "style": {
+        "themePreset": "cream_paper",
+        "layout": "two_column",
+        "accent": null,
+        "font": null,
+        "decorationPack": null,
+        "sparkles": false
+      },
+      "location": null,
+      "currently": "Reading",
+      "music": {
+        "url": "https://example.com/song",
+        "title": null,
+        "artist": null
+      },
+      "banner": null,
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "topFriends": {
+        "size": null,
+        "visibility": null,
+        "items": null
+      },
+      "visibility": null,
+      "updatedAt": null,
+      "configurationVersion": 1
+    },
+    {
+      "owner": {
+        "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96",
+        "username": "ada",
+        "displayName": "Ada",
+        "bio": null,
+        "avatarUrl": null
+      },
+      "relationship": "owner",
+      "style": {
+        "themePreset": "cream_paper",
+        "layout": "two_column",
+        "accent": null,
+        "font": null,
+        "decorationPack": null,
+        "sparkles": false
+      },
+      "location": null,
+      "currently": "Reading",
+      "music": {
+        "url": "https://example.com/song",
+        "title": null,
+        "artist": null
+      },
+      "banner": {
+        "url": "https://media.example.test/b.webp",
+        "bannerMediaId": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96"
+      },
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "topFriends": {
+        "size": 8,
+        "visibility": "friends",
+        "items": []
+      },
+      "visibility": "friends",
+      "updatedAt": "2026-10-20T10:00:00.123456Z",
+      "configurationVersion": 1
+    }
+  ],
+  "invalid": [
+    {
+      "owner": {
+        "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96",
+        "username": "ada",
+        "displayName": "Ada",
+        "bio": null,
+        "avatarUrl": null
+      },
+      "relationship": "friend",
+      "style": {
+        "themePreset": "vaporwave",
+        "layout": "two_column",
+        "accent": null,
+        "font": null,
+        "decorationPack": null,
+        "sparkles": false
+      },
+      "location": null,
+      "currently": "Reading",
+      "music": {
+        "url": "https://example.com/song",
+        "title": null,
+        "artist": null
+      },
+      "banner": null,
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "topFriends": {
+        "size": null,
+        "visibility": null,
+        "items": null
+      },
+      "visibility": null,
+      "updatedAt": null,
+      "configurationVersion": 1
+    },
+    {
+      "owner": {
+        "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96",
+        "username": "ada",
+        "displayName": "Ada",
+        "bio": null,
+        "avatarUrl": null
+      },
+      "relationship": "friend",
+      "style": {
+        "themePreset": "cream_paper",
+        "layout": "two_column",
+        "accent": null,
+        "font": null,
+        "decorationPack": null,
+        "sparkles": false
+      },
+      "location": null,
+      "currently": "Reading",
+      "music": {
+        "url": "https://example.com/song",
+        "title": null,
+        "artist": null
+      },
+      "banner": null,
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "topFriends": {
+        "size": null,
+        "visibility": null,
+        "items": null
+      },
+      "visibility": null,
+      "updatedAt": null,
+      "configurationVersion": 2
+    },
+    {
+      "owner": {
+        "id": "5b2d2c9f-6a1f-4b6a-8e3b-1a3c6d7e8f96",
+        "username": "ada",
+        "displayName": "Ada",
+        "bio": null,
+        "avatarUrl": null
+      },
+      "relationship": "stranger",
+      "style": {
+        "themePreset": "cream_paper",
+        "layout": "two_column",
+        "accent": null,
+        "font": null,
+        "decorationPack": null,
+        "sparkles": false
+      },
+      "location": null,
+      "currently": "Reading",
+      "music": {
+        "url": "https://example.com/song",
+        "title": null,
+        "artist": null
+      },
+      "banner": null,
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "topFriends": {
+        "size": null,
+        "visibility": null,
+        "items": null
+      },
+      "visibility": null,
+      "updatedAt": null,
+      "configurationVersion": 1
+    }
+  ]
+}

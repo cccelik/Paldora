@@ -80,10 +80,18 @@ const attachReactionImage: AttachReadyAsset = async () => undefined;
  */
 const attachLifeUpdateImage: AttachReadyAsset = async () => undefined;
 
+/**
+ * Room banners are claimed by the API when the Room is saved
+ * (`PATCH /me/room`, in its own transaction), like post photos. Becoming
+ * ready has nothing to do; an unclaimed banner is removed by the reaper.
+ */
+const attachRoomBanner: AttachReadyAsset = async () => undefined;
+
 /** What "ready" means for each purpose. Add a row with each new purpose. */
 export const attachments: Readonly<Record<MediaPurpose, AttachReadyAsset>> = {
   avatar: attachAvatar,
   post_image: attachPostImage,
   reaction_image: attachReactionImage,
   life_update_image: attachLifeUpdateImage,
+  room_banner: attachRoomBanner,
 };

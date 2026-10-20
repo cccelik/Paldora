@@ -60,6 +60,54 @@ describe('createDerivatives', () => {
     }
   });
 
+  it('crops Room banners to exact 3:1 covers and keeps the whole master', async () => {
+    const result = await createDerivatives(
+      await cameraJpeg(3000, 2000),
+      MEDIA_PURPOSE_POLICIES.room_banner,
+    );
+    // Orientation 6: the 3000×2000 capture is portrait (2000×3000).
+    expect(result.master).toMatchObject({ width: 1707, height: 2560 });
+    expect(result.display).toMatchObject({ width: 1600, height: 533 });
+    expect(result.thumbnail).toMatchObject({ width: 640, height: 213 });
+    for (const image of [result.master, result.display, result.thumbnail]) {
+      const metadata = await sharp(image.bytes).metadata();
+      expect(metadata.format).toBe('webp');
+      expect(metadata.exif).toBeUndefined();
+      expect(metadata.xmp).toBeUndefined();
+      expect(Buffer.from(image.bytes).includes('Secret Model')).toBe(false);
+      expect(Buffer.from(image.bytes).includes('GPS')).toBe(false);
+    }
+  });
+
+  it('covers the banner frame even from a small or very wide input', async () => {
+    const tiny = new Uint8Array(
+      await sharp({
+        create: { width: 90, height: 60, channels: 3, background: '#fff' },
+      })
+        .png()
+        .toBuffer(),
+    );
+    const small = await createDerivatives(
+      tiny,
+      MEDIA_PURPOSE_POLICIES.room_banner,
+    );
+    expect(small.master).toMatchObject({ width: 90, height: 60 });
+    expect(small.display).toMatchObject({ width: 1600, height: 533 });
+    const panorama = new Uint8Array(
+      await sharp({
+        create: { width: 4000, height: 400, channels: 3, background: '#123' },
+      })
+        .jpeg()
+        .toBuffer(),
+    );
+    const wide = await createDerivatives(
+      panorama,
+      MEDIA_PURPOSE_POLICIES.room_banner,
+    );
+    expect(wide.display).toMatchObject({ width: 1600, height: 533 });
+    expect(wide.thumbnail).toMatchObject({ width: 640, height: 213 });
+  });
+
   it('applies EXIF orientation before stripping it', async () => {
     const { master } = await createDerivatives(
       await cameraJpeg(1200, 800),

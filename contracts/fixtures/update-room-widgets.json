@@ -1,0 +1,235 @@
+{
+  "schema": "UpdateRoomWidgetsRequest",
+  "valid": [
+    {
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "expectedUpdatedAt": null
+    },
+    {
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    }
+  ],
+  "invalid": [
+    {
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "music",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        }
+      ],
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    },
+    {
+      "widgets": [
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 0,
+          "enabled": true
+        },
+        {
+          "type": "currently",
+          "placement": "sidebar",
+          "position": 1,
+          "enabled": true
+        },
+        {
+          "type": "top_friends",
+          "placement": "sidebar",
+          "position": 2,
+          "enabled": true
+        },
+        {
+          "type": "photos",
+          "placement": "sidebar",
+          "position": 3,
+          "enabled": true
+        },
+        {
+          "type": "life_updates",
+          "placement": "main",
+          "position": 4,
+          "enabled": true
+        },
+        {
+          "type": "posts",
+          "placement": "main",
+          "position": 5,
+          "enabled": true
+        },
+        {
+          "type": "memories",
+          "placement": "main",
+          "position": 6,
+          "enabled": true
+        }
+      ],
+      "expectedUpdatedAt": "2026-10-20T10:00:00.123456Z"
+    }
+  ]
+}

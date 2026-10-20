@@ -79,8 +79,14 @@ describe('reserving an upload', () => {
   it('rejects purposes, types, and sizes outside policy', async () => {
     const user = await app.createUser();
     for (const body of [
-      { purpose: 'room_banner', contentType: 'image/png', contentLength: 10 },
+      { purpose: 'cover_photo', contentType: 'image/png', contentLength: 10 },
       { purpose: 'avatar', contentType: 'image/svg+xml', contentLength: 10 },
+      {
+        purpose: 'room_banner',
+        boxId: randomUUID(),
+        contentType: 'image/png',
+        contentLength: 10,
+      },
       {
         purpose: 'avatar',
         contentType: 'image/png',
@@ -93,6 +99,31 @@ describe('reserving an upload', () => {
       });
       expect(response.status, JSON.stringify(body)).toBe(400);
     }
+  });
+});
+
+describe('reserving a Room banner', () => {
+  it('is user-scoped: no Box, owned by the uploader', async () => {
+    const user = await app.createUser();
+    const response = await app.request(user, '/media/uploads', {
+      method: 'POST',
+      body: {
+        purpose: 'room_banner',
+        contentType: 'image/webp',
+        contentLength: 2_048,
+      },
+    });
+    expect(response.status).toBe(201);
+    const { mediaAsset } = mediaUploadSchema.parse(await response.json());
+    expect(mediaAsset).toMatchObject({
+      purpose: 'room_banner',
+      status: 'pending',
+    });
+    const [row] = await app.database
+      .select({ boxId: mediaAssets.boxId, owner: mediaAssets.ownerUserId })
+      .from(mediaAssets)
+      .where(eq(mediaAssets.id, mediaAsset.id));
+    expect(row).toEqual({ boxId: null, owner: user.id });
   });
 });
 

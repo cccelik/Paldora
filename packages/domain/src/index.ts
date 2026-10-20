@@ -6,3 +6,4 @@ export * from './boxes.js';
 export * from './social.js';
 export * from './reactions.js';
 export * from './life-updates.js';
+export * from './rooms.js';

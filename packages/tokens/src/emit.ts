@@ -1,4 +1,5 @@
 import type { ResolvedToken, TokenValue } from './resolve.js';
+import { accentFor, readRoomThemeTokens } from './room-themes.js';
 
 const header =
   'Generated from design/tokens/paldora.tokens.json by `pnpm tokens:generate`. Do not edit.';
@@ -38,7 +39,11 @@ function themeBlock(tokens: readonly ResolvedToken[], mode: string): string {
  */
 export function emitCss(tokens: readonly ResolvedToken[]): string {
   const primitives = tokens
-    .filter((token) => !token.path.startsWith('theme.'))
+    // Room tokens never reach the shell; they live in room-themes.css.
+    .filter(
+      (token) =>
+        !token.path.startsWith('theme.') && !token.path.startsWith('room.'),
+    )
     .map((token) => `  --pal-${kebab(token.path)}: ${cssValue(token)};`)
     .join('\n');
   const light = themeBlock(tokens, 'light');
@@ -65,6 +70,52 @@ ${dark.replace(/^ {2}/gm, '    ')}
   color-scheme: dark;
 ${dark}
 }
+`;
+}
+
+const fontStack = (families: readonly string[]) =>
+  families
+    .map((family) => (/\s/.test(family) ? `'${family}'` : family))
+    .join(', ');
+
+/**
+ * Room themes as static CSS selected by `data-*` attributes on
+ * `.room-canvas` (ADR 017). No color is ever computed from user input, and
+ * nothing here needs an inline style, so the strict CSP holds. The preset
+ * sets the surface colors, the scheme picks each accent's side, and the
+ * font key picks a system stack.
+ */
+export function emitRoomCss(tokens: readonly ResolvedToken[]): string {
+  const { presets, accents, fonts } = readRoomThemeTokens(tokens);
+  const presetRules = presets.map(
+    ({ id, colors }) => `.room-canvas[data-room-theme='${id}'] {
+  --room-canvas: ${colors.canvas};
+  --room-surface: ${colors.surface};
+  --room-text: ${colors.text};
+  --room-text-muted: ${colors.textMuted};
+  --room-border: ${colors.border};
+}`,
+  );
+  const schemeRules = (['light', 'dark'] as const).map(
+    (scheme) => `.room-canvas[data-room-scheme='${scheme}'] {
+  color-scheme: ${scheme};
+}`,
+  );
+  const accentRules = (['light', 'dark'] as const).flatMap((scheme) =>
+    accents.map(
+      (accent) =>
+        `.room-canvas[data-room-scheme='${scheme}'][data-room-accent='${accent.key}'] {
+  --room-accent: ${accentFor(accent, scheme)};
+}`,
+    ),
+  );
+  const fontRules = fonts.map(
+    ({ key, families }) => `.room-canvas[data-room-font='${key}'] {
+  --room-font: ${fontStack(families)};
+}`,
+  );
+  return `/* ${header} */
+${[...presetRules, ...schemeRules, ...accentRules, ...fontRules].join('\n\n')}
 `;
 }
 
