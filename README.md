@@ -6,7 +6,7 @@ Paldora is a privacy-first social platform and living scrapbook for real
 friends and private communities. This repository is a greenfield rebuild,
 delivered one release-gated phase at a time.
 
-- **Status:** Phase 0 (foundation) is complete. See [REBUILD_PLAN.md](REBUILD_PLAN.md).
+- **Status:** Phases 0–6 are delivered (foundation through Life Updates and Memories). See [REBUILD_PLAN.md](REBUILD_PLAN.md).
 - **Rules for contributors and agents:** [CLAUDE.md](CLAUDE.md).
 - **Reference build:** [legacy/](legacy/) holds the frozen Phase 7 build.
   Use it as reference only and never import from it.

@@ -51,6 +51,11 @@ export function isNotificationHint(hint: RealtimeHint): boolean {
   return notificationTypes.has(hint.type);
 }
 
+/** Personal Memories, which can hold content from any of the viewer's Boxes. */
+function isPersonalMemories(path: string): boolean {
+  return path === '/memories' || path.startsWith('/memories/');
+}
+
 /**
  * Targeted invalidation: a page refetches only when the hint concerns what it
  * shows. `resync` is handled by the caller (it means "anything may differ").
@@ -63,7 +68,8 @@ export function shouldRefresh(pathname: string, hint: RealtimeHint): boolean {
       path === '/boxes' ||
       path.startsWith('/boxes/') ||
       path === '/life-updates' ||
-      path.startsWith('/life-updates/')
+      path.startsWith('/life-updates/') ||
+      isPersonalMemories(path)
     );
   }
   if (isNotificationHint(hint)) return path === '/notifications';
@@ -72,11 +78,17 @@ export function shouldRefresh(pathname: string, hint: RealtimeHint): boolean {
   if (isInteractionHint(hint)) {
     return hint.postId !== undefined && path === `/posts/${hint.postId}`;
   }
-  if (!hint.type.startsWith('post.')) return false;
+  return hint.type.startsWith('post.') && showsPost(path, hint);
+}
+
+/** Pages that list or show the post a `post.*` hint names. */
+function showsPost(path: string, hint: RealtimeHint): boolean {
+  const box = hint.boxId === undefined ? null : `/boxes/${hint.boxId}`;
   return (
     path === '/home' ||
     path === '/life-updates' ||
-    (hint.boxId !== undefined && path === `/boxes/${hint.boxId}`) ||
+    isPersonalMemories(path) ||
+    (box !== null && (path === box || path === `${box}/memories`)) ||
     (hint.postId !== undefined && path === `/posts/${hint.postId}`)
   );
 }

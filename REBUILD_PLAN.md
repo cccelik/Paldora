@@ -282,6 +282,36 @@ addenda in ADR 012 and 013).
 expanding inline. An optimistic camera reaction bumps the count only; the
 server's answer fills the strip with the signed thumbnail.
 
+## Phase 6 delivery notes (2026-10-20)
+
+**Delivered (the whole [plan](docs/plans/phase-6-life-updates-memories.md),
+all recommended defaults):** Life Updates with nine optional sections and up
+to four photos, shared once to 1–20 Boxes or kept Only Me; one backing post
+per Box, so each Box keeps its own conversation; an audience that the
+database makes immutable; edit and delete across every Box at once; Home
+dedupe into one card with alphabetical Box tabs; Box-deletion tombstones and
+a worker sweep; and derived Memories (personal and per Box, UTC year/month,
+type filter, cursor paging, summary counts) with no stored copy
+([ADR 016](docs/adr/016-life-updates-and-memories.md), addendum in ADR 013).
+
+**Deviations from the plan, as reported by each slice:**
+
+- `PATCH /life-updates/{id}` is partial: `sections` and `mediaAssetIds` are
+  each optional and replace that part when present.
+- `feedItemSchema` moved to `packages/validation/src/feeds.ts` to avoid a
+  posts ↔ life-updates import cycle; ordinary-post page data moved to
+  `PostPageService` (`itemsForPosts`), which Memories reuse.
+- `MemorySummary` also returns the chosen `year` (null when empty).
+- No `posts.kind` index: EXPLAIN shows range scans on `posts_box_feed_index`.
+- Web Memories: `/memories/[year]` shows the year's items under UTC month
+  headings as well as the month grid; there is no separate date rail (each
+  card already shows its time). There is no `loading.tsx`, because a
+  streamed fallback would turn the not-found pages into 200 responses.
+
+**Notes:** months are UTC, and the pages say so. Blocked authors' content is
+omitted from Memories with no placeholder (decision 15); feeds keep the
+neutral placeholder.
+
 ## Phases 1–9: Web product (rebuild to parity, then beyond)
 
 Every phase delivers: migration(s), domain + Zod + OpenAPI entries, policy +
@@ -343,12 +373,13 @@ before it is designed.
    Then implement the slice and report the exact gate results.
 4. Update this file's status table below when a phase exits.
 
-| Phase | Status                                                                     |
-| ----- | -------------------------------------------------------------------------- |
-| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run |
-| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending    |
-| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                     |
-| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green           |
-| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open         |
-| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications   |
-| 6–12  | Not started                                                                |
+| Phase | Status                                                                      |
+| ----- | --------------------------------------------------------------------------- |
+| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run  |
+| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending     |
+| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                      |
+| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green            |
+| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open          |
+| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications    |
+| 6     | Delivered 2026-10-20 (local gates green); Life Updates and derived Memories |
+| 7–12  | Not started                                                                 |

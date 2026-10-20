@@ -136,6 +136,9 @@ GET /me/memories, /boxes/{id}/memories (Box: BoxPolicyService.membership first):
     → PostPageService.itemsForPosts + LifeUpdateViewService.byIds (re-authorize,
     batch; scopeBoxId for a Box) → items in candidate order; nothing stored
 GET …/memories/summary: same candidates, counted per UTC year and month
+web: /memories (years) → /memories/{year} (months + that year's items) →
+    /memories/{year}/{month}; /boxes/{id}/memories?year=&month=; type filter and
+    "Load older" are links; summary and page fetched in parallel, server-rendered
 ```
 
 Comments and reactions on a delivery are ordinary Phase 5 interactions on its

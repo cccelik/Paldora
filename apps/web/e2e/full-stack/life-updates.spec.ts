@@ -1,12 +1,14 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import { provisionAccount } from './accounts';
 import {
   expectAccessible,
   expectNoOverflow,
   personOnOwnSession,
+  shareLifeUpdate,
   sharedBox,
   signedIn,
+  tabTo,
 } from './sessions';
 
 const photo = fileURLToPath(
@@ -17,16 +19,6 @@ const lifeUpdateOn = (page: Page) =>
   page.getByRole('article', { name: /^Life Update by/ });
 const boxIdOf = (url: string) => url.split('/').at(-1) ?? '';
 
-/** Keyboard only: Tab forward until `target` has focus. */
-async function tabTo(page: Page, target: Locator, limit = 80) {
-  for (let step = 0; step < limit; step += 1) {
-    if (await target.evaluate((element) => element === document.activeElement))
-      return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
-
 async function comment(page: Page, text: string) {
   const field = page.getByLabel('Add a comment');
   await field.fill(text);
@@ -36,27 +28,6 @@ async function comment(page: Page, text: string) {
       .getByRole('article', { name: /^Comment by/ })
       .filter({ hasText: text }),
   ).toBeVisible();
-}
-
-/** Writes one section and shares to the named Boxes through the composer. */
-async function shareLifeUpdate(
-  page: Page,
-  text: string,
-  audience: { boxes: readonly string[] } | 'only_me',
-) {
-  await page.goto('/life-updates/new');
-  await page.getByLabel('Life lately').fill(text);
-  if (audience === 'only_me') {
-    await page.getByRole('radio', { name: 'Only me' }).check();
-  } else {
-    for (const name of audience.boxes) {
-      await page.getByRole('checkbox', { name }).check();
-    }
-  }
-  await page.getByRole('button', { name: 'Share Life Update' }).click();
-  await expect(page).toHaveURL(/\/life-updates\/[0-9a-f-]{36}$/);
-  await expect(page.getByText(text)).toBeVisible();
-  return page.url();
 }
 
 test('a Life Update reaches two Boxes once, with a conversation per Box', async ({

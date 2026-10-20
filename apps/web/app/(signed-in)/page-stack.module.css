@@ -12,3 +12,10 @@
   padding: 0;
   list-style: none;
 }
+
+/* A row of secondary links that wraps on narrow screens. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}

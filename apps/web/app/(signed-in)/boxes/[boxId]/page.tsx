@@ -78,19 +78,23 @@ export default async function BoxPage({
         }
       />
       <Section id="posts" title="Posts">
-        {box.status === 'active' ? (
-          <>
-            <PostComposer boxId={boxId} />
-            <div>
-              <Link
-                className={buttonClassName('secondary')}
-                href={`/life-updates/new?box=${boxId}` as Route}
-              >
-                Share a Life Update
-              </Link>
-            </div>
-          </>
-        ) : null}
+        {box.status === 'active' ? <PostComposer boxId={boxId} /> : null}
+        <div className={styles.actions}>
+          {box.status === 'active' ? (
+            <Link
+              className={buttonClassName('secondary')}
+              href={`/life-updates/new?box=${boxId}` as Route}
+            >
+              Share a Life Update
+            </Link>
+          ) : null}
+          <Link
+            className={buttonClassName('secondary')}
+            href={`/boxes/${boxId}/memories`}
+          >
+            Memories
+          </Link>
+        </div>
         <PostFeed
           items={feed.items}
           presets={me.preferences.reactionPresets}

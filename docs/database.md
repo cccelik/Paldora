@@ -192,7 +192,7 @@ every delivery's comments, reactions, camera images, and notifications, the
 photos are retired once, and the row keeps `status='deleted'` with empty
 sections.
 
-Memories (slice 5) add **no table, column, or migration**: they are derived
+Memories add **no table, column, or migration**: they are derived
 at query time from `posts`, `life_update_deliveries`, `life_updates`, and
 `box_memberships`. The candidate query is driven by the viewer's memberships
 (`box_memberships_user_status_index`) into the existing

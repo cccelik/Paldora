@@ -79,3 +79,25 @@ Tests: `apps/api/src/social/block.integration.test.ts`,
 `apps/api/src/notifications/notifications.integration.test.ts`, and
 `apps/worker/src/activity/projector.integration.test.ts`. Still to do: Life
 Updates (6), Rooms and Top Friends (7).
+
+## Addendum: Phase 6 rows (2026-10-20)
+
+D1 applies to Life Updates and Memories through the same `hiddenByBlock`
+definition ([ADR 016](016-life-updates-and-memories.md)). Rows added to the
+matrix, tested in both directions with unblock and re-block:
+
+| Surface                     | Behaviour across a block (either direction)                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Home feed                   | One neutral `hidden` placeholder per Life Update (deduped), naming no author, text, photos, or Boxes                  |
+| Box feed                    | The neutral placeholder for that Box's backing post                                                                   |
+| Detail and backing posts    | `LIFE_UPDATE_NOT_FOUND`; the backing post is `POST_NOT_FOUND`                                                         |
+| Memories (personal and Box) | **Omitted**, with no placeholder and not counted in the summary (Phase 6 decision 15: a timeline has no slot to keep) |
+| Counts                      | Viewer-relative, unchanged from Phase 5                                                                               |
+| Own Only Me                 | Unaffected                                                                                                            |
+| Unblock                     | Content returns everywhere                                                                                            |
+
+Tests: `apps/api/src/social/block.integration.test.ts`,
+`apps/api/src/life-updates/life-updates.integration.test.ts`,
+`apps/api/src/memories/memories.integration.test.ts`, and the full-stack
+`apps/web/e2e/full-stack/{life-updates,memories}.spec.ts`. Still to do: Rooms
+and Top Friends (7).

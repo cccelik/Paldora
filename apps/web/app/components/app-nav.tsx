@@ -9,6 +9,7 @@ const links = [
   { href: '/friends', label: 'Friends' },
   { href: '/boxes', label: 'Boxes' },
   { href: '/life-updates', label: 'Life Updates' },
+  { href: '/memories', label: 'Memories' },
   { href: '/settings/account', label: 'Settings', section: '/settings' },
 ] as const;
 

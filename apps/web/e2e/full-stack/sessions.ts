@@ -4,6 +4,7 @@ import {
   test,
   type Browser,
   type BrowserContext,
+  type Locator,
   type Page,
 } from '@playwright/test';
 import { signIn, type Account } from './accounts';
@@ -68,4 +69,35 @@ export async function sharedBox(
   await grace.getByRole('button', { name: 'Join' }).click();
   await expect(grace.getByRole('link', { name })).toBeVisible();
   return url;
+}
+
+/** Keyboard only: Tab forward until `target` has focus. */
+export async function tabTo(page: Page, target: Locator, limit = 80) {
+  for (let step = 0; step < limit; step += 1) {
+    if (await target.evaluate((element) => element === document.activeElement))
+      return;
+    await page.keyboard.press('Tab');
+  }
+  await expect(target).toBeFocused();
+}
+
+/** Writes one section and shares to the named Boxes through the composer. */
+export async function shareLifeUpdate(
+  page: Page,
+  text: string,
+  audience: { boxes: readonly string[] } | 'only_me',
+) {
+  await page.goto('/life-updates/new');
+  await page.getByLabel('Life lately').fill(text);
+  if (audience === 'only_me') {
+    await page.getByRole('radio', { name: 'Only me' }).check();
+  } else {
+    for (const name of audience.boxes) {
+      await page.getByRole('checkbox', { name }).check();
+    }
+  }
+  await page.getByRole('button', { name: 'Share Life Update' }).click();
+  await expect(page).toHaveURL(/\/life-updates\/[0-9a-f-]{36}$/);
+  await expect(page.getByText(text)).toBeVisible();
+  return page.url();
 }

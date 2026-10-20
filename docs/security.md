@@ -210,7 +210,7 @@ double mark-read, realtime), the notification rows in
 skip rule, dedupe, concurrent projectors, poison events, crash before commit,
 Redis down at publish, retention).
 
-## Authorization matrix: Phase 6 (Life Updates and Memories; slices 1–5)
+## Authorization matrix: Phase 6 (Life Updates and Memories)
 
 A Life Update is visible to a viewer when it is active, no block exists
 between the viewer and the author (either direction, the shared
@@ -282,7 +282,7 @@ Races decided by the database or by locks:
   finds the post gone; nothing survives on a deleted delivery (raced in tests
   for posts and Life Updates alike).
 
-### Memories (slice 5)
+### Memories
 
 Memories are derived on every request from one candidate query
 (`memories/memory-candidates.ts`) shared by the page and the summary; nothing
@@ -315,6 +315,15 @@ both block directions, UTC edges (`23:59:59.999999` on Dec 31 and Feb 29
 against midnight), identical timestamps across pages, deletion removing an
 item at once, and a fixed query count per page. The routes are reads and
 carry no rate limit.
+
+The web pages (`/memories/**`, `/boxes/[id]/memories`) reject a malformed
+year, month, type, or Box ID with `notFound()` before calling the API, and
+render `BOX_NOT_FOUND` and `VALIDATION_FAILED` (a foreign cursor) as the same
+404, so a former member, a stranger, and a guessed ID cannot tell a Box
+exists. They have no `loading.tsx`, which would stream a 200 before the
+not-found decision. Full-stack tests in `apps/web/e2e/full-stack/
+memories.spec.ts` cover dedupe with tabs, deletion, removal, a stranger, a
+block, and Only Me at desktop and 390px.
 
 ## Assumptions
 

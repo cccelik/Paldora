@@ -147,6 +147,32 @@ describe('Life Update pages', () => {
   });
 });
 
+describe('Memories pages', () => {
+  it('refresh personal Memories for any post change and Box Memories only for that Box', () => {
+    const hint = { type: 'post.deleted', boxId: BOX, postId: POST };
+    expect(shouldRefresh('/memories', hint)).toBe(true);
+    expect(shouldRefresh('/memories/2026/3', hint)).toBe(true);
+    expect(shouldRefresh(`/boxes/${BOX}/memories`, hint)).toBe(true);
+    expect(shouldRefresh(`/boxes/${POST}/memories`, hint)).toBe(false);
+    expect(
+      shouldRefresh('/memories/2026', {
+        type: 'comment.created',
+        postId: POST,
+      }),
+    ).toBe(false);
+  });
+
+  it('refresh every Memories page when memberships change', () => {
+    for (const path of [
+      '/memories',
+      '/memories/2026',
+      `/boxes/${BOX}/memories`,
+    ]) {
+      expect(shouldRefresh(path, { type: 'memberships.changed' })).toBe(true);
+    }
+  });
+});
+
 describe('interaction and notification hints', () => {
   const COMMENT = '3b9f0f2a-1c4d-4e5f-8a6b-7c8d9e0f1a2b';
 

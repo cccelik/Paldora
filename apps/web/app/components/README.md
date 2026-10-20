@@ -112,3 +112,18 @@ Life Update pages: `/life-updates` (yours, Only Me included), `/life-updates/new
 `?comment=` pins, via `lib/pinned-thread.ts`), `/life-updates/[id]/edit`.
 `/posts/[postId]` redirects a backing post there with its Box. Server Actions
 are in `actions/life-updates.ts` and `actions/life-update-photos.ts`.
+
+## Memories
+
+| Component                                             | Owns                                                                                                                                                                                   |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MemoryYearNav`, `MemoryMonthNav`, `MemoryTypeFilter` | Period and filter links with counts from the summary (`aria-current` marks the place). All twelve UTC months are listed; empty ones are named, not linked.                             |
+| `MemoryTimeline`                                      | Items under a heading per UTC month, as `PostCard` and `LifeUpdateCard`. With `boxId` (Box Memories) cards stay in that Box: one context, no Box badge. Honest empty state.            |
+| `MemoryPeriod`                                        | One year or month: the navs, the filter, the timeline, and "Load older memories" (a `MoreLink`). Shared by `/memories/[year]`, `/memories/[year]/[month]`, and `/boxes/[id]/memories`. |
+
+Memories pages: `/memories` (years), `/memories/[year]`, `/memories/[year]/[month]`
+(`?type=`, `?cursor=`), and `/boxes/[id]/memories?year=&month=&type=&cursor=`
+(the newest year by default; linked from the Box page). URL parsing, links, and
+UTC month grouping are pure helpers in `lib/memories.ts`; a malformed period is
+`notFound()` before any API call. The pages deliberately have no `loading.tsx`:
+a streamed fallback would send 200 before a not-found decision.
