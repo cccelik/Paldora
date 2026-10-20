@@ -21,3 +21,44 @@ export async function assetStatusOutcome(
     return actionError(error, copy);
   }
 }
+
+/** What a reserved upload hands the browser: where to PUT, and how. */
+export interface PreparedPhotoUpload {
+  readonly mediaAssetId: string;
+  readonly url: string;
+  readonly headers: Readonly<Record<string, string>>;
+}
+
+export const photoCopy = {
+  MEDIA_UPLOAD_MISMATCH: 'That photo didn’t upload completely. Try again.',
+  MEDIA_UPLOAD_EXPIRED: 'The upload took too long. Try again.',
+  STORAGE_UNAVAILABLE: 'Photos are unavailable right now. Try again shortly.',
+  BOX_ARCHIVED: 'This Box is archived, so it can’t take new photos.',
+  RATE_LIMITED: 'That’s a lot of photos at once. Try again in a little while.',
+};
+
+/**
+ * Reserves a signed upload for one already-validated photo, through the
+ * generic media flow: the purpose decides whether it is Box- or user-scoped.
+ */
+export async function reservePhotoUpload(
+  reserve: () => Promise<{
+    mediaAsset: { id: string };
+    upload: { url: string; headers: Readonly<Record<string, string>> };
+  }>,
+): Promise<ActionOutcome<PreparedPhotoUpload>> {
+  try {
+    const { mediaAsset, upload } = await reserve();
+    return {
+      status: 'success',
+      message: 'Upload ready.',
+      data: {
+        mediaAssetId: mediaAsset.id,
+        url: upload.url,
+        headers: upload.headers,
+      },
+    };
+  } catch (error) {
+    return actionError(error, photoCopy);
+  }
+}

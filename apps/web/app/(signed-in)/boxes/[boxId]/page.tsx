@@ -1,5 +1,6 @@
 import { canManageMembers } from '@paldora/domain';
 import { uuidSchema } from '@paldora/validation';
+import type { Route } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -12,7 +13,12 @@ import { MemberList } from '../../../components/box-members';
 import { PostComposer } from '../../../components/post-composer';
 import { PostFeed } from '../../../components/post-card';
 import { MoreLink } from '../../../components/more-link';
-import { Badge, PageHeader, Section } from '../../../components/ui';
+import {
+  Badge,
+  buttonClassName,
+  PageHeader,
+  Section,
+} from '../../../components/ui';
 import {
   apiClient,
   completedUser,
@@ -72,10 +78,23 @@ export default async function BoxPage({
         }
       />
       <Section id="posts" title="Posts">
-        {box.status === 'active' ? <PostComposer boxId={boxId} /> : null}
+        {box.status === 'active' ? (
+          <>
+            <PostComposer boxId={boxId} />
+            <div>
+              <Link
+                className={buttonClassName('secondary')}
+                href={`/life-updates/new?box=${boxId}` as Route}
+              >
+                Share a Life Update
+              </Link>
+            </div>
+          </>
+        ) : null}
         <PostFeed
           items={feed.items}
           presets={me.preferences.reactionPresets}
+          viewerId={me.user.id}
           empty="No posts yet. Be the first to share."
         />
         {feed.nextCursor ? (

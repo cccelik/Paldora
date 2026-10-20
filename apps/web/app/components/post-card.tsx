@@ -86,11 +86,14 @@ function feedItemKey(item: FeedItemView): string {
 export function PostFeed({
   items,
   presets,
+  viewerId,
   showBox = false,
   empty,
 }: {
   items: readonly FeedItemView[];
   presets: readonly string[];
+  /** Lets a Life Update's author delete it from the feed. */
+  viewerId?: string | undefined;
   showBox?: boolean;
   empty: string;
 }) {
@@ -102,7 +105,12 @@ export function PostFeed({
           {item.kind === 'post' ? (
             <PostCard post={item.post} presets={presets} showBox={showBox} />
           ) : item.kind === 'life_update' ? (
-            <LifeUpdateCard lifeUpdate={item.lifeUpdate} presets={presets} />
+            <LifeUpdateCard
+              lifeUpdate={item.lifeUpdate}
+              presets={presets}
+              viewerId={viewerId}
+              showBox={showBox}
+            />
           ) : (
             <HiddenPostCard />
           )}

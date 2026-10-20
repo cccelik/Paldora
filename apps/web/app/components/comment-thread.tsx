@@ -28,6 +28,7 @@ export function CommentThread({
   presets,
   canInteract,
   commentCount,
+  olderHref,
 }: {
   postId: string;
   threads: readonly ThreadPageItem[];
@@ -39,6 +40,8 @@ export function CommentThread({
   presets: readonly string[];
   canInteract: boolean;
   commentCount: number;
+  /** The "older comments" link, for pages other than the post's own. */
+  olderHref?: string | undefined;
 }) {
   const rest = threads
     .map(toThreadData)
@@ -95,7 +98,10 @@ export function CommentThread({
       )}
       {nextCursor ? (
         <MoreLink
-          href={`/posts/${postId}?comments=${encodeURIComponent(nextCursor)}#comments`}
+          href={
+            olderHref ??
+            `/posts/${postId}?comments=${encodeURIComponent(nextCursor)}#comments`
+          }
           label="Show older comments"
         />
       ) : null}

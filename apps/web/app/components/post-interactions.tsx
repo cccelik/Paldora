@@ -71,6 +71,7 @@ export function PostInteractions({
   summary: initial,
   presets,
   commentsLink = true,
+  commentsHref,
 }: {
   postId: string;
   /** The post's Box: a camera image is scoped to it. */
@@ -79,6 +80,8 @@ export function PostInteractions({
   presets: readonly string[];
   /** Feeds link to the permalink; the permalink itself shows the thread. */
   commentsLink?: boolean;
+  /** Where "N comments" leads; a Life Update opens its own page instead. */
+  commentsHref?: string | undefined;
 }) {
   const { shown, setSummary, react, run } = useOptimisticReaction(
     initial,
@@ -107,7 +110,7 @@ export function PostInteractions({
     }
   });
 
-  const href = `/posts/${postId}#comments`;
+  const href = commentsHref ?? `/posts/${postId}#comments`;
   return (
     <div className={styles.interactions}>
       <ReactionBar

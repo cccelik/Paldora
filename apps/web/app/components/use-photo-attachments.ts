@@ -1,12 +1,10 @@
 'use client';
 
-import { POST_MEDIA_MAX_ITEMS } from '@paldora/domain';
+import { POST_MEDIA_MAX_ITEMS, type MediaContentType } from '@paldora/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  completePostPhoto,
-  postPhotoStatus,
-  preparePostPhoto,
-} from '../actions/post-photos';
+import type { PreparedUpload } from '../actions/avatar';
+import { completePostPhoto, postPhotoStatus } from '../actions/post-photos';
+import type { ActionOutcome } from '../lib/action-result';
 import {
   asContentType,
   photoFileProblem,
@@ -24,13 +22,40 @@ export interface Attachment {
 
 type Patch = Partial<Omit<Attachment, 'key' | 'previewUrl'>>;
 
+/** Reserves the signed upload for one file (the purpose decides the scope). */
+export type PreparePhoto = (file: {
+  contentType: MediaContentType;
+  contentLength: number;
+}) => Promise<ActionOutcome<PreparedUpload>>;
+
+/** A photo that is already attached (an editor's starting point). */
+export interface RetainedPhoto {
+  readonly mediaAssetId: string;
+  readonly previewUrl: string;
+}
+
+const retainedItems = (photos: readonly RetainedPhoto[]): Attachment[] =>
+  photos.map((photo, index) => ({
+    key: index,
+    previewUrl: photo.previewUrl,
+    phase: 'ready',
+    mediaAssetId: photo.mediaAssetId,
+  }));
+
 /**
- * Up to four photos for one post: reserve → PUT → complete → wait for the
- * worker. Photos not used by a post are cleaned up by the server after a day.
+ * Up to four photos for one post or Life Update: reserve → PUT → complete →
+ * wait for the worker. `prepare` reserves the upload for the right purpose;
+ * `retained` are photos already attached, which start out ready. Photos
+ * never attached are cleaned up by the server after a day.
  */
-export function usePhotoAttachments(boxId: string) {
-  const [items, setItems] = useState<readonly Attachment[]>([]);
-  const nextKey = useRef(0);
+export function usePhotoAttachments(
+  prepare: PreparePhoto,
+  retained: readonly RetainedPhoto[] = [],
+) {
+  const [items, setItems] = useState<readonly Attachment[]>(() =>
+    retainedItems(retained),
+  );
+  const nextKey = useRef(retained.length);
   const urls = useRef(new Set<string>());
 
   useEffect(
@@ -48,8 +73,7 @@ export function usePhotoAttachments(boxId: string) {
 
   const upload = useCallback(
     async (key: number, file: File) => {
-      const prepared = await preparePostPhoto({
-        boxId,
+      const prepared = await prepare({
         contentType: asContentType(file.type),
         contentLength: file.size,
       });
@@ -83,7 +107,7 @@ export function usePhotoAttachments(boxId: string) {
           : {}),
       });
     },
-    [boxId, patch],
+    [prepare, patch],
   );
 
   const add = useCallback(

@@ -1,0 +1,27 @@
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachment {
+  display: grid;
+  gap: var(--pal-space-1);
+  justify-items: start;
+  width: 8.5rem;
+}
+
+.attachmentImage {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--pal-radius-md);
+  object-fit: cover;
+}
+
+.attachmentStatus {
+  color: var(--pal-text-muted);
+  font-size: 0.8125rem;
+}

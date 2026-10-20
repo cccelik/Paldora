@@ -1,51 +1,26 @@
 'use client';
 
 import { POST_CONTENT_MAX_LENGTH, POST_MEDIA_MAX_ITEMS } from '@paldora/domain';
-import { useActionState, useEffect, useRef, useState } from 'react';
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { preparePostPhoto } from '../actions/post-photos';
 import { createPostAction } from '../actions/posts';
 import { idleResult } from '../lib/action-result';
 import { PHOTO_ACCEPT } from '../lib/image-upload';
 import { ActionFeedback } from './action-feedback';
 import { SubmitButton } from './submit-button';
 import { Button, TextAreaField } from './ui';
-import { usePhotoAttachments, type Attachment } from './use-photo-attachments';
+import { PhotoAttachmentList } from './photo-attachment-list';
+import {
+  usePhotoAttachments,
+  type PreparePhoto,
+} from './use-photo-attachments';
 import styles from './post-card.module.css';
-
-const phaseText: Record<Attachment['phase'], string> = {
-  uploading: 'Uploading…',
-  processing: 'Preparing…',
-  ready: 'Ready',
-  failed: 'Failed',
-};
-
-function AttachmentList({
-  items,
-  onRemove,
-}: {
-  items: readonly Attachment[];
-  onRemove: (key: number) => void;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <ul className={styles.attachments} aria-label="Photos to post">
-      {items.map((item, index) => (
-        <li key={item.key} className={styles.attachment}>
-          <img
-            className={styles.attachmentImage}
-            src={item.previewUrl}
-            alt={`Selected photo ${index + 1}`}
-          />
-          <span className={styles.attachmentStatus} role="status">
-            {item.message ?? phaseText[item.phase]}
-          </span>
-          <Button variant="quiet" onClick={() => onRemove(item.key)}>
-            Remove photo {index + 1}
-          </Button>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /**
  * Write to a Box, with up to four photos. Cmd/Ctrl+Enter posts. Posting waits
@@ -55,7 +30,11 @@ function AttachmentList({
 export function PostComposer({ boxId }: { boxId: string }) {
   const [state, action] = useActionState(createPostAction, idleResult);
   const [text, setText] = useState('');
-  const photos = usePhotoAttachments(boxId);
+  const prepare = useCallback<PreparePhoto>(
+    (file) => preparePostPhoto({ boxId, ...file }),
+    [boxId],
+  );
+  const photos = usePhotoAttachments(prepare);
   const form = useRef<HTMLFormElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const { clear } = photos;
@@ -91,7 +70,11 @@ export function PostComposer({ boxId }: { boxId: string }) {
         }}
         help={`${text.length.toLocaleString('en')} / ${POST_CONTENT_MAX_LENGTH.toLocaleString('en')}`}
       />
-      <AttachmentList items={photos.items} onRemove={photos.remove} />
+      <PhotoAttachmentList
+        items={photos.items}
+        onRemove={photos.remove}
+        label="Photos to post"
+      />
       <input
         ref={picker}
         className="visually-hidden"

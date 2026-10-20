@@ -10,6 +10,7 @@ export function SubmitButton({
   variant = 'primary',
   block = false,
   disabled = false,
+  describedBy,
 }: {
   children: string;
   pendingLabel: string;
@@ -17,6 +18,8 @@ export function SubmitButton({
   block?: boolean;
   /** Locked until the form is ready, independent of its pending state. */
   disabled?: boolean;
+  /** IDs of text that explains the button (a notice, why it is locked). */
+  describedBy?: string | undefined;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -26,6 +29,7 @@ export function SubmitButton({
       block={block}
       disabled={pending || disabled}
       aria-disabled={pending || disabled}
+      aria-describedby={describedBy}
     >
       {pending ? pendingLabel : children}
     </Button>

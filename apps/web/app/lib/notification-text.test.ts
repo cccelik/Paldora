@@ -72,6 +72,37 @@ describe('notificationHref', () => {
       `/posts/${POST}`,
     );
   });
+
+  it('opens a Life Update on the Box the notification is about', () => {
+    const LIFE = '5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f';
+    const BOX = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
+    expect(
+      notificationHref({
+        postId: POST,
+        commentId: COMMENT,
+        lifeUpdateId: LIFE,
+        boxId: BOX,
+      }),
+    ).toBe(
+      `/life-updates/${LIFE}?box=${BOX}&comment=${COMMENT}#comment-${COMMENT}`,
+    );
+    expect(
+      notificationHref({
+        postId: POST,
+        commentId: null,
+        lifeUpdateId: LIFE,
+        boxId: BOX,
+      }),
+    ).toBe(`/life-updates/${LIFE}?box=${BOX}`);
+  });
+
+  it('says “your Life Update” for a Life Update’s conversation', () => {
+    expect(
+      notificationSentence(
+        notification({ lifeUpdateId: '5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f' }),
+      ),
+    ).toBe('Ada commented on your Life Update in Weekend crew');
+  });
 });
 
 describe('unread badge and label', () => {

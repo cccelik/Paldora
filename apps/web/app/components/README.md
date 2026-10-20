@@ -55,18 +55,19 @@ Shared form rhythm lives in `components/form-stack.module.css`.
 
 ## Posts, photos, and realtime
 
-| Component              | Owns                                                                                                                                                      |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PostFeed`, `PostCard` | Chronological posts; hidden (blocked) items render a neutral card with no author.                                                                         |
-| `LifeUpdateCard`       | Minimal Phase 6 feed rendering of a Life Update: shared sections and photos once, then `PostInteractions` per Box context (tabbed card comes in slice 6). |
-| `PostComposer`         | Text plus up to 4 photos; Cmd/Ctrl+Enter posts; locked while photos are processing.                                                                       |
-| `usePhotoAttachments`  | Photo flow: reserve → PUT → complete → wait for the worker (`lib/media-polling.ts` `untilProcessed`, shared with the camera).                             |
-| `PostActions`          | The author's inline Edit and confirmed Delete.                                                                                                            |
-| `PostPhotos`           | Photo grid and full-screen viewer (native `<dialog>`: focus trap, Escape, arrows).                                                                        |
-| `LocalTime`            | UTC on the server, the viewer's timezone after mount; no hydration mismatch.                                                                              |
-| `MoreLink`             | "Show more" for keyset-paged lists: a plain link, no script.                                                                                              |
-| `RealtimeBridge`       | One event stream per tab; refreshes only the page a hint concerns; marks `data-realtime`; re-dispatches every hint as a window `paldora:realtime` event.  |
-| `useRealtimeHint`      | Subscribes a component to `paldora:realtime` hints (cards, the bell).                                                                                     |
+| Component              | Owns                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PostFeed`, `PostCard` | Chronological posts; hidden (blocked) items render a neutral card with no author.                                                                                                                            |
+| `PhotoAttachmentList`  | The photos a composer holds: preview, upload status, Remove. Shared by the post and Life Update composers.                                                                                                   |
+| `PostComposer`         | Text plus up to 4 photos; Cmd/Ctrl+Enter posts; locked while photos are processing.                                                                                                                          |
+| `usePhotoAttachments`  | Photo flow: reserve → PUT → complete → wait for the worker (`lib/media-polling.ts` `untilProcessed`, shared with the camera). Takes the purpose's `prepare` and optional retained (already attached) photos. |
+| `PostActions`          | The author's inline Edit and confirmed Delete.                                                                                                                                                               |
+| `PostPhotos`           | Photo grid and full-screen viewer (native `<dialog>`: focus trap, Escape, arrows).                                                                                                                           |
+| `LocalTime`            | UTC on the server, the viewer's timezone after mount; no hydration mismatch.                                                                                                                                 |
+| `MoreLink`             | "Show more" for keyset-paged lists: a plain link, no script.                                                                                                                                                 |
+| `RefreshOnPosts`       | Re-renders a page whose URL does not name the posts it shows (a Life Update's page) when a hint concerns them (`lib/realtime.ts` `concernsPosts`).                                                           |
+| `RealtimeBridge`       | One event stream per tab; refreshes only the page a hint concerns; marks `data-realtime`; re-dispatches every hint as a window `paldora:realtime` event.                                                     |
+| `useRealtimeHint`      | Subscribes a component to `paldora:realtime` hints (cards, the bell).                                                                                                                                        |
 
 ## Feedback
 
@@ -94,3 +95,20 @@ Shared form rhythm lives in `components/form-stack.module.css`.
 | `ReactionList`, `ReactionFilter`      | The `/posts/[postId]/reactions` page: people with their emoji or camera thumbnail; All / Camera filter links (no script).                                                                                                                                                                                                                               |
 | `NotificationBell`                    | Header link to `/notifications`: "Notifications, N unread" (99+), refetches on notification hints, generic "new notification" toast.                                                                                                                                                                                                                    |
 | `NotificationList`, `NotificationRow` | Rows are plain forms (work without JS): mark read, then redirect to the post with `?comment=` pinned. Sentences from `lib/notification-text.ts`.                                                                                                                                                                                                        |
+
+## Life Updates
+
+| Component                                         | Owns                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `LifeUpdateCard`                                  | Server shell: author, time (permalink), edited marker, "Life Update" and "Only me" badges, sections as `<h3>` headings, `PostPhotos` once, then `LifeUpdateContexts` (or the Only Me note, with no interactions), and `LifeUpdateActions` for the author. `permalink` makes tabs follow the URL. |
+| `LifeUpdateContexts`                              | Client tabs, one per Box the viewer is in (API order, alphabetical): `tablist`/`tab`/one `tabpanel`, roving tabindex, arrows wrap, Home/End (`lib/life-update-form.ts` `nextTabIndex`). The panel remounts `PostInteractions` per Box. One context renders no tab bar.                           |
+| `LifeUpdateActions`                               | The author's Edit link and confirmed Delete ("removes it from every Box…"); `leaveAfterDelete` returns to `/life-updates`.                                                                                                                                                                       |
+| `LifeUpdateComposer`                              | Sections, photos (`life_update_image`), audience (Boxes checkboxes with filter from 7 Boxes and "n of 20 selected", archived Boxes disabled with the reason; or Only me), the immutable-audience notice with a summary, and the reason the button is locked (`draftProblem`).                    |
+| `LifeUpdateEditor`                                | Sections and photos (kept photos start ready); the page shows the audience read-only.                                                                                                                                                                                                            |
+| `LifeUpdateSectionFields`, `LifeUpdatePhotoField` | The nine section fields with per-section and total counters, and the photo picker; shared by the composer and the editor.                                                                                                                                                                        |
+
+Life Update pages: `/life-updates` (yours, Only Me included), `/life-updates/new`
+(`?box=` preselects), `/life-updates/[id]` (`?box=` picks the conversation;
+`?comment=` pins, via `lib/pinned-thread.ts`), `/life-updates/[id]/edit`.
+`/posts/[postId]` redirects a backing post there with its Box. Server Actions
+are in `actions/life-updates.ts` and `actions/life-update-photos.ts`.

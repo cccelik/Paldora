@@ -22,6 +22,12 @@ export function NotificationRow({
         <input type="hidden" name="postId" value={notification.postId} />
         <input
           type="hidden"
+          name="lifeUpdateId"
+          value={notification.lifeUpdateId ?? ''}
+        />
+        <input type="hidden" name="boxId" value={notification.box.id} />
+        <input
+          type="hidden"
           name="commentId"
           value={notification.commentId ?? ''}
         />

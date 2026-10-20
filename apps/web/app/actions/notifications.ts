@@ -19,6 +19,8 @@ const openForm = z.object({
   notificationId: uuidSchema,
   postId: uuidSchema,
   commentId: z.union([uuidSchema, z.literal('')]),
+  lifeUpdateId: z.union([uuidSchema, z.literal('')]),
+  boxId: uuidSchema,
 });
 
 /**
@@ -31,9 +33,12 @@ export async function openNotificationAction(formData: FormData) {
     notificationId: textField(formData, 'notificationId'),
     postId: textField(formData, 'postId'),
     commentId: textField(formData, 'commentId'),
+    lifeUpdateId: textField(formData, 'lifeUpdateId'),
+    boxId: textField(formData, 'boxId'),
   });
   if (!parsed.success) redirect('/notifications');
-  const { notificationId, postId, commentId } = parsed.data;
+  const { notificationId, postId, commentId, lifeUpdateId, boxId } =
+    parsed.data;
   let visible = true;
   try {
     await (await apiClient()).markNotificationRead(notificationId);
@@ -43,7 +48,14 @@ export async function openNotificationAction(formData: FormData) {
   // `redirect` throws, so it stays outside the try block.
   revalidatePath('/notifications');
   if (!visible) redirect('/notifications');
-  redirect(notificationHref({ postId, commentId: commentId || null }) as Route);
+  redirect(
+    notificationHref({
+      postId,
+      commentId: commentId || null,
+      lifeUpdateId: lifeUpdateId || null,
+      boxId,
+    }) as Route,
+  );
 }
 
 export async function markAllNotificationsReadAction(

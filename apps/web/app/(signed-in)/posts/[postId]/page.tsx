@@ -1,10 +1,11 @@
-import { ApiClientError, type PaldoraApiClient } from '@paldora/api-client';
-import { uuidSchema, type CommentItemView } from '@paldora/validation';
+import { uuidSchema } from '@paldora/validation';
+import type { Route } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { CommentThread } from '../../../components/comment-thread';
-import type { ThreadData } from '../../../components/comment-thread-view';
 import { PostCard } from '../../../components/post-card';
+import { lifeUpdateHref } from '../../../lib/life-update-form';
+import { conversationFor } from '../../../lib/pinned-thread';
 import {
   apiClient,
   completedUser,
@@ -14,55 +15,6 @@ import {
 import styles from '../../page-stack.module.css';
 
 export const metadata = { title: 'Post' };
-
-/** Absent and not-yours look the same; only those become "no pin". */
-async function visibleOrNull<Value>(work: Promise<Value>) {
-  try {
-    return await work;
-  } catch (error) {
-    if (
-      error instanceof ApiClientError &&
-      ['COMMENT_NOT_FOUND', 'VALIDATION_FAILED'].includes(error.code)
-    ) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-/**
- * The thread a deep link points into: its root (or a tombstone when the
- * root is gone) and enough replies to include the linked one.
- */
-async function pinnedThread(
-  api: PaldoraApiClient,
-  postId: string,
-  commentId: string,
-): Promise<ThreadData | null> {
-  const detail = await visibleOrNull(api.comment(commentId));
-  if (!detail || detail.comment.postId !== postId) return null;
-  const { rootId, comment } = detail;
-  const isRoot = comment.parentCommentId === null;
-  const [root, replies] = await Promise.all([
-    isRoot ? detail : visibleOrNull(api.comment(rootId)),
-    api.commentReplies(rootId, { limit: 50 }),
-  ]);
-  const items: CommentItemView[] = [...replies.items];
-  if (
-    !isRoot &&
-    !items.some(
-      (item) => item.kind === 'comment' && item.comment.id === comment.id,
-    )
-  ) {
-    items.push({ kind: 'comment', comment });
-  }
-  return {
-    root: root ? { kind: 'comment', comment: root.comment } : null,
-    rootId,
-    replies: items,
-    replyCount: root?.comment.replyCount ?? items.length,
-  };
-}
 
 export default async function PostPage({
   params,
@@ -77,16 +29,24 @@ export default async function PostPage({
     'POST_NOT_FOUND',
     'VALIDATION_FAILED',
   ]);
-  const linked = uuidSchema.safeParse(query.comment);
-  const [comments, pinned] = await Promise.all([
-    orNotFound(
-      api.comments(post.id, { limit: 20, cursor: cursorParam(query.comments) }),
-      ['POST_NOT_FOUND', 'VALIDATION_FAILED'],
-    ),
-    linked.success
-      ? pinnedThread(api, post.id, linked.data.toLowerCase())
-      : null,
-  ]);
+  // A Life Update's backing post has no content of its own: show the Life
+  // Update, opened on this Box's conversation, keeping any deep link.
+  if (post.kind === 'life_update' && post.lifeUpdateId) {
+    const linked = uuidSchema.safeParse(query.comment);
+    redirect(
+      lifeUpdateHref(post.lifeUpdateId, {
+        boxId: post.box.id,
+        commentId: linked.success ? linked.data.toLowerCase() : null,
+        commentsCursor: cursorParam(query.comments),
+      }) as Route,
+    );
+  }
+  const { comments, pinned, pinnedMissing, focusId } = await conversationFor(
+    api,
+    post.id,
+    query,
+    ['POST_NOT_FOUND', 'VALIDATION_FAILED'],
+  );
   const presets = me.preferences.reactionPresets;
   return (
     <div className={styles.stack}>
@@ -105,8 +65,8 @@ export default async function PostPage({
         threads={comments.items}
         nextCursor={comments.nextCursor}
         pinned={pinned}
-        pinnedMissing={linked.success && pinned === null}
-        focusId={linked.success ? linked.data.toLowerCase() : undefined}
+        pinnedMissing={pinnedMissing}
+        focusId={focusId}
         presets={presets}
         canInteract={post.interactions.canInteract}
         commentCount={post.interactions.commentCount}

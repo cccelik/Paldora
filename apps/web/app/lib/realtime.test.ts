@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readEventStream } from './event-stream';
 import {
   backoffDelay,
+  concernsPosts,
   isInteractionHint,
   isNotificationHint,
   parseHint,
@@ -111,6 +112,38 @@ describe('shouldRefresh', () => {
       shouldRefresh('/friends', { type: 'post.created', boxId: BOX }),
     ).toBe(false);
     expect(shouldRefresh('/home', { type: 'ping' })).toBe(false);
+  });
+});
+
+describe('Life Update pages', () => {
+  const OTHER = '3b9f0f2a-1c4d-4e5f-8a6b-7c8d9e0f1a2b';
+
+  it('refreshes the list for post changes and every Life Update page for membership changes', () => {
+    expect(
+      shouldRefresh('/life-updates', { type: 'post.deleted', boxId: BOX }),
+    ).toBe(true);
+    expect(
+      shouldRefresh(`/life-updates/${POST}`, { type: 'memberships.changed' }),
+    ).toBe(true);
+    expect(
+      shouldRefresh('/life-updates/new', { type: 'memberships.changed' }),
+    ).toBe(true);
+  });
+
+  it('lets a page that shows backing posts refresh only for those posts', () => {
+    const shown = new Set([POST]);
+    for (const type of ['post.updated', 'post.deleted', 'comment.created']) {
+      expect(concernsPosts(shown, { type, postId: POST, boxId: BOX })).toBe(
+        true,
+      );
+    }
+    expect(
+      concernsPosts(shown, { type: 'comment.created', postId: OTHER }),
+    ).toBe(false);
+    expect(concernsPosts(shown, { type: 'notification.created' })).toBe(false);
+    expect(
+      concernsPosts(shown, { type: 'notification.created', postId: POST }),
+    ).toBe(false);
   });
 });
 

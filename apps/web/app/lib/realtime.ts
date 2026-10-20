@@ -58,7 +58,13 @@ export function isNotificationHint(hint: RealtimeHint): boolean {
 export function shouldRefresh(pathname: string, hint: RealtimeHint): boolean {
   const path = pathname.toLowerCase();
   if (hint.type === 'memberships.changed') {
-    return path === '/home' || path === '/boxes' || path.startsWith('/boxes/');
+    return (
+      path === '/home' ||
+      path === '/boxes' ||
+      path.startsWith('/boxes/') ||
+      path === '/life-updates' ||
+      path.startsWith('/life-updates/')
+    );
   }
   if (isNotificationHint(hint)) return path === '/notifications';
   // Interaction hints never refresh a whole feed: each card refetches only
@@ -69,9 +75,22 @@ export function shouldRefresh(pathname: string, hint: RealtimeHint): boolean {
   if (!hint.type.startsWith('post.')) return false;
   return (
     path === '/home' ||
+    path === '/life-updates' ||
     (hint.boxId !== undefined && path === `/boxes/${hint.boxId}`) ||
     (hint.postId !== undefined && path === `/posts/${hint.postId}`)
   );
+}
+
+/**
+ * For a page that shows posts its URL does not name (a Life Update's page
+ * shows its backing posts): refresh when a post or its conversation changes.
+ */
+export function concernsPosts(
+  postIds: ReadonlySet<string>,
+  hint: RealtimeHint,
+): boolean {
+  if (hint.postId === undefined || !postIds.has(hint.postId)) return false;
+  return hint.type.startsWith('post.') || isInteractionHint(hint);
 }
 
 /** Exponential backoff with jitter: about 1 s, 2 s, 4 s … capped at 30 s. */

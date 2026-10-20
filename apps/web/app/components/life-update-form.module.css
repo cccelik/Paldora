@@ -1,0 +1,171 @@
+/* The Life Update composer and editor: one column at every width. */
+.form {
+  display: grid;
+  gap: var(--pal-space-6);
+  min-width: 0;
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--pal-space-4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--pal-space-2);
+  padding: 0;
+  font-family: var(--pal-font-editorial);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.subLegend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.sections {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.total {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.totalOver {
+  color: var(--pal-danger-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.photos {
+  display: grid;
+  gap: var(--pal-space-3);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2) var(--pal-space-6);
+}
+
+.choice,
+.boxRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-1) var(--pal-space-3);
+  min-height: var(--pal-size-touch-target);
+  cursor: pointer;
+}
+
+.choice input,
+.boxRow input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--pal-accent);
+}
+
+.boxGroup {
+  display: grid;
+  gap: var(--pal-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--pal-space-4);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 15%, transparent);
+  border-radius: var(--pal-radius-md);
+}
+
+.boxGroup:disabled {
+  color: var(--pal-text-muted);
+}
+
+.boxGroup:disabled .boxRow {
+  cursor: default;
+}
+
+.boxList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.boxRow {
+  min-height: 3rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--pal-text) 8%, transparent);
+}
+
+.boxList li:last-child .boxRow {
+  border-bottom: 0;
+}
+
+.boxRow:has(input:disabled) {
+  cursor: default;
+}
+
+.boxName {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.boxReason {
+  flex-basis: 100%;
+  padding-inline-start: calc(1.25rem + var(--pal-space-3));
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.notice {
+  display: grid;
+  gap: var(--pal-space-1);
+  padding: var(--pal-space-4);
+  border-inline-start: 3px solid var(--pal-accent);
+  border-radius: var(--pal-radius-sm);
+  background: var(--pal-surface);
+  overflow-wrap: anywhere;
+}
+
+.noticeTitle {
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+/* The page's read-only account of where a Life Update went. */
+.audience {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+}
+
+.audienceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

@@ -1,0 +1,74 @@
+.card {
+  gap: var(--pal-space-4);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.badges a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+}
+
+.sections {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.private {
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.single,
+.contexts {
+  display: grid;
+  gap: var(--pal-space-3);
+  padding-top: var(--pal-space-3);
+  border-top: 1px solid color-mix(in srgb, var(--pal-text) 10%, transparent);
+}
+
+/* Tabs wrap onto more rows on narrow screens; nothing scrolls sideways. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border-radius: var(--pal-radius-pill);
+  background: transparent;
+  color: var(--pal-text-muted);
+  font: inherit;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition:
+    background-color var(--pal-duration-fast) var(--pal-easing-standard),
+    color var(--pal-duration-fast) var(--pal-easing-standard);
+}
+
+.tab:hover {
+  color: var(--pal-text);
+}
+
+.tab[aria-selected='true'] {
+  border-color: var(--pal-accent);
+  background: var(--pal-surface);
+  color: var(--pal-text);
+}
+
+.panel {
+  min-width: 0;
+}

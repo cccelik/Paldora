@@ -28,6 +28,7 @@
 
 .nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--pal-space-1);
   /* Narrow screens: navigation gets its own row under brand and account. */

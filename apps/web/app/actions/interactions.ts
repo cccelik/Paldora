@@ -18,8 +18,11 @@ import {
 import { runForm, runFormWithData } from '../lib/action-runner';
 import { apiClient } from '../lib/session';
 
-/** Comments change the permalink page only; feeds learn from realtime hints. */
-const threadPaths = ['/posts/[postId]'];
+/**
+ * Comments change the conversation pages only (a post's, or a Life Update's
+ * for one Box); feeds learn from realtime hints.
+ */
+const threadPaths = ['/posts/[postId]', '/life-updates/[lifeUpdateId]'];
 
 const copy = {
   BOX_ARCHIVED: 'This Box is archived, so it’s read-only now.',

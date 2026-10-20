@@ -32,6 +32,8 @@ export async function reactionPresetsAction(
         '/home',
         '/boxes/[boxId]',
         '/posts/[postId]',
+        '/life-updates',
+        '/life-updates/[lifeUpdateId]',
       ],
     },
   );
