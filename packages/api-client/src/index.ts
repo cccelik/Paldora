@@ -1,4 +1,5 @@
 import {
+  type UpdatePersonalizationInput,
   apiRoutes,
   errorEnvelopeSchema,
   type CreateBoxInput,
@@ -480,6 +481,18 @@ export class PaldoraApiClient {
    * Your own Room with the owner-only fields. `updatedAt` is the version to
    * send as `expectedUpdatedAt` on your next Room write (null: never saved).
    */
+  public myRoomPersonalization() {
+    return this.call(apiRoutes.getMyRoomPersonalization);
+  }
+  public roomPersonalization(username: string) {
+    return this.call(apiRoutes.getRoomPersonalization, {
+      params: { username },
+    });
+  }
+  public updateMyRoomPersonalization(body: UpdatePersonalizationInput) {
+    return this.call(apiRoutes.updateMyRoomPersonalization, { body });
+  }
+
   public myRoom() {
     return this.call(apiRoutes.getMyRoom);
   }

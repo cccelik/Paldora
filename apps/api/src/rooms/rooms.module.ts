@@ -1,3 +1,5 @@
+import { RoomPersonalizationController } from './room-personalization.controller.js';
+import { RoomPersonalizationService } from './services/room-personalization.service.js';
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
 import { MediaModule } from '../media/media.module.js';
@@ -22,8 +24,9 @@ import { RoomsController } from './rooms.controller.js';
  */
 @Module({
   imports: [IdentityModule, MediaModule, MemoriesModule],
-  controllers: [RoomsController],
+  controllers: [RoomsController, RoomPersonalizationController],
   providers: [
+    RoomPersonalizationService,
     RoomAccessService,
     RoomViewService,
     RoomContentService,

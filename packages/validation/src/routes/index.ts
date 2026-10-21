@@ -1,3 +1,8 @@
+import {
+  getMyRoomPersonalization,
+  getRoomPersonalization,
+  updateMyRoomPersonalization,
+} from './personalization.js';
 import type { RouteDefinition } from '../route.js';
 import { getLiveness, getReadiness } from './platform.js';
 import {
@@ -111,6 +116,9 @@ export * from './rooms.js';
 
 /** Every operation in the public contract. Add new routes here. */
 export const apiRoutes = {
+  getMyRoomPersonalization,
+  getRoomPersonalization,
+  updateMyRoomPersonalization,
   getLiveness,
   getReadiness,
   getCurrentUser,
@@ -186,3 +194,5 @@ export const apiRoutes = {
   updateMyRoomWidgets,
   updateMyRoomTopFriends,
 } as const satisfies Record<string, RouteDefinition>;
+
+export * from './personalization.js';

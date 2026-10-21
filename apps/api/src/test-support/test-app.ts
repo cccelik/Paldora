@@ -62,7 +62,9 @@ export interface TestApp {
  * identity provider (local issuer) and object storage (in-memory) are
  * replaced. Fails loudly when infrastructure is not configured.
  */
-export async function createTestApp(): Promise<TestApp> {
+export async function createTestApp(
+  personalization: boolean | { css: boolean; widgets: boolean } = false,
+): Promise<TestApp> {
   const { DATABASE_URL, REDIS_URL } = requireEnvironmentVariables(
     ['DATABASE_URL', 'REDIS_URL'],
     process.env,
@@ -72,6 +74,14 @@ export async function createTestApp(): Promise<TestApp> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(API_ENVIRONMENT)
     .useValue({
+      ROOM_CUSTOM_CSS_ENABLED:
+        typeof personalization === 'boolean'
+          ? personalization
+          : personalization.css,
+      ROOM_CUSTOM_WIDGETS_ENABLED:
+        typeof personalization === 'boolean'
+          ? personalization
+          : personalization.widgets,
       PALDORA_ENV: 'test',
       LOG_LEVEL: 'silent',
       DATABASE_URL,
