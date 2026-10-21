@@ -423,14 +423,37 @@ before it is designed.
    Then implement the slice and report the exact gate results.
 4. Update this file's status table below when a phase exits.
 
-| Phase | Status                                                                              |
-| ----- | ----------------------------------------------------------------------------------- |
-| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run          |
-| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending             |
-| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                              |
-| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green                    |
-| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open                  |
-| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications            |
-| 6     | Delivered 2026-10-20 (local gates green); Life Updates and derived Memories         |
-| 7     | Delivered 2026-10-20 (local gates green); Rooms and customizer; K4 sign-off pending |
-| 8–12  | Not started                                                                         |
+| Phase | Status                                                                                          |
+| ----- | ----------------------------------------------------------------------------------------------- |
+| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed; CI green 2026-10-21                                |
+| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending                         |
+| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                                          |
+| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green                                |
+| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open                              |
+| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications                        |
+| 6     | Delivered 2026-10-20 (local gates green); Life Updates and derived Memories                     |
+| 7     | Delivered 2026-10-20 (local gates green); Rooms and customizer; K4 sign-off pending             |
+| 8     | Plan, threat model, and ADR 018 proposed; awaiting owner approval and dedicated security review |
+| 9–12  | Not started                                                                                     |
+
+## Cleanup and Phase 8 review checkpoint (2026-10-21)
+
+Repository cleanup steps 1–5 are complete and pushed through `b0775dc`.
+[CI passed all four jobs](https://github.com/cccelik/Paldora/actions/runs/39592622097),
+including real-service integration and signed-in browser tests. The earlier
+phase notes retain their historical local-only verification statements; this
+checkpoint records the first green CI run after cleanup. Hosted Supabase and
+production smoke checks remain outstanding.
+
+Phase 8 is documentation only: [plan](plans/phase-8-advanced-personalization.md),
+[threat model](threat-models/phase-8-personalization.md), and
+[proposed ADR 018](adr/018-room-personalization-boundaries.md). The recommended
+first owner decision covers constrained CSS design/review. Static widgets need
+an independent review that resolves authenticated isolated delivery. No Phase 8
+code, migration, endpoint, or CSP relaxation has been built. Implementation
+waits for owner approval and the relevant dedicated security review. Phases
+9–12 remain unstarted, and public registration remains disabled.
+
+Still open, without blocking the cleanup: ADR 017 K4 theme colors and removed
+background override; Phase 7 members visibility, bottom navigation, and Top
+Friends defaults; D5 production hosting; and eventual `legacy/` deletion.
