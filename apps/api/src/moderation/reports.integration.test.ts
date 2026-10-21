@@ -32,6 +32,68 @@ const report = (
 });
 
 describe('private reports and case access', () => {
+  it('audits idempotent suspension and restoration, blocking new account requests', async () => {
+    const moderator = await app.person();
+    const reporter = await app.person();
+    const subject = await app.person();
+    await app.database
+      .insert(staffGrants)
+      .values({ userId: moderator.id, role: 'moderator' });
+    const receipt = reportReceiptSchema.parse(
+      await json(
+        await as(reporter).post('/reports', report('user', subject.id)),
+        201,
+      ),
+    );
+    const suspend = {
+      action: 'suspend',
+      reason: 'The case evidence meets the suspension policy.',
+      idempotencyKey: randomUUID(),
+    };
+    const path = `/moderation/cases/${receipt.id}/actions`;
+    const first = await json<{ status: string }>(
+      await as(moderator).post(path, suspend),
+      201,
+    );
+    expect(first.status).toBe('closed');
+    expect(
+      (
+        await json<{ status: string }>(
+          await as(moderator).post(path, suspend),
+          201,
+        )
+      ).status,
+    ).toBe('closed');
+    await expectError(
+      await app.request(subject, '/me'),
+      403,
+      'ACCOUNT_BLOCKED',
+    );
+    await expectError(
+      await as(reporter).post(path, {
+        ...suspend,
+        idempotencyKey: randomUUID(),
+      }),
+      403,
+      'MODERATION_FORBIDDEN',
+    );
+    const restore = {
+      action: 'unsuspend',
+      reason: 'An appeal established the suspension was mistaken.',
+      idempotencyKey: randomUUID(),
+    };
+    expect((await as(moderator).post(path, restore)).status).toBe(201);
+    expect((await app.request(subject, '/me')).status).toBe(200);
+    const audits = await app.database
+      .select()
+      .from(moderationAudit)
+      .where(eq(moderationAudit.subjectId, receipt.id));
+    expect(audits.map((item) => item.event).sort()).toEqual([
+      'account.suspended',
+      'account.unsuspended',
+    ]);
+  });
+
   it('returns one private receipt for a visible user, and only staff can open it', async () => {
     const reporter = await app.person();
     const subject = await app.person();

@@ -6,9 +6,13 @@ import {
   staffGrants,
   userReports,
   users,
+  type DatabaseExecutor,
   type PaldoraDatabase,
 } from '@paldora/database';
-import type { CreateReportInput } from '@paldora/validation';
+import type {
+  CreateReportInput,
+  ModerationActionInput,
+} from '@paldora/validation';
 import { randomUUID } from 'node:crypto';
 import { and, eq, isNotNull, not } from 'drizzle-orm';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
@@ -27,6 +31,7 @@ import {
 import { isReadable, loadPostContext } from '../posts/post-context.js';
 import { postNotFound } from '../posts/post-errors.js';
 import { userNotFound } from '../identity/user-directory.service.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 
 export const moderationForbidden = defineError(
   HttpStatus.FORBIDDEN,
@@ -38,6 +43,11 @@ export const reportNotFound = defineError(
   'REPORT_NOT_FOUND',
   'This case was not found.',
 );
+const actionUnavailable = defineError(
+  HttpStatus.CONFLICT,
+  'REPORT_ACTION_UNAVAILABLE',
+  'This action is not available for the case.',
+);
 
 const receipt = (row: typeof userReports.$inferSelect) => ({
   id: row.id,
@@ -48,6 +58,26 @@ const receipt = (row: typeof userReports.$inferSelect) => ({
   createdAt: row.createdAt.toISOString(),
 });
 
+async function changeAccount(
+  tx: DatabaseExecutor,
+  row: typeof userReports.$inferSelect,
+  action: ModerationActionInput['action'],
+  actorId: string,
+): Promise<string | null> {
+  if (action === 'close') return null;
+  if (row.targetKind !== 'user' || row.targetId === actorId)
+    throw actionUnavailable();
+  const expected = action === 'suspend' ? 'active' : 'suspended';
+  const next = action === 'suspend' ? 'suspended' : 'active';
+  const [target] = await tx
+    .update(users)
+    .set({ status: next })
+    .where(and(eq(users.id, row.targetId), eq(users.status, expected)))
+    .returning({ id: users.id });
+  if (!target) throw actionUnavailable();
+  return target.id;
+}
+
 @Injectable()
 export class ReportService {
   public constructor(
@@ -55,6 +85,7 @@ export class ReportService {
     @Inject(BoxPolicyService) private readonly boxes: BoxPolicyService,
     @Inject(InteractionPolicyService)
     private readonly interactions: InteractionPolicyService,
+    @Inject(RealtimeBus) private readonly realtime: RealtimeBus,
   ) {}
 
   private async assertTarget(viewerId: string, input: CreateReportInput) {
@@ -207,6 +238,68 @@ export class ReportService {
       detail: row.detail,
       reporterUserId: row.reporterUserId,
       closedAt: row.closedAt?.toISOString() ?? null,
+    };
+  }
+
+  public async act(
+    userId: string,
+    caseId: string,
+    input: ModerationActionInput,
+  ) {
+    await this.staff(userId);
+    const event =
+      input.action === 'close'
+        ? 'case.closed'
+        : input.action === 'suspend'
+          ? 'account.suspended'
+          : 'account.unsuspended';
+    const result = await this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(userReports)
+        .where(eq(userReports.id, caseId))
+        .for('update')
+        .limit(1);
+      if (!row) throw reportNotFound();
+      const [committed] = await tx
+        .select()
+        .from(moderationAudit)
+        .where(eq(moderationAudit.idempotencyKey, input.idempotencyKey))
+        .limit(1);
+      if (committed) {
+        if (
+          committed.actorUserId !== userId ||
+          committed.subjectId !== caseId ||
+          committed.event !== event
+        )
+          throw actionUnavailable();
+        return { row, notify: null };
+      }
+      if (row.status !== 'open' && input.action !== 'unsuspend')
+        throw actionUnavailable();
+      const notify = await changeAccount(tx, row, input.action, userId);
+      await tx.insert(moderationAudit).values({
+        actorUserId: userId,
+        subjectId: caseId,
+        event,
+        reason: input.reason,
+        idempotencyKey: input.idempotencyKey,
+      });
+      if (row.status === 'closed') return { row, notify };
+      const [closed] = await tx
+        .update(userReports)
+        .set({ status: 'closed', closedAt: new Date() })
+        .where(eq(userReports.id, caseId))
+        .returning();
+      if (!closed) throw reportNotFound();
+      return { row: closed, notify };
+    });
+    if (result.notify) await this.realtime.userEvent(result.notify, 'resync');
+    return {
+      ...receipt(result.row),
+      detail: result.row.detail,
+      reporterUserId: result.row.reporterUserId,
+      closedAt: result.row.closedAt?.toISOString() ?? null,
     };
   }
 }

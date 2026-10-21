@@ -3,6 +3,7 @@ import {
   createReportSchema,
   moderationCasePageSchema,
   moderationCaseSchema,
+  moderationActionSchema,
   reportReceiptPageSchema,
   reportReceiptSchema,
 } from '../reports.js';
@@ -64,4 +65,22 @@ export const getModerationCase = defineRoute({
   successStatus: 200,
   response: moderationCaseSchema,
   errors: ['MODERATION_FORBIDDEN', 'REPORT_NOT_FOUND'],
+});
+
+export const actOnModerationCase = defineRoute({
+  operationId: 'actOnModerationCase',
+  method: 'POST',
+  path: '/moderation/cases/{caseId}/actions',
+  summary:
+    'Staff action with mandatory reason and idempotency key. Close any case or suspend/unsuspend the subject of a user report. Rate limited to 60 per hour.',
+  tag: 'Moderation',
+  access: 'authenticated',
+  successStatus: 201,
+  body: moderationActionSchema,
+  response: moderationCaseSchema,
+  errors: [
+    'MODERATION_FORBIDDEN',
+    'REPORT_NOT_FOUND',
+    'REPORT_ACTION_UNAVAILABLE',
+  ],
 });

@@ -13,6 +13,12 @@ The [Phase 9 threat model](threat-models/phase-9-moderation-account-lifecycle.md
 tracks the remaining takedown, suspension-stream, export, deletion, and hosted
 signup gates. Public signup remains disabled.
 
+Moderators can close a case or suspend/restore the subject of a user report
+with a reason and idempotency key. The account status change, case closure and
+immutable audit entry share one database transaction. Suspension is rechecked
+before every realtime event and heartbeat, and a best-effort user-channel
+resync after commit prompts an already-open stream to close promptly.
+
 Paldora is private by default, and authorization is deny-by-default. The
 non-negotiable invariants live in [CLAUDE.md §G](../CLAUDE.md). This page
 records the controls that are implemented and how each one is verified.

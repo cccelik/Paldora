@@ -4,7 +4,7 @@ import {
   Injectable,
   type MessageEvent,
 } from '@nestjs/common';
-import { boxMemberships, type PaldoraDatabase } from '@paldora/database';
+import { boxMemberships, users, type PaldoraDatabase } from '@paldora/database';
 import type { AuthenticatedPrincipal } from '@paldora/domain';
 import type { Logger } from '@paldora/observability';
 import type { RealtimeEvent } from '@paldora/validation';
@@ -23,7 +23,8 @@ const MAX_TIMER_MS = 2_147_483_647;
  * One open stream. It subscribes to the person's `user:` channel and to the
  * channel of every Box they currently belong to. When a membership changes
  * the server recomputes that set, so a removed member stops receiving that
- * Box's events and a new member starts, with no per-event authorization query.
+ * Box's events and a new member starts. Account status is rechecked before
+ * every event and heartbeat so suspension closes an existing connection.
  */
 class Stream {
   private readonly boxUnsubscribers = new Map<string, () => void>();
@@ -36,6 +37,7 @@ class Stream {
     private readonly principal: AuthenticatedPrincipal,
     private readonly bus: RealtimeBus,
     private readonly loadBoxIds: () => Promise<string[]>,
+    private readonly isActive: () => Promise<boolean>,
     private readonly sink: {
       next(event: MessageEvent): void;
       complete(): void;
@@ -50,7 +52,7 @@ class Stream {
       userChannel(userId),
       (event) => {
         void this.recompute().then(
-          () => this.send(event),
+          () => this.authorizedSend(event),
           () => this.stop(),
         );
       },
@@ -58,17 +60,20 @@ class Stream {
     this.unsubscribeDown = this.bus.onDown(() => this.stop());
     await this.recompute();
     if (this.closed) return;
-    this.send({ type: 'resync', at: new Date().toISOString() });
+    await this.authorizedSend({ type: 'resync', at: new Date().toISOString() });
+    if (this.closed) return;
     const untilExpiry = this.principal.expiresAt.getTime() - Date.now();
     this.timers.push(
       setTimeout(
         () => this.stop(),
         Math.min(Math.max(untilExpiry, 0), MAX_TIMER_MS),
       ),
-      setInterval(
-        () => this.send({ type: 'ping', at: new Date().toISOString() }),
-        HEARTBEAT_MS,
-      ),
+      setInterval(() => {
+        void this.authorizedSend({
+          type: 'ping',
+          at: new Date().toISOString(),
+        });
+      }, HEARTBEAT_MS),
     );
   }
 
@@ -90,6 +95,18 @@ class Stream {
     if (!this.closed) this.sink.next({ type: event.type, data: event });
   }
 
+  private async authorizedSend(event: RealtimeEvent): Promise<void> {
+    try {
+      if (!(await this.isActive())) {
+        this.stop();
+        return;
+      }
+      this.send(event);
+    } catch {
+      this.stop();
+    }
+  }
+
   private async recompute(): Promise<void> {
     const wanted = new Set(await this.loadBoxIds());
     for (const [boxId, unsubscribe] of this.boxUnsubscribers) {
@@ -101,8 +118,11 @@ class Stream {
       if (this.boxUnsubscribers.has(boxId) || this.closed) continue;
       // Sequential: each subscription is a Redis round trip on one connection.
       // eslint-disable-next-line no-await-in-loop
-      const unsubscribe = await this.bus.subscribe(boxChannel(boxId), (event) =>
-        this.send(event),
+      const unsubscribe = await this.bus.subscribe(
+        boxChannel(boxId),
+        (event) => {
+          void this.authorizedSend(event);
+        },
       );
       this.boxUnsubscribers.set(boxId, unsubscribe);
     }
@@ -138,6 +158,7 @@ export class RealtimeStreamService {
         principal,
         this.bus,
         () => this.activeBoxIds(principal.userId),
+        () => this.isActive(principal.userId),
         subscriber,
       );
       stream.start().catch((error: unknown) => {
@@ -164,5 +185,14 @@ export class RealtimeStreamService {
         ),
       );
     return rows.map((row) => row.boxId);
+  }
+
+  private async isActive(userId: string): Promise<boolean> {
+    const [row] = await this.database
+      .select({ status: users.status })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return row?.status === 'active';
   }
 }

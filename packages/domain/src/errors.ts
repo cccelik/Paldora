@@ -71,6 +71,7 @@ export const API_ERROR_CODES = [
   'TOP_FRIEND_NOT_ELIGIBLE',
   // Private reports and staff-only case access (Phase 9).
   'REPORT_NOT_FOUND',
+  'REPORT_ACTION_UNAVAILABLE',
   'MODERATION_FORBIDDEN',
 ] as const;
 

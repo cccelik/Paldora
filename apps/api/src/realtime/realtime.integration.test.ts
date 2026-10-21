@@ -1,4 +1,6 @@
+import { users } from '@paldora/database';
 import { postSchema } from '@paldora/validation';
+import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { openStream, type OpenStream } from '../test-support/event-stream.js';
 import { expectError, json, ok } from '../test-support/http.js';
@@ -86,6 +88,27 @@ describe('connecting', () => {
 });
 
 describe('delivery', () => {
+  it('closes an existing stream when the account is suspended before a Box event', async () => {
+    const owner = await app.person('owner');
+    const member = await app.person('member');
+    const box = await newBox(owner);
+    await join(owner, box.id, member);
+    const stream = await listen(member);
+    await app.database
+      .update(users)
+      .set({ status: 'suspended' })
+      .where(eq(users.id, member.id));
+    await say(owner, box.id, 'A new post after suspension');
+    const outcome = await Promise.race([
+      stream.ended.then(() => 'ended'),
+      new Promise<string>((resolve) => {
+        setTimeout(() => resolve('open'), 5_000);
+      }),
+    ]);
+    expect(outcome).toBe('ended');
+    await expectError(await app.request(member, '/me'), 403, 'ACCOUNT_BLOCKED');
+  });
+
   it('tells every member about post changes, with IDs only', async () => {
     const [owner, member] = await Promise.all([
       app.person('owner'),

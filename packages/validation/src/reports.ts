@@ -55,4 +55,14 @@ export const moderationCasePageSchema = cursorPageSchema(
   reportReceiptSchema,
 ).meta({ id: 'ModerationCasePage' });
 
+export const moderationActionSchema = z
+  .object({
+    action: z.enum(['close', 'suspend', 'unsuspend']),
+    reason: z.string().trim().min(20).max(1000),
+    idempotencyKey: uuidSchema,
+  })
+  .strict()
+  .meta({ id: 'ModerationAction' });
+
 export type CreateReportInput = z.infer<typeof createReportSchema>;
+export type ModerationActionInput = z.infer<typeof moderationActionSchema>;

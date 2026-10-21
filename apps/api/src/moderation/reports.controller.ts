@@ -10,7 +10,9 @@ import {
 } from '@nestjs/common';
 import {
   createReportSchema,
+  moderationActionSchema,
   type CreateReportInput,
+  type ModerationActionInput,
 } from '@paldora/validation';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import {
@@ -65,5 +67,16 @@ export class ReportsController {
     @Param('caseId', uuidParam) caseId: string,
   ) {
     return this.reports.case(me.userId, caseId);
+  }
+
+  @Post('moderation/cases/:caseId/actions')
+  @Header('Cache-Control', 'private, no-store')
+  @RateLimit({ scope: 'moderation-action', limit: 60, windowSeconds: HOUR })
+  public act(
+    @CurrentPrincipal() me: Principal,
+    @Param('caseId', uuidParam) caseId: string,
+    @Body(new ZodPipe(moderationActionSchema)) input: ModerationActionInput,
+  ) {
+    return this.reports.act(me.userId, caseId, input);
   }
 }

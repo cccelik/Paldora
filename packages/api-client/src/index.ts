@@ -18,6 +18,7 @@ import {
   type RouteDefinition,
   type RouteResponse,
   type CreateReportInput,
+  type ModerationActionInput,
 } from '@paldora/validation';
 import type { z } from 'zod';
 
@@ -150,6 +151,13 @@ export class PaldoraApiClient {
 
   public moderationCase(caseId: string) {
     return this.call(apiRoutes.getModerationCase, { params: { caseId } });
+  }
+
+  public actOnModerationCase(caseId: string, body: ModerationActionInput) {
+    return this.call(apiRoutes.actOnModerationCase, {
+      params: { caseId },
+      body,
+    });
   }
 
   /** Accepts the wire input; the server validates and normalizes it. */
