@@ -181,6 +181,9 @@ importers:
       '@paldora/validation':
         specifier: workspace:*
         version: link:../../packages/validation
+      '@supabase/supabase-js':
+        specifier: 2.112.3
+        version: 2.112.3
       bullmq:
         specifier: 6.2.0
         version: 6.2.0(ioredis@6.0.0)(pg@8.16.3)

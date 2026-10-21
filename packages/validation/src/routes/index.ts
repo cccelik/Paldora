@@ -16,6 +16,11 @@ import {
   getAccountExport,
   downloadAccountExport,
 } from './account-exports.js';
+import {
+  requestAccountDeletion,
+  getAccountDeletion,
+  cancelAccountDeletion,
+} from './account-deletion.js';
 import type { RouteDefinition } from '../route.js';
 import { getLiveness, getReadiness } from './platform.js';
 import {
@@ -128,12 +133,16 @@ export * from './memories.js';
 export * from './rooms.js';
 export * from './reports.js';
 export * from './account-exports.js';
+export * from './account-deletion.js';
 
 /** Every operation in the public contract. Add new routes here. */
 export const apiRoutes = {
   requestAccountExport,
   getAccountExport,
   downloadAccountExport,
+  requestAccountDeletion,
+  getAccountDeletion,
+  cancelAccountDeletion,
   createReport,
   listMyReports,
   listModerationCases,

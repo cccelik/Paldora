@@ -113,6 +113,13 @@
       "when": 1792605500000,
       "tag": "0015_export_retry_key",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792606500000,
+      "tag": "0016_account_deletion",
+      "breakpoints": true
     }
   ]
 }

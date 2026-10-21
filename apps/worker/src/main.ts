@@ -15,6 +15,7 @@ import { startProjector } from './activity/projector.js';
 import { createRealtimePublisher } from './activity/realtime-publisher.js';
 import { startDispatcher } from './outbox/dispatcher.js';
 import { recordJobFailure } from './outbox/failures.js';
+import { createSupabaseAuthDeleter } from './account-deletion/supabase-auth-deleter.js';
 
 const environment = parseWorkerEnvironment(process.env);
 const logger = createLogger({
@@ -36,6 +37,12 @@ const storage = new S3ObjectStorage({
   secretAccessKey: environment.S3_SECRET_ACCESS_KEY,
   forcePathStyle: environment.S3_FORCE_PATH_STYLE,
 });
+const authKey =
+  environment.SUPABASE_SECRET_KEY ?? environment.SUPABASE_SERVICE_ROLE_KEY;
+const authDeleter =
+  environment.SUPABASE_URL && authKey
+    ? createSupabaseAuthDeleter(environment.SUPABASE_URL, authKey)
+    : undefined;
 
 // BullMQ workers require unlimited per-request retries on their connection.
 const workerConnection = new Redis(environment.REDIS_URL, {
@@ -58,7 +65,11 @@ const queue = new Queue(environment.JOB_QUEUE_NAME, {
 const worker = new Worker(
   environment.JOB_QUEUE_NAME,
   createJobRouter(
-    createJobHandlers({ database: connection.database, storage }),
+    createJobHandlers({
+      database: connection.database,
+      storage,
+      ...(authDeleter ? { authDeleter } : {}),
+    }),
     { logger },
   ),
   { connection: workerConnection, concurrency: environment.WORKER_CONCURRENCY },

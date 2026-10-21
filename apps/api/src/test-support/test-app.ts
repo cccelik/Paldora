@@ -23,6 +23,7 @@ import {
   API_ENVIRONMENT,
   LOGGER,
   OBJECT_STORAGE,
+  PASSWORD_REAUTHENTICATOR,
 } from '../platform/config/tokens.js';
 import { LocalIssuer } from './local-issuer.js';
 
@@ -88,6 +89,8 @@ export async function createTestApp(
       DATABASE_POOL_MAX: 4,
       REDIS_URL,
       WEB_ORIGIN: webOrigin,
+      SUPABASE_URL: 'https://auth.integration.test',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-publishable-key',
     })
     .overrideProvider(LOGGER)
     .useValue(
@@ -101,6 +104,11 @@ export async function createTestApp(
     .useValue(issuer.verifier)
     .overrideProvider(OBJECT_STORAGE)
     .useValue(storage)
+    .overrideProvider(PASSWORD_REAUTHENTICATOR)
+    .useValue({
+      verify: async (_email: string, password: string) =>
+        password === 'correct-password',
+    })
     .compile();
   const app: INestApplication =
     moduleRef.createNestApplication<NestExpressApplication>({

@@ -49,6 +49,7 @@ const apiEnvironmentSchema = z
     API_PORT: z.coerce.number().int().positive().max(65_535).default(4000),
     WEB_ORIGIN: httpUrl,
     SUPABASE_URL: httpUrl,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
     SUPABASE_JWT_AUDIENCE: z.string().min(1).default('authenticated'),
   })
   .superRefine((values, context) =>
@@ -74,15 +75,34 @@ const workerEnvironmentSchema = z
       .min(100)
       .max(60_000)
       .default(1_000),
+    SUPABASE_URL: httpUrl.optional(),
+    SUPABASE_SECRET_KEY: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(20).optional(),
+    ),
+    SUPABASE_SERVICE_ROLE_KEY: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(20).optional(),
+    ),
   })
-  .superRefine((values, context) =>
+  .superRefine((values, context) => {
     enforceDeployedRules(
       values,
       ['S3_ENDPOINT'],
       ['DATABASE_URL', 'REDIS_URL', 'S3_SECRET_ACCESS_KEY'],
       context,
-    ),
-  );
+    );
+    if (
+      values.PALDORA_ENV === 'production' &&
+      (!values.SUPABASE_URL ||
+        !(values.SUPABASE_SECRET_KEY ?? values.SUPABASE_SERVICE_ROLE_KEY))
+    )
+      context.addIssue({
+        code: 'custom',
+        message:
+          'Worker account erasure requires SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY).',
+      });
+  });
 
 /**
  * The trusted administrative provisioning script. It alone holds the

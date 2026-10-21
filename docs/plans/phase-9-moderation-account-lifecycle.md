@@ -24,6 +24,11 @@ The owner chose a **7-day cancellation window** before account erasure,
 **90 days after case closure** as the default evidence-retention period
 (subject to any specific legal duty), and **immediate object retirement** for
 moderator takedowns. Restoring retired media requires a new upload.
+Deletion requires transfer of every owned Box before a request can be made.
+The first personal export format is a private JSON archive. The deletion
+worker freezes the account at the end of the cancellation window, then
+removes owned media and exports, deletes the Auth identity, and removes the
+database user. Failed external steps leave a retryable erasure request.
 
 ## Data and contract
 

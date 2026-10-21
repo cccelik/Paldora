@@ -19,6 +19,7 @@ import {
   type RouteResponse,
   type CreateReportInput,
   type ModerationActionInput,
+  type AccountDeletionPassword,
 } from '@paldora/validation';
 import type { z } from 'zod';
 
@@ -147,6 +148,18 @@ export class PaldoraApiClient {
 
   public downloadAccountExport(exportId: string) {
     return this.call(apiRoutes.downloadAccountExport, { params: { exportId } });
+  }
+
+  public requestAccountDeletion(body: AccountDeletionPassword) {
+    return this.call(apiRoutes.requestAccountDeletion, { body });
+  }
+
+  public accountDeletion() {
+    return this.call(apiRoutes.getAccountDeletion);
+  }
+
+  public cancelAccountDeletion(body: AccountDeletionPassword) {
+    return this.call(apiRoutes.cancelAccountDeletion, { body });
   }
 
   public createReport(body: CreateReportInput) {

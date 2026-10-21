@@ -7,6 +7,11 @@ import {
   expireNextExport,
 } from './account-export/export-archive.js';
 import {
+  finishNextErasure,
+  startNextDueErasure,
+  type AuthAccountDeleter,
+} from './account-deletion/erase-account.js';
+import {
   createProcessMediaHandler,
   type MediaJobDependencies,
 } from './media/process-media.js';
@@ -17,7 +22,9 @@ export const MAINTENANCE_REAPER_EVERY_MS = 15 * 60 * 1_000;
 
 /** Every job the worker understands, keyed by BullMQ job name. */
 export function createJobHandlers(
-  dependencies: MediaJobDependencies,
+  dependencies: MediaJobDependencies & {
+    readonly authDeleter?: AuthAccountDeleter;
+  },
 ): Readonly<Record<string, JobHandler>> {
   return {
     [MAINTENANCE_REAPER_JOB]: async (_job, { logger }) => {
@@ -30,6 +37,16 @@ export function createJobHandlers(
         dependencies.database,
         dependencies.storage,
       );
+      const erasureStarted = dependencies.authDeleter
+        ? await startNextDueErasure(dependencies.database)
+        : false;
+      const erasureCompleted = dependencies.authDeleter
+        ? await finishNextErasure(
+            dependencies.database,
+            dependencies.storage,
+            dependencies.authDeleter,
+          )
+        : false;
       const needsHuman =
         result.dead > 0 ||
         result.deadActivityEvents > 0 ||
@@ -37,7 +54,16 @@ export function createJobHandlers(
       const log = needsHuman
         ? logger.error.bind(logger)
         : logger.info.bind(logger);
-      log({ ...result, exportBuilt, exportExpired }, 'maintenance reaper ran');
+      log(
+        {
+          ...result,
+          exportBuilt,
+          exportExpired,
+          erasureStarted,
+          erasureCompleted,
+        },
+        'maintenance reaper ran',
+      );
     },
     [MEDIA_PROCESS_JOB]: createProcessMediaHandler(dependencies),
     [MEDIA_DELETE_JOB]: createDeleteMediaHandler(dependencies),

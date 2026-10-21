@@ -21,6 +21,7 @@ const localApi = {
   REDIS_URL: 'redis://localhost:6379',
   WEB_ORIGIN: 'http://localhost:3000/',
   SUPABASE_URL: 'https://project.supabase.co',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: 'public-anon-key',
 };
 
 const localWeb = {

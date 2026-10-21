@@ -14,6 +14,7 @@
     "test:integration": "vitest run integration.test --no-file-parallelism"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.112.3",
     "@paldora/config": "workspace:*",
     "@paldora/database": "workspace:*",
     "@paldora/domain": "workspace:*",

@@ -12,3 +12,4 @@ export * from './rooms.js';
 export * from './personalization.js';
 export * from './moderation.js';
 export * from './account-exports.js';
+export * from './account-deletion.js';
