@@ -57,4 +57,7 @@ export async function loadPostContext(
 export const isReadable = (
   context: PostContext | undefined,
 ): context is PostContext =>
-  context !== undefined && !context.hidden && context.post.status === 'active';
+  context !== undefined &&
+  !context.hidden &&
+  context.post.status === 'active' &&
+  !context.post.moderationHidden;

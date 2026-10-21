@@ -177,8 +177,15 @@ export class InteractionSummaryService {
         and(
           inArray(comments.postId, [...postIds]),
           eq(comments.status, 'active'),
+          eq(comments.moderationHidden, false),
           not(hiddenByBlock(viewerId, comments.authorUserId)),
-          or(isNull(root.id), not(hiddenByBlock(viewerId, root.authorUserId))),
+          or(
+            isNull(root.id),
+            and(
+              eq(root.moderationHidden, false),
+              not(hiddenByBlock(viewerId, root.authorUserId)),
+            ),
+          ),
         ),
       )
       .groupBy(comments.postId);

@@ -86,7 +86,13 @@ export class InteractionPolicyService {
     commentId: string,
   ): Promise<CommentContext> {
     const row = await this.loadComment(executor, viewerId, commentId);
-    if (!row || !row.postActive || row.postHidden || row.commentHidden) {
+    if (
+      !row ||
+      !row.postActive ||
+      row.postHidden ||
+      row.commentHidden ||
+      row.comment.moderationHidden
+    ) {
       throw commentNotFound();
     }
     return toContext(row);
@@ -109,7 +115,8 @@ export class InteractionPolicyService {
       !row ||
       !row.postActive ||
       row.commentHidden ||
-      row.comment.status !== 'active'
+      row.comment.status !== 'active' ||
+      row.comment.moderationHidden
     ) {
       throw commentNotFound();
     }
@@ -129,13 +136,16 @@ export class InteractionPolicyService {
         comment: comments,
         boxId: posts.boxId,
         boxStatus: boxes.status,
-        postActive: sql<boolean>`(${posts.status} = 'active')`.mapWith(Boolean),
+        postActive:
+          sql<boolean>`(${posts.status} = 'active' and not ${posts.moderationHidden})`.mapWith(
+            Boolean,
+          ),
         postHidden: hiddenByBlock(viewerId, posts.authorUserId).mapWith(
           Boolean,
         ),
         commentHidden:
           sql<boolean>`(${hiddenByBlock(viewerId, comments.authorUserId)}
-          or (${root.id} is not null and ${hiddenByBlock(viewerId, root.authorUserId)}))`.mapWith(
+          or (${root.id} is not null and (${hiddenByBlock(viewerId, root.authorUserId)} or ${root.moderationHidden})))`.mapWith(
             Boolean,
           ),
       })
@@ -161,11 +171,14 @@ export class InteractionPolicyService {
     gone: () => Error,
   ): Promise<void> {
     const [post] = await transaction
-      .select({ status: posts.status })
+      .select({
+        status: posts.status,
+        moderationHidden: posts.moderationHidden,
+      })
       .from(posts)
       .where(eq(posts.id, postId))
       .for('share')
       .limit(1);
-    if (post?.status !== 'active') throw gone();
+    if (post?.status !== 'active' || post.moderationHidden) throw gone();
   }
 }

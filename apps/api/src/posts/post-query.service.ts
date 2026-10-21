@@ -90,6 +90,7 @@ export class PostQueryService {
       .where(
         and(
           eq(posts.status, 'active'),
+          eq(posts.moderationHidden, false),
           boxId === undefined
             ? representativeDelivery(viewerId)
             : eq(posts.boxId, boxId),

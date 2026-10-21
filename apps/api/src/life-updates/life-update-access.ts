@@ -49,6 +49,7 @@ export async function loadContexts(
       and(
         eq(posts.id, lifeUpdateDeliveries.postId),
         eq(posts.status, 'active'),
+        eq(posts.moderationHidden, false),
       ),
     )
     .innerJoin(boxes, eq(boxes.id, lifeUpdateDeliveries.boxId))

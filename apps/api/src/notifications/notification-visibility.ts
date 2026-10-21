@@ -15,6 +15,7 @@ const activeComment = sql`exists (
   select 1 from ${comments}
   where ${comments.id} = ${notifications.commentId}
     and ${comments.status} = 'active'
+    and ${comments.moderationHidden} = false
 )`;
 
 /**
@@ -60,6 +61,7 @@ export function visibleTo(viewerId: string): SQL {
         and ${boxMemberships.status} = 'active'
       where ${posts.id} = ${notifications.postId}
         and ${posts.status} = 'active'
+        and ${posts.moderationHidden} = false
     )`,
     sql`exists (
       select 1 from ${users}

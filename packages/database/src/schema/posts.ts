@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   index,
   integer,
@@ -42,6 +43,7 @@ export const posts = paldoraSchema.table(
      */
     kind: text('kind').notNull().default('post'),
     status: postStatus('status').notNull().default('active'),
+    moderationHidden: boolean('moderation_hidden').notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     editedAt: timestamp('edited_at', { withTimezone: true }),

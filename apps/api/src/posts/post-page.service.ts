@@ -84,6 +84,7 @@ export class PostPageService {
         and(
           inArray(posts.id, [...new Set(postIds)]),
           eq(posts.status, 'active'),
+          eq(posts.moderationHidden, false),
           eq(posts.kind, 'post'),
           not(hiddenByBlock(viewerId, posts.authorUserId)),
         ),

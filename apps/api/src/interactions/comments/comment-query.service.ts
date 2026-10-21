@@ -79,6 +79,7 @@ export class CommentQueryService {
       .where(
         and(
           eq(comments.postId, postId),
+          eq(comments.moderationHidden, false),
           isNull(comments.parentCommentId),
           this.listedRoot(),
           keyset.after,
@@ -89,7 +90,7 @@ export class CommentQueryService {
     // A thread whose root is hidden is one placeholder: no replies loaded.
     const open = rows
       .slice(0, query.limit)
-      .filter((row) => !row.hidden)
+      .filter((row) => !row.hidden && !row.comment.moderationHidden)
       .map((row) => row.comment.id);
     const [previews, replyCounts] = await Promise.all([
       this.replyPreviews(viewerId, open),
@@ -110,7 +111,10 @@ export class CommentQueryService {
           previews.filter((p) => p.comment.parentCommentId === row.comment.id),
           context,
         ),
-        replyCount: row.hidden ? 0 : (replyCounts.get(row.comment.id) ?? 0),
+        replyCount:
+          row.hidden || row.comment.moderationHidden
+            ? 0
+            : (replyCounts.get(row.comment.id) ?? 0),
       };
       return [{ row, thread }];
     });
@@ -128,7 +132,12 @@ export class CommentQueryService {
     query: PageQuery,
   ): Promise<Page<CommentItemView>> {
     const root = await this.policy.commentFor(this.database, viewerId, rootId);
-    if (root.comment.parentCommentId !== null) throw commentNotFound();
+    if (
+      root.comment.parentCommentId !== null ||
+      root.comment.status !== 'active' ||
+      root.comment.moderationHidden
+    )
+      throw commentNotFound();
     const keyset = keysetWindow(
       comments.createdAt,
       comments.id,
@@ -146,6 +155,7 @@ export class CommentQueryService {
         and(
           eq(comments.parentCommentId, rootId),
           eq(comments.status, 'active'),
+          eq(comments.moderationHidden, false),
           keyset.after,
         ),
       )
@@ -207,7 +217,7 @@ export class CommentQueryService {
   /** A root stays listed while it is active or still has an active reply. */
   private listedRoot() {
     return or(
-      eq(comments.status, 'active'),
+      and(eq(comments.status, 'active'), eq(comments.moderationHidden, false)),
       exists(
         this.database
           .select({ one: sql`1` })
@@ -216,6 +226,7 @@ export class CommentQueryService {
             and(
               eq(reply.parentCommentId, comments.id),
               eq(reply.status, 'active'),
+              eq(reply.moderationHidden, false),
             ),
           ),
       ),
@@ -236,6 +247,7 @@ export class CommentQueryService {
         parentCommentId: comments.parentCommentId,
         content: comments.content,
         status: comments.status,
+        moderationHidden: comments.moderationHidden,
         createdAt: comments.createdAt,
         editedAt: comments.editedAt,
         rank: sql<number>`row_number() over (partition by ${comments.parentCommentId} order by ${comments.createdAt}, ${comments.id})`.as(
@@ -247,6 +259,7 @@ export class CommentQueryService {
         and(
           inArray(comments.parentCommentId, [...rootIds]),
           eq(comments.status, 'active'),
+          eq(comments.moderationHidden, false),
         ),
       )
       .as('ranked_replies');
@@ -258,6 +271,7 @@ export class CommentQueryService {
         parentCommentId: ranked.parentCommentId,
         content: ranked.content,
         status: ranked.status,
+        moderationHidden: ranked.moderationHidden,
         createdAt: ranked.createdAt,
         editedAt: ranked.editedAt,
         hidden: hiddenByBlock(viewerId, ranked.authorUserId).mapWith(Boolean),
@@ -278,6 +292,7 @@ export class CommentQueryService {
         and(
           inArray(comments.parentCommentId, [...rootIds]),
           eq(comments.status, 'active'),
+          eq(comments.moderationHidden, false),
         ),
       )
       .groupBy(comments.parentCommentId);

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   foreignKey,
   index,
@@ -45,6 +46,7 @@ export const comments = paldoraSchema.table(
     }),
     content: text('content'),
     status: commentStatus('status').notNull().default('active'),
+    moderationHidden: boolean('moderation_hidden').notNull().default(false),
     depth: smallint('depth')
       .notNull()
       .generatedAlwaysAs(

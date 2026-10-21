@@ -57,7 +57,7 @@ export const moderationCasePageSchema = cursorPageSchema(
 
 export const moderationActionSchema = z
   .object({
-    action: z.enum(['close', 'suspend', 'unsuspend']),
+    action: z.enum(['close', 'suspend', 'unsuspend', 'hide', 'restore']),
     reason: z.string().trim().min(20).max(1000),
     idempotencyKey: uuidSchema,
   })

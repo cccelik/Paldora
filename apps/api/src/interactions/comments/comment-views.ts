@@ -18,6 +18,7 @@ export type CommentFields = Pick<
   | 'parentCommentId'
   | 'content'
   | 'status'
+  | 'moderationHidden'
   | 'createdAt'
   | 'editedAt'
 >;
@@ -70,7 +71,7 @@ export function toCommentItem(
 ): CommentItemView | null {
   const { comment } = row;
   const createdAt = comment.createdAt.toISOString();
-  if (row.hidden) {
+  if (row.hidden || comment.moderationHidden) {
     return { kind: 'hidden', hidden: { id: comment.id, createdAt } };
   }
   if (comment.status === 'deleted') {

@@ -73,7 +73,7 @@ export const actOnModerationCase = defineRoute({
   method: 'POST',
   path: '/moderation/cases/{caseId}/actions',
   summary:
-    'Staff action with mandatory reason and idempotency key. Close any case or suspend/unsuspend the subject of a user report. Rate limited to 60 per hour.',
+    'Staff action with mandatory reason and idempotency key. Close a case, suspend/unsuspend a reported user, or hide/restore a reported post or comment. Takedown retires media objects before success. Rate limited to 60 per hour.',
   tag: 'Moderation',
   access: 'authenticated',
   successStatus: 201,

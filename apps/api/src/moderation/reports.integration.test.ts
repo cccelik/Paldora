@@ -1,5 +1,12 @@
-import { moderationAudit, staffGrants, userReports } from '@paldora/database';
 import {
+  mediaAssets,
+  moderationAudit,
+  staffGrants,
+  userReports,
+} from '@paldora/database';
+import { readyMediaAsset } from '@paldora/database/testing';
+import {
+  feedPageSchema,
   reportReceiptPageSchema,
   reportReceiptSchema,
 } from '@paldora/validation';
@@ -32,6 +39,164 @@ const report = (
 });
 
 describe('private reports and case access', () => {
+  it('hides and restores a reported post, retiring signed media bytes before success', async () => {
+    const scene = scenes(app);
+    const { owner, member, box } = await scene.room();
+    const moderator = await app.person();
+    await app.database
+      .insert(staffGrants)
+      .values({ userId: moderator.id, role: 'moderator' });
+    const photo = await readyMediaAsset(app.database, {
+      ownerId: owner.id,
+      boxId: box.id,
+      purpose: 'post_image',
+    });
+    for (const key of Object.values(photo.keys))
+      app.storage.put(key, 'image/jpeg', new Uint8Array([1, 2, 3]));
+    const post = await json<{ id: string }>(
+      await as(owner).post(`/boxes/${box.id}/posts`, {
+        content: 'Reported photo',
+        mediaAssetIds: [photo.id],
+      }),
+      201,
+    );
+    const receipt = reportReceiptSchema.parse(
+      await json(
+        await as(member).post('/reports', report('post', post.id)),
+        201,
+      ),
+    );
+    const path = `/moderation/cases/${receipt.id}/actions`;
+    await json(
+      await as(moderator).post(path, {
+        action: 'hide',
+        reason: 'The reported image violates the published content policy.',
+        idempotencyKey: randomUUID(),
+      }),
+      201,
+    );
+    await expectError(
+      await as(member).get(`/posts/${post.id}`),
+      404,
+      'POST_NOT_FOUND',
+    );
+    const feed = feedPageSchema.parse(
+      await json(await as(member).get(`/boxes/${box.id}/posts`)),
+    );
+    expect(
+      feed.items.some(
+        (item) => item.kind === 'post' && item.post.id === post.id,
+      ),
+    ).toBe(false);
+    const [asset] = await app.database
+      .select()
+      .from(mediaAssets)
+      .where(eq(mediaAssets.id, photo.id));
+    expect(asset?.status).toBe('deleted');
+    for (const key of Object.values(photo.keys))
+      expect(app.storage.objects.has(key)).toBe(false);
+    await json(
+      await as(moderator).post(path, {
+        action: 'restore',
+        reason: 'Review established that the text may remain available.',
+        idempotencyKey: randomUUID(),
+      }),
+      201,
+    );
+    expect((await as(member).get(`/posts/${post.id}`)).status).toBe(200);
+  });
+
+  it('hides a reported comment and its replies without exposing the author', async () => {
+    const scene = scenes(app);
+    const { owner, member, box } = await scene.room();
+    const moderator = await app.person();
+    await app.database
+      .insert(staffGrants)
+      .values({ userId: moderator.id, role: 'moderator' });
+    const post = await scene.say(owner, box.id);
+    const root = await scene.comment(member, post.id, 'Reported comment');
+    const reply = await scene.comment(owner, post.id, 'A reply', root.id);
+    const receipt = reportReceiptSchema.parse(
+      await json(
+        await as(owner).post('/reports', report('comment', root.id)),
+        201,
+      ),
+    );
+    await json(
+      await as(moderator).post(`/moderation/cases/${receipt.id}/actions`, {
+        action: 'hide',
+        reason: 'The comment includes a prohibited personal disclosure.',
+        idempotencyKey: randomUUID(),
+      }),
+      201,
+    );
+    await expectError(
+      await as(owner).get(`/comments/${root.id}`),
+      404,
+      'COMMENT_NOT_FOUND',
+    );
+    await expectError(
+      await as(owner).get(`/comments/${reply.id}`),
+      404,
+      'COMMENT_NOT_FOUND',
+    );
+    await expectError(
+      await as(owner).get(`/comments/${root.id}/replies`),
+      404,
+      'COMMENT_NOT_FOUND',
+    );
+    const threads = await scene.threads(owner, post.id);
+    expect(
+      threads.items.some(
+        (item) =>
+          item.root.kind === 'comment' && item.root.comment.id === root.id,
+      ),
+    ).toBe(false);
+  });
+
+  it('does not commit a photo takedown when storage retirement fails', async () => {
+    const scene = scenes(app);
+    const { owner, member, box } = await scene.room();
+    const moderator = await app.person();
+    await app.database
+      .insert(staffGrants)
+      .values({ userId: moderator.id, role: 'moderator' });
+    const photo = await readyMediaAsset(app.database, {
+      ownerId: owner.id,
+      boxId: box.id,
+      purpose: 'post_image',
+    });
+    const post = await json<{ id: string }>(
+      await as(owner).post(`/boxes/${box.id}/posts`, {
+        content: 'Photo awaiting review',
+        mediaAssetIds: [photo.id],
+      }),
+      201,
+    );
+    const receipt = reportReceiptSchema.parse(
+      await json(
+        await as(member).post('/reports', report('post', post.id)),
+        201,
+      ),
+    );
+    app.storage.failNext();
+    expect(
+      (
+        await as(moderator).post(`/moderation/cases/${receipt.id}/actions`, {
+          action: 'hide',
+          reason: 'The reported image requires immediate retirement.',
+          idempotencyKey: randomUUID(),
+        })
+      ).status,
+    ).toBe(500);
+    expect((await as(member).get(`/posts/${post.id}`)).status).toBe(200);
+    const [asset] = await app.database
+      .select()
+      .from(mediaAssets)
+      .where(eq(mediaAssets.id, photo.id));
+    expect(asset?.status).toBe('ready');
+  });
+
   it('limits exact account lookup to administrators and audits hits and misses', async () => {
     const administrator = await app.person();
     const moderator = await app.person();
