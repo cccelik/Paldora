@@ -1,5 +1,6 @@
 'use client';
 
+import { RoomPersonalizationEditor } from '@/components/rooms/room-personalization-editor';
 import { RoomAboutForm } from '@/components/rooms/room-about-form';
 import { RoomAppearanceForm } from '@/components/rooms/room-appearance-form';
 import { RoomAudienceForm } from '@/components/rooms/room-audience-form';
@@ -10,7 +11,11 @@ import { RoomTopFriendsEditor } from '@/components/rooms/room-top-friends-editor
 import { RoomWidgetEditor } from '@/components/rooms/room-widget-editor';
 import { type RoomSaveContext } from '@/components/rooms/use-room-save';
 import { DEFAULT_ROOM } from '@paldora/domain';
-import { type RoomView, type UserSummary } from '@paldora/validation';
+import {
+  type PersonalizationSource,
+  type RoomView,
+  type UserSummary,
+} from '@paldora/validation';
 import { useCallback, useMemo, useState } from 'react';
 /**
  * The Room customizer. It holds the last saved Room and its version: every
@@ -26,11 +31,13 @@ export function RoomEditor({
   previews,
   friends,
   moreFriends,
+  personalization,
 }: {
   room: RoomView;
   previews: RoomPreviews;
   friends: readonly UserSummary[];
   moreFriends: boolean;
+  personalization: PersonalizationSource;
 }) {
   const [saved, setSaved] = useState(room);
   const [stale, setStale] = useState(false);
@@ -73,6 +80,7 @@ export function RoomEditor({
           saved={saved.visibility ?? DEFAULT_ROOM.visibility}
           context={context}
         />
+        <RoomPersonalizationEditor source={personalization} context={context} />
         <RoomAboutForm room={room} context={context} />
         <RoomBannerEditor banner={saved.banner} context={context} />
         <RoomWidgetEditor room={room} layout={style.layout} context={context} />

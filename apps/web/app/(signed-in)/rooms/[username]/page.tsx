@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import styles from '@/(signed-in)/rooms/[username]/page.module.css';
 import { RoomCanvas } from '@/components/rooms/room-canvas';
 import { RoomOwnerStrip } from '@/components/rooms/room-owner-strip';
@@ -21,11 +22,28 @@ export default async function RoomPage({
   if (username === null) notFound();
   const api = await apiClient();
   const room = await orNotFound(api.room(username), ROOM_ABSENT);
-  const previews = await loadRoomPreviews(api, room);
+  const [previews, personalization] = await Promise.all([
+    loadRoomPreviews(api, room),
+    orNotFound(api.roomPersonalization(username), ROOM_ABSENT),
+  ]);
+  const cssRevision = createHash('sha256')
+    .update(personalization.css)
+    .digest('hex')
+    .slice(0, 16);
   return (
     <div className={styles.page}>
+      {personalization.css ? (
+        <link
+          rel="stylesheet"
+          href={`/rooms/${encodeURIComponent(username)}/personalization.css?v=${cssRevision}`}
+        />
+      ) : null}
       <RoomOwnerStrip room={room} />
-      <RoomCanvas room={room} previews={previews} />
+      <RoomCanvas
+        personalization={personalization}
+        room={room}
+        previews={previews}
+      />
     </div>
   );
 }

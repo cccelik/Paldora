@@ -1,7 +1,8 @@
 # ADR 018: Review-gated Room personalization boundaries
 
-Status: proposed (2026-10-21), awaiting owner approval and dedicated security
-review. No implementation or migration accompanies this ADR.
+Status: accepted for implementation (2026-10-21). Owner authorization:
+“implement 8”. [Dedicated implementation review](../threat-models/phase-8-security-review.md)
+completed by Codex; production activation remains gated on release evidence.
 
 ## Context
 
@@ -10,7 +11,7 @@ introduce author-controlled CSS and HTML, adding stored-content, UI deception,
 network exfiltration, browser isolation, and availability risks. Arbitrary
 JavaScript is permanently prohibited by the product's security invariants.
 
-## Proposed decision
+## Decision
 
 Review and deliver constrained CSS before separately reviewed static widgets.
 Use a closed, bounded, versioned CSS grammar with server-generated scope and
@@ -19,9 +20,8 @@ resource. Preserve the application's CSP and keep trusted controls outside the
 customized surface. Owner writes remain optimistic and API-authorized.
 
 Widgets initially accept only bounded text-oriented markup, rendered on a
-separate cookieless origin with an empty iframe sandbox, restrictive response
-CSP, no referrer, and no active content, messaging, links, or media. The origin
-and exact HTML allowlist require their own approval and security review. Room
+sandboxed opaque srcdoc document retrieved by the authorized parent, with an
+empty iframe sandbox and restrictive child meta CSP, no referrer, and no active content, messaging, links, or media. The exact allowlist and pinned parsers are recorded in the dedicated review. Room
 access is checked for every artifact; editable source is owner-only. Private
 no-store delivery, policy-version invalidation, and independent kill switches
 are requirements. Token presets remain the fallback.
@@ -31,12 +31,10 @@ The [plan](../plans/phase-8-advanced-personalization.md) and
 matrix, limits, tests, and review evidence. Nothing changes deployed migrations,
 existing privacy responses, signed-media access, or the signup gate.
 
-Authenticated delivery to a credential-free widget origin is unresolved. The
-review must prove either authorized parent retrieval with opaque sandboxed
-`srcdoc` and no directly navigable HTML endpoint, or an isolated-origin
-protocol. No public artifact, URL token, or credential relaxation is an accepted
-workaround. Widget implementation remains blocked on that review; the first
-recommended owner decision is CSS-first design/review only.
+Authenticated delivery uses authorized parent retrieval with opaque sandboxed
+`srcdoc` and no directly navigable HTML endpoint. No public artifact, URL token,
+credential relaxation, or separate origin protocol is introduced. Every source
+is recompiled at read time; no stale derived output is trusted.
 
 ## Alternatives
 
@@ -51,7 +49,6 @@ recommended owner decision is CSS-first design/review only.
 ## Consequences and revisit triggers
 
 Less expressive than general CSS/HTML; more parser, policy-version, browser-test,
-and hosting maintenance. No implementation starts before owner approval and the
-relevant dedicated security review. New properties, tags, attributes, resources,
+and hosting maintenance. Owner approval and separate CSS/HTML implementation reviews precede this implementation. New properties, tags, attributes, resources,
 capability tokens, or origins require a new review. Revisit if safe delivery
 would require weakening the application CSP; retain token-only Rooms instead.

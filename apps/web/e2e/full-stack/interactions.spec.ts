@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { provisionAccount } from '../support/accounts';
+import { apiAs, type Person } from '../support/rooms';
 import { comment, openPermalink, post } from '../support/flows';
 import { postOn } from '../support/locators';
 import {
@@ -27,6 +28,25 @@ async function reply(page: Page, to: string, text: string) {
   await expect(page.getByText(text)).toBeVisible();
 }
 
+/** The optimistic button updates first; reload only after the API stores the choice. */
+async function expectStoredReaction(
+  person: Person,
+  postId: string,
+  kind: string | null,
+) {
+  await expect
+    .poll(
+      async () => {
+        const post = await person.call<{
+          interactions: { viewerReaction: { kind: string } | null };
+        }>('GET', `/posts/${postId}`);
+        return post.interactions.viewerReaction?.kind ?? null;
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(kind);
+}
+
 test('comments, replies, reactions, and notifications reach the author', async ({
   page,
   browser,
@@ -45,6 +65,8 @@ test('comments, replies, reactions, and notifications reach the author', async (
 
   // Grace comments, replies, and replies to her reply.
   const permalink = await openPermalink(grace.page, boxUrl);
+  const graceApi = await apiAs(graceAccount);
+  const postId = permalink.split('/').at(-1) ?? '';
   await comment(grace.page, 'Count me in');
   await reply(grace.page, 'Count me in', 'Bringing lemonade');
   await reply(grace.page, 'Bringing lemonade', 'And a blanket');
@@ -63,6 +85,7 @@ test('comments, replies, reactions, and notifications reach the author', async (
     name: /^React with 👍/,
   });
   await thumbs.dblclick();
+  await expectStoredReaction(graceApi, postId, '👍');
   await expect(thumbs).toHaveAttribute('aria-pressed', 'true');
   await grace.page.reload();
   await expect(
@@ -82,6 +105,7 @@ test('comments, replies, reactions, and notifications reach the author', async (
   await expect(dialog.getByText('Enter one emoji, like 🦄.')).toBeVisible();
   await dialog.getByLabel('Any emoji').fill('🦄');
   await dialog.getByRole('button', { name: 'Use' }).click();
+  await expectStoredReaction(graceApi, postId, '🦄');
   await expect(dialog).toBeHidden();
   const unicorn = postOn(grace.page).getByRole('button', {
     name: 'React with 🦄. 1 person',
@@ -98,6 +122,7 @@ test('comments, replies, reactions, and notifications reach the author', async (
 
   // She changes her mind: removes it, then settles on ❤️.
   await unicorn.click();
+  await expectStoredReaction(graceApi, postId, null);
   await expect(
     postOn(grace.page).getByRole('button', { name: /^React with 🦄/ }),
   ).toHaveCount(0);
@@ -105,6 +130,7 @@ test('comments, replies, reactions, and notifications reach the author', async (
   await postOn(grace.page)
     .getByRole('button', { name: 'React with ❤️', exact: true })
     .click();
+  await expectStoredReaction(graceApi, postId, '❤️');
   await expect(
     postOn(grace.page).getByRole('button', { name: 'React with ❤️. 1 person' }),
   ).toHaveAttribute('aria-pressed', 'true');

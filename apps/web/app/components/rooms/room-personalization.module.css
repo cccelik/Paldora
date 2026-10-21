@@ -1,0 +1,35 @@
+.form {
+  display: grid;
+  gap: var(--pal-space-4);
+  min-width: 0;
+}
+.widget {
+  display: grid;
+  gap: var(--pal-space-3);
+  min-width: 0;
+  border: 1px solid var(--pal-text-muted);
+  padding: var(--pal-space-4);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-3);
+}
+.form button {
+  min-height: 44px;
+  padding: var(--pal-space-2) var(--pal-space-3);
+}
+.widgets {
+  display: grid;
+  gap: var(--pal-space-4);
+  padding: var(--pal-space-5);
+  min-width: 0;
+}
+.frame {
+  display: block;
+  width: 100%;
+  height: 12rem;
+  border: 0;
+  background: var(--pal-color-brand-paper);
+  color-scheme: light;
+}

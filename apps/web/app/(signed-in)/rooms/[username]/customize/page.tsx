@@ -31,9 +31,10 @@ export default async function CustomizeRoomPage({
   }
   const api = await apiClient();
   const room = await orNotFound(api.myRoom(), ROOM_ABSENT);
-  const [previews, choices] = await Promise.all([
+  const [previews, choices, personalization] = await Promise.all([
     loadRoomPreviews(api, room, { every: true }),
     loadFriendChoices(api),
+    api.myRoomPersonalization(),
   ]);
   return (
     <div className={styles.page}>
@@ -45,6 +46,7 @@ export default async function CustomizeRoomPage({
         description="Each section saves on its own. Your Room is yours to style; who can see your posts and Life Updates never changes here."
       />
       <RoomEditor
+        personalization={personalization}
         room={room}
         previews={previews}
         friends={choices.friends}

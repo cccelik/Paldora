@@ -1,6 +1,6 @@
 # Phase 8 personalization threat model
 
-Status: design for review, 2026-10-21. No implementation or security sign-off.
+Status: implementation review recorded, 2026-10-21. See the [dedicated review](phase-8-security-review.md); production flags default off.
 Related: [plan](../plans/phase-8-advanced-personalization.md),
 [ADR 018](../adr/018-room-personalization-boundaries.md),
 [security invariants](../security.md).
@@ -23,7 +23,7 @@ visibility still comes from the ordinary API, not customization configuration.
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | CSS escapes scope or spoofs trusted UI              | Closed selectors rooted by the server to a dedicated Room surface; forbid fixed/sticky positioning, transforms, negative spacing, z-index, generated content, interaction changes, and properties not explicitly approved | Hostile selectors and values cannot affect any trusted control; screenshots and hit tests           |
 | CSS leaks data through requests or selectors        | No URLs, imports, font faces, external resources, arbitrary custom properties, attribute selectors, `:has`, or input-sensitive pseudo-classes; parse and regenerate, never regex-sanitize                                 | Network interception records zero author-controlled requests; escaped and nested syntax corpus      |
-| HTML executes or navigates                          | Text-only allowlist; reject executable/interactive tags and all URL/event/style attributes; separate cookieless origin; iframe `sandbox=""`; no capability tokens                                                         | Parser mutation corpus, direct-navigation tests, origin and sandbox assertions in all three engines |
+| HTML executes or navigates                          | Text-only allowlist; reject executable/interactive tags and all URL/event/style attributes; authorized parent retrieval into opaque srcdoc; iframe `sandbox=""`; no capability tokens                                     | Parser mutation corpus, direct-navigation tests, origin and sandbox assertions in all three engines |
 | Sanitizer or browser parser differential            | Canonical AST output, versioned policy, bounded depth/nodes/bytes, reject unknown syntax                                                                                                                                  | Round-trip and malformed-input corpus, dependency review and upgrade regression tests               |
 | Widget accesses app credentials                     | Never send tokens/cookies/private content to its origin; no same-origin relaxation, scripts, messaging bridge, or shared storage                                                                                          | Request/header audit; parent/child access and storage attempts fail                                 |
 | Artifact leaks an inaccessible Room                 | Shared Room access check on every request, no-store and no shared cache, source owner-only                                                                                                                                | Byte-equivalent denial matrix for Room and artifact endpoints; relationship revocation tests        |
@@ -55,24 +55,22 @@ not replace authorization, resource limits, or CSP. A kill switch restores the
 token-only surface without deleting the owner's draft. Nothing can retract
 bytes already read or screenshots saved by an authorized viewer.
 
-## Unresolved widget transport boundary
+## Resolved widget transport boundary
 
-The proposed cookieless origin cannot receive app credentials and independently
-perform the current viewer check at the same time. This is a blocker for the
-widget design, not a reason to publish artifacts or put tokens in URLs. Review
-must resolve either authorized parent retrieval plus opaque sandboxed `srcdoc`
-(with inherited-CSP tests and no directly navigable HTML endpoint), or a proven
-isolated-origin protocol. No transport or frame-source policy is approved here.
-Existing app script/style restrictions must stay intact; any later frame-source
-extension needs specific approval. CSS-first review can proceed independently.
+The authorized parent retrieves sanitized bytes through RoomAccessService and
+renders an empty-sandbox srcdoc iframe. No directly navigable HTML endpoint,
+public object, URL token, cross-origin credential exchange or messaging exists.
+The inherited parent CSP is preserved; the child meta CSP denies resources.
+Browser tests verify opaque origin, blocked script/network/form/navigation
+behavior and authorized private/no-store CSS delivery.
 
 ## Dedicated security review gate
 
-Before either surface is built, name the reviewer, review the exact allowlists
-and dependency versions, resolve the threat rows, and record approval scope and
-residual risks. A plan approval alone does not close this review. Before release,
-attach the three-engine abuse-test evidence and verify deployed origin, cookie,
-cache, MIME, CSP, and sandbox headers. No reviewer or approval is recorded yet.
+Codex reviewed the exact CSS and HTML grammars and pinned dependencies before
+implementation; see the [review record](phase-8-security-review.md). This is not
+an independent external audit. Production flags remain off until repository
+and three-engine browser evidence is reviewed and deployment smoke checks pass.
+New grammar or iframe capabilities require another policy review.
 
 ## Primary references checked 2026-10-21
 

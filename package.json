@@ -24,7 +24,8 @@
     "db:generate": "pnpm --filter @paldora/database db:generate",
     "db:migrate": "pnpm --filter @paldora/database db:migrate",
     "scan:client-bundle": "node scripts/scan-client-bundle.mjs apps/web/.next/static",
-    "test:e2e:full": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && node scripts/with-test-database.mjs playwright test -c apps/web/e2e/playwright.fullstack.config.ts"
+    "test:e2e:full": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && node scripts/with-test-database.mjs playwright test -c apps/web/e2e/playwright.fullstack.config.ts",
+    "test:e2e:personalization": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && node scripts/with-test-database.mjs playwright test -c apps/web/e2e/playwright.personalization.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

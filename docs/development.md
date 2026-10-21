@@ -147,3 +147,24 @@ the real provisioning script. The worker uses its own queue
 4. Add unit, integration, and authorization tests. The route-inventory test
    fails until the route and the registry agree.
 5. Update `docs/api.md` if the endpoint introduces a new concept.
+
+### Room personalization (Phase 8)
+
+`@paldora/personalization` contains the server-side bounded CSS and static HTML
+compilers. Do not import it into browser components. The API reauthorizes the
+Room and recompiles source on every rendered read. The web stylesheet handler
+also reauthorizes each fetch and uses a content revision to refresh changed CSS.
+
+`ROOM_CUSTOM_CSS_ENABLED` and `ROOM_CUSTOM_WIDGETS_ENABLED` are independent API
+flags, both false by default. The full-stack test fixture enables them only for
+its isolated test services. Turning one off hides that surface and preserves its
+source/policy without blocking saves to the other surface. Owner source access
+remains available for recovery. No public HTML artifact or widget origin is used.
+
+Run `pnpm test:e2e:personalization` after installing Chromium, Firefox and WebKit
+with `pnpm exec playwright install chromium firefox webkit`. It uses the same
+production services and dedicated database wrapper as the full-stack suite.
+The browser fixture deliberately bypasses the compiler to verify sandbox/CSP
+independently; CSP-blocked request events are distinguished from actual network
+interception. Release requirements and exact grammar are in the
+[review record](threat-models/phase-8-security-review.md).

@@ -20,6 +20,8 @@ const apiUrl = `http://127.0.0.1:${apiPort}/api/v1`;
 const storageUrl = process.env.E2E_S3_ENDPOINT ?? 'http://127.0.0.1:9000';
 
 export const fullStackEnvironment = {
+  ROOM_CUSTOM_CSS_ENABLED: 'true',
+  ROOM_CUSTOM_WIDGETS_ENABLED: 'true',
   PALDORA_ENV: 'test',
   LOG_LEVEL: 'info',
   DATABASE_URL:

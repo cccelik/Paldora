@@ -16,7 +16,7 @@ export function Widget({
   const id = `room-widget-${type}`;
   return (
     <section
-      className={styles.widget}
+      className={`pal-custom-card ${styles.widget}`}
       data-position={position}
       aria-labelledby={id}
     >

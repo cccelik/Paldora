@@ -236,7 +236,7 @@ Invariants:
   | camera upload  |   120 |
 
 - The Supabase service-role key and S3 keys are server-only. They never go into web, iOS, or Android bundles, Vercel, or committed files. The service-role key is used **only** by the trusted seed and admin path.
-- The Room model accepts no HTML, CSS, script, font URLs, or background URLs. **Never arbitrary JavaScript.** **Never custom cryptography.**
+- Room personalization accepts only the reviewed Phase 8 closed CSS/HTML grammar (ADR 018), with independent flags off by default. Never scripts, font URLs, or background URLs. **Never arbitrary JavaScript.** **Never custom cryptography.**
 
 ## H. API, validation, and errors
 

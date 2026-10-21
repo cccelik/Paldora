@@ -441,3 +441,20 @@ matrix:
 
 Never claim encryption properties that are not implemented. End-to-end
 encrypted Boxes require their own threat model and an external review.
+
+## Phase 8 Room personalization
+
+The [dedicated review](threat-models/phase-8-security-review.md),
+[threat model](threat-models/phase-8-personalization.md) and
+[ADR 018](adr/018-room-personalization-boundaries.md) define the closed language.
+Exact typography selectors/properties/values are parsed and regenerated under a
+server-owned Room scope. Static HTML accepts only text-oriented tags, without
+attributes, links, resources or active content. The authorized parent delivers
+opaque empty-sandbox srcdoc documents with a resource-denying child CSP.
+No public HTML endpoint, credentials in URLs or parent CSP relaxation exists.
+
+Every artifact read uses current RoomAccessService authorization; raw source is
+owner-only. Responses are private/no-store. Policy changes fail closed; writes
+use the shared Room version and rate budget. Independent CSS/widget kill
+switches default off. Production activation requires browser evidence and
+deployment smoke checks. Arbitrary JavaScript remains permanently prohibited.

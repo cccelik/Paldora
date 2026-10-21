@@ -183,7 +183,9 @@ async function route(request, response) {
   return send(response, 404, { msg: 'not found' });
 }
 
-createServer((request, response) => {
+// Keep the fixture connection alive across browser/a11y pauses rather than
+// racing Node fetch's pooled socket against the default five-second close.
+createServer({ keepAliveTimeout: 60_000 }, (request, response) => {
   route(request, response).catch(() =>
     send(response, 500, { msg: 'fake auth error' }),
   );
