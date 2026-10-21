@@ -39,6 +39,7 @@ export interface ReapResult
   readonly retriedDeletions: number;
   readonly purged: number;
   readonly purgedModerationCases: number;
+  readonly redactedModerationCases: number;
   /** Rows still dead after this run: these need a human. */
   readonly dead: number;
 }
@@ -174,7 +175,7 @@ export async function reap(
   const requeued = await requeueStalled(database, now);
   const retriedDeletions = await retryDeadDeletions(database, now);
   const purged = await purgeFinished(database, now);
-  const purgedModerationCases = await retainClosedModerationCases(database);
+  const moderationRetention = await retainClosedModerationCases(database);
   const activity = await retainActivity(database, now);
   const lifeUpdates = await sweepDeliverylessLifeUpdates(
     database,
@@ -191,7 +192,8 @@ export async function reap(
     requeued,
     retriedDeletions,
     purged,
-    purgedModerationCases,
+    purgedModerationCases: moderationRetention.purged,
+    redactedModerationCases: moderationRetention.redacted,
     dead: deadRows?.value ?? 0,
     ...activity,
     ...lifeUpdates,

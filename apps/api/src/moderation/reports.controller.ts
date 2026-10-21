@@ -11,6 +11,7 @@ import {
 import {
   createReportSchema,
   moderationActionSchema,
+  moderationQueueQuerySchema,
   type CreateReportInput,
   type ModerationActionInput,
 } from '@paldora/validation';
@@ -55,7 +56,8 @@ export class ReportsController {
   @Header('Cache-Control', 'private, no-store')
   public queue(
     @CurrentPrincipal() me: Principal,
-    @Query(cursorPageQuery) query: PageQuery,
+    @Query(new ZodPipe(moderationQueueQuerySchema))
+    query: PageQuery & { status: 'open' | 'closed' },
   ) {
     return this.reports.queue(me.userId, query);
   }

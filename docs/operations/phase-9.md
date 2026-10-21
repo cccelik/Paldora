@@ -20,11 +20,15 @@ retried. Verify ordinary post, comment, Room, media, and feed reads after a
 takedown; do not use a previously issued signed URL as proof of a successful
 takedown until object storage confirms deletion.
 
-The 15-minute maintenance reaper removes closed reports and their case audit
+The 15-minute maintenance reaper removes closed report evidence and case audit
 rows 90 days after `closed_at`, up to 100 cases per run. Check
-`purgedModerationCases` in the reaper log. Open reports and standalone
-staff-grant/account-lookup audit remain. Do not manually delete audit rows;
-the database guard permits only due case rows.
+`purgedModerationCases` and `redactedModerationCases` in its log. If content is
+still hidden or an account still suspended, the report detail and reporter ID
+are erased while a minimal case pointer remains. Staff can find it in the
+Closed cases tab and reverse enforcement; the pointer is purged after the
+state becomes inactive. Open reports and standalone staff-grant/account-lookup
+audit remain. Do not manually delete audit rows; the database guard permits
+only due case rows.
 
 ## Export and deletion
 

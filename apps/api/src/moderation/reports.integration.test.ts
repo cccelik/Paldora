@@ -256,6 +256,14 @@ describe('private reports and case access', () => {
       201,
     );
     expect(first.status).toBe('closed');
+    const closedQueue = await json<{ items: { id: string }[] }>(
+      await as(moderator).get('/moderation/cases?status=closed'),
+    );
+    expect(closedQueue.items.some((item) => item.id === receipt.id)).toBe(true);
+    const openQueue = await json<{ items: { id: string }[] }>(
+      await as(moderator).get('/moderation/cases?status=open'),
+    );
+    expect(openQueue.items.some((item) => item.id === receipt.id)).toBe(false);
     expect(
       (
         await json<{ status: string }>(

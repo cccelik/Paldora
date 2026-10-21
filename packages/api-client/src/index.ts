@@ -170,7 +170,9 @@ export class PaldoraApiClient {
     return this.call(apiRoutes.listMyReports, { query: page });
   }
 
-  public moderationCases(page: PageOptions = {}) {
+  public moderationCases(
+    page: PageOptions & { status?: 'open' | 'closed' } = {},
+  ) {
     return this.call(apiRoutes.listModerationCases, { query: page });
   }
 

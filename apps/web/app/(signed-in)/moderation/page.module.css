@@ -10,6 +10,25 @@
   list-style: none;
 }
 
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-3);
+}
+
+.tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  padding-inline: var(--pal-space-3);
+  color: var(--pal-text);
+}
+
+.tabs a[aria-current='page'] {
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-surface);
+}
+
 .item {
   display: flex;
   flex-wrap: wrap;

@@ -5,6 +5,7 @@ import {
   moderationCaseSchema,
   moderationActionSchema,
   moderationAccountSchema,
+  moderationQueueQuerySchema,
   reportReceiptPageSchema,
   reportReceiptSchema,
 } from '../reports.js';
@@ -47,11 +48,12 @@ export const listModerationCases = defineRoute({
   operationId: 'listModerationCases',
   method: 'GET',
   path: '/moderation/cases',
-  summary: 'Minimal newest-first case queue; explicit staff grant required.',
+  summary:
+    'Minimal newest-first open or closed case queue; explicit staff grant required.',
   tag: 'Moderation',
   access: 'authenticated',
   successStatus: 200,
-  query: cursorPageQuerySchema,
+  query: moderationQueueQuerySchema,
   response: moderationCasePageSchema,
   errors: ['MODERATION_FORBIDDEN'],
 });

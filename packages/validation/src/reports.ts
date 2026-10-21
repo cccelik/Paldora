@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  cursorPageQuerySchema,
   cursorPageSchema,
   isoTimestampSchema,
   uuidSchema,
@@ -11,6 +12,9 @@ export const reportTargetKindSchema = z.enum([
   'post',
   'comment',
 ]);
+export const moderationQueueQuerySchema = cursorPageQuerySchema.extend({
+  status: z.enum(['open', 'closed']).default('open'),
+});
 export const reportCategorySchema = z.enum([
   'harassment',
   'spam',

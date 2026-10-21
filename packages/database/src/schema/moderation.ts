@@ -44,6 +44,8 @@ export const userReports = paldoraSchema.table(
     status: reportStatus('status').notNull().default('open'),
     createdAt: createdAt(),
     closedAt: timestamp('closed_at', { withTimezone: true }),
+    evidencePurgedAt: timestamp('evidence_purged_at', { withTimezone: true }),
+    retentionNextAt: timestamp('retention_next_at', { withTimezone: true }),
   },
   (table) => [
     uniqueIndex('user_reports_reporter_target_unique')
@@ -60,7 +62,7 @@ export const userReports = paldoraSchema.table(
       table.id.desc(),
     ),
     index('user_reports_retention_index')
-      .on(table.closedAt)
+      .on(table.retentionNextAt)
       .where(sql`${table.status} = 'closed'`),
     check(
       'user_reports_detail_check',
@@ -69,6 +71,10 @@ export const userReports = paldoraSchema.table(
     check(
       'user_reports_closed_check',
       sql`(${table.status} = 'closed') = (${table.closedAt} is not null)`,
+    ),
+    check(
+      'user_reports_retention_check',
+      sql`(${table.status} = 'closed') = (${table.retentionNextAt} is not null)`,
     ),
   ],
 );

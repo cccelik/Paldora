@@ -4416,7 +4416,7 @@
     "/moderation/cases": {
       "get": {
         "operationId": "listModerationCases",
-        "summary": "Minimal newest-first case queue; explicit staff grant required.",
+        "summary": "Minimal newest-first open or closed case queue; explicit staff grant required.",
         "tags": [
           "Moderation"
         ],
@@ -4445,6 +4445,19 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "open",
+              "type": "string",
+              "enum": [
+                "open",
+                "closed"
+              ]
             }
           }
         ],

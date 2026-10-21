@@ -15,9 +15,11 @@ export default async function ModerationQueuePage({
   searchParams,
 }: PageProps<'/moderation'>) {
   await completedUser();
-  const cursor = cursorParam((await searchParams).cursor);
+  const search = await searchParams;
+  const cursor = cursorParam(search.cursor);
+  const status = search.status === 'closed' ? 'closed' : 'open';
   const page = await orNotFound(
-    (await apiClient()).moderationCases({ limit: 25, cursor }),
+    (await apiClient()).moderationCases({ limit: 25, cursor, status }),
     ['MODERATION_FORBIDDEN'],
   );
   return (
@@ -26,7 +28,21 @@ export default async function ModerationQueuePage({
         title="Moderation queue"
         description="Review reports one case at a time. Opening a case is audited."
       />
-      {page.items.length === 0 ? <p>No open reports.</p> : null}
+      <nav aria-label="Case status" className={styles.tabs}>
+        <Link
+          href="/moderation"
+          aria-current={status === 'open' ? 'page' : undefined}
+        >
+          Open cases
+        </Link>
+        <Link
+          href="/moderation?status=closed"
+          aria-current={status === 'closed' ? 'page' : undefined}
+        >
+          Closed cases
+        </Link>
+      </nav>
+      {page.items.length === 0 ? <p>No {status} reports.</p> : null}
       <ul className={styles.list}>
         {page.items.map((item) => (
           <li key={item.id} className={styles.item}>
@@ -42,7 +58,7 @@ export default async function ModerationQueuePage({
       </ul>
       {page.nextCursor ? (
         <MoreLink
-          href={`/moderation?cursor=${encodeURIComponent(page.nextCursor)}`}
+          href={`/moderation?status=${status}&cursor=${encodeURIComponent(page.nextCursor)}`}
           label="Show older cases"
         />
       ) : null}

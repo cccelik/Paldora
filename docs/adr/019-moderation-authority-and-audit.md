@@ -39,9 +39,13 @@ Room banner foreign key.
   retires owned objects and exports, clears `rooms.banner_media_id`, deletes
   the Auth identity, and removes the database user. Failed external steps
   leave a retryable erasure request. Export is a private JSON archive.
-- Closed report detail and case-specific audit rows are purged after 90 days.
-  Database triggers reject mutation before that boundary. Staff-grant and
-  account-lookup audit rows are outside case evidence and remain append-only.
+- Closed report detail, reporter identity, and case-specific audit rows are
+  purged after 90 days. If a takedown or suspension is still active, a minimal
+  case pointer remains so staff can reverse it through the audited API. Once
+  enforcement ends, that pointer is purged at its next retention check.
+  Database triggers reject audit mutation before the 90-day boundary.
+  Staff-grant and account-lookup audit rows are outside case evidence and
+  remain append-only.
 - Public signup remains disabled until all moderation and account-lifecycle
   paths, abuse controls, and hosted smoke tests pass and the owner approves
   activation.

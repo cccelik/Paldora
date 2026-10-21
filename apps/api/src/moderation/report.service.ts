@@ -302,7 +302,10 @@ export class ReportService {
     );
   }
 
-  public async queue(userId: string, query: PageQuery) {
+  public async queue(
+    userId: string,
+    query: PageQuery & { status: 'open' | 'closed' },
+  ) {
     await this.staff(userId);
     const keyset = keysetWindow(
       userReports.createdAt,
@@ -316,7 +319,7 @@ export class ReportService {
         cursorAt: cursorTimestamp(userReports.createdAt),
       })
       .from(userReports)
-      .where(and(eq(userReports.status, 'open'), keyset.after))
+      .where(and(eq(userReports.status, query.status), keyset.after))
       .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     return pageOf(
@@ -329,25 +332,28 @@ export class ReportService {
 
   public async case(userId: string, caseId: string) {
     await this.staff(userId);
-    const [row] = await this.db
-      .select()
-      .from(userReports)
-      .where(eq(userReports.id, caseId))
-      .limit(1);
-    if (!row) throw reportNotFound();
-    await this.db.insert(moderationAudit).values({
-      actorUserId: userId,
-      subjectId: caseId,
-      event: 'case.viewed',
-      reason: 'Moderator opened this case for review.',
-      idempotencyKey: randomUUID(),
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(userReports)
+        .where(eq(userReports.id, caseId))
+        .for('share')
+        .limit(1);
+      if (!row) throw reportNotFound();
+      await tx.insert(moderationAudit).values({
+        actorUserId: userId,
+        subjectId: caseId,
+        event: 'case.viewed',
+        reason: 'Moderator opened this case for review.',
+        idempotencyKey: randomUUID(),
+      });
+      return {
+        ...receipt(row),
+        detail: row.detail,
+        reporterUserId: row.reporterUserId,
+        closedAt: row.closedAt?.toISOString() ?? null,
+      };
     });
-    return {
-      ...receipt(row),
-      detail: row.detail,
-      reporterUserId: row.reporterUserId,
-      closedAt: row.closedAt?.toISOString() ?? null,
-    };
   }
 
   public async act(
@@ -407,10 +413,29 @@ export class ReportService {
         reason: input.reason,
         idempotencyKey: input.idempotencyKey,
       });
-      if (row.status === 'closed') return { row, notify, boxEvent };
+      if (row.status === 'closed') {
+        const closedAt = new Date();
+        const [updated] = await tx
+          .update(userReports)
+          .set({
+            closedAt,
+            retentionNextAt: new Date(
+              closedAt.getTime() + 90 * 24 * 60 * 60_000,
+            ),
+          })
+          .where(eq(userReports.id, caseId))
+          .returning();
+        if (!updated) throw reportNotFound();
+        return { row: updated, notify, boxEvent };
+      }
+      const closedAt = new Date();
       const [closed] = await tx
         .update(userReports)
-        .set({ status: 'closed', closedAt: new Date() })
+        .set({
+          status: 'closed',
+          closedAt,
+          retentionNextAt: new Date(closedAt.getTime() + 90 * 24 * 60 * 60_000),
+        })
         .where(eq(userReports.id, caseId))
         .returning();
       if (!closed) throw reportNotFound();
