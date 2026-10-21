@@ -45,7 +45,7 @@ worker, web, packages and repo root).
      controller support (`Principal`, `PageQuery`, `HOUR`), realtime
      `boxEvent` / `announceDeliveries`, `iso` / `isoOrNull`, `defineError`,
      a `DATABASE` provider replacing the 24 `private get database()` copies,
-     `keysetWindow` helper, `keysetWindow`.
+     `keysetWindow` helper.
    - Keep lock order unchanged (see lock-order comments in life-update-erasure,
      room-top-friends and life-update-delete).
    - Folder layout: `platform/` split into `config`, `http`, `rate-limit`,
