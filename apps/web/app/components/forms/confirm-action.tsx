@@ -1,0 +1,84 @@
+'use client';
+
+import { ActionFeedback } from '@/components/forms/action-feedback';
+import {
+  type FormAction,
+  type HiddenFieldValues,
+} from '@/components/forms/action-types';
+import styles from '@/components/forms/confirm-action.module.css';
+import { SubmitButton } from '@/components/forms/submit-button';
+import { Button, type ButtonVariant, HiddenFields } from '@/components/ui';
+import { idleResult } from '@/lib/actions/action-result';
+import { useActionState, useEffect, useRef, useState } from 'react';
+/**
+ * A two-step control for anything that is hard to undo. The first press opens
+ * a plain-language question; focus moves to Cancel, the safe choice, and
+ * returns to the trigger when the question closes.
+ */
+export function ConfirmAction({
+  action,
+  fields,
+  label,
+  prompt,
+  confirmLabel,
+  pendingLabel,
+  variant = 'danger',
+  onSuccess,
+}: {
+  action: FormAction;
+  fields: HiddenFieldValues;
+  label: string;
+  prompt: string;
+  confirmLabel: string;
+  pendingLabel: string;
+  variant?: ButtonVariant;
+  /** For content the page does not re-render on its own (client-held rows). */
+  onSuccess?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction] = useActionState(action, idleResult);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const cancel = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (state.status === 'success') onSuccess?.();
+  }, [state, onSuccess]);
+
+  useEffect(() => {
+    if (open) cancel.current?.focus();
+    else if (wasOpen.current) trigger.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
+  if (!open) {
+    return (
+      <div>
+        <Button ref={trigger} variant={variant} onClick={() => setOpen(true)}>
+          {label}
+        </Button>
+        {state.status === 'error' ? <ActionFeedback state={state} /> : null}
+      </div>
+    );
+  }
+  return (
+    <form
+      action={formAction}
+      className={styles.confirm}
+      role="group"
+      aria-label={prompt}
+    >
+      <HiddenFields values={fields} />
+      <p className={styles.prompt}>{prompt}</p>
+      <div className={styles.buttons}>
+        <SubmitButton variant={variant} pendingLabel={pendingLabel}>
+          {confirmLabel}
+        </SubmitButton>
+        <Button ref={cancel} variant="secondary" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+      <ActionFeedback state={state} />
+    </form>
+  );
+}

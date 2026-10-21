@@ -1,0 +1,11 @@
+.composer {
+  display: grid;
+  gap: var(--pal-space-3);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--pal-space-2);
+}

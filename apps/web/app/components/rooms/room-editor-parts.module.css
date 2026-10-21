@@ -1,0 +1,69 @@
+/*
+ * The Room customizer. This is trusted app chrome: it uses only the app's
+ * `--pal-*` tokens. The theme swatches and the live preview are the only
+ * places that use `.room-canvas` and its `--room-*` variables, and they
+ * stay inside their own frames. Nothing here sets a z-index.
+ */
+
+.section {
+  display: grid;
+  gap: var(--pal-space-4);
+  min-width: 0;
+  padding: var(--pal-space-5);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}
+
+.sectionTitle {
+  font-family: var(--pal-font-editorial);
+  font-size: var(--pal-font-size-heading-small);
+  font-weight: 600;
+}
+
+.sectionDetail,
+.hint {
+  color: var(--pal-text-muted);
+}
+
+/* Theme picker: one card per preset, name and Light/Dark in words. */
+
+/* Reorderable rows (widgets and Top Friends). */
+
+.moves {
+  display: inline-flex;
+  gap: var(--pal-space-1);
+}
+
+.moves .move {
+  min-width: var(--pal-size-touch-target);
+  padding-inline: 0;
+  border-color: color-mix(
+    in srgb,
+    var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+    transparent
+  );
+  text-decoration: none;
+}
+
+/* Banner: the processed 3:1 photo, or the chosen file while it uploads. */
+
+/* A stale save: stays until the person reloads. */
+.stale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid var(--pal-warning-text);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+  color: var(--pal-text);
+}
+
+.stale p {
+  flex: 1 1 16rem;
+}
+
+.locked {
+  color: var(--pal-warning-text);
+}

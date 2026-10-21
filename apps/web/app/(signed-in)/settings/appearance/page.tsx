@@ -1,9 +1,9 @@
+import styles from '@/(signed-in)/settings/appearance/page.module.css';
+import { AppearanceForm } from '@/components/account/appearance-form';
+import { roomHref } from '@/lib/rooms/room-theme';
+import { completedUser } from '@/lib/server/session';
 import { type Route } from 'next';
 import Link from 'next/link';
-import { AppearanceForm } from '../../../components/appearance-form';
-import { roomHref } from '../../../lib/room-theme';
-import { completedUser } from '../../../lib/session';
-import styles from '../settings.module.css';
 export const metadata = { title: 'Appearance' };
 
 export default async function AppearanceSettingsPage() {

@@ -1,0 +1,28 @@
+.card {
+  gap: var(--pal-space-4);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.badges a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+}
+
+.sections {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.private {
+  color: var(--pal-text-muted);
+  font-size: var(--pal-font-size-sm);
+}
+
+/* Tabs wrap onto more rows on narrow screens; nothing scrolls sideways. */

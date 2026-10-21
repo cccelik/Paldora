@@ -1,22 +1,22 @@
-import { type Route } from 'next';
-import { redirect } from 'next/navigation';
-import { CommentThread } from '../../../components/comment-thread';
-import { PostCard } from '../../../components/post-card';
-import { BackLink } from '../../../components/ui';
-import { lifeUpdateHref } from '../../../lib/life-update-form';
-import { conversationFor } from '../../../lib/pinned-thread';
+import styles from '@/(signed-in)/posts/[postId]/page.module.css';
+import { CommentThread } from '@/components/interactions/comment-thread';
+import { PostCard } from '@/components/posts/post-card';
+import { BackLink } from '@/components/ui';
+import { conversationFor } from '@/lib/interactions/pinned-thread';
+import { lifeUpdateHref } from '@/lib/life-updates/life-update-form';
 import {
   POST_ABSENT,
   optionalUuid,
   uuidParam,
-} from '../../../lib/route-params';
+} from '@/lib/server/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
-} from '../../../lib/session';
-import styles from '../../page-stack.module.css';
+} from '@/lib/server/session';
+import { type Route } from 'next';
+import { redirect } from 'next/navigation';
 export const metadata = { title: 'Post' };
 
 export default async function PostPage({

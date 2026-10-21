@@ -1,6 +1,6 @@
-import { postOn } from './locators';
 import { expect, type Page } from '@playwright/test';
 import { type Account } from './accounts';
+import { postOn } from './locators';
 /** Ada makes a Box and Grace joins it, both through the real screens. */
 export async function sharedBox(
   ada: Page,

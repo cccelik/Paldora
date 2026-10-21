@@ -1,0 +1,42 @@
+.section {
+  display: grid;
+  gap: var(--pal-space-4);
+  scroll-margin-top: 7rem;
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: var(--pal-font-size-heading-small);
+  font-weight: 600;
+}
+
+.note {
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+  color: var(--pal-text-muted);
+}
+
+.threads,
+.replies {
+  display: grid;
+  gap: var(--pal-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.thread {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+/* One level of indent only: 16px on narrow screens. */
+
+.pinned {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-3);
+  border: var(--pal-border-width-hairline) solid var(--pal-accent);
+  border-radius: var(--pal-radius-lg);
+}

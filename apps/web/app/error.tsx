@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './status-page.module.css';
+import styles from '@/error.module.css';
 interface ErrorBoundaryProps {
   error: Error & { digest?: string };
   retry: () => void;

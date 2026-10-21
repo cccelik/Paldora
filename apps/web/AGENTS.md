@@ -21,11 +21,11 @@ Read the root [CLAUDE.md](../../CLAUDE.md) first. These rules add to it.
 
 - `proxy.ts` sets the **only** Content-Security-Policy. Never add one in `next.config.ts`.
 - Production CSP allows no inline styles, so **never use `style={...}` attributes**. Express dynamic presentation through classes or `data-*` attributes.
-- Public configuration comes from `app/lib/environment.ts`, which validates it. There are no `localhost` fallbacks.
+- Public configuration comes from `app/lib/server/environment.ts`, which validates it. There are no `localhost` fallbacks.
 - Server-only secrets never appear in this app.
 - Authorization is the API's job. Pages call the typed `@paldora/api-client` and render the result.
 
-**Server Actions** return `ActionResult` (`app/lib/action-result.ts`) to `useActionState`. They never put messages in query strings.
+**Server Actions** return `ActionResult` (`app/lib/actions/action-result.ts`) to `useActionState`. They never put messages in query strings.
 
 **Components** (catalog: [app/components/README.md](app/components/README.md)):
 
@@ -36,3 +36,9 @@ Read the root [CLAUDE.md](../../CLAUDE.md) first. These rules add to it.
 - Extract at the second genuine use, and search before creating.
 
 **Accessibility:** every page must hold up at desktop and 390px width, provide keyboard access, visible focus, and 44px targets, respect reduced motion, and pass the axe checks in `e2e/`.
+
+**Imports and ownership:** use `@/` for paths under `app/` (also configured in
+Vitest). Components are grouped in feature folders; server-compatible primitives
+stay in `components/ui`. Library code never imports component definitions or
+types: thread and Room preview types live in `lib/interactions` and `lib/rooms`.
+Each CSS module has one rendering owner in the same feature or route folder.

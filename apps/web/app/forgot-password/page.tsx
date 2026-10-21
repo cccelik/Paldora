@@ -1,5 +1,5 @@
-import { ForgotPasswordForm } from '../components/auth-forms';
-import { AuthLayout } from '../components/auth-layout';
+import { ForgotPasswordForm } from '@/components/auth/auth-forms';
+import { AuthLayout } from '@/components/auth/auth-layout';
 export const metadata = { title: 'Reset your password' };
 
 export default function ForgotPasswordPage() {

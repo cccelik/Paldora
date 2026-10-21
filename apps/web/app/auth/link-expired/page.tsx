@@ -1,6 +1,6 @@
+import { AuthLayout } from '@/components/auth/auth-layout';
+import { buttonClassName } from '@/components/ui';
 import Link from 'next/link';
-import { AuthLayout } from '../../components/auth-layout';
-import { buttonClassName } from '../../components/ui';
 export const metadata = { title: 'Link expired' };
 
 export default function LinkExpiredPage() {

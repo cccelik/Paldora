@@ -1,13 +1,13 @@
-import { type PaldoraApiClient } from '@paldora/api-client';
-import { type BoxView } from '@paldora/validation';
+import styles from '@/(signed-in)/life-updates/new/page.module.css';
 import {
   LifeUpdateComposer,
   type AudienceBox,
-} from '../../../components/life-update-composer';
-import { BackLink, PageHeader } from '../../../components/ui';
-import { optionalUuid } from '../../../lib/route-params';
-import { apiClient, completedUser } from '../../../lib/session';
-import styles from '../../page-stack.module.css';
+} from '@/components/life-updates/life-update-composer';
+import { BackLink, PageHeader } from '@/components/ui';
+import { optionalUuid } from '@/lib/server/route-params';
+import { apiClient, completedUser } from '@/lib/server/session';
+import { type PaldoraApiClient } from '@paldora/api-client';
+import { type BoxView } from '@paldora/validation';
 export const metadata = { title: 'New Life Update' };
 
 const PAGE_SIZE = 50;

@@ -1,0 +1,52 @@
+/*
+ * The Room customizer. This is trusted app chrome: it uses only the app's
+ * `--pal-*` tokens. The theme swatches and the live preview are the only
+ * places that use `.room-canvas` and its `--room-*` variables, and they
+ * stay inside their own frames. Nothing here sets a z-index.
+ */
+
+.sectionDetail,
+.hint {
+  color: var(--pal-text-muted);
+}
+
+.invalid {
+  color: var(--pal-danger-text);
+  font-weight: 600;
+}
+
+.form {
+  display: grid;
+  gap: var(--pal-space-5);
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--pal-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--pal-space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+/* Theme picker: one card per preset, name and Light/Dark in words. */
+
+/* Reorderable rows (widgets and Top Friends). */
+
+/* Banner: the processed 3:1 photo, or the chosen file while it uploads. */
+
+/* A stale save: stays until the person reloads. */

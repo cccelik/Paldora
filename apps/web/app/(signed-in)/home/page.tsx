@@ -1,10 +1,10 @@
+import pageStyles from '@/(signed-in)/home/page-layout.module.css';
+import styles from '@/(signed-in)/home/page.module.css';
+import { MoreLink } from '@/components/common/more-link';
+import { PostFeed } from '@/components/posts/post-card';
+import { Avatar, buttonClassName, Section } from '@/components/ui';
+import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
 import Link from 'next/link';
-import { MoreLink } from '../../components/more-link';
-import { PostFeed } from '../../components/post-card';
-import { Avatar, buttonClassName, Section } from '../../components/ui';
-import { apiClient, completedUser, cursorParam } from '../../lib/session';
-import pageStyles from '../page-stack.module.css';
-import styles from './page.module.css';
 export const metadata = { title: 'Home' };
 
 export default async function HomePage({ searchParams }: PageProps<'/home'>) {

@@ -1,28 +1,28 @@
 'use server';
 
-import { type RoomView } from '@paldora/validation';
 import {
   actionError,
   invalidOutcome,
   type ActionOutcome,
   type ActionResult,
-} from '../lib/action-result';
-import { runFormWithData } from '../lib/action-runner';
-import { textField } from '../lib/form-data';
-import { photoCopy, reservePhotoUpload } from '../lib/media-asset-action';
+} from '@/lib/actions/action-result';
+import { runFormWithData } from '@/lib/actions/action-runner';
+import { textField } from '@/lib/actions/form-data';
+import { photoCopy, reservePhotoUpload } from '@/lib/media/media-asset-action';
+import {
+  PHOTO_FILE_MESSAGE,
+  uploadFileSchema,
+  type PreparedUpload,
+} from '@/lib/media/upload';
 import {
   roomBannerInputSchema,
   roomSettingsFormSchema,
   roomTopFriendsFormSchema,
   roomWidgetsFormSchema,
   SECTION_SAVED,
-} from '../lib/room-forms';
-import { apiClient } from '../lib/session';
-import {
-  PHOTO_FILE_MESSAGE,
-  uploadFileSchema,
-  type PreparedUpload,
-} from '../lib/upload';
+} from '@/lib/rooms/room-forms';
+import { apiClient } from '@/lib/server/session';
+import { type RoomView } from '@paldora/validation';
 /**
  * Room customizer actions. Each sends the version the editor last saw
  * (`expectedUpdatedAt`) and returns the saved Room, whose `updatedAt` the

@@ -1,19 +1,22 @@
 'use server';
 
+import {
+  actionError,
+  invalidOutcome,
+  type ActionResult,
+} from '@/lib/actions/action-result';
+import { textField } from '@/lib/actions/form-data';
+import {
+  APPEARANCE_COOKIE,
+  appearanceCookieOptions,
+} from '@/lib/server/appearance';
+import { publicEnvironment } from '@/lib/server/environment';
+import { apiClient } from '@/lib/server/session';
 import { type ProfileChanges } from '@paldora/api-client';
 import { appearanceSchema } from '@paldora/validation';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import {
-  actionError,
-  invalidOutcome,
-  type ActionResult,
-} from '../lib/action-result';
-import { APPEARANCE_COOKIE, appearanceCookieOptions } from '../lib/appearance';
-import { publicEnvironment } from '../lib/environment';
-import { textField } from '../lib/form-data';
-import { apiClient } from '../lib/session';
 const profileCopy = {
   USERNAME_UNAVAILABLE: 'That username is taken. Try another.',
   ONBOARDING_INCOMPLETE: 'Finish the earlier steps first.',

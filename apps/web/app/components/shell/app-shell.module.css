@@ -1,0 +1,81 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--pal-z-index-sticky);
+  border-bottom: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
+      transparent
+    );
+  background: var(--pal-canvas);
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pal-space-1) var(--pal-space-4);
+  max-width: var(--pal-size-content-max);
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--pal-space-2))
+    max(var(--pal-space-4), env(safe-area-inset-right, 0px)) var(--pal-space-2)
+    max(var(--pal-space-4), env(safe-area-inset-left, 0px));
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  text-decoration: none;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.signOut {
+  margin: 0;
+}
+
+.avatarLink {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--pal-size-touch-target);
+  min-height: var(--pal-size-touch-target);
+  border-radius: var(--pal-radius-pill);
+}
+
+.avatarPlain {
+  display: none;
+}
+
+.main {
+  max-width: var(--pal-size-content-max);
+  margin: 0 auto;
+  /* Room for the fixed bottom nav and the home indicator. */
+  padding: var(--pal-space-8) var(--pal-space-4)
+    calc(
+      env(safe-area-inset-bottom, 0px) + var(--pal-size-touch-target) +
+        var(--pal-space-16)
+    );
+}
+
+@media (min-width: 768px) {
+  .avatarLink,
+  .bottomNav {
+    display: none;
+  }
+
+  .avatarPlain {
+    display: inline-flex;
+  }
+
+  .main {
+    padding: var(--pal-space-8) var(--pal-space-8)
+      calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-16));
+  }
+}

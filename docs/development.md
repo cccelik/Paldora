@@ -99,7 +99,7 @@ to catch interference from leftovers in the dedicated test database.
 
 ```bash
 pnpm --filter @paldora/api exec vitest run src/platform/platform.test.ts
-pnpm --filter @paldora/web exec vitest run app/lib/csp.test.ts
+pnpm --filter @paldora/web exec vitest run app/lib/security/csp.test.ts
 DATABASE_URL=postgresql://paldora:paldora_dev_only@localhost:5432/paldora \
 REDIS_URL=redis://localhost:6379 S3_ENDPOINT=http://127.0.0.1:9000 \
 S3_REGION=us-east-1 S3_BUCKET=paldora-private S3_ACCESS_KEY_ID=paldora_minio \

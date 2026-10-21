@@ -1,11 +1,11 @@
+import styles from '@/(signed-in)/rooms/[username]/page.module.css';
+import { RoomCanvas } from '@/components/rooms/room-canvas';
+import { RoomOwnerStrip } from '@/components/rooms/room-owner-strip';
+import { loadRoomPreviews } from '@/lib/rooms/room-previews';
+import { roomUsernameParam } from '@/lib/rooms/room-theme';
+import { ROOM_ABSENT } from '@/lib/server/route-params';
+import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
 import { notFound } from 'next/navigation';
-import { RoomCanvas } from '../../../components/room-canvas';
-import { RoomOwnerStrip } from '../../../components/room-owner-strip';
-import { loadRoomPreviews } from '../../../lib/room-previews';
-import { roomUsernameParam } from '../../../lib/room-theme';
-import { ROOM_ABSENT } from '../../../lib/route-params';
-import { apiClient, completedUser, orNotFound } from '../../../lib/session';
-import styles from './page.module.css';
 export const metadata = { title: 'Room' };
 
 /**

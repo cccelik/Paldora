@@ -1,18 +1,18 @@
-import { REAL_REACTION_KIND } from '@paldora/domain';
-import { MoreLink } from '../../../../components/more-link';
+import styles from '@/(signed-in)/posts/[postId]/reactions/page.module.css';
+import { MoreLink } from '@/components/common/more-link';
 import {
   ReactionFilter,
   ReactionList,
-} from '../../../../components/reaction-list';
-import { BackLink, EmptyState, PageHeader } from '../../../../components/ui';
-import { POST_ABSENT, uuidParam } from '../../../../lib/route-params';
+} from '@/components/interactions/reaction-list';
+import { BackLink, EmptyState, PageHeader } from '@/components/ui';
+import { POST_ABSENT, uuidParam } from '@/lib/server/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
-} from '../../../../lib/session';
-import styles from '../../../page-stack.module.css';
+} from '@/lib/server/session';
+import { REAL_REACTION_KIND } from '@paldora/domain';
 export const metadata = { title: 'Reactions' };
 
 /** Everyone who reacted to a post, newest first; `?kind=real` for camera. */

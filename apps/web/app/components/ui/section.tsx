@@ -1,6 +1,6 @@
+import { Card } from '@/components/ui/card';
+import styles from '@/components/ui/section.module.css';
 import { type ReactNode } from 'react';
-import { Card } from './card';
-import styles from './section.module.css';
 /** A titled panel: the repeated block of settings, friends, and Box pages. */
 export function Section({
   id,

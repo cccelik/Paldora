@@ -1,8 +1,8 @@
+import { ResetPasswordForm } from '@/components/auth/auth-forms';
+import { AuthLayout } from '@/components/auth/auth-layout';
+import { buttonClassName } from '@/components/ui';
+import { accessToken } from '@/lib/server/session';
 import Link from 'next/link';
-import { ResetPasswordForm } from '../components/auth-forms';
-import { AuthLayout } from '../components/auth-layout';
-import { buttonClassName } from '../components/ui';
-import { accessToken } from '../lib/session';
 export const metadata = { title: 'Choose a new password' };
 
 /** Reached from a recovery link (or settings) with a valid session. */

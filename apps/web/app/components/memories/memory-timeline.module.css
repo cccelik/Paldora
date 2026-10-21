@@ -1,0 +1,32 @@
+/* Memories: period choices (years, months, type) and the month-grouped list. */
+
+.choices,
+.filters,
+.items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Gold marks where you are; it never fills. */
+
+.timeline {
+  display: grid;
+  gap: var(--pal-space-8);
+}
+
+.group {
+  display: grid;
+  gap: var(--pal-space-3);
+}
+
+.heading {
+  font-family: var(--pal-font-editorial);
+  font-size: var(--pal-font-size-heading-small);
+  font-weight: 600;
+}
+
+.items {
+  display: grid;
+  gap: var(--pal-space-4);
+}

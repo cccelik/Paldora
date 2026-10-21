@@ -1,9 +1,9 @@
 'use server';
 
+import { type ActionResult } from '@/lib/actions/action-result';
+import { runForm } from '@/lib/actions/action-runner';
 import { usernameSchema, uuidSchema } from '@paldora/validation';
 import { z } from 'zod';
-import { type ActionResult } from '../lib/action-result';
-import { runForm } from '../lib/action-runner';
 const usernameForm = z.object({ username: usernameSchema });
 const friendshipForm = z.object({ friendshipId: uuidSchema });
 const userForm = z.object({ userId: uuidSchema });

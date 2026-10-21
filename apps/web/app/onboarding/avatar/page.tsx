@@ -1,9 +1,9 @@
-import { finishOnboardingAction } from '../../actions/profile';
-import { AvatarUploader } from '../../components/avatar-uploader';
-import { OnboardingLayout } from '../../components/onboarding-layout';
-import { SubmitButton } from '../../components/submit-button';
-import { userOnStep } from '../../lib/session';
-import styles from './page.module.css';
+import { finishOnboardingAction } from '@/actions/profile';
+import { OnboardingLayout } from '@/components/auth/onboarding-layout';
+import { SubmitButton } from '@/components/forms/submit-button';
+import { AvatarUploader } from '@/components/media/avatar-uploader';
+import { userOnStep } from '@/lib/server/session';
+import styles from '@/onboarding/avatar/page.module.css';
 export const metadata = { title: 'Add a photo' };
 
 export default async function AvatarStepPage() {

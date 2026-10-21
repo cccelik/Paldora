@@ -1,4 +1,4 @@
-import styles from './form-message.module.css';
+import styles from '@/components/ui/form-message.module.css';
 export type MessageTone = 'success' | 'attention' | 'failure';
 
 /**

@@ -1,10 +1,10 @@
-import { markAllNotificationsReadAction } from '../../actions/notifications';
-import { MoreLink } from '../../components/more-link';
-import { NotificationList } from '../../components/notification-row';
-import { RowActionForm } from '../../components/row-action-form';
-import { EmptyState, PageHeader } from '../../components/ui';
-import { apiClient, completedUser, cursorParam } from '../../lib/session';
-import styles from '../page-stack.module.css';
+import styles from '@/(signed-in)/notifications/page.module.css';
+import { markAllNotificationsReadAction } from '@/actions/notifications';
+import { MoreLink } from '@/components/common/more-link';
+import { RowActionForm } from '@/components/forms/row-action-form';
+import { NotificationList } from '@/components/notifications/notification-row';
+import { EmptyState, PageHeader } from '@/components/ui';
+import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
 export const metadata = { title: 'Notifications' };
 
 export default async function NotificationsPage({

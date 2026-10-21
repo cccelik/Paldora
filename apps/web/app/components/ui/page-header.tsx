@@ -1,5 +1,5 @@
+import styles from '@/components/ui/page-header.module.css';
 import { type ReactNode } from 'react';
-import styles from './page-header.module.css';
 /** The h1 of a signed-in page, with optional badges and a description. */
 export function PageHeader({
   title,

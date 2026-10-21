@@ -1,0 +1,8 @@
+/* The vertical rhythm shared by Friends, Boxes, and a single Box. */
+.stack {
+  display: grid;
+  gap: var(--pal-space-8);
+  max-width: 44rem;
+}
+
+/* A row of secondary links that wraps on narrow screens. */

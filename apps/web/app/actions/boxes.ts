@@ -1,10 +1,10 @@
 'use server';
 
+import { type ActionResult } from '@/lib/actions/action-result';
+import { runForm, runFormWithData } from '@/lib/actions/action-runner';
 import { boxNameSchema, usernameSchema, uuidSchema } from '@paldora/validation';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { type ActionResult } from '../lib/action-result';
-import { runForm, runFormWithData } from '../lib/action-runner';
 const boxForm = z.object({ boxId: uuidSchema });
 const memberForm = z.object({ boxId: uuidSchema, userId: uuidSchema });
 const invitationForm = z.object({ invitationId: uuidSchema });

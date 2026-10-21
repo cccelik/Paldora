@@ -1,5 +1,5 @@
+import styles from '@/components/ui/card.module.css';
 import { type HTMLAttributes } from 'react';
-import styles from './card.module.css';
 export function Card({
   as: Element = 'div',
   className,

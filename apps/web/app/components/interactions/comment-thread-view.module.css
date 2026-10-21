@@ -1,0 +1,27 @@
+.threads,
+.replies {
+  display: grid;
+  gap: var(--pal-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One level of indent only: 16px on narrow screens. */
+.replies,
+.indent {
+  padding-inline-start: var(--pal-space-4);
+  border-inline-start: 2px solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
+      transparent
+    );
+}
+
+@media (min-width: 768px) {
+  .replies,
+  .indent {
+    padding-inline-start: var(--pal-space-6);
+  }
+}

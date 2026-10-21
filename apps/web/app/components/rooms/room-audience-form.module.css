@@ -1,0 +1,97 @@
+/*
+ * The Room customizer. This is trusted app chrome: it uses only the app's
+ * `--pal-*` tokens. The theme swatches and the live preview are the only
+ * places that use `.room-canvas` and its `--room-*` variables, and they
+ * stay inside their own frames. Nothing here sets a z-index.
+ */
+
+.form {
+  display: grid;
+  gap: var(--pal-space-5);
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--pal-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--pal-space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+.option,
+.check,
+.theme {
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-3);
+  min-height: var(--pal-size-touch-target);
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-default) * 100%),
+      transparent
+    );
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+  cursor: pointer;
+}
+
+.option:has(input:checked),
+.theme:has(input:checked) {
+  border-color: var(--pal-accent);
+  box-shadow: inset 0 0 0 1px var(--pal-accent);
+}
+
+.option:has(input:focus-visible),
+.check:has(input:focus-visible),
+.theme:has(input:focus-visible) {
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus);
+  outline-offset: 2px;
+}
+
+.option input,
+.check input,
+.theme input,
+.inlineCheck input {
+  /* At least 24×24 on its own (WCAG 2.5.8), whatever is nearby. */
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--pal-accent);
+}
+
+.optionLabel {
+  display: block;
+  font-weight: 600;
+}
+
+.optionDetail {
+  display: block;
+  color: var(--pal-text-muted);
+  font-size: var(--pal-font-size-sm);
+}
+
+/* Theme picker: one card per preset, name and Light/Dark in words. */
+
+/* Reorderable rows (widgets and Top Friends). */
+
+/* Banner: the processed 3:1 photo, or the chosen file while it uploads. */
+
+/* A stale save: stays until the person reloads. */

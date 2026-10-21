@@ -1,6 +1,14 @@
 'use server';
 
 import {
+  actionError,
+  invalidOutcome,
+  type ActionOutcome,
+  type ActionResult,
+} from '@/lib/actions/action-result';
+import { runForm, runFormWithData } from '@/lib/actions/action-runner';
+import { apiClient } from '@/lib/server/session';
+import {
   commentContentSchema,
   emojiSchema,
   uuidSchema,
@@ -10,14 +18,6 @@ import {
   type PostInteractionSummary,
 } from '@paldora/validation';
 import { z } from 'zod';
-import {
-  actionError,
-  invalidOutcome,
-  type ActionOutcome,
-  type ActionResult,
-} from '../lib/action-result';
-import { runForm, runFormWithData } from '../lib/action-runner';
-import { apiClient } from '../lib/session';
 /**
  * Comments change the conversation pages only (a post's, or a Life Update's
  * for one Box); feeds learn from realtime hints.

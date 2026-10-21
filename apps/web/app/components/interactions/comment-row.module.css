@@ -1,0 +1,55 @@
+/* One level of indent only: 16px on narrow screens. */
+
+.comment {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+  /* Clears the sticky header when a deep link scrolls here. */
+  scroll-margin-top: 7rem;
+}
+
+.comment:focus-visible {
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus);
+  outline-offset: 2px;
+}
+
+.placeholder {
+  color: var(--pal-text-muted);
+  font-style: italic;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: var(--pal-text-muted);
+  font-size: var(--pal-font-size-sm);
+}
+
+.body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.composer {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}

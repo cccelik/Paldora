@@ -1,6 +1,6 @@
-import { OnboardingLayout } from '../../components/onboarding-layout';
-import { ProfileStepForm } from '../../components/profile-forms';
-import { userOnStep } from '../../lib/session';
+import { ProfileStepForm } from '@/components/account/profile-forms';
+import { OnboardingLayout } from '@/components/auth/onboarding-layout';
+import { userOnStep } from '@/lib/server/session';
 export const metadata = { title: 'About you' };
 
 export default async function ProfileStepPage() {

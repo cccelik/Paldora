@@ -1,5 +1,5 @@
+import styles from '@/components/ui/badge.module.css';
 import { type ReactNode } from 'react';
-import styles from './badge.module.css';
 /** A small status or role label. Text always carries the meaning. */
 export function Badge({
   children,

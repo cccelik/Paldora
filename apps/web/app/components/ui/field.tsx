@@ -1,9 +1,9 @@
+import styles from '@/components/ui/field.module.css';
 import {
   type InputHTMLAttributes,
   type Ref,
   type TextareaHTMLAttributes,
 } from 'react';
-import styles from './field.module.css';
 interface FieldFrame {
   label: string;
   /** Becomes the control's ID and the base of its description ID. */

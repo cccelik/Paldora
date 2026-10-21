@@ -1,7 +1,7 @@
+import { safeCallbackPath } from '@/lib/security/callback-path';
+import { createSupabaseServerClient } from '@/lib/server/supabase/server';
 import { redirect } from 'next/navigation';
 import { type NextRequest } from 'next/server';
-import { safeCallbackPath } from '../../lib/callback-path';
-import { createSupabaseServerClient } from '../../lib/supabase/server';
 /**
  * Email links land here: PKCE `code` from the default templates, or
  * `token_hash` from custom recovery templates. Only allowlisted in-app paths

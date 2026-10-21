@@ -1,19 +1,19 @@
 'use server';
 
+import {
+  actionError,
+  type ActionOutcome,
+  type ActionResult,
+} from '@/lib/actions/action-result';
+import { runForm } from '@/lib/actions/action-runner';
+import { textField } from '@/lib/actions/form-data';
+import { notificationHref } from '@/lib/notifications/notification-text';
+import { apiClient } from '@/lib/server/session';
 import { uuidSchema, type UnreadCount } from '@paldora/validation';
 import { type Route } from 'next';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import {
-  actionError,
-  type ActionOutcome,
-  type ActionResult,
-} from '../lib/action-result';
-import { runForm } from '../lib/action-runner';
-import { textField } from '../lib/form-data';
-import { notificationHref } from '../lib/notification-text';
-import { apiClient } from '../lib/session';
 const openForm = z.object({
   notificationId: uuidSchema,
   postId: uuidSchema,

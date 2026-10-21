@@ -1,0 +1,47 @@
+/* The Life Update composer and editor: one column at every width. */
+
+.fieldset {
+  display: grid;
+  gap: var(--pal-space-4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--pal-space-2);
+  padding: 0;
+  font-family: var(--pal-font-editorial);
+  font-size: var(--pal-font-size-subtitle);
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--pal-text-muted);
+  font-size: var(--pal-font-size-sm);
+}
+
+.sections {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.total {
+  color: var(--pal-text-muted);
+  font-size: var(--pal-font-size-sm);
+  font-weight: 600;
+}
+
+.totalOver {
+  color: var(--pal-danger-text);
+  font-size: var(--pal-font-size-sm);
+  font-weight: 600;
+}
+
+.photos {
+  display: grid;
+  gap: var(--pal-space-3);
+}
+
+/* The page's read-only account of where a Life Update went. */

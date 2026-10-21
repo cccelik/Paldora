@@ -1,16 +1,13 @@
+import styles from '@/(signed-in)/rooms/[username]/customize/page.module.css';
+import { RoomEditor } from '@/components/rooms/room-editor';
+import { BackLink, PageHeader } from '@/components/ui';
+import { loadFriendChoices, loadRoomPreviews } from '@/lib/rooms/room-previews';
+import { roomHref, roomUsernameParam } from '@/lib/rooms/room-theme';
+import { ROOM_ABSENT } from '@/lib/server/route-params';
+import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
 import { normalizeUsername } from '@paldora/validation';
 import { type Route } from 'next';
 import { notFound } from 'next/navigation';
-import { RoomEditor } from '../../../../components/room-editor';
-import { BackLink, PageHeader } from '../../../../components/ui';
-import {
-  loadFriendChoices,
-  loadRoomPreviews,
-} from '../../../../lib/room-previews';
-import { roomHref, roomUsernameParam } from '../../../../lib/room-theme';
-import { ROOM_ABSENT } from '../../../../lib/route-params';
-import { apiClient, completedUser, orNotFound } from '../../../../lib/session';
-import styles from './page.module.css';
 export const metadata = { title: 'Customize your Room' };
 
 /**

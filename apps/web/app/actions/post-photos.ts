@@ -1,18 +1,21 @@
 'use server';
 
-import { uuidSchema } from '@paldora/validation';
-import { invalidOutcome, type ActionOutcome } from '../lib/action-result';
+import {
+  invalidOutcome,
+  type ActionOutcome,
+} from '@/lib/actions/action-result';
 import {
   assetStatusOutcome,
   photoCopy,
   reservePhotoUpload,
-} from '../lib/media-asset-action';
-import { apiClient } from '../lib/session';
+} from '@/lib/media/media-asset-action';
 import {
   PHOTO_FILE_MESSAGE,
   uploadFileSchema,
   type PreparedUpload,
-} from '../lib/upload';
+} from '@/lib/media/upload';
+import { apiClient } from '@/lib/server/session';
+import { uuidSchema } from '@paldora/validation';
 const fileSchema = uploadFileSchema('post_image').extend({ boxId: uuidSchema });
 
 /** Reserves a signed upload for one photo in a Box the person belongs to. */

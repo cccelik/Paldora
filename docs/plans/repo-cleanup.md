@@ -1,6 +1,6 @@
 # Repository cleanup plan
 
-Status: in progress (2026-10-21). Behavior-preserving refactor requested by the
+Status: completed (2026-10-21). Behavior-preserving refactor requested by the
 owner: remove duplication and bad practice, extract reusable pieces, and make
 the repository easier to navigate. Source: three read-only audits (API and
 worker, web, packages and repo root).
@@ -138,3 +138,23 @@ worker 47, storage 6); browser 31 passed and one expected skip; full-stack 80
 passed. Browser support also passed a separate TypeScript check. A stale flow
 re-export caught during full-stack discovery was removed before the green run.
 No privacy response codes or production behavior changed.
+
+## Step 5 implementation
+
+Components and libraries now use the requested feature folders and the `@/`
+alias, configured in TypeScript and Vitest. Tracked files moved with `git mv`.
+Room widgets, Memories, and the Life Update composer were split by rendering
+responsibility. Thread and Room preview data types live in the library, with
+no library-to-component imports. Shared CSS was partitioned by the classes each
+rendering owner uses; 94 modules have one owner, with no cross-feature CSS
+imports. Catalog and AGENTS.md paths describe the new ownership.
+
+Step 5 validation: format, zero-warning lint, typecheck, contract/token checks,
+build and bundle scan passed; unit 988; integration 585 on each of two runs
+(API 418, database 114, worker 47, storage 6); browser 31 passed and one expected
+skip; full-stack 80 passed. Browser support separately typechecked. Settings
+(18 elements) and Room customizer (132 elements) still match the original
+measured rectangles at both 390px and 1440px after the CSS partitions. Captures
+are `/tmp/paldora-after5-*`. Vitest's `.mts` alias and filesystem-reading test
+URLs were corrected during validation. No tests were dropped, and no deferred
+cleanup or product feature was implemented.

@@ -1,0 +1,17 @@
+.section {
+  display: grid;
+  gap: var(--pal-space-5);
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}
+
+.sectionTitle {
+  font-family: var(--pal-font-editorial);
+  font-size: var(--pal-font-size-heading-small);
+  font-weight: 600;
+}
+
+.sectionDetail {
+  color: var(--pal-text-muted);
+}

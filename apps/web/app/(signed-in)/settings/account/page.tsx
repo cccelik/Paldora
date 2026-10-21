@@ -1,9 +1,9 @@
+import styles from '@/(signed-in)/settings/account/page.module.css';
+import { AccountForm } from '@/components/account/profile-forms';
+import { AvatarUploader } from '@/components/media/avatar-uploader';
+import { TextField } from '@/components/ui';
+import { completedUser } from '@/lib/server/session';
 import Link from 'next/link';
-import { AvatarUploader } from '../../../components/avatar-uploader';
-import { AccountForm } from '../../../components/profile-forms';
-import { TextField } from '../../../components/ui';
-import { completedUser } from '../../../lib/session';
-import styles from '../settings.module.css';
 export const metadata = { title: 'Account settings' };
 
 export default async function AccountSettingsPage() {

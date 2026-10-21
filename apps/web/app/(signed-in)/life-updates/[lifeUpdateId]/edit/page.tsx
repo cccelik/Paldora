@@ -1,16 +1,16 @@
-import { type Route } from 'next';
-import { notFound } from 'next/navigation';
-import { LifeUpdateEditor } from '../../../../components/life-update-editor';
-import formStyles from '../../../../components/life-update-form.module.css';
-import { BackLink, Badge, PageHeader } from '../../../../components/ui';
-import { lifeUpdateHref } from '../../../../lib/life-update-form';
+import formStyles from '@/(signed-in)/life-updates/[lifeUpdateId]/edit/page-layout.module.css';
+import styles from '@/(signed-in)/life-updates/[lifeUpdateId]/edit/page.module.css';
+import { LifeUpdateEditor } from '@/components/life-updates/life-update-editor';
+import { BackLink, Badge, PageHeader } from '@/components/ui';
+import { lifeUpdateHref } from '@/lib/life-updates/life-update-form';
 import {
   LIFE_UPDATE_ABSENT,
   optionalUuid,
   uuidParam,
-} from '../../../../lib/route-params';
-import { apiClient, completedUser, orNotFound } from '../../../../lib/session';
-import styles from '../../../page-stack.module.css';
+} from '@/lib/server/route-params';
+import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
+import { type Route } from 'next';
+import { notFound } from 'next/navigation';
 export const metadata = { title: 'Edit Life Update' };
 
 /**

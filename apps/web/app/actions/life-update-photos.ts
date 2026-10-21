@@ -1,13 +1,16 @@
 'use server';
 
-import { invalidOutcome, type ActionOutcome } from '../lib/action-result';
-import { reservePhotoUpload } from '../lib/media-asset-action';
-import { apiClient } from '../lib/session';
+import {
+  invalidOutcome,
+  type ActionOutcome,
+} from '@/lib/actions/action-result';
+import { reservePhotoUpload } from '@/lib/media/media-asset-action';
 import {
   PHOTO_FILE_MESSAGE,
   uploadFileSchema,
   type PreparedUpload,
-} from '../lib/upload';
+} from '@/lib/media/upload';
+import { apiClient } from '@/lib/server/session';
 const fileSchema = uploadFileSchema('life_update_image');
 
 /**

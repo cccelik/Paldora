@@ -1,21 +1,21 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import {
   actionError,
   invalidOutcome,
   type ActionOutcome,
-} from '../lib/action-result';
+} from '@/lib/actions/action-result';
 import {
   assetStatusOutcome,
   reservePhotoUpload,
-} from '../lib/media-asset-action';
-import { apiClient } from '../lib/session';
+} from '@/lib/media/media-asset-action';
 import {
   PHOTO_FILE_MESSAGE,
   uploadFileSchema,
   type PreparedUpload,
-} from '../lib/upload';
+} from '@/lib/media/upload';
+import { apiClient } from '@/lib/server/session';
+import { revalidatePath } from 'next/cache';
 const fileSchema = uploadFileSchema('avatar');
 
 const uploadCopy = {

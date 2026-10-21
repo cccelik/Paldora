@@ -1,5 +1,5 @@
+import styles from '@/components/ui/stack.module.css';
 import { type HTMLAttributes } from 'react';
-import styles from './stack.module.css';
 export function Stack({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div

@@ -1,0 +1,26 @@
+/* One level of indent only: 16px on narrow screens. */
+
+.composer {
+  display: grid;
+  gap: var(--pal-space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-self: start;
+  gap: var(--pal-space-2);
+  padding-inline-start: var(--pal-space-3);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-surface);
+  font-size: var(--pal-font-size-sm);
+  font-weight: 600;
+}

@@ -1,6 +1,6 @@
+import styles from '@/(signed-in)/settings/layout.module.css';
+import { SettingsNav } from '@/components/shell/settings-nav';
 import { type ReactNode } from 'react';
-import { SettingsNav } from '../../components/settings-nav';
-import styles from './settings.module.css';
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <div className={styles.page}>

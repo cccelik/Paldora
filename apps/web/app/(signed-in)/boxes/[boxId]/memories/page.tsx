@@ -1,16 +1,20 @@
-import { type Route } from 'next';
-import { notFound } from 'next/navigation';
-import { MemoryScopePage } from '../../../../components/memory-scope-page';
-import { MemoryPeriod } from '../../../../components/memory-timeline';
-import { BackLink, EmptyState } from '../../../../components/ui';
-import { memoryHref, monthName, parsePeriod } from '../../../../lib/memories';
-import { BOX_ABSENT, uuidParam } from '../../../../lib/route-params';
+import { MemoryScopePage } from '@/components/memories/memory-scope-page';
+import { MemoryPeriod } from '@/components/memories/memory-timeline';
+import { BackLink, EmptyState } from '@/components/ui';
+import {
+  memoryHref,
+  monthName,
+  parsePeriod,
+} from '@/lib/life-updates/memories';
+import { BOX_ABSENT, uuidParam } from '@/lib/server/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
-} from '../../../../lib/session';
+} from '@/lib/server/session';
+import { type Route } from 'next';
+import { notFound } from 'next/navigation';
 export const metadata = { title: 'Box Memories' };
 
 const absent = BOX_ABSENT;

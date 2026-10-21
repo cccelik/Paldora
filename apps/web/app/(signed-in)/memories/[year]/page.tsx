@@ -1,19 +1,19 @@
-import { notFound } from 'next/navigation';
-import { MemoryScopePage } from '../../../components/memory-scope-page';
-import { MemoryPeriod } from '../../../components/memory-timeline';
-import { BackLink } from '../../../components/ui';
+import { MemoryScopePage } from '@/components/memories/memory-scope-page';
+import { MemoryPeriod } from '@/components/memories/memory-timeline';
+import { BackLink } from '@/components/ui';
 import {
   memoriesDescription,
   parseMemoryType,
   parseYear,
-} from '../../../lib/memories';
-import { MEMORY_ABSENT } from '../../../lib/route-params';
+} from '@/lib/life-updates/memories';
+import { MEMORY_ABSENT } from '@/lib/server/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
-} from '../../../lib/session';
+} from '@/lib/server/session';
+import { notFound } from 'next/navigation';
 export const metadata = { title: 'Memories' };
 
 /** One UTC year of the viewer's Memories, grouped by month. */

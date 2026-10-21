@@ -1,0 +1,27 @@
+/* Shared vertical rhythm for every form in the app. */
+.form {
+  display: grid;
+  gap: var(--pal-space-5);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pal-space-3);
+  min-height: var(--pal-size-touch-target);
+}
+
+.check input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  accent-color: var(--pal-accent);
+}

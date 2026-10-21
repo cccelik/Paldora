@@ -1,19 +1,22 @@
 'use server';
 
-import { ApiClientError } from '@paldora/api-client';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import {
   actionError,
   invalidOutcome,
   type ActionResult,
-} from '../lib/action-result';
-import { APPEARANCE_COOKIE, appearanceCookieOptions } from '../lib/appearance';
-import { publicEnvironment } from '../lib/environment';
-import { textField } from '../lib/form-data';
-import { routeForOnboarding } from '../lib/onboarding';
-import { apiClientFor } from '../lib/session';
-import { createSupabaseServerClient } from '../lib/supabase/server';
+} from '@/lib/actions/action-result';
+import { textField } from '@/lib/actions/form-data';
+import {
+  APPEARANCE_COOKIE,
+  appearanceCookieOptions,
+} from '@/lib/server/appearance';
+import { publicEnvironment } from '@/lib/server/environment';
+import { routeForOnboarding } from '@/lib/server/onboarding';
+import { apiClientFor } from '@/lib/server/session';
+import { createSupabaseServerClient } from '@/lib/server/supabase/server';
+import { ApiClientError } from '@paldora/api-client';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 const secureCookies = () =>
   publicEnvironment().NEXT_PUBLIC_WEB_URL.startsWith('https://');
 

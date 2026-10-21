@@ -1,9 +1,9 @@
+import styles from '@/(signed-in)/life-updates/page.module.css';
+import { MoreLink } from '@/components/common/more-link';
+import { LifeUpdateCard } from '@/components/life-updates/life-update-card';
+import { buttonClassName, EmptyState, PageHeader } from '@/components/ui';
+import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
 import Link from 'next/link';
-import { LifeUpdateCard } from '../../components/life-update-card';
-import { MoreLink } from '../../components/more-link';
-import { buttonClassName, EmptyState, PageHeader } from '../../components/ui';
-import { apiClient, completedUser, cursorParam } from '../../lib/session';
-import styles from '../page-stack.module.css';
 export const metadata = { title: 'Life Updates' };
 
 /** The viewer's own Life Updates, newest first, Only Me included. */

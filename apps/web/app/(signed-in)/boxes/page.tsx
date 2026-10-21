@@ -1,9 +1,9 @@
-import { CreateBoxForm } from '../../components/box-forms';
-import { BoxCardList, MyInvitationList } from '../../components/box-lists';
-import { MoreLink } from '../../components/more-link';
-import { PageHeader, Section } from '../../components/ui';
-import { apiClient, completedUser, cursorParam } from '../../lib/session';
-import styles from '../page-stack.module.css';
+import styles from '@/(signed-in)/boxes/page.module.css';
+import { CreateBoxForm } from '@/components/boxes/box-forms';
+import { BoxCardList, MyInvitationList } from '@/components/boxes/box-lists';
+import { MoreLink } from '@/components/common/more-link';
+import { PageHeader, Section } from '@/components/ui';
+import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
 export const metadata = { title: 'Boxes' };
 
 export default async function BoxesPage({ searchParams }: PageProps<'/boxes'>) {

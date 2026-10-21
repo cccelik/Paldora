@@ -1,5 +1,11 @@
 'use server';
 
+import { type ActionResult } from '@/lib/actions/action-result';
+import { runForm, runFormWithData } from '@/lib/actions/action-runner';
+import {
+  lifeUpdateHref,
+  sectionFieldName,
+} from '@/lib/life-updates/life-update-form';
 import { LIFE_UPDATE_SECTION_KEYS } from '@paldora/domain';
 import {
   createLifeUpdateSchema,
@@ -9,9 +15,6 @@ import {
 import { type Route } from 'next';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { type ActionResult } from '../lib/action-result';
-import { runForm, runFormWithData } from '../lib/action-runner';
-import { lifeUpdateHref, sectionFieldName } from '../lib/life-update-form';
 /** Every page that can show a Life Update or one of its conversations. */
 const lifeUpdatePaths = [
   '/home',

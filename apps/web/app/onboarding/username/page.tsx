@@ -1,6 +1,6 @@
-import { OnboardingLayout } from '../../components/onboarding-layout';
-import { UsernameStepForm } from '../../components/profile-forms';
-import { userOnStep } from '../../lib/session';
+import { UsernameStepForm } from '@/components/account/profile-forms';
+import { OnboardingLayout } from '@/components/auth/onboarding-layout';
+import { userOnStep } from '@/lib/server/session';
 export const metadata = { title: 'Choose your username' };
 
 export default async function UsernameStepPage() {

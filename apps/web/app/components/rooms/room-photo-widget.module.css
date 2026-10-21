@@ -1,0 +1,31 @@
+/*
+ * Room widgets. Colors come only from the Room theme variables
+ * (`--room-*`, set by `@paldora/tokens/room-themes.css` on `.room-canvas`);
+ * text uses `--room-text`/`--room-text-muted` (AA on canvas and surface),
+ * the accent is used only for non-text marks. No z-index anywhere.
+ */
+
+/* Narrow screens collapse every layout to the saved global order. */
+
+.photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo {
+  display: block;
+  overflow: hidden;
+  border: var(--pal-border-width-hairline) solid var(--room-border);
+  border-radius: var(--pal-radius-sm);
+  aspect-ratio: 1;
+}
+
+.photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

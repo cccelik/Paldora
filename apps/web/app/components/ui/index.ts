@@ -1,15 +1,19 @@
-export { Avatar, initialsOf } from './avatar';
-export { Badge } from './badge';
-export { Button, buttonClassName, type ButtonVariant } from './button';
-export { EmptyState } from './empty-state';
-export { TextAreaField, TextField } from './field';
-export { FormMessage, type MessageTone } from './form-message';
-export { PageHeader } from './page-header';
-export { Section } from './section';
-export { Wordmark } from './wordmark';
+export { Avatar, initialsOf } from '@/components/ui/avatar';
+export { Badge } from '@/components/ui/badge';
+export {
+  Button,
+  buttonClassName,
+  type ButtonVariant,
+} from '@/components/ui/button';
+export { EmptyState } from '@/components/ui/empty-state';
+export { TextAreaField, TextField } from '@/components/ui/field';
+export { FormMessage, type MessageTone } from '@/components/ui/form-message';
+export { PageHeader } from '@/components/ui/page-header';
+export { Section } from '@/components/ui/section';
+export { Wordmark } from '@/components/ui/wordmark';
 
-export { HiddenFields } from './hidden-fields';
+export { HiddenFields } from '@/components/ui/hidden-fields';
 
-export { BackLink } from './back-link';
-export { Card } from './card';
-export { Stack } from './stack';
+export { BackLink } from '@/components/ui/back-link';
+export { Card } from '@/components/ui/card';
+export { Stack } from '@/components/ui/stack';

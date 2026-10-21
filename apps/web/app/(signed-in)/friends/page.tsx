@@ -1,17 +1,14 @@
-import {
-  blockPersonAction,
-  sendFriendRequestAction,
-} from '../../actions/social';
+import styles from '@/(signed-in)/friends/page.module.css';
+import { blockPersonAction, sendFriendRequestAction } from '@/actions/social';
+import { MoreLink } from '@/components/common/more-link';
+import { UsernameActionForm } from '@/components/forms/username-action-form';
 import {
   BlockedList,
   FriendList,
   FriendRequestList,
-} from '../../components/friend-lists';
-import { MoreLink } from '../../components/more-link';
-import { PageHeader, Section } from '../../components/ui';
-import { UsernameActionForm } from '../../components/username-action-form';
-import { apiClient, completedUser, cursorParam } from '../../lib/session';
-import styles from '../page-stack.module.css';
+} from '@/components/people/friend-lists';
+import { PageHeader, Section } from '@/components/ui';
+import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
 export const metadata = { title: 'Friends' };
 
 export default async function FriendsPage({

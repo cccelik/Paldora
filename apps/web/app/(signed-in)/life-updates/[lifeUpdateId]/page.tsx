@@ -1,17 +1,17 @@
-import Link from 'next/link';
-import { CommentThread } from '../../../components/comment-thread';
-import { LifeUpdateCard } from '../../../components/life-update-card';
-import { RefreshOnPosts } from '../../../components/refresh-on-posts';
-import { lifeUpdateHref } from '../../../lib/life-update-form';
-import { conversationFor } from '../../../lib/pinned-thread';
+import styles from '@/(signed-in)/life-updates/[lifeUpdateId]/page.module.css';
+import { CommentThread } from '@/components/interactions/comment-thread';
+import { LifeUpdateCard } from '@/components/life-updates/life-update-card';
+import { RefreshOnPosts } from '@/components/realtime/refresh-on-posts';
+import { conversationFor } from '@/lib/interactions/pinned-thread';
+import { lifeUpdateHref } from '@/lib/life-updates/life-update-form';
 import {
   LIFE_UPDATE_ABSENT,
   POST_ABSENT,
   optionalUuid,
   uuidParam,
-} from '../../../lib/route-params';
-import { apiClient, completedUser, orNotFound } from '../../../lib/session';
-import styles from '../../page-stack.module.css';
+} from '@/lib/server/route-params';
+import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
+import Link from 'next/link';
 export const metadata = { title: 'Life Update' };
 
 const absent = LIFE_UPDATE_ABSENT;

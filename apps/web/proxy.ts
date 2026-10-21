@@ -1,7 +1,7 @@
+import { buildContentSecurityPolicy, createNonce } from '@/lib/security/csp';
+import { publicEnvironment } from '@/lib/server/environment';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { buildContentSecurityPolicy, createNonce } from './app/lib/csp';
-import { publicEnvironment } from './app/lib/environment';
 const hasSupabaseSession = (request: NextRequest) =>
   request.cookies.getAll().some((cookie) => cookie.name.startsWith('sb-'));
 

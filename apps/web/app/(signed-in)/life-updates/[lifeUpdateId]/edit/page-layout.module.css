@@ -1,0 +1,29 @@
+/* The Life Update composer and editor: one column at every width. */
+
+.subLegend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--pal-text-muted);
+  font-size: var(--pal-font-size-sm);
+}
+
+/* The page's read-only account of where a Life Update went. */
+.audience {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+}
+
+.audienceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

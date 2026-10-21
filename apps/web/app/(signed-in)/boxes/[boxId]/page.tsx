@@ -1,31 +1,31 @@
-import { canManageMembers } from '@paldora/domain';
-import { type Route } from 'next';
-import Link from 'next/link';
-import { MemberList } from '../../../components/box-members';
+import styles from '@/(signed-in)/boxes/[boxId]/page.module.css';
+import { MemberList } from '@/components/boxes/box-members';
 import {
   DeleteSection,
   InviteSection,
   LeaveSection,
   SettingsSection,
-} from '../../../components/box-sections';
-import { MoreLink } from '../../../components/more-link';
-import { PostFeed } from '../../../components/post-card';
-import { PostComposer } from '../../../components/post-composer';
+} from '@/components/boxes/box-sections';
+import { MoreLink } from '@/components/common/more-link';
+import { PostFeed } from '@/components/posts/post-card';
+import { PostComposer } from '@/components/posts/post-composer';
 import {
   BackLink,
   Badge,
   buttonClassName,
   PageHeader,
   Section,
-} from '../../../components/ui';
-import { BOX_ABSENT, uuidParam } from '../../../lib/route-params';
+} from '@/components/ui';
+import { BOX_ABSENT, uuidParam } from '@/lib/server/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
-} from '../../../lib/session';
-import styles from '../../page-stack.module.css';
+} from '@/lib/server/session';
+import { canManageMembers } from '@paldora/domain';
+import { type Route } from 'next';
+import Link from 'next/link';
 export const metadata = { title: 'Box' };
 
 const roleLabel = { owner: 'Owner', admin: 'Admin', member: 'Member' } as const;

@@ -1,0 +1,12 @@
+/* Shared vertical rhythm for every form in the app. */
+.form {
+  display: grid;
+  gap: var(--pal-space-5);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}

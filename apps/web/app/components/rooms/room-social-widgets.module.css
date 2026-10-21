@@ -1,0 +1,67 @@
+/*
+ * Room widgets. Colors come only from the Room theme variables
+ * (`--room-*`, set by `@paldora/tokens/room-themes.css` on `.room-canvas`);
+ * text uses `--room-text`/`--room-text-muted` (AA on canvas and surface),
+ * the accent is used only for non-text marks. No z-index anywhere.
+ */
+
+/* Narrow screens collapse every layout to the saved global order. */
+
+.music {
+  display: grid;
+  gap: var(--pal-space-1);
+  min-height: var(--pal-size-touch-target);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.musicLink {
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
+  border-inline-start: 4px solid var(--room-accent);
+  border-radius: var(--pal-radius-md);
+  background: var(--room-canvas);
+  text-decoration: none;
+}
+
+.musicTitle {
+  font-weight: 700;
+}
+
+.musicLink .musicTitle {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.musicArtist,
+.musicHost {
+  color: var(--room-text-muted);
+  font-size: var(--pal-font-size-sm);
+}
+
+.friends {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.friend {
+  display: grid;
+  justify-items: center;
+  gap: var(--pal-space-1);
+  min-height: var(--pal-size-touch-target);
+  padding: var(--pal-space-2);
+  border-radius: var(--pal-radius-md);
+  text-align: center;
+  text-underline-offset: 0.2em;
+}
+
+.friendName {
+  max-width: 100%;
+  font-size: var(--pal-font-size-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

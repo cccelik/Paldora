@@ -1,19 +1,19 @@
 'use server';
 
-import { MEDIA_PURPOSE_POLICIES, REAL_REACTION_KIND } from '@paldora/domain';
-import { uuidSchema, type PostInteractionSummary } from '@paldora/validation';
-import { z } from 'zod';
 import {
   actionError,
   invalidOutcome,
   type ActionOutcome,
-} from '../lib/action-result';
+} from '@/lib/actions/action-result';
 import {
   assetStatusOutcome,
   reservePhotoUpload,
-} from '../lib/media-asset-action';
-import { apiClient } from '../lib/session';
-import { type PreparedUpload } from '../lib/upload';
+} from '@/lib/media/media-asset-action';
+import { type PreparedUpload } from '@/lib/media/upload';
+import { apiClient } from '@/lib/server/session';
+import { MEDIA_PURPOSE_POLICIES, REAL_REACTION_KIND } from '@paldora/domain';
+import { uuidSchema, type PostInteractionSummary } from '@paldora/validation';
+import { z } from 'zod';
 const imageSchema = z.object({
   boxId: uuidSchema,
   contentType: z.literal('image/jpeg'),

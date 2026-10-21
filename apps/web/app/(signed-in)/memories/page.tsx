@@ -1,8 +1,8 @@
-import { MemoryScopePage } from '../../components/memory-scope-page';
-import { MemoryYearNav } from '../../components/memory-timeline';
-import { EmptyState } from '../../components/ui';
-import { memoriesDescription } from '../../lib/memories';
-import { apiClient, completedUser } from '../../lib/session';
+import { MemoryScopePage } from '@/components/memories/memory-scope-page';
+import { MemoryYearNav } from '@/components/memories/memory-timeline';
+import { EmptyState } from '@/components/ui';
+import { memoriesDescription } from '@/lib/life-updates/memories';
+import { apiClient, completedUser } from '@/lib/server/session';
 export const metadata = { title: 'Memories' };
 
 /** The years that hold something the viewer can still see. */

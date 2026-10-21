@@ -1,0 +1,45 @@
+/*
+ * Room widgets. Colors come only from the Room theme variables
+ * (`--room-*`, set by `@paldora/tokens/room-themes.css` on `.room-canvas`);
+ * text uses `--room-text`/`--room-text-muted` (AA on canvas and surface),
+ * the accent is used only for non-text marks. No z-index anywhere.
+ */
+
+/* Narrow screens collapse every layout to the saved global order. */
+
+.previews {
+  display: grid;
+  gap: var(--pal-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.years {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.year {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
+  border-radius: var(--pal-radius-pill);
+  text-underline-offset: 0.2em;
+}
+
+.yearLabel {
+  font-weight: 700;
+}
+
+.yearCount {
+  color: var(--room-text-muted);
+  font-size: var(--pal-font-size-sm);
+}
