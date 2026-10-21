@@ -5,7 +5,6 @@ import { RowActionForm } from '../../components/row-action-form';
 import { EmptyState, PageHeader } from '../../components/ui';
 import { apiClient, completedUser, cursorParam } from '../../lib/session';
 import styles from '../page-stack.module.css';
-
 export const metadata = { title: 'Notifications' };
 
 export default async function NotificationsPage({

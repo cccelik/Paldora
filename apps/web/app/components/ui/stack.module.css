@@ -1,0 +1,5 @@
+.stack {
+  display: grid;
+  gap: var(--pal-space-8);
+  max-width: 44rem;
+}

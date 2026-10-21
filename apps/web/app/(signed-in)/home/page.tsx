@@ -5,7 +5,6 @@ import { Avatar, buttonClassName, Section } from '../../components/ui';
 import { apiClient, completedUser, cursorParam } from '../../lib/session';
 import pageStyles from '../page-stack.module.css';
 import styles from './page.module.css';
-
 export const metadata = { title: 'Home' };
 
 export default async function HomePage({ searchParams }: PageProps<'/home'>) {

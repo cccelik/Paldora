@@ -1,14 +1,14 @@
 'use client';
 
 import { USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH } from '@paldora/domain';
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useRef } from 'react';
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
-import type { FormAction, HiddenFields } from './action-types';
-import { SubmitButton } from './submit-button';
-import { TextField } from './ui';
+import { type FormAction, type HiddenFieldValues } from './action-types';
 import styles from './form-stack.module.css';
-
+import { SubmitButton } from './submit-button';
+import { HiddenFields, TextField } from './ui';
+import { useActionSuccess } from './use-action-success';
 /** "Type a username, press a button": friend requests, blocks, invitations. */
 export function UsernameActionForm({
   action,
@@ -20,7 +20,7 @@ export function UsernameActionForm({
   pendingLabel,
 }: {
   action: FormAction;
-  fields?: HiddenFields;
+  fields?: HiddenFieldValues;
   id: string;
   label: string;
   help?: string;
@@ -30,15 +30,11 @@ export function UsernameActionForm({
   const [state, formAction] = useActionState(action, idleResult);
   const form = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (state.status === 'success') form.current?.reset();
-  }, [state]);
+  useActionSuccess(state, () => form.current?.reset());
 
   return (
     <form ref={form} action={formAction} className={styles.form}>
-      {Object.entries(fields).map(([name, value]) => (
-        <input key={name} type="hidden" name={name} value={value} />
-      ))}
+      <HiddenFields values={fields} />
       <TextField
         label={label}
         id={id}

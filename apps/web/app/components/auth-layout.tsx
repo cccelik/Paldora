@@ -1,7 +1,6 @@
-import type { ReactNode } from 'react';
-import { Wordmark } from './ui';
+import { type ReactNode } from 'react';
 import styles from './auth-layout.module.css';
-
+import { Wordmark } from './ui';
 /** The frame for signed-out pages: sign-in and password recovery. */
 export function AuthLayout({
   title,

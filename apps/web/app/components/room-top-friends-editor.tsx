@@ -9,8 +9,8 @@ import {
   type TopFriendsSize,
   type TopFriendsVisibility,
 } from '@paldora/domain';
-import type { RoomView, UserSummary } from '@paldora/validation';
-import type { Route } from 'next';
+import { type RoomView, type UserSummary } from '@paldora/validation';
+import { type Route } from 'next';
 import Link from 'next/link';
 import { useState } from 'react';
 import { updateRoomTopFriendsAction } from '../actions/rooms';
@@ -27,11 +27,10 @@ import {
   RoomSectionFeedback,
   RoomVersionField,
 } from './room-editor-parts';
-import { Avatar, Button } from './ui';
+import styles from './room-editor.module.css';
+import { Avatar, Button, HiddenFields } from './ui';
 import { useMoveFocus } from './use-move-focus';
 import { useRoomSave, type RoomSaveContext } from './use-room-save';
-import styles from './room-editor.module.css';
-
 interface TopFriendsDraft {
   readonly chosen: readonly UserSummary[];
   readonly size: TopFriendsSize;
@@ -213,10 +212,10 @@ export function RoomTopFriendsEditor({
     >
       <form action={action} className={styles.form}>
         <RoomVersionField context={context} />
-        <input
-          type="hidden"
-          name="userIds"
-          value={JSON.stringify(chosen.map((friend) => friend.id))}
+        <HiddenFields
+          values={{
+            userIds: JSON.stringify(chosen.map((friend) => friend.id)),
+          }}
         />
         <SizeAndAudience draft={draft} onChange={change} />
         {chosen.length === 0 ? (

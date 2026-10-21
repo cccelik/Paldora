@@ -2,16 +2,15 @@
 
 import { POST_MEDIA_MAX_ITEMS, type MediaContentType } from '@paldora/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PreparedUpload } from '../actions/avatar';
 import { completePostPhoto, postPhotoStatus } from '../actions/post-photos';
-import type { ActionOutcome } from '../lib/action-result';
+import { type ActionOutcome } from '../lib/action-result';
 import {
   asContentType,
   photoFileProblem,
   putToSignedUrl,
 } from '../lib/image-upload';
 import { untilProcessed } from '../lib/media-polling';
-
+import { type PreparedUpload } from '../lib/upload';
 export interface Attachment {
   readonly key: number;
   readonly previewUrl: string;

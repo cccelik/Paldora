@@ -13,7 +13,6 @@ import {
   shouldResync,
   type RealtimeHint,
 } from '../lib/realtime';
-
 interface RealtimeBridgeProps {
   apiUrl: string;
   supabaseUrl: string;

@@ -14,9 +14,9 @@ import {
   RoomSectionFeedback,
   RoomVersionField,
 } from './room-editor-parts';
-import { useRoomSave, type RoomSaveContext } from './use-room-save';
 import styles from './room-editor.module.css';
-
+import { HiddenFields } from './ui';
+import { useRoomSave, type RoomSaveContext } from './use-room-save';
 /** Who may visit: three nested audiences, each in plain words. */
 export function RoomAudienceForm({
   saved,
@@ -37,7 +37,7 @@ export function RoomAudienceForm({
       description="A block in either direction always hides your Room, whatever you choose here. Visitors only ever see posts and Life Updates they can already see."
     >
       <form action={action} className={styles.form}>
-        <input type="hidden" name="section" value="audience" />
+        <HiddenFields values={{ section: 'audience' }} />
         <RoomVersionField context={context} />
         <fieldset className={styles.fieldset}>
           <legend className={styles.legend}>Visible to</legend>

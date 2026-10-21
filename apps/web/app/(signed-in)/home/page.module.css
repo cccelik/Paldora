@@ -20,7 +20,11 @@
 
 .title {
   font-family: var(--pal-font-editorial);
-  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-size: clamp(
+    var(--pal-font-size-title-small),
+    5vw,
+    var(--pal-font-size-display)
+  );
   font-weight: 600;
   line-height: 1.15;
   overflow-wrap: anywhere;

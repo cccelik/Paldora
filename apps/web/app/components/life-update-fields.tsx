@@ -15,11 +15,10 @@ import {
   sectionsTotal,
   type SectionDrafts,
 } from '../lib/life-update-form';
-import { PhotoAttachmentList } from './photo-attachment-list';
-import { Button, TextAreaField } from './ui';
-import type { usePhotoAttachments } from './use-photo-attachments';
 import styles from './life-update-form.module.css';
-
+import { PhotoAttachmentList } from './photo-attachment-list';
+import { Button, HiddenFields, TextAreaField } from './ui';
+import { type usePhotoAttachments } from './use-photo-attachments';
 const count = (value: number) => value.toLocaleString('en');
 
 /**
@@ -77,10 +76,8 @@ export function LifeUpdatePhotoField({
   const picker = useRef<HTMLInputElement>(null);
   return (
     <div className={styles.photos}>
-      <input
-        type="hidden"
-        name="mediaAssetIds"
-        value={JSON.stringify(photos.readyIds)}
+      <HiddenFields
+        values={{ mediaAssetIds: JSON.stringify(photos.readyIds) }}
       />
       <PhotoAttachmentList
         items={photos.items}

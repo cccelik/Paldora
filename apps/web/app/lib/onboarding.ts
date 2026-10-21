@@ -1,6 +1,5 @@
-import type { OnboardingState } from '@paldora/domain';
-import type { Route } from 'next';
-
+import { type OnboardingState } from '@paldora/domain';
+import { type Route } from 'next';
 const onboardingRoutes = {
   username: '/onboarding/username',
   profile: '/onboarding/profile',

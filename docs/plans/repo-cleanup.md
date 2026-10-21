@@ -113,3 +113,28 @@ first attempt passed 79 and hit a local auth `ECONNRESET` before the remaining
 test's privacy assertions. No production behavior was changed to hide it.
 Compose returned a nonzero status after the successful one-shot bucket init;
 all three services were available and exercised by the gates.
+
+## Step 4 implementation
+
+Browser setup now lives in `e2e/support` (accessibility, console, accounts,
+sessions, flows, locators, and Rooms). Upload actions share a prepared type,
+file schemas and validation copy, reservation/status helpers, and one invalid
+outcome helper. Shared composer shortcuts, character counts, success effects,
+and debounce lifecycles replace copies. Hidden fields and BackLink/Card/Stack
+primitives own repeated markup; Section composes Card. Memories share their
+page frame and period parser, while every route retains its own API calls,
+absence codes, UUID case behavior, and not-found timing. ThemeSwatch uses the
+`appearance` prop.
+
+Generated hairline, three border-opacity levels, and the existing exact font
+sizes replace local values. Fields use the strong border level (50%, raised
+from 25%); this is the intended visual normalization, not a layout change.
+Before/after Settings and Room customizer screenshots were inspected at 390px
+and 1440px: all 18 Settings and 132 customizer measured element rectangles
+matched at both widths. Captures remain local in `/tmp/paldora-{before,after}-*`.
+
+Validation: 988 unit tests; integration 585 twice (API 418, database 114,
+worker 47, storage 6); browser 31 passed and one expected skip; full-stack 80
+passed. Browser support also passed a separate TypeScript check. A stale flow
+re-export caught during full-stack discovery was removed before the green run.
+No privacy response codes or production behavior changed.

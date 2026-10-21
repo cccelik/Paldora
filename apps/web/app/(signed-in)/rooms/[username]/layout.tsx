@@ -1,6 +1,5 @@
 import '@paldora/tokens/room-themes.css';
-import type { ReactNode } from 'react';
-
+import { type ReactNode } from 'react';
 /**
  * Room themes as static CSS scoped to `.room-canvas[data-room-*]`, loaded
  * only under `/rooms`. Deliberately no `loading.tsx` anywhere below: a

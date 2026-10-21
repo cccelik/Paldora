@@ -1,24 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
-
-const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
-async function expectAccessible(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
-  expect(
-    results.violations.map((violation) => `${violation.id}: ${violation.help}`),
-  ).toEqual([]);
-}
-
-async function expectNoOverflow(page: Page) {
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth -
-      document.documentElement.clientWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
-}
-
+import { expect, test } from '@playwright/test';
+import { expectAccessible, expectNoOverflow } from './support/a11y';
 test('the landing page links to sign-in', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Sign in' }).click();

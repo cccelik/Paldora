@@ -1,8 +1,8 @@
-import type { Route } from 'next';
-import Link from 'next/link';
+import { type Route } from 'next';
 import { notFound } from 'next/navigation';
+import { MemoryScopePage } from '../../../../components/memory-scope-page';
 import { MemoryPeriod } from '../../../../components/memory-timeline';
-import { PageHeader } from '../../../../components/ui';
+import { BackLink } from '../../../../components/ui';
 import {
   memoriesDescription,
   memoryHref,
@@ -11,14 +11,13 @@ import {
   parseMonth,
   parseYear,
 } from '../../../../lib/memories';
+import { MEMORY_ABSENT } from '../../../../lib/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
 } from '../../../../lib/session';
-import styles from '../../../page-stack.module.css';
-
 export const metadata = { title: 'Memories' };
 
 /** One UTC month of the viewer's Memories. */
@@ -44,19 +43,23 @@ export default async function MemoryMonthPage({
         cursor: cursorParam(query.cursor),
         limit: 20,
       }),
-      ['VALIDATION_FAILED'],
+      MEMORY_ABSENT,
     ),
   ]);
   const scope = { kind: 'personal' } as const;
   return (
-    <div className={styles.stack}>
-      <p>
-        <Link href={memoryHref(scope, { year }) as Route}>← All of {year}</Link>
-      </p>
-      <PageHeader
-        title={`${monthName(month)} ${year}`}
-        description={memoriesDescription}
-      />
+    <MemoryScopePage
+      title={`${monthName(month)} ${year}`}
+      description={memoriesDescription}
+      back={
+        <>
+          {' '}
+          <BackLink href={memoryHref(scope, { year }) as Route}>
+            All of {year}
+          </BackLink>{' '}
+        </>
+      }
+    >
       <MemoryPeriod
         scope={scope}
         summary={summary}
@@ -67,6 +70,6 @@ export default async function MemoryMonthPage({
         presets={me.preferences.reactionPresets}
         viewerId={me.user.id}
       />
-    </div>
+    </MemoryScopePage>
   );
 }

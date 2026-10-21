@@ -58,6 +58,31 @@
   --pal-font-brand: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
   --pal-font-editorial: Newsreader, 'Iowan Old Style', Georgia, serif;
   --pal-font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pal-border-width-hairline: 1px;
+  --pal-border-opacity-soft: 0.12;
+  --pal-border-opacity-default: 0.2;
+  --pal-border-opacity-strong: 0.5;
+  --pal-font-size-caption: 0.8125rem;
+  --pal-font-size-hero-small: 2.75rem;
+  --pal-font-size-hero-large: 4.5rem;
+  --pal-font-size-lead: 1.125rem;
+  --pal-font-size-sm: 0.875rem;
+  --pal-font-size-subtitle: 1.25rem;
+  --pal-font-size-title-small: 1.75rem;
+  --pal-font-size-display: 2.25rem;
+  --pal-font-size-body: 1rem;
+  --pal-font-size-brand-small: 1.3rem;
+  --pal-font-size-display-large: 2.5rem;
+  --pal-font-size-heading-small: 1.375rem;
+  --pal-font-size-heading: 1.5rem;
+  --pal-font-size-xs: 0.75rem;
+  --pal-font-size-title: 1.875rem;
+  --pal-font-size-body-large: 1.0625rem;
+  --pal-font-size-relative-label: 0.75em;
+  --pal-font-size-display-small: 2rem;
+  --pal-font-size-readable: 0.9375rem;
+  --pal-font-size-hero: 3rem;
+  --pal-font-size-relative-small: 0.7em;
 }
 
 :root,

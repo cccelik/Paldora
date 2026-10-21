@@ -1,4 +1,4 @@
-import type { PostInteractionSummary } from '@paldora/validation';
+import { type PostInteractionSummary } from '@paldora/validation';
 import { describe, expect, it } from 'vitest';
 import {
   countOf,
@@ -6,7 +6,6 @@ import {
   reactionKinds,
   withViewerReaction,
 } from './reaction-summary';
-
 const summary: PostInteractionSummary = {
   commentCount: 2,
   reactions: [

@@ -1,11 +1,10 @@
-import type { CommentThreadView as ThreadPageItem } from '@paldora/validation';
+import { type CommentThreadView as ThreadPageItem } from '@paldora/validation';
 import { itemId } from '../lib/comment-items';
 import { CommentComposer } from './comment-composer';
 import { CommentThreadView, type ThreadData } from './comment-thread-view';
+import styles from './comment-thread.module.css';
 import { MoreLink } from './more-link';
 import { EmptyState } from './ui';
-import styles from './comment-thread.module.css';
-
 const toThreadData = (thread: ThreadPageItem): ThreadData => ({
   root: thread.root,
   rootId: itemId(thread.root),

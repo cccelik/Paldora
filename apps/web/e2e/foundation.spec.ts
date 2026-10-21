@@ -1,25 +1,6 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
-
-const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
-/** Collects console errors, which include CSP violations and hydration bugs. */
-function watchConsole(page: Page): string[] {
-  const errors: string[] = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  page.on('pageerror', (error) => errors.push(error.message));
-  return errors;
-}
-
-async function expectAccessible(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
-  expect(
-    results.violations.map((violation) => `${violation.id}: ${violation.help}`),
-  ).toEqual([]);
-}
-
+import { expect, test } from '@playwright/test';
+import { expectAccessible } from './support/a11y';
+import { watchConsole } from './support/console';
 test('landing page presents the promise accessibly', async ({ page }) => {
   const errors = watchConsole(page);
   const response = await page.goto('/');

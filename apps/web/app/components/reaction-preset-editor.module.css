@@ -18,10 +18,15 @@
   width: 3.5rem;
   height: 3.5rem;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-md);
   background: var(--pal-canvas);
-  font-size: 1.75rem;
+  font-size: var(--pal-font-size-title-small);
   line-height: 1;
   cursor: pointer;
 }

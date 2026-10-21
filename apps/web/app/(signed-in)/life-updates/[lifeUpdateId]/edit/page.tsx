@@ -1,14 +1,16 @@
-import { uuidSchema } from '@paldora/validation';
-import Link from 'next/link';
-import type { Route } from 'next';
+import { type Route } from 'next';
 import { notFound } from 'next/navigation';
 import { LifeUpdateEditor } from '../../../../components/life-update-editor';
-import { Badge, PageHeader } from '../../../../components/ui';
-import { lifeUpdateHref } from '../../../../lib/life-update-form';
-import { apiClient, completedUser, orNotFound } from '../../../../lib/session';
 import formStyles from '../../../../components/life-update-form.module.css';
+import { BackLink, Badge, PageHeader } from '../../../../components/ui';
+import { lifeUpdateHref } from '../../../../lib/life-update-form';
+import {
+  LIFE_UPDATE_ABSENT,
+  optionalUuid,
+  uuidParam,
+} from '../../../../lib/route-params';
+import { apiClient, completedUser, orNotFound } from '../../../../lib/session';
 import styles from '../../../page-stack.module.css';
-
 export const metadata = { title: 'Edit Life Update' };
 
 /**
@@ -20,23 +22,20 @@ export default async function EditLifeUpdatePage({
   searchParams,
 }: PageProps<'/life-updates/[lifeUpdateId]/edit'>) {
   const me = await completedUser();
-  const id = uuidSchema.safeParse((await params).lifeUpdateId);
-  if (!id.success) notFound();
-  const lifeUpdate = await orNotFound((await apiClient()).lifeUpdate(id.data), [
-    'LIFE_UPDATE_NOT_FOUND',
-    'VALIDATION_FAILED',
-  ]);
+  const id = uuidParam((await params).lifeUpdateId);
+  const lifeUpdate = await orNotFound(
+    (await apiClient()).lifeUpdate(id),
+    LIFE_UPDATE_ABSENT,
+  );
   if (lifeUpdate.author.id !== me.user.id) notFound();
-  const box = uuidSchema.safeParse((await searchParams).box);
+  const box = optionalUuid((await searchParams).box)?.toLowerCase();
   const returnBoxId = lifeUpdate.contexts.find(
-    (context) => box.success && context.box.id === box.data.toLowerCase(),
+    (context) => box !== undefined && context.box.id === box,
   )?.box.id;
   const back = lifeUpdateHref(lifeUpdate.id, { boxId: returnBoxId });
   return (
     <div className={styles.stack}>
-      <p>
-        <Link href={back as Route}>← Back to the Life Update</Link>
-      </p>
+      <BackLink href={back as Route}>Back to the Life Update</BackLink>
       <PageHeader title="Edit Life Update" />
       <section className={formStyles.audience} aria-labelledby="audience-title">
         <h2 id="audience-title" className={formStyles.subLegend}>

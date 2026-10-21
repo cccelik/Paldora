@@ -1,8 +1,7 @@
-import type { MediaAssetView } from '@paldora/validation';
+import { type MediaAssetView } from '@paldora/validation';
 import { describe, expect, it, vi } from 'vitest';
-import type { ActionOutcome } from './action-result';
+import { type ActionOutcome } from './action-result';
 import { MEDIA_POLL_MS, untilProcessed, untilSettled } from './media-polling';
-
 type Status = MediaAssetView['status'];
 const ok = (data: Status): ActionOutcome<Status> => ({
   status: 'success',

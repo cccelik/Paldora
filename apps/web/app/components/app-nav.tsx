@@ -1,6 +1,6 @@
 'use client';
 
-import type { Route } from 'next';
+import { type Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -9,7 +9,6 @@ import {
   type NavigationLink,
 } from '../lib/navigation';
 import styles from './app-shell.module.css';
-
 function NavLinks({
   links,
   className,

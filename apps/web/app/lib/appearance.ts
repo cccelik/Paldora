@@ -1,5 +1,4 @@
-import type { Appearance } from '@paldora/domain';
-
+import { type Appearance } from '@paldora/domain';
 /**
  * A device-side mirror of the server-stored appearance preference, so the
  * root layout can render the right theme before any data loads. PostgreSQL

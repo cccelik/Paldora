@@ -7,7 +7,7 @@ import {
   prepareReactionImage,
   reactionImageStatus,
 } from '../actions/reaction-media';
-import type { ActionOutcome } from '../lib/action-result';
+import { type ActionOutcome } from '../lib/action-result';
 import {
   CAMERA_JPEG_QUALITY,
   fitWithin,
@@ -17,7 +17,6 @@ import {
 } from '../lib/camera';
 import { putToSignedUrl } from '../lib/image-upload';
 import { untilProcessed } from '../lib/media-polling';
-
 /**
  * idle → requesting → live → captured → uploading → processing → sent.
  * `paused` is live interrupted by a hidden page; `unavailable` is a camera

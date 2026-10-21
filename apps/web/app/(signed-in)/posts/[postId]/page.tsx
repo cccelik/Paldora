@@ -1,11 +1,15 @@
-import { uuidSchema } from '@paldora/validation';
-import type { Route } from 'next';
-import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { type Route } from 'next';
+import { redirect } from 'next/navigation';
 import { CommentThread } from '../../../components/comment-thread';
 import { PostCard } from '../../../components/post-card';
+import { BackLink } from '../../../components/ui';
 import { lifeUpdateHref } from '../../../lib/life-update-form';
 import { conversationFor } from '../../../lib/pinned-thread';
+import {
+  POST_ABSENT,
+  optionalUuid,
+  uuidParam,
+} from '../../../lib/route-params';
 import {
   apiClient,
   completedUser,
@@ -13,7 +17,6 @@ import {
   orNotFound,
 } from '../../../lib/session';
 import styles from '../../page-stack.module.css';
-
 export const metadata = { title: 'Post' };
 
 export default async function PostPage({
@@ -21,22 +24,18 @@ export default async function PostPage({
   searchParams,
 }: PageProps<'/posts/[postId]'>) {
   const me = await completedUser();
-  const id = uuidSchema.safeParse((await params).postId);
-  if (!id.success) notFound();
+  const id = uuidParam((await params).postId);
   const query = await searchParams;
   const api = await apiClient();
-  const post = await orNotFound(api.post(id.data), [
-    'POST_NOT_FOUND',
-    'VALIDATION_FAILED',
-  ]);
+  const post = await orNotFound(api.post(id), POST_ABSENT);
   // A Life Update's backing post has no content of its own: show the Life
   // Update, opened on this Box's conversation, keeping any deep link.
   if (post.kind === 'life_update' && post.lifeUpdateId) {
-    const linked = uuidSchema.safeParse(query.comment);
+    const linked = optionalUuid(query.comment)?.toLowerCase();
     redirect(
       lifeUpdateHref(post.lifeUpdateId, {
         boxId: post.box.id,
-        commentId: linked.success ? linked.data.toLowerCase() : null,
+        commentId: linked ?? null,
         commentsCursor: cursorParam(query.comments),
       }) as Route,
     );
@@ -45,14 +44,12 @@ export default async function PostPage({
     api,
     post.id,
     query,
-    ['POST_NOT_FOUND', 'VALIDATION_FAILED'],
+    POST_ABSENT,
   );
   const presets = me.preferences.reactionPresets;
   return (
     <div className={styles.stack}>
-      <p>
-        <Link href={`/boxes/${post.box.id}`}>← {post.box.name}</Link>
-      </p>
+      <BackLink href={`/boxes/${post.box.id}`}>{post.box.name}</BackLink>
       <PostCard
         post={post}
         presets={presets}

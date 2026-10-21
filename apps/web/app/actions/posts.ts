@@ -4,9 +4,8 @@ import { POST_MEDIA_MAX_ITEMS } from '@paldora/domain';
 import { postContentSchema, uuidSchema } from '@paldora/validation';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import type { ActionResult } from '../lib/action-result';
+import { type ActionResult } from '../lib/action-result';
 import { runForm } from '../lib/action-runner';
-
 const feedPaths = ['/home', '/boxes/[boxId]', '/posts/[postId]'];
 
 /** The composer sends its ready photo IDs as one JSON field, in order. */

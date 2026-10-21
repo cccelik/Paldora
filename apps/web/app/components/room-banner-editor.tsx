@@ -1,17 +1,16 @@
 'use client';
 
-import type { RoomView } from '@paldora/validation';
+import { type RoomView } from '@paldora/validation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { completePostPhoto, postPhotoStatus } from '../actions/post-photos';
 import { prepareRoomBanner, saveRoomBanner } from '../actions/rooms';
 import { idleResult, type ActionResult } from '../lib/action-result';
 import { mediaFileProblem, PHOTO_ACCEPT } from '../lib/image-upload';
 import { EditorSection, RoomSectionFeedback } from './room-editor-parts';
+import styles from './room-editor.module.css';
 import { Button, FormMessage } from './ui';
 import { useMediaUpload, type MediaUploadSteps } from './use-media-upload';
 import { reportRoomSave, type RoomSaveContext } from './use-room-save';
-import styles from './room-editor.module.css';
-
 const bannerSteps: MediaUploadSteps = {
   fileProblem: (file) => mediaFileProblem(file, 'room_banner'),
   prepare: prepareRoomBanner,

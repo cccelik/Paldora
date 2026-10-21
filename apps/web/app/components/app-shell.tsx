@@ -1,14 +1,13 @@
-import type { CurrentUser, UnreadCount } from '@paldora/validation';
+import { type CurrentUser, type UnreadCount } from '@paldora/validation';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { signOutAction } from '../actions/auth';
 import { primaryNavigation } from '../lib/navigation';
 import { AppNav, BottomNav } from './app-nav';
+import styles from './app-shell.module.css';
 import { NotificationBell } from './notification-bell';
 import { SubmitButton } from './submit-button';
 import { Avatar, Wordmark } from './ui';
-import styles from './app-shell.module.css';
-
 /**
  * The trusted frame around signed-in pages. Navigation and account actions
  * live here, outside any user-customized content (a Room canvas sits in

@@ -1,10 +1,8 @@
-import 'server-only';
-
 import { ApiClientError, type PaldoraApiClient } from '@paldora/api-client';
 import { uuidSchema, type CommentItemView } from '@paldora/validation';
-import type { ThreadData } from '../components/comment-thread-view';
+import 'server-only';
+import { type ThreadData } from '../components/comment-thread-view';
 import { cursorParam, orNotFound } from './session';
-
 /** Absent and not-yours look the same; only those become "no pin". */
 async function visibleOrNull<Value>(work: Promise<Value>) {
   try {

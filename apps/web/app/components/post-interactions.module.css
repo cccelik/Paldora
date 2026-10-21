@@ -37,7 +37,7 @@
 
 .meta {
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }
 
 .everyone {
@@ -45,7 +45,7 @@
   align-items: center;
   min-height: var(--pal-size-touch-target);
   color: var(--pal-text);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   font-weight: 600;
   text-underline-offset: 0.2em;
 }
@@ -58,7 +58,12 @@
   min-width: var(--pal-size-touch-target);
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-3);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-default) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-pill);
   background: transparent;
   color: var(--pal-text);
@@ -69,5 +74,9 @@
 }
 
 .camera:hover {
-  border-color: color-mix(in srgb, var(--pal-text) 50%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+    transparent
+  );
 }

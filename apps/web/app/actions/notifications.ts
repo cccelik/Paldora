@@ -1,7 +1,7 @@
 'use server';
 
 import { uuidSchema, type UnreadCount } from '@paldora/validation';
-import type { Route } from 'next';
+import { type Route } from 'next';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -14,7 +14,6 @@ import { runForm } from '../lib/action-runner';
 import { textField } from '../lib/form-data';
 import { notificationHref } from '../lib/notification-text';
 import { apiClient } from '../lib/session';
-
 const openForm = z.object({
   notificationId: uuidSchema,
   postId: uuidSchema,

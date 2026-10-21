@@ -1,10 +1,9 @@
 'use server';
 
-import { MEDIA_PURPOSE_POLICIES } from '@paldora/domain';
-import { mediaContentTypeSchema, type RoomView } from '@paldora/validation';
-import { z } from 'zod';
+import { type RoomView } from '@paldora/validation';
 import {
   actionError,
+  invalidOutcome,
   type ActionOutcome,
   type ActionResult,
 } from '../lib/action-result';
@@ -19,8 +18,11 @@ import {
   SECTION_SAVED,
 } from '../lib/room-forms';
 import { apiClient } from '../lib/session';
-import type { PreparedUpload } from './avatar';
-
+import {
+  PHOTO_FILE_MESSAGE,
+  uploadFileSchema,
+  type PreparedUpload,
+} from '../lib/upload';
 /**
  * Room customizer actions. Each sends the version the editor last saw
  * (`expectedUpdatedAt`) and returns the saved Room, whose `updatedAt` the
@@ -78,14 +80,7 @@ export async function updateRoomTopFriendsAction(
   );
 }
 
-const bannerFileSchema = z.object({
-  contentType: mediaContentTypeSchema,
-  contentLength: z
-    .number()
-    .int()
-    .min(1)
-    .max(MEDIA_PURPOSE_POLICIES.room_banner.maxBytes),
-});
+const bannerFileSchema = uploadFileSchema('room_banner');
 
 const bannerUploadCopy = {
   ...photoCopy,
@@ -99,12 +94,7 @@ export async function prepareRoomBanner(
 ): Promise<ActionOutcome<PreparedUpload>> {
   const parsed = bannerFileSchema.safeParse(input);
   if (!parsed.success) {
-    return {
-      status: 'error',
-      code: 'VALIDATION_FAILED',
-      message: 'Choose a JPEG, PNG, or WebP photo up to 10 MB.',
-      tone: 'attention',
-    };
+    return invalidOutcome(PHOTO_FILE_MESSAGE);
   }
   const api = await apiClient();
   return reservePhotoUpload(

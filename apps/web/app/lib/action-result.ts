@@ -1,5 +1,4 @@
 import { ApiClientError } from '@paldora/api-client';
-
 /**
  * What a Server Action returns to `useActionState`. Results travel in React
  * state, never in URL query strings, so messages do not leak into history,
@@ -55,3 +54,11 @@ export function actionError(
     tone: error.status < 500 ? 'attention' : 'failure',
   };
 }
+
+/** Expected validation failure without exposing parser internals. */
+export const invalidOutcome = (message: string): ActionOutcome<never> => ({
+  status: 'error',
+  code: 'VALIDATION_FAILED',
+  message,
+  tone: 'attention',
+});

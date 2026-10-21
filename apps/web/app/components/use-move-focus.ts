@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-
 interface PendingFocus {
   readonly key: string;
   readonly direction: 'up' | 'down';

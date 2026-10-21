@@ -12,7 +12,12 @@
   align-items: center;
   gap: var(--pal-space-3) var(--pal-space-4);
   padding: var(--pal-space-3) 0;
-  border-top: 1px solid color-mix(in srgb, var(--pal-text) 12%, transparent);
+  border-top: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
+      transparent
+    );
 }
 
 .row:first-child {
@@ -47,7 +52,7 @@
 
 .username {
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   overflow-wrap: anywhere;
 }
 

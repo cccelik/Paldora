@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
-import { provisionAccount } from './accounts';
+import { provisionAccount } from '../support/accounts';
+import { comment } from '../support/flows';
 import {
   expectAccessible,
   expectNoOverflow,
@@ -9,8 +10,7 @@ import {
   sharedBox,
   signedIn,
   tabTo,
-} from './sessions';
-
+} from '../support/sessions';
 const photo = fileURLToPath(
   new URL('../fixtures/photo-with-gps.jpg', import.meta.url),
 );
@@ -18,17 +18,6 @@ const photo = fileURLToPath(
 const lifeUpdateOn = (page: Page) =>
   page.getByRole('article', { name: /^Life Update by/ });
 const boxIdOf = (url: string) => url.split('/').at(-1) ?? '';
-
-async function comment(page: Page, text: string) {
-  const field = page.getByLabel('Add a comment');
-  await field.fill(text);
-  await field.press('ControlOrMeta+Enter');
-  await expect(
-    page
-      .getByRole('article', { name: /^Comment by/ })
-      .filter({ hasText: text }),
-  ).toBeVisible();
-}
 
 test('a Life Update reaches two Boxes once, with a conversation per Box', async ({
   page,

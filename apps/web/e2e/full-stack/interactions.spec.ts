@@ -1,46 +1,19 @@
 import { expect, test, type Page } from '@playwright/test';
-import { provisionAccount } from './accounts';
+import { provisionAccount } from '../support/accounts';
+import { comment, openPermalink, post } from '../support/flows';
+import { postOn } from '../support/locators';
 import {
   expectAccessible,
   expectNoOverflow,
   personOnOwnSession,
   sharedBox,
   signedIn,
-} from './sessions';
-
+} from '../support/sessions';
 /** Notifications come from the worker's projector: allow it a few polls. */
 const projected = { timeout: 20_000 };
 const live = (page: Page) => page.locator('[data-realtime="connected"]');
-const postOn = (page: Page) => page.getByRole('article', { name: /Post by/ });
+
 const bell = (page: Page) => page.getByRole('link', { name: /^Notifications/ });
-
-async function post(page: Page, text: string) {
-  await page.getByLabel('Share with this Box').fill(text);
-  await page.getByRole('button', { name: 'Post', exact: true }).click();
-  await expect(page.getByText(text)).toBeVisible();
-}
-
-/** From a Box page, open the post's own page through its comments link. */
-async function openPermalink(page: Page, boxUrl: string) {
-  await page.goto(boxUrl);
-  await postOn(page)
-    .getByRole('link', { name: 'Comment', exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/posts\/[0-9a-f-]{36}#comments$/);
-  return page.url().replace(/#comments$/, '');
-}
-
-async function comment(page: Page, text: string) {
-  const field = page.getByLabel('Add a comment');
-  await field.fill(text);
-  await field.press('ControlOrMeta+Enter');
-  await expect(
-    page
-      .getByRole('article', { name: /^Comment by/ })
-      .filter({ hasText: text }),
-  ).toBeVisible();
-  await expect(field).toHaveValue('');
-}
 
 async function reply(page: Page, to: string, text: string) {
   await page

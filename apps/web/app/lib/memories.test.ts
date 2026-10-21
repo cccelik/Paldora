@@ -1,4 +1,4 @@
-import type { MemoryItemView } from '@paldora/validation';
+import { type MemoryItemView } from '@paldora/validation';
 import { describe, expect, it } from 'vitest';
 import {
   groupByMonth,
@@ -8,7 +8,6 @@ import {
   parseMonth,
   parseYear,
 } from './memories';
-
 const BOX = '7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10';
 
 describe('Memories URL parsing', () => {

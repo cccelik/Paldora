@@ -5,7 +5,6 @@ import {
   nextTabIndex,
   sectionsTotal,
 } from './life-update-form';
-
 const ID = '0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22';
 const BOX = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
 const COMMENT = '3b9f0f2a-1c4d-4e5f-8a6b-7c8d9e0f1a2b';

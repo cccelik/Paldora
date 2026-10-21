@@ -10,7 +10,6 @@ import {
 import { idleTapGuard, settle, tap } from '../lib/tap-guard';
 import { EmojiChooser } from './emoji-chooser';
 import styles from './reaction-bar.module.css';
-
 type SetReaction = (kind: string | null) => Promise<void>;
 
 /**

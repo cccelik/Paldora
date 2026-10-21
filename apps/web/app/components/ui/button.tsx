@@ -1,6 +1,5 @@
-import type { ButtonHTMLAttributes, Ref } from 'react';
+import { type ButtonHTMLAttributes, type Ref } from 'react';
 import styles from './button.module.css';
-
 export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'danger';
 
 /** Class names for anything that should look like a button (links too). */

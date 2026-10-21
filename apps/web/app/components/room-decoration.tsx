@@ -1,6 +1,5 @@
-import type { RoomDecorationPack } from '@paldora/domain';
+import { type RoomDecorationPack } from '@paldora/domain';
 import styles from './room-decoration.module.css';
-
 /** Unicode glyphs only: no images, no fonts, nothing fetched. */
 const glyphs: Readonly<Record<RoomDecorationPack, readonly string[]>> = {
   none: [],

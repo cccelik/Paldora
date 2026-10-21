@@ -1,20 +1,19 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { MemoryScopePage } from '../../../components/memory-scope-page';
 import { MemoryPeriod } from '../../../components/memory-timeline';
-import { PageHeader } from '../../../components/ui';
+import { BackLink } from '../../../components/ui';
 import {
   memoriesDescription,
   parseMemoryType,
   parseYear,
 } from '../../../lib/memories';
+import { MEMORY_ABSENT } from '../../../lib/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
 } from '../../../lib/session';
-import styles from '../../page-stack.module.css';
-
 export const metadata = { title: 'Memories' };
 
 /** One UTC year of the viewer's Memories, grouped by month. */
@@ -37,18 +36,20 @@ export default async function MemoryYearPage({
         cursor: cursorParam(query.cursor),
         limit: 20,
       }),
-      ['VALIDATION_FAILED'],
+      MEMORY_ABSENT,
     ),
   ]);
   return (
-    <div className={styles.stack}>
-      <p>
-        <Link href="/memories">← All years</Link>
-      </p>
-      <PageHeader
-        title={`Memories of ${year}`}
-        description={memoriesDescription}
-      />
+    <MemoryScopePage
+      title={`Memories of ${year}`}
+      description={memoriesDescription}
+      back={
+        <>
+          {' '}
+          <BackLink href="/memories">All years</BackLink>{' '}
+        </>
+      }
+    >
       <MemoryPeriod
         scope={{ kind: 'personal' }}
         summary={summary}
@@ -58,6 +59,6 @@ export default async function MemoryYearPage({
         presets={me.preferences.reactionPresets}
         viewerId={me.user.id}
       />
-    </div>
+    </MemoryScopePage>
   );
 }

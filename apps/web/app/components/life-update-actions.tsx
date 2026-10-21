@@ -1,13 +1,12 @@
-import type { Route } from 'next';
+import { type Route } from 'next';
 import Link from 'next/link';
 import {
   deleteLifeUpdateAction,
   deleteLifeUpdateAndLeaveAction,
 } from '../actions/life-updates';
 import { ConfirmAction } from './confirm-action';
-import { buttonClassName } from './ui';
 import styles from './post-card.module.css';
-
+import { buttonClassName } from './ui';
 /**
  * The author's Edit link and confirmed Delete. Delete always takes the
  * whole Life Update, from every Box, with its conversations: there is no

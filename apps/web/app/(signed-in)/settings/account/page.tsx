@@ -4,7 +4,6 @@ import { AccountForm } from '../../../components/profile-forms';
 import { TextField } from '../../../components/ui';
 import { completedUser } from '../../../lib/session';
 import styles from '../settings.module.css';
-
 export const metadata = { title: 'Account settings' };
 
 export default async function AccountSettingsPage() {

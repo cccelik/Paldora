@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { PERMISSIONS_POLICY, securityHeaders } from './security-headers';
-
 const header = (deployed: boolean, key: string) =>
   securityHeaders({ deployed }).find((entry) => entry.key === key)?.value;
 

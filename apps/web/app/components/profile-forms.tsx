@@ -14,10 +14,9 @@ import {
 } from '../actions/profile';
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
+import styles from './form-stack.module.css';
 import { SubmitButton } from './submit-button';
 import { TextAreaField, TextField } from './ui';
-import styles from './form-stack.module.css';
-
 const usernameHelp = '3–30 letters, numbers, or underscores.';
 
 function UsernameInput({ defaultValue }: { defaultValue: string }) {

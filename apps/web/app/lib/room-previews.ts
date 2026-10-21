@@ -1,14 +1,12 @@
+import { type PaldoraApiClient } from '@paldora/api-client';
+import { type RoomWidgetType } from '@paldora/domain';
+import { type RoomView, type UserSummary } from '@paldora/validation';
 import 'server-only';
-
-import type { PaldoraApiClient } from '@paldora/api-client';
-import type { RoomWidgetType } from '@paldora/domain';
-import type { RoomView, UserSummary } from '@paldora/validation';
 import {
   ROOM_PHOTO_PREVIEW_COUNT,
   type RoomPreviews,
 } from '../components/room-widgets';
 import { orNotFound } from './session';
-
 const absent = ['ROOM_NOT_FOUND'];
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 import { POST_CONTENT_MAX_LENGTH } from '@paldora/domain';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   deletePostAction,
   deletePostAndLeaveAction,
@@ -10,10 +10,10 @@ import {
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
 import { ConfirmAction } from './confirm-action';
-import { SubmitButton } from './submit-button';
-import { Button, TextAreaField } from './ui';
 import styles from './post-card.module.css';
-
+import { SubmitButton } from './submit-button';
+import { Button, HiddenFields, TextAreaField } from './ui';
+import { useActionSuccess } from './use-action-success';
 function EditForm({
   postId,
   initial,
@@ -26,12 +26,10 @@ function EditForm({
   onDone: () => void;
 }) {
   const [state, action] = useActionState(updatePostAction, idleResult);
-  useEffect(() => {
-    if (state.status === 'success') onDone();
-  }, [state, onDone]);
+  useActionSuccess(state, () => onDone());
   return (
     <form action={action} className={styles.composer}>
-      <input type="hidden" name="postId" value={postId} />
+      <HiddenFields values={{ postId: postId }} />
       <TextAreaField
         label="Edit your post"
         id={`edit-${postId}`}

@@ -1,9 +1,8 @@
+import { expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { expect, type Page } from '@playwright/test';
 import { fullStackEnvironment } from '../playwright.fullstack.config';
-import type { Account } from './accounts';
-
+import { type Account } from './accounts';
 /**
  * Room set-up shared by `rooms.spec.ts` and `room-customize.spec.ts`. What
  * belongs to other features (friends, Boxes, Room settings, the banner

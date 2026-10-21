@@ -2,7 +2,7 @@
   padding: var(--pal-space-3) var(--pal-space-4);
   border-radius: var(--pal-radius-md);
   background: var(--pal-surface);
-  font-size: 0.9375rem;
+  font-size: var(--pal-font-size-readable);
 }
 
 .success {

@@ -1,5 +1,4 @@
 import styles from './form-message.module.css';
-
 export type MessageTone = 'success' | 'attention' | 'failure';
 
 /**

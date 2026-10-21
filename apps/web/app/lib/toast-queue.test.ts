@@ -10,7 +10,6 @@ import {
   type ToastAction,
   type ToastState,
 } from './toast-queue';
-
 const run = (actions: readonly ToastAction[], state = initialToastState) =>
   actions.reduce<ToastState>(toastReducer, state);
 

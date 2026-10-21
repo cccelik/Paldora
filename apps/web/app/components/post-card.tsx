@@ -1,13 +1,12 @@
-import type { FeedItemView, PostView } from '@paldora/validation';
+import { type FeedItemView, type PostView } from '@paldora/validation';
 import Link from 'next/link';
 import { LifeUpdateCard } from './life-update-card';
 import { LocalTime } from './local-time';
 import { PostActions } from './post-actions';
+import styles from './post-card.module.css';
 import { PostInteractions } from './post-interactions';
 import { PostPhotos } from './post-photos';
 import { Avatar, Badge, EmptyState } from './ui';
-import styles from './post-card.module.css';
-
 export function PostCard({
   post,
   presets,

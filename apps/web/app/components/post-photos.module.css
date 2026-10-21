@@ -106,7 +106,7 @@
   min-width: var(--pal-size-touch-target);
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-4);
-  border: 1px solid
+  border: var(--pal-border-width-hairline) solid
     color-mix(in srgb, var(--pal-color-text-dark-primary) 40%, transparent);
   border-radius: var(--pal-radius-pill);
   background: transparent;

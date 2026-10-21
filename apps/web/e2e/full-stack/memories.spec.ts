@@ -1,15 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
-import { provisionAccount } from './accounts';
+import { expectSound } from '../support/a11y';
+import { provisionAccount } from '../support/accounts';
 import {
   expectAccessible,
-  expectNoOverflow,
   personOnOwnSession,
   shareLifeUpdate,
   sharedBox,
   signedIn,
   tabTo,
-} from './sessions';
-
+} from '../support/sessions';
 // Everything is shared during the test, so it lands in the current UTC month.
 const now = new Date();
 const year = now.getUTCFullYear();
@@ -29,11 +28,6 @@ async function postInBox(page: Page, boxUrl: string, text: string) {
   await composer.fill(text);
   await composer.press('ControlOrMeta+Enter');
   await expect(page.getByText(text)).toBeVisible();
-}
-
-async function expectSound(page: Page) {
-  await expectAccessible(page);
-  await expectNoOverflow(page);
 }
 
 test('Memories gather posts and Life Updates once, by year and month, from the keyboard', async ({

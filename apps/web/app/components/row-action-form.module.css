@@ -9,7 +9,12 @@
   display: grid;
   gap: var(--pal-space-3);
   padding: var(--pal-space-4);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-md);
   background: var(--pal-canvas);
 }

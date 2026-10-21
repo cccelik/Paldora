@@ -1,13 +1,11 @@
-import 'server-only';
-
 import { ApiClientError, PaldoraApiClient } from '@paldora/api-client';
-import type { CurrentUser } from '@paldora/validation';
+import { type CurrentUser } from '@paldora/validation';
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
+import 'server-only';
 import { publicEnvironment } from './environment';
 import { routeForOnboarding } from './onboarding';
 import { createSupabaseServerClient } from './supabase/server';
-
 /**
  * The web data-access layer. The session cookie only supplies the bearer
  * token; the API verifies it and decides authorization on every call.

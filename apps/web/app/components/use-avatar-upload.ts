@@ -9,7 +9,6 @@ import {
 } from '../actions/avatar';
 import { avatarFileProblem } from '../lib/image-upload';
 import { useMediaUpload, type MediaUploadSteps } from './use-media-upload';
-
 export type { UploadPhase } from './use-media-upload';
 
 const avatarSteps: MediaUploadSteps = {

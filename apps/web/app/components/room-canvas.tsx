@@ -1,15 +1,14 @@
 import { resolveRoomStyle } from '@paldora/domain';
-import type { RoomView } from '@paldora/validation';
+import { type RoomView } from '@paldora/validation';
 import {
   roomColumns,
   roomThemeAttributes,
   type PlacedWidget,
 } from '../lib/room-theme';
+import styles from './room-canvas.module.css';
 import { RoomDecoration, RoomSparkles } from './room-decoration';
 import { RoomWidget, type RoomPreviews } from './room-widgets';
 import { Avatar } from './ui';
-import styles from './room-canvas.module.css';
-
 export type { RoomPreviews } from './room-widgets';
 
 /**

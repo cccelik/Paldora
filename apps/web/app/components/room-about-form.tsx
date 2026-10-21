@@ -16,10 +16,9 @@ import {
   RoomSectionFeedback,
   RoomVersionField,
 } from './room-editor-parts';
-import { TextAreaField, TextField } from './ui';
-import { useRoomSave, type RoomSaveContext } from './use-room-save';
 import styles from './room-editor.module.css';
-
+import { HiddenFields, TextAreaField, TextField } from './ui';
+import { useRoomSave, type RoomSaveContext } from './use-room-save';
 interface AboutDraft {
   readonly location: string;
   readonly currently: string;
@@ -78,7 +77,7 @@ export function RoomAboutForm({
       description="Plain text only. Leave a field empty to take it off your Room."
     >
       <form action={action} className={styles.form}>
-        <input type="hidden" name="section" value="about" />
+        <HiddenFields values={{ section: 'about' }} />
         <RoomVersionField context={context} />
         <TextField
           label="Location"

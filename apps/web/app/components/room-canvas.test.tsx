@@ -1,11 +1,10 @@
+import { DEFAULT_ROOM_WIDGETS, ROOM_THEME_PRESETS } from '@paldora/domain';
+import { type RoomView } from '@paldora/validation';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_ROOM_WIDGETS, ROOM_THEME_PRESETS } from '@paldora/domain';
-import type { RoomView } from '@paldora/validation';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { RoomCanvas, type RoomPreviews } from './room-canvas';
-
 const read = (relative: string) =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
 

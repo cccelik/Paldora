@@ -17,7 +17,12 @@
   min-width: var(--pal-size-touch-target);
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-3);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-default) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-pill);
   background: transparent;
   color: var(--pal-text);
@@ -34,7 +39,11 @@
 
 .reaction:hover,
 .more:hover {
-  border-color: color-mix(in srgb, var(--pal-text) 50%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+    transparent
+  );
 }
 
 .more {
@@ -42,12 +51,12 @@
 }
 
 .emoji {
-  font-size: 1.125rem;
+  font-size: var(--pal-font-size-lead);
   line-height: 1;
 }
 
 .count {
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -57,5 +66,5 @@
   gap: var(--pal-space-1);
   padding: var(--pal-space-1) var(--pal-space-2);
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { buildContentSecurityPolicy, createNonce } from './csp';
-
 const base = {
   nonce: 'abc123',
   webUrl: 'https://paldora.example',

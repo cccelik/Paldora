@@ -1,15 +1,14 @@
 'use client';
 
-import type { RoomView } from '@paldora/validation';
-import type { ReactNode } from 'react';
-import type { ActionResult } from '../lib/action-result';
+import { type RoomView } from '@paldora/validation';
+import { type ReactNode } from 'react';
+import { type ActionResult } from '../lib/action-result';
 import { moveLabel } from '../lib/room-editor';
 import { ActionFeedback } from './action-feedback';
-import { SubmitButton } from './submit-button';
-import { Button } from './ui';
-import { ROOM_STALE_CODE, type RoomSaveContext } from './use-room-save';
 import styles from './room-editor.module.css';
-
+import { SubmitButton } from './submit-button';
+import { Button, HiddenFields } from './ui';
+import { ROOM_STALE_CODE, type RoomSaveContext } from './use-room-save';
 /**
  * A persistent "reload" message: the Room changed somewhere else (another
  * tab or device), so nothing here is saved over it. Reloading shows the
@@ -84,13 +83,7 @@ export function RoomSaveButton({
 
 /** The fields every Room write sends with the person's choices. */
 export function RoomVersionField({ context }: { context: RoomSaveContext }) {
-  return (
-    <input
-      type="hidden"
-      name="expectedUpdatedAt"
-      value={context.version ?? ''}
-    />
-  );
+  return <HiddenFields values={{ expectedUpdatedAt: context.version ?? '' }} />;
 }
 
 /**

@@ -9,10 +9,9 @@ import {
 } from '../actions/boxes';
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
-import { SubmitButton } from './submit-button';
-import { TextField } from './ui';
 import styles from './form-stack.module.css';
-
+import { SubmitButton } from './submit-button';
+import { HiddenFields, TextField } from './ui';
 export function CreateBoxForm() {
   const [state, action] = useActionState(createBoxAction, idleResult);
   return (
@@ -44,7 +43,7 @@ export function RenameBoxForm({
   const [state, action] = useActionState(renameBoxAction, idleResult);
   return (
     <form action={action} className={styles.form}>
-      <input type="hidden" name="boxId" value={boxId} />
+      <HiddenFields values={{ boxId: boxId }} />
       <TextField
         label="Box name"
         id="rename-box"
@@ -79,7 +78,7 @@ export function DeleteBoxForm({
   const ready = typed === name && understood;
   return (
     <form action={action} className={styles.form}>
-      <input type="hidden" name="boxId" value={boxId} />
+      <HiddenFields values={{ boxId: boxId }} />
       <TextField
         label={`Type “${name}” to confirm`}
         id="delete-box-name"

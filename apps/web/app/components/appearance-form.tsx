@@ -1,14 +1,13 @@
 'use client';
 
-import type { Appearance } from '@paldora/domain';
+import { type Appearance } from '@paldora/domain';
 import { useActionState } from 'react';
 import { saveAppearanceAction } from '../actions/profile';
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
-import { SubmitButton } from './submit-button';
 import styles from './appearance-form.module.css';
 import formStyles from './form-stack.module.css';
-
+import { SubmitButton } from './submit-button';
 const options: readonly { value: Appearance; label: string; detail: string }[] =
   [
     {

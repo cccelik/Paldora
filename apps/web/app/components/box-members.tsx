@@ -1,5 +1,8 @@
 import { mayChangeRole, mayRemoveMember, type BoxRole } from '@paldora/domain';
-import type { BoxInvitationView, BoxMemberView } from '@paldora/validation';
+import {
+  type BoxInvitationView,
+  type BoxMemberView,
+} from '@paldora/validation';
 import {
   removeMemberAction,
   revokeInvitationAction,
@@ -10,7 +13,6 @@ import { ConfirmAction } from './confirm-action';
 import { PersonList, PersonRow } from './person-row';
 import { RowActionForm } from './row-action-form';
 import { Badge, EmptyState } from './ui';
-
 const roleLabel = { owner: 'Owner', admin: 'Admin', member: 'Member' } as const;
 
 function MemberActions({

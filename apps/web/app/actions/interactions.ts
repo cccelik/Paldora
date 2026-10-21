@@ -12,12 +12,12 @@ import {
 import { z } from 'zod';
 import {
   actionError,
+  invalidOutcome,
   type ActionOutcome,
   type ActionResult,
 } from '../lib/action-result';
 import { runForm, runFormWithData } from '../lib/action-runner';
 import { apiClient } from '../lib/session';
-
 /**
  * Comments change the conversation pages only (a post's, or a Life Update's
  * for one Box); feeds learn from realtime hints.
@@ -32,13 +32,6 @@ const copy = {
   RATE_LIMITED: 'That’s a lot at once. Try again in a little while.',
 };
 
-const invalid = (message: string): ActionOutcome<never> => ({
-  status: 'error',
-  code: 'VALIDATION_FAILED',
-  message,
-  tone: 'attention',
-});
-
 /** Validates `unknown` input, then runs one API call for a button. */
 async function call<Schema extends z.ZodType, Output>(
   schema: Schema,
@@ -46,7 +39,7 @@ async function call<Schema extends z.ZodType, Output>(
   work: (input: z.output<Schema>) => Promise<Output>,
 ): Promise<ActionOutcome<Output>> {
   const parsed = schema.safeParse(input);
-  if (!parsed.success) return invalid('Choose a single emoji.');
+  if (!parsed.success) return invalidOutcome('Choose a single emoji.');
   try {
     return {
       status: 'success',

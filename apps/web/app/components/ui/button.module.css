@@ -5,7 +5,7 @@
   gap: var(--pal-space-2);
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-5);
-  border: 1px solid transparent;
+  border: var(--pal-border-width-hairline) solid transparent;
   border-radius: var(--pal-radius-pill);
   font: inherit;
   font-weight: 600;
@@ -29,7 +29,11 @@
 }
 
 .secondary {
-  border-color: color-mix(in srgb, var(--pal-text) 30%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+    transparent
+  );
   background: transparent;
   color: var(--pal-text);
 }

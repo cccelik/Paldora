@@ -3,8 +3,7 @@ import {
   ROOM_WIDGET_TYPES,
   type RoomWidgetSetting,
 } from '@paldora/domain';
-import type { RoomView, UserSummary } from '@paldora/validation';
-
+import { type RoomView, type UserSummary } from '@paldora/validation';
 /**
  * Pure helpers for the Room customizer: ordering lists with buttons, the
  * words announced after a move, and what a draft is missing. The rules

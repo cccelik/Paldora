@@ -15,12 +15,12 @@
   display: flex;
   gap: var(--pal-space-2);
   color: var(--room-accent);
-  font-size: 1.25rem;
+  font-size: var(--pal-font-size-subtitle);
   line-height: 1;
 }
 
 .glyph:nth-child(2) {
-  font-size: 0.75em;
+  font-size: var(--pal-font-size-relative-label);
   transform: translateY(0.6em);
 }
 
@@ -32,7 +32,7 @@
   position: absolute;
   width: 5.5rem;
   height: 1.25rem;
-  border: 1px solid var(--room-border);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
   background: var(--room-surface);
   opacity: 0.85;
 }
@@ -52,7 +52,7 @@
 .sparkles {
   inset: 0;
   color: var(--room-accent);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   line-height: 1;
 }
 

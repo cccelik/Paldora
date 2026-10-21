@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import {
   DEFAULT_ROOM,
   DEFAULT_ROOM_WIDGETS,
@@ -14,6 +12,8 @@ import {
   resolveTokens,
   roomSchemeOf,
 } from '@paldora/tokens';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   excerpt,
@@ -23,7 +23,6 @@ import {
   roomThemeAttributes,
   roomUsernameParam,
 } from './room-theme';
-
 const read = (relative: string) =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
 

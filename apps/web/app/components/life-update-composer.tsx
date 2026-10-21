@@ -14,14 +14,14 @@ import {
   LifeUpdatePhotoField,
   LifeUpdateSectionFields,
 } from './life-update-fields';
+import styles from './life-update-form.module.css';
 import { SubmitButton } from './submit-button';
-import { TextField } from './ui';
+import { HiddenFields, TextField } from './ui';
 import {
   usePhotoAttachments,
   type PreparePhoto,
 } from './use-photo-attachments';
-import styles from './life-update-form.module.css';
-
+import { useSubmitShortcut } from './use-submit-shortcut';
 export interface AudienceBox {
   readonly id: string;
   readonly name: string;
@@ -210,24 +210,20 @@ export function LifeUpdateComposer({
     photosBusy: photos.busy,
     audience: { type, boxCount: chosen.length },
   });
+  const submitShortcut = useSubmitShortcut(form, problem === null);
   return (
     <form
       ref={form}
       action={action}
       className={styles.form}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-          event.preventDefault();
-          if (problem === null) form.current?.requestSubmit();
-        }
-      }}
+      onKeyDown={submitShortcut}
     >
-      <input
-        type="hidden"
-        name="boxIds"
-        value={JSON.stringify(
-          type === 'boxes' ? chosen.map((box) => box.id) : [],
-        )}
+      <HiddenFields
+        values={{
+          boxIds: JSON.stringify(
+            type === 'boxes' ? chosen.map((box) => box.id) : [],
+          ),
+        }}
       />
       <LifeUpdateSectionFields
         idPrefix="life-update"

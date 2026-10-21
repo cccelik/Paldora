@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './settings-nav.module.css';
-
 const sections = [
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/appearance', label: 'Appearance' },

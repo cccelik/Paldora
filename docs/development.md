@@ -118,6 +118,11 @@ pnpm contract:check && pnpm tokens:check && pnpm build
 Then run `pnpm test:integration` with Docker up, `pnpm test:e2e`, and
 `pnpm test:e2e:full`.
 
+Browser support lives in `apps/web/e2e/support`: `a11y`, `console`,
+`sessions`, `accounts`, `flows`, `locators`, and `rooms`. Specs reuse these
+helpers; support is outside the spec discovery paths. `sessions` keeps a
+facade for the established setup helpers.
+
 ## Full-stack browser tests
 
 `pnpm test:e2e:full` (config: `apps/web/e2e/playwright.fullstack.config.ts`,

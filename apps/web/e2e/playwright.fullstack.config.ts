@@ -5,7 +5,6 @@ import {
   sharedConfig,
   viewportProjects,
 } from './playwright.shared';
-
 /**
  * Full-stack browser tests: real web (production build), API, worker,
  * PostgreSQL, Redis, and MinIO. Only the identity provider is replaced, by a

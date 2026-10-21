@@ -1,13 +1,12 @@
 'use client';
 
-import type { RoomView } from '@paldora/validation';
+import { type RoomView } from '@paldora/validation';
 import { useActionState } from 'react';
 import {
   idleResult,
   type ActionOutcome,
   type ActionResult,
 } from '../lib/action-result';
-
 export const ROOM_STALE_CODE = 'ROOM_UPDATE_STALE';
 
 /**

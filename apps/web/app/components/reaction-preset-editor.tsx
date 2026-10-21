@@ -6,10 +6,9 @@ import { reactionPresetsAction } from '../actions/presets';
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
 import { EmojiChooser } from './emoji-chooser';
-import { SubmitButton } from './submit-button';
-import { Button } from './ui';
 import styles from './reaction-preset-editor.module.css';
-
+import { SubmitButton } from './submit-button';
+import { Button, HiddenFields } from './ui';
 /**
  * Five slots, each changed through the same chooser the reaction bar uses.
  * Saving sends all five; the server checks they are distinct emoji.
@@ -42,7 +41,7 @@ export function ReactionPresetEditor({
       <ol className={styles.slots} aria-label="Your five shortcuts">
         {slots.map((emoji, index) => (
           <li key={index} className={styles.slot}>
-            <input type="hidden" name={`preset${index}`} value={emoji} />
+            <HiddenFields values={{ [`preset${index}`]: emoji }} />
             <EmojiChooser
               title={`Choose shortcut ${index + 1}`}
               trigger={<span aria-hidden="true">{emoji}</span>}

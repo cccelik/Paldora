@@ -9,10 +9,9 @@ import {
 } from '../actions/auth';
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback as Feedback } from './action-feedback';
+import styles from './form-stack.module.css';
 import { SubmitButton } from './submit-button';
 import { TextField } from './ui';
-import styles from './form-stack.module.css';
-
 export function SignInForm() {
   const [state, action] = useActionState(signInAction, idleResult);
   return (

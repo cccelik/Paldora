@@ -1,14 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import {
   REALTIME_DEBOUNCE_MS,
   concernsPosts,
   type RealtimeHint,
 } from '../lib/realtime';
+import { useDebouncedCallback } from './use-debounced-callback';
 import { useRealtimeHint } from './use-realtime-hint';
-
 /**
  * Re-renders the page (through its normal authorized queries) when a
  * realtime hint concerns one of these posts. For pages whose URL does not
@@ -20,15 +20,13 @@ export function RefreshOnPosts({ postIds }: { postIds: readonly string[] }) {
     () => new Set(postIds.map((id) => id.toLowerCase())),
     [postIds],
   );
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const refresh = useDebouncedCallback(
+    () => router.refresh(),
+    REALTIME_DEBOUNCE_MS.routeRefresh,
+  );
   useRealtimeHint((hint: RealtimeHint) => {
     if (!concernsPosts(shown, hint)) return;
-    clearTimeout(timer.current);
-    timer.current = setTimeout(
-      () => router.refresh(),
-      REALTIME_DEBOUNCE_MS.routeRefresh,
-    );
+    refresh();
   });
   return null;
 }

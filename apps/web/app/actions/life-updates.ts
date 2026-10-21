@@ -6,13 +6,12 @@ import {
   updateLifeUpdateSchema,
   uuidSchema,
 } from '@paldora/validation';
-import type { Route } from 'next';
+import { type Route } from 'next';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import type { ActionResult } from '../lib/action-result';
+import { type ActionResult } from '../lib/action-result';
 import { runForm, runFormWithData } from '../lib/action-runner';
 import { lifeUpdateHref, sectionFieldName } from '../lib/life-update-form';
-
 /** Every page that can show a Life Update or one of its conversations. */
 const lifeUpdatePaths = [
   '/home',

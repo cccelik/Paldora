@@ -21,7 +21,7 @@ body {
   background: var(--pal-canvas);
   color: var(--pal-text);
   font-family: var(--pal-font-ui);
-  font-size: 1rem;
+  font-size: var(--pal-font-size-body);
   line-height: 1.5;
   text-rendering: optimizeLegibility;
 }

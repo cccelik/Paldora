@@ -1,17 +1,16 @@
 import { normalizeUsername } from '@paldora/validation';
-import type { Route } from 'next';
-import Link from 'next/link';
+import { type Route } from 'next';
 import { notFound } from 'next/navigation';
 import { RoomEditor } from '../../../../components/room-editor';
-import { PageHeader } from '../../../../components/ui';
+import { BackLink, PageHeader } from '../../../../components/ui';
 import {
   loadFriendChoices,
   loadRoomPreviews,
 } from '../../../../lib/room-previews';
 import { roomHref, roomUsernameParam } from '../../../../lib/room-theme';
+import { ROOM_ABSENT } from '../../../../lib/route-params';
 import { apiClient, completedUser, orNotFound } from '../../../../lib/session';
 import styles from './page.module.css';
-
 export const metadata = { title: 'Customize your Room' };
 
 /**
@@ -34,18 +33,16 @@ export default async function CustomizeRoomPage({
     notFound();
   }
   const api = await apiClient();
-  const room = await orNotFound(api.myRoom(), ['ROOM_NOT_FOUND']);
+  const room = await orNotFound(api.myRoom(), ROOM_ABSENT);
   const [previews, choices] = await Promise.all([
     loadRoomPreviews(api, room, { every: true }),
     loadFriendChoices(api),
   ]);
   return (
     <div className={styles.page}>
-      <p>
-        <Link href={roomHref(room.owner.username) as Route}>
-          ← Back to your Room
-        </Link>
-      </p>
+      <BackLink href={roomHref(room.owner.username) as Route}>
+        Back to your Room
+      </BackLink>
       <PageHeader
         title="Customize your Room"
         description="Each section saves on its own. Your Room is yours to style; who can see your posts and Life Updates never changes here."

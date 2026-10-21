@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { buttonClassName, Wordmark } from './components/ui';
 import styles from './page.module.css';
-
 const promises = [
   {
     title: 'Private by default',

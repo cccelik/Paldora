@@ -1,24 +1,24 @@
 import { canManageMembers } from '@paldora/domain';
-import { uuidSchema } from '@paldora/validation';
-import type { Route } from 'next';
+import { type Route } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { MemberList } from '../../../components/box-members';
 import {
   DeleteSection,
   InviteSection,
   LeaveSection,
   SettingsSection,
 } from '../../../components/box-sections';
-import { MemberList } from '../../../components/box-members';
-import { PostComposer } from '../../../components/post-composer';
-import { PostFeed } from '../../../components/post-card';
 import { MoreLink } from '../../../components/more-link';
+import { PostFeed } from '../../../components/post-card';
+import { PostComposer } from '../../../components/post-composer';
 import {
+  BackLink,
   Badge,
   buttonClassName,
   PageHeader,
   Section,
 } from '../../../components/ui';
+import { BOX_ABSENT, uuidParam } from '../../../lib/route-params';
 import {
   apiClient,
   completedUser,
@@ -26,20 +26,18 @@ import {
   orNotFound,
 } from '../../../lib/session';
 import styles from '../../page-stack.module.css';
-
 export const metadata = { title: 'Box' };
 
 const roleLabel = { owner: 'Owner', admin: 'Admin', member: 'Member' } as const;
-const absent = ['BOX_NOT_FOUND', 'VALIDATION_FAILED'];
+const absent = BOX_ABSENT;
 
 export default async function BoxPage({
   params,
   searchParams,
 }: PageProps<'/boxes/[boxId]'>) {
   const me = await completedUser();
-  const parsedId = uuidSchema.safeParse((await params).boxId);
-  if (!parsedId.success) notFound();
-  const boxId = parsedId.data;
+  const parsedId = uuidParam((await params).boxId);
+  const boxId = parsedId;
   const api = await apiClient();
   const box = await orNotFound(api.box(boxId), absent);
   const manager = canManageMembers(box.currentUserRole);
@@ -55,9 +53,7 @@ export default async function BoxPage({
   ]);
   return (
     <div className={styles.stack}>
-      <p>
-        <Link href="/boxes">← All Boxes</Link>
-      </p>
+      <BackLink href="/boxes">All Boxes</BackLink>
       <PageHeader
         title={box.name}
         meta={

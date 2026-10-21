@@ -1,7 +1,6 @@
-import type { ReactNode } from 'react';
-import { Wordmark } from './ui';
+import { type ReactNode } from 'react';
 import styles from './onboarding-layout.module.css';
-
+import { Wordmark } from './ui';
 const totalSteps = 3;
 
 /** The frame for the three setup steps: username, profile, photo. */

@@ -9,14 +9,18 @@
 }
 
 .inline {
-  font-size: 1.5rem;
+  font-size: var(--pal-font-size-heading);
 }
 
 .display {
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-size: clamp(
+    var(--pal-font-size-display-small),
+    6vw,
+    var(--pal-font-size-hero)
+  );
 }
 
 .star {
   color: var(--pal-accent);
-  font-size: 0.7em;
+  font-size: var(--pal-font-size-relative-small);
 }

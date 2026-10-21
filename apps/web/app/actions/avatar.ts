@@ -1,30 +1,22 @@
 'use server';
 
-import { MEDIA_PURPOSE_POLICIES } from '@paldora/domain';
-import {
-  mediaContentTypeSchema,
-  uuidSchema,
-  type MediaAssetView,
-} from '@paldora/validation';
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { actionError, type ActionOutcome } from '../lib/action-result';
+import {
+  actionError,
+  invalidOutcome,
+  type ActionOutcome,
+} from '../lib/action-result';
+import {
+  assetStatusOutcome,
+  reservePhotoUpload,
+} from '../lib/media-asset-action';
 import { apiClient } from '../lib/session';
-
-export interface PreparedUpload {
-  readonly mediaAssetId: string;
-  readonly url: string;
-  readonly headers: Readonly<Record<string, string>>;
-}
-
-const fileSchema = z.object({
-  contentType: mediaContentTypeSchema,
-  contentLength: z
-    .number()
-    .int()
-    .min(1)
-    .max(MEDIA_PURPOSE_POLICIES.avatar.maxBytes),
-});
+import {
+  PHOTO_FILE_MESSAGE,
+  uploadFileSchema,
+  type PreparedUpload,
+} from '../lib/upload';
+const fileSchema = uploadFileSchema('avatar');
 
 const uploadCopy = {
   MEDIA_UPLOAD_MISMATCH: 'That photo didn’t upload completely. Try again.',
@@ -41,53 +33,34 @@ export async function prepareAvatarUpload(
 ): Promise<ActionOutcome<PreparedUpload>> {
   const parsed = fileSchema.safeParse(file);
   if (!parsed.success) {
-    return {
-      status: 'error',
-      code: 'VALIDATION_FAILED',
-      message: 'Choose a JPEG, PNG, or WebP photo up to 10 MB.',
-      tone: 'attention',
-    };
+    return invalidOutcome(PHOTO_FILE_MESSAGE);
   }
-  try {
-    const { mediaAsset, upload } = await (
-      await apiClient()
-    ).createMediaUpload({ purpose: 'avatar', ...parsed.data });
-    return {
-      status: 'success',
-      message: 'Upload ready.',
-      data: {
-        mediaAssetId: mediaAsset.id,
-        url: upload.url,
-        headers: upload.headers,
-      },
-    };
-  } catch (error) {
-    return actionError(error, uploadCopy);
-  }
-}
-
-async function withAsset(
-  mediaAssetId: unknown,
-  call: (id: string) => Promise<MediaAssetView>,
-): Promise<ActionOutcome<MediaAssetView['status']>> {
-  const id = uuidSchema.safeParse(mediaAssetId);
-  if (!id.success) return actionError(new Error('invalid id'));
-  try {
-    const asset = await call(id.data);
-    return { status: 'success', message: asset.status, data: asset.status };
-  } catch (error) {
-    return actionError(error, uploadCopy);
-  }
+  return reservePhotoUpload(
+    async () =>
+      (await apiClient()).createMediaUpload({
+        purpose: 'avatar',
+        ...parsed.data,
+      }),
+    uploadCopy,
+  );
 }
 
 export async function completeAvatarUpload(mediaAssetId: unknown) {
   const api = await apiClient();
-  return withAsset(mediaAssetId, (id) => api.completeMediaUpload(id));
+  return assetStatusOutcome(
+    mediaAssetId,
+    (id) => api.completeMediaUpload(id),
+    uploadCopy,
+  );
 }
 
 export async function avatarUploadStatus(mediaAssetId: unknown) {
   const api = await apiClient();
-  const result = await withAsset(mediaAssetId, (id) => api.mediaAsset(id));
+  const result = await assetStatusOutcome(
+    mediaAssetId,
+    (id) => api.mediaAsset(id),
+    uploadCopy,
+  );
   if (result.status === 'success' && result.data === 'ready') {
     revalidatePath('/', 'layout');
   }

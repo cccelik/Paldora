@@ -18,7 +18,12 @@
   gap: var(--pal-space-4);
   min-height: var(--pal-size-touch-target);
   padding: var(--pal-space-3) var(--pal-space-4);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-default) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-md);
   cursor: pointer;
 }
@@ -42,5 +47,5 @@
 .detail {
   display: block;
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }

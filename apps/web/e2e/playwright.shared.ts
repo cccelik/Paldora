@@ -1,10 +1,9 @@
-import { fileURLToPath } from 'node:url';
 import {
   devices,
   type PlaywrightTestConfig,
   type Project,
 } from '@playwright/test';
-
+import { fileURLToPath } from 'node:url';
 /**
  * The repository root. Web servers start there (their commands use root
  * paths), and artifacts land in its `test-results/`, which CI uploads.

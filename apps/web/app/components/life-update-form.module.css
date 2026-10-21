@@ -18,7 +18,7 @@
   margin-bottom: var(--pal-space-2);
   padding: 0;
   font-family: var(--pal-font-editorial);
-  font-size: 1.25rem;
+  font-size: var(--pal-font-size-subtitle);
   font-weight: 600;
 }
 
@@ -29,7 +29,7 @@
 
 .hint {
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }
 
 .sections {
@@ -39,13 +39,13 @@
 
 .total {
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   font-weight: 600;
 }
 
 .totalOver {
   color: var(--pal-danger-text);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   font-weight: 600;
 }
 
@@ -85,7 +85,12 @@
   min-width: 0;
   margin: 0;
   padding: var(--pal-space-4);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 15%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-md);
 }
 
@@ -106,7 +111,12 @@
 
 .boxRow {
   min-height: 3rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--pal-text) 8%, transparent);
+  border-bottom: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
+      transparent
+    );
 }
 
 .boxList li:last-child .boxRow {
@@ -128,7 +138,7 @@
   flex-basis: 100%;
   padding-inline-start: calc(1.25rem + var(--pal-space-3));
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }
 
 .notice {

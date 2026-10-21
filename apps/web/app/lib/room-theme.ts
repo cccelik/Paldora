@@ -9,7 +9,6 @@ import {
   usernameSchema,
   type RoomView,
 } from '@paldora/validation';
-
 /**
  * Pure helpers for showing a Room. A Room's look is a set of `data-*`
  * attributes that select static CSS from `@paldora/tokens/room-themes.css`:

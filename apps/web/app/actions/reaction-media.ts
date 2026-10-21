@@ -3,11 +3,17 @@
 import { MEDIA_PURPOSE_POLICIES, REAL_REACTION_KIND } from '@paldora/domain';
 import { uuidSchema, type PostInteractionSummary } from '@paldora/validation';
 import { z } from 'zod';
-import { actionError, type ActionOutcome } from '../lib/action-result';
-import { assetStatusOutcome } from '../lib/media-asset-action';
+import {
+  actionError,
+  invalidOutcome,
+  type ActionOutcome,
+} from '../lib/action-result';
+import {
+  assetStatusOutcome,
+  reservePhotoUpload,
+} from '../lib/media-asset-action';
 import { apiClient } from '../lib/session';
-import type { PreparedUpload } from './avatar';
-
+import { type PreparedUpload } from '../lib/upload';
 const imageSchema = z.object({
   boxId: uuidSchema,
   contentType: z.literal('image/jpeg'),
@@ -30,13 +36,6 @@ const copy = {
   RATE_LIMIT_UNAVAILABLE: 'Camera reactions are paused for a moment.',
 };
 
-const invalid = (message: string): ActionOutcome<never> => ({
-  status: 'error',
-  code: 'VALIDATION_FAILED',
-  message,
-  tone: 'attention',
-});
-
 /**
  * Reserves a signed upload for one camera frame, scoped to the post's Box
  * so exactly the people who see the post can see the image.
@@ -45,23 +44,16 @@ export async function prepareReactionImage(
   input: unknown,
 ): Promise<ActionOutcome<PreparedUpload>> {
   const parsed = imageSchema.safeParse(input);
-  if (!parsed.success) return invalid('That photo is too large to send.');
-  try {
-    const { mediaAsset, upload } = await (
-      await apiClient()
-    ).createMediaUpload({ purpose: 'reaction_image', ...parsed.data });
-    return {
-      status: 'success',
-      message: 'Upload ready.',
-      data: {
-        mediaAssetId: mediaAsset.id,
-        url: upload.url,
-        headers: upload.headers,
-      },
-    };
-  } catch (error) {
-    return actionError(error, copy);
-  }
+  if (!parsed.success)
+    return invalidOutcome('That photo is too large to send.');
+  return reservePhotoUpload(
+    async () =>
+      (await apiClient()).createMediaUpload({
+        purpose: 'reaction_image',
+        ...parsed.data,
+      }),
+    copy,
+  );
 }
 
 export async function completeReactionImage(mediaAssetId: unknown) {
@@ -92,7 +84,7 @@ export async function setCameraReactionAction(
   input: unknown,
 ): Promise<ActionOutcome<PostInteractionSummary>> {
   const parsed = cameraReaction.safeParse(input);
-  if (!parsed.success) return invalid('That photo can’t be sent.');
+  if (!parsed.success) return invalidOutcome('That photo can’t be sent.');
   try {
     const { postId, mediaAssetId } = parsed.data;
     const summary = await (

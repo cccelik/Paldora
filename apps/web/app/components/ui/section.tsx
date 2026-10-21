@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
+import { Card } from './card';
 import styles from './section.module.css';
-
 /** A titled panel: the repeated block of settings, friends, and Box pages. */
 export function Section({
   id,
@@ -14,7 +14,7 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className={styles.section} aria-labelledby={`${id}-title`}>
+    <Card as="section" aria-labelledby={`${id}-title`}>
       <header className={styles.header}>
         <h2 id={`${id}-title`} className={styles.title}>
           {title}
@@ -24,6 +24,6 @@ export function Section({
         ) : null}
       </header>
       {children}
-    </section>
+    </Card>
   );
 }

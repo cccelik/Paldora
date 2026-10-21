@@ -3,7 +3,6 @@
 import { isSingleEmoji } from '@paldora/domain';
 import { useId, useRef, useState, type ReactNode } from 'react';
 import styles from './emoji-chooser.module.css';
-
 /** A small, static set to pick from; any other emoji can be typed. */
 export const CURATED_EMOJI = [
   '👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏',

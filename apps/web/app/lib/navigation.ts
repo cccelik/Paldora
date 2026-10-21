@@ -1,5 +1,4 @@
 import { roomHref } from './room-theme';
-
 /**
  * The one list of primary destinations. The desktop top nav shows every
  * link in list order; below 768px the bottom nav shows the five with a

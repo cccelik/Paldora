@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import styles from './status-page.module.css';
-
 export const metadata = { title: 'Not found' };
 
 /**

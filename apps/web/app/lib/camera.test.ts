@@ -5,7 +5,6 @@ import {
   problemFromError,
   unsupportedReason,
 } from './camera';
-
 describe('fitWithin', () => {
   it('keeps frames that already fit', () => {
     expect(fitWithin({ width: 640, height: 480 })).toEqual({

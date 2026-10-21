@@ -142,6 +142,90 @@
       ]
     }
   },
+  "borderWidth": {
+    "$type": "dimension",
+    "hairline": {
+      "$value": "1px"
+    }
+  },
+  "borderOpacity": {
+    "$type": "number",
+    "soft": {
+      "$value": 0.12
+    },
+    "default": {
+      "$value": 0.2
+    },
+    "strong": {
+      "$value": 0.5
+    }
+  },
+  "fontSize": {
+    "$type": "dimension",
+    "caption": {
+      "$value": "0.8125rem"
+    },
+    "heroSmall": {
+      "$value": "2.75rem"
+    },
+    "heroLarge": {
+      "$value": "4.5rem"
+    },
+    "lead": {
+      "$value": "1.125rem"
+    },
+    "sm": {
+      "$value": "0.875rem"
+    },
+    "subtitle": {
+      "$value": "1.25rem"
+    },
+    "titleSmall": {
+      "$value": "1.75rem"
+    },
+    "display": {
+      "$value": "2.25rem"
+    },
+    "body": {
+      "$value": "1rem"
+    },
+    "brandSmall": {
+      "$value": "1.3rem"
+    },
+    "displayLarge": {
+      "$value": "2.5rem"
+    },
+    "headingSmall": {
+      "$value": "1.375rem"
+    },
+    "heading": {
+      "$value": "1.5rem"
+    },
+    "xs": {
+      "$value": "0.75rem"
+    },
+    "title": {
+      "$value": "1.875rem"
+    },
+    "bodyLarge": {
+      "$value": "1.0625rem"
+    },
+    "relativeLabel": {
+      "$value": "0.75em"
+    },
+    "displaySmall": {
+      "$value": "2rem"
+    },
+    "readable": {
+      "$value": "0.9375rem"
+    },
+    "hero": {
+      "$value": "3rem"
+    },
+    "relativeSmall": {
+      "$value": "0.7em"
+    }
+  },
   "room": {
     "$description": "Room themes (Phase 7, ADR 017). Scoped to `.room-canvas` by generated room-themes.css and never used by the app shell. Canvas, surface, and text are the legacy seeds; textMuted and border are new solid colors (legacy used the accent at 40% alpha). Each accent has a value for light presets and one for dark presets, so every accent meets 3:1 on every preset; legacy accents were nudged where they failed (ADR 017 lists every change). Preset keys are the camelCase form of the domain ids (obsidianGold = obsidian_gold, tumblr2014 = tumblr_2014).",
     "preset": {

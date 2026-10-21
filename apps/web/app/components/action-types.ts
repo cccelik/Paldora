@@ -1,5 +1,4 @@
-import type { ActionResult } from '../lib/action-result';
-
+import { type ActionResult } from '../lib/action-result';
 /** The shape `useActionState` needs, and every Server Action here has. */
 export type FormAction = (
   previous: ActionResult,
@@ -7,4 +6,4 @@ export type FormAction = (
 ) => Promise<ActionResult>;
 
 /** Values a form carries along with what the person types. */
-export type HiddenFields = Readonly<Record<string, string>>;
+export type HiddenFieldValues = Readonly<Record<string, string>>;

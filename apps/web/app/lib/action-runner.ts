@@ -1,11 +1,13 @@
-import 'server-only';
-
-import type { PaldoraApiClient } from '@paldora/api-client';
+import { type PaldoraApiClient } from '@paldora/api-client';
 import { revalidatePath } from 'next/cache';
-import type { z } from 'zod';
-import { actionError, type ActionOutcome } from './action-result';
+import 'server-only';
+import { type z } from 'zod';
+import {
+  actionError,
+  invalidOutcome,
+  type ActionOutcome,
+} from './action-result';
 import { apiClient } from './session';
-
 export interface RunOptions {
   /** Shown beside the form after success. */
   readonly success: string;
@@ -30,13 +32,6 @@ function stringFields(formData: FormData): Record<string, string> {
   return fields;
 }
 
-const invalid = (message: string): ActionOutcome<never> => ({
-  status: 'error',
-  code: 'VALIDATION_FAILED',
-  message,
-  tone: 'attention',
-});
-
 /**
  * Server Actions are public endpoints, so every one validates its inputs
  * here and then lets the API decide authorization. Returns the work's result
@@ -50,7 +45,7 @@ export async function runFormWithData<Schema extends z.ZodType, Output>(
 ): Promise<ActionOutcome<Output>> {
   const parsed = schema.safeParse(stringFields(formData));
   if (!parsed.success) {
-    return invalid(
+    return invalidOutcome(
       parsed.error.issues[0]?.message ?? 'Check the details and try again.',
     );
   }

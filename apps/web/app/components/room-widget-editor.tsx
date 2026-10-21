@@ -5,7 +5,7 @@ import {
   type RoomLayout,
   type RoomWidgetPlacement,
 } from '@paldora/domain';
-import type { RoomView } from '@paldora/validation';
+import { type RoomView } from '@paldora/validation';
 import { useState } from 'react';
 import { updateRoomWidgetsAction } from '../actions/rooms';
 import {
@@ -23,10 +23,10 @@ import {
   RoomSectionFeedback,
   RoomVersionField,
 } from './room-editor-parts';
+import styles from './room-editor.module.css';
+import { HiddenFields } from './ui';
 import { useMoveFocus } from './use-move-focus';
 import { useRoomSave, type RoomSaveContext } from './use-room-save';
-import styles from './room-editor.module.css';
-
 const placementLabels: Readonly<Record<RoomWidgetPlacement, string>> = {
   sidebar: 'Sidebar',
   main: 'Main column',
@@ -152,10 +152,8 @@ export function RoomWidgetEditor({
     >
       <form action={action} className={styles.form}>
         <RoomVersionField context={context} />
-        <input
-          type="hidden"
-          name="widgets"
-          value={JSON.stringify(widgetSettings(drafts))}
+        <HiddenFields
+          values={{ widgets: JSON.stringify(widgetSettings(drafts)) }}
         />
         <ol ref={focus.list} className={styles.rows} aria-label="Widget order">
           {drafts.map((draft, index) => (

@@ -1,4 +1,4 @@
-import type { BlockedUserView, FriendshipView } from '@paldora/validation';
+import { type BlockedUserView, type FriendshipView } from '@paldora/validation';
 import {
   acceptFriendRequestAction,
   blockPersonAction,
@@ -11,7 +11,6 @@ import { ConfirmAction } from './confirm-action';
 import { PersonList, PersonRow } from './person-row';
 import { RowActionForm } from './row-action-form';
 import { Badge, EmptyState } from './ui';
-
 export function FriendRequestList({
   items,
 }: {

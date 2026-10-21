@@ -10,7 +10,6 @@ import {
   widgetDrafts,
   widgetSettings,
 } from './room-editor';
-
 const person = (id: string) => ({
   id,
   username: id,

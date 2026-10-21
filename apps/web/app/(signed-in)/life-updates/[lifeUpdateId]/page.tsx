@@ -1,17 +1,20 @@
-import { uuidSchema } from '@paldora/validation';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { CommentThread } from '../../../components/comment-thread';
 import { LifeUpdateCard } from '../../../components/life-update-card';
 import { RefreshOnPosts } from '../../../components/refresh-on-posts';
 import { lifeUpdateHref } from '../../../lib/life-update-form';
 import { conversationFor } from '../../../lib/pinned-thread';
+import {
+  LIFE_UPDATE_ABSENT,
+  POST_ABSENT,
+  optionalUuid,
+  uuidParam,
+} from '../../../lib/route-params';
 import { apiClient, completedUser, orNotFound } from '../../../lib/session';
 import styles from '../../page-stack.module.css';
-
 export const metadata = { title: 'Life Update' };
 
-const absent = ['LIFE_UPDATE_NOT_FOUND', 'VALIDATION_FAILED'];
+const absent = LIFE_UPDATE_ABSENT;
 
 /**
  * A Life Update with one Box's conversation below it (`?box=`, else the
@@ -23,23 +26,19 @@ export default async function LifeUpdatePage({
   searchParams,
 }: PageProps<'/life-updates/[lifeUpdateId]'>) {
   const me = await completedUser();
-  const id = uuidSchema.safeParse((await params).lifeUpdateId);
-  if (!id.success) notFound();
+  const id = uuidParam((await params).lifeUpdateId);
   const query = await searchParams;
   const api = await apiClient();
-  const lifeUpdate = await orNotFound(api.lifeUpdate(id.data), absent);
-  const wanted = uuidSchema.safeParse(query.box);
+  const lifeUpdate = await orNotFound(api.lifeUpdate(id), absent);
+  const wanted = optionalUuid(query.box)?.toLowerCase();
   const context =
     lifeUpdate.contexts.find(
-      (item) => wanted.success && item.box.id === wanted.data.toLowerCase(),
+      (item) => wanted !== undefined && item.box.id === wanted,
     ) ?? lifeUpdate.contexts[0];
   // The conversation went away between the two reads (left, deleted): the
   // same answer as any other absence.
   const conversation = context
-    ? await conversationFor(api, context.postId, query, [
-        'POST_NOT_FOUND',
-        'VALIDATION_FAILED',
-      ])
+    ? await conversationFor(api, context.postId, query, POST_ABSENT)
     : null;
   const presets = me.preferences.reactionPresets;
   return (

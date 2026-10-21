@@ -10,7 +10,7 @@
   align-content: start;
   min-width: 0;
   padding: var(--pal-space-5);
-  border: 1px solid var(--room-border);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
   border-radius: var(--pal-radius-lg);
   background: var(--room-surface);
 }
@@ -48,7 +48,7 @@
   padding-bottom: var(--pal-space-2);
   border-bottom: 2px solid var(--room-accent);
   font-family: var(--room-font);
-  font-size: 1.25rem;
+  font-size: var(--pal-font-size-subtitle);
   line-height: 1.2;
 }
 
@@ -57,7 +57,7 @@
 }
 
 .currently {
-  font-size: 1.0625rem;
+  font-size: var(--pal-font-size-body-large);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -72,7 +72,7 @@
 
 .musicLink {
   padding: var(--pal-space-3) var(--pal-space-4);
-  border: 1px solid var(--room-border);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
   border-inline-start: 4px solid var(--room-accent);
   border-radius: var(--pal-radius-md);
   background: var(--room-canvas);
@@ -91,7 +91,7 @@
 .musicArtist,
 .musicHost {
   color: var(--room-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }
 
 .friends {
@@ -116,7 +116,7 @@
 
 .friendName {
   max-width: 100%;
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -133,7 +133,7 @@
 .photo {
   display: block;
   overflow: hidden;
-  border: 1px solid var(--room-border);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
   border-radius: var(--pal-radius-sm);
   aspect-ratio: 1;
 }
@@ -156,7 +156,7 @@
   display: grid;
   gap: var(--pal-space-1);
   padding-top: var(--pal-space-3);
-  border-top: 1px solid var(--room-border);
+  border-top: var(--pal-border-width-hairline) solid var(--room-border);
 }
 
 .preview:first-child {
@@ -175,7 +175,7 @@
 
 .previewMeta {
   color: var(--room-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   overflow-wrap: anywhere;
 }
 
@@ -194,7 +194,7 @@
   gap: var(--pal-space-2);
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-4);
-  border: 1px solid var(--room-border);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
   border-radius: var(--pal-radius-pill);
   text-underline-offset: 0.2em;
 }
@@ -205,5 +205,5 @@
 
 .yearCount {
   color: var(--room-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }

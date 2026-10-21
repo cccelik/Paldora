@@ -1,9 +1,9 @@
 'use client';
 
-import type { LifeUpdateSectionKey } from '@paldora/domain';
-import type { LifeUpdateView } from '@paldora/validation';
+import { type LifeUpdateSectionKey } from '@paldora/domain';
+import { type LifeUpdateView } from '@paldora/validation';
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { Route } from 'next';
 import { useActionState, useCallback, useMemo, useRef, useState } from 'react';
 import { prepareLifeUpdatePhoto } from '../actions/life-update-photos';
 import { updateLifeUpdateAction } from '../actions/life-updates';
@@ -18,14 +18,14 @@ import {
   LifeUpdatePhotoField,
   LifeUpdateSectionFields,
 } from './life-update-fields';
+import styles from './life-update-form.module.css';
 import { SubmitButton } from './submit-button';
-import { buttonClassName } from './ui';
+import { buttonClassName, HiddenFields } from './ui';
 import {
   usePhotoAttachments,
   type PreparePhoto,
 } from './use-photo-attachments';
-import styles from './life-update-form.module.css';
-
+import { useSubmitShortcut } from './use-submit-shortcut';
 /**
  * Edit a Life Update's sections and photos. Kept photos start out ready;
  * saving replaces both parts everywhere it was shared. The audience is not
@@ -67,20 +67,16 @@ export function LifeUpdateEditor({
     photosBusy: photos.busy,
   });
   const back = lifeUpdateHref(lifeUpdate.id, { boxId: returnBoxId });
+  const submitShortcut = useSubmitShortcut(form, problem === null);
   return (
     <form
       ref={form}
       action={action}
       className={styles.form}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-          event.preventDefault();
-          if (problem === null) form.current?.requestSubmit();
-        }
-      }}
+      onKeyDown={submitShortcut}
     >
-      <input type="hidden" name="lifeUpdateId" value={lifeUpdate.id} />
-      <input type="hidden" name="returnBoxId" value={returnBoxId ?? ''} />
+      <HiddenFields values={{ lifeUpdateId: lifeUpdate.id }} />
+      <HiddenFields values={{ returnBoxId: returnBoxId ?? '' }} />
       <LifeUpdateSectionFields
         idPrefix={`edit-${lifeUpdate.id}`}
         drafts={drafts}

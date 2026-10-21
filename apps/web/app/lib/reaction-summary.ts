@@ -1,9 +1,8 @@
 import { REAL_REACTION_KIND } from '@paldora/domain';
-import type {
-  CommentInteractionSummary,
-  ReactionCountView,
+import {
+  type CommentInteractionSummary,
+  type ReactionCountView,
 } from '@paldora/validation';
-
 /** The fields every reaction summary (post or comment) shares. */
 export interface ReactionSummaryLike {
   readonly reactions: readonly ReactionCountView[];

@@ -1,13 +1,12 @@
 'use client';
 
 import { startTransition, useOptimistic, useState } from 'react';
-import type { ActionOutcome } from '../lib/action-result';
+import { type ActionOutcome } from '../lib/action-result';
 import {
   withViewerReaction,
   type ReactionSummaryLike,
 } from '../lib/reaction-summary';
 import { useToast } from './toast';
-
 /**
  * A reaction summary from the server, shown optimistically while a reaction
  * is being sent. The action's answer becomes the new base; a fresh server

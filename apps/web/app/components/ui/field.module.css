@@ -10,7 +10,7 @@
 .optional {
   margin-inline-start: var(--pal-space-2);
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
   font-weight: 400;
 }
 
@@ -18,7 +18,12 @@
   display: flex;
   align-items: center;
   min-height: var(--pal-size-touch-target);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-md);
   background: var(--pal-canvas);
 }
@@ -65,5 +70,5 @@
 
 .help {
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }

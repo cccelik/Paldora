@@ -1,14 +1,13 @@
-import type { BoxInvitationView, BoxView } from '@paldora/validation';
+import { type BoxInvitationView, type BoxView } from '@paldora/validation';
 import Link from 'next/link';
 import {
   acceptInvitationAction,
   declineInvitationAction,
 } from '../actions/boxes';
+import styles from './box-lists.module.css';
 import { PersonList, PersonRow } from './person-row';
 import { RowActionForm } from './row-action-form';
 import { Badge, EmptyState } from './ui';
-import styles from './box-lists.module.css';
-
 const roleLabel = { owner: 'Owner', admin: 'Admin', member: 'Member' } as const;
 
 export function BoxCardList({ boxes }: { boxes: readonly BoxView[] }) {

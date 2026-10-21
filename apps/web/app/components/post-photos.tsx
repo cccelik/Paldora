@@ -1,9 +1,8 @@
 'use client';
 
-import type { PostMediaView } from '@paldora/validation';
+import { type PostMediaView } from '@paldora/validation';
 import { useEffect, useRef, useState } from 'react';
 import styles from './post-photos.module.css';
-
 /**
  * A post's photos as a grid, with a full-screen viewer. The viewer is a native
  * modal dialog, which provides the focus trap, Escape to close, and focus

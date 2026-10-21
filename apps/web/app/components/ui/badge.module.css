@@ -2,10 +2,15 @@
   display: inline-flex;
   align-items: center;
   padding: 0.125rem var(--pal-space-3);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-pill);
   color: var(--pal-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--pal-font-size-caption);
   font-weight: 600;
   white-space: nowrap;
 }

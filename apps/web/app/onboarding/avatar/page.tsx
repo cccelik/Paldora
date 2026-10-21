@@ -4,7 +4,6 @@ import { OnboardingLayout } from '../../components/onboarding-layout';
 import { SubmitButton } from '../../components/submit-button';
 import { userOnStep } from '../../lib/session';
 import styles from './page.module.css';
-
 export const metadata = { title: 'Add a photo' };
 
 export default async function AvatarStepPage() {

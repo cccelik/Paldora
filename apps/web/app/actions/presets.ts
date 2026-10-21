@@ -3,9 +3,8 @@
 import { REACTION_PRESET_COUNT } from '@paldora/domain';
 import { reactionPresetsSchema } from '@paldora/validation';
 import { z } from 'zod';
-import type { ActionResult } from '../lib/action-result';
+import { type ActionResult } from '../lib/action-result';
 import { runForm } from '../lib/action-runner';
-
 /** The editor sends its five slots as `preset0` … `preset4`. */
 const presetsForm = z
   .record(z.string(), z.string())

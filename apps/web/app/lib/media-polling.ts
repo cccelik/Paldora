@@ -1,6 +1,5 @@
-import type { MediaAssetView } from '@paldora/validation';
-import type { ActionOutcome } from './action-result';
-
+import { type MediaAssetView } from '@paldora/validation';
+import { type ActionOutcome } from './action-result';
 export const MEDIA_POLL_MS = 1_500;
 export const MEDIA_MAX_POLLS = 40;
 

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { bottomLinks, isCurrentSection, primaryNavigation } from './navigation';
-
 describe('primaryNavigation', () => {
   it('lists every desktop destination, with My Room for the signed-in user', () => {
     expect(primaryNavigation('ada').map((entry) => entry.label)).toEqual([

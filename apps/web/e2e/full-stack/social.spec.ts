@@ -1,55 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
-import {
-  expect,
-  test,
-  type Browser,
-  type BrowserContext,
-  type Locator,
-  type Page,
-} from '@playwright/test';
-import { provisionAccount, signIn, type Account } from './accounts';
-
-const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
-async function expectAccessible(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
-  expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
-}
-
-async function expectNoOverflow(page: Page) {
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth -
-      document.documentElement.clientWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
-}
-
-/** A second person in their own session, on the same device profile. */
-async function personOnOwnSession(
-  browser: Browser,
-  account: Account,
-): Promise<{ page: Page; context: BrowserContext }> {
-  const { viewport, isMobile, hasTouch, userAgent, baseURL } =
-    test.info().project.use;
-  const context = await browser.newContext({
-    ...(viewport ? { viewport } : {}),
-    ...(isMobile !== undefined ? { isMobile } : {}),
-    ...(hasTouch !== undefined ? { hasTouch } : {}),
-    ...(userAgent ? { userAgent } : {}),
-    ...(baseURL ? { baseURL } : {}),
-  });
-  const page = await context.newPage();
-  await signedIn(page, account);
-  return { page, context };
-}
-
-/** Signs in and waits until the app has actually landed on Home. */
-async function signedIn(page: Page, account: Account) {
-  await signIn(page, account);
-  await expect(page).toHaveURL(/\/home$/);
-}
-
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expectAccessible, expectNoOverflow } from '../support/a11y';
+import { provisionAccount, type Account } from '../support/accounts';
+import { personOnOwnSession, signedIn } from '../support/sessions';
 function rowFor(scope: Page | Locator, username: string) {
   return scope.getByRole('listitem').filter({ hasText: `@${username}` });
 }

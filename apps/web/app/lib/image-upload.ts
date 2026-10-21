@@ -4,7 +4,6 @@ import {
   type MediaContentType,
   type MediaPurpose,
 } from '@paldora/domain';
-
 const accepted = new Set<string>(MEDIA_CONTENT_TYPES);
 
 export const AVATAR_ACCEPT = MEDIA_CONTENT_TYPES.join(',');

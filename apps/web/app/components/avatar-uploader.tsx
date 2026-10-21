@@ -2,10 +2,9 @@
 
 import { useRef } from 'react';
 import { AVATAR_ACCEPT } from '../lib/image-upload';
+import styles from './avatar-uploader.module.css';
 import { Avatar, Button, FormMessage } from './ui';
 import { useAvatarUpload } from './use-avatar-upload';
-import styles from './avatar-uploader.module.css';
-
 function PhotoPreview({
   preview,
   busy,

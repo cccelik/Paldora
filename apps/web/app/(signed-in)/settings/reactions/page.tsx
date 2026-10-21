@@ -1,7 +1,6 @@
 import { ReactionPresetEditor } from '../../../components/reaction-preset-editor';
 import { completedUser } from '../../../lib/session';
 import styles from '../settings.module.css';
-
 export const metadata = { title: 'Reactions' };
 
 export default async function ReactionSettingsPage() {

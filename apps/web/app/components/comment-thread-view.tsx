@@ -1,19 +1,18 @@
 'use client';
 
-import type { CommentItemView, CommentView } from '@paldora/validation';
+import { type CommentItemView, type CommentView } from '@paldora/validation';
 import { useState } from 'react';
 import { moreRepliesAction } from '../actions/interactions';
-import { CommentComposer } from './comment-composer';
 import { itemId } from '../lib/comment-items';
+import { CommentComposer } from './comment-composer';
 import {
   CommentEntry,
   CommentPlaceholder,
   type ReplyTarget,
 } from './comment-row';
-import { Button } from './ui';
-import { useToast } from './toast';
 import styles from './comment-thread.module.css';
-
+import { useToast } from './toast';
+import { Button } from './ui';
 export interface ThreadData {
   /** Null when the root is gone but the thread is linked to directly. */
   readonly root: CommentItemView | null;

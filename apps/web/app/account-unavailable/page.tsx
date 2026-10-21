@@ -1,7 +1,6 @@
 import { signOutAction } from '../actions/auth';
 import { AuthLayout } from '../components/auth-layout';
 import { SubmitButton } from '../components/submit-button';
-
 export const metadata = { title: 'Account unavailable' };
 
 /** Signed in with the identity provider, but no usable Paldora account. */

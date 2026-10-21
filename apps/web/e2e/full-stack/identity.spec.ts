@@ -1,35 +1,11 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
-import { identityOnly, provisionAccount, signIn } from './accounts';
-
+import { expectAccessible, expectNoOverflow } from '../support/a11y';
+import { identityOnly, provisionAccount, signIn } from '../support/accounts';
+import { watchConsole } from '../support/console';
 const photo = fileURLToPath(
   new URL('../fixtures/photo-with-gps.jpg', import.meta.url),
 );
-const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
-async function expectAccessible(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
-  expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
-}
-
-async function expectNoOverflow(page: Page) {
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth -
-      document.documentElement.clientWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
-}
-
-function watchConsole(page: Page): string[] {
-  const errors: string[] = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  page.on('pageerror', (error) => errors.push(error.message));
-  return errors;
-}
 
 test('wrong passwords and unknown emails get the same answer', async ({
   page,

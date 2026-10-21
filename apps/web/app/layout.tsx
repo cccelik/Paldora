@@ -1,11 +1,10 @@
 import '@paldora/tokens/tokens.css';
-import './globals.css';
-import type { Metadata, Viewport } from 'next';
+import { type Metadata, type Viewport } from 'next';
 import { cookies } from 'next/headers';
 import { connection } from 'next/server';
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
+import './globals.css';
 import { APPEARANCE_COOKIE, appearanceAttribute } from './lib/appearance';
-
 export const metadata: Metadata = {
   title: {
     default: 'Paldora — A box for your people',

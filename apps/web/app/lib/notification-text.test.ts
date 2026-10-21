@@ -1,4 +1,4 @@
-import type { NotificationView } from '@paldora/validation';
+import { type NotificationView } from '@paldora/validation';
 import { describe, expect, it } from 'vitest';
 import {
   notificationHref,
@@ -6,7 +6,6 @@ import {
   unreadBadge,
   unreadLabel,
 } from './notification-text';
-
 const POST = '0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22';
 const COMMENT = '3b9f0f2a-1c4d-4e5f-8a6b-7c8d9e0f1a2b';
 

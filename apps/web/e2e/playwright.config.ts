@@ -4,7 +4,6 @@ import {
   sharedConfig,
   viewportProjects,
 } from './playwright.shared';
-
 const port = Number(process.env.E2E_WEB_PORT ?? 3100);
 const baseURL = `http://127.0.0.1:${port}`;
 

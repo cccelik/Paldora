@@ -1,14 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
-import { provisionAccount } from './accounts';
+import { provisionAccount } from '../support/accounts';
 import {
   expectAccessible,
   expectNoOverflow,
   personOnOwnSession,
   sharedBox,
   signedIn,
-} from './sessions';
-
+} from '../support/sessions';
 const photo = fileURLToPath(
   new URL('../fixtures/photo-with-gps.jpg', import.meta.url),
 );

@@ -22,7 +22,7 @@
 
 .private {
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }
 
 .single,
@@ -30,7 +30,12 @@
   display: grid;
   gap: var(--pal-space-3);
   padding-top: var(--pal-space-3);
-  border-top: 1px solid color-mix(in srgb, var(--pal-text) 10%, transparent);
+  border-top: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
+      transparent
+    );
 }
 
 /* Tabs wrap onto more rows on narrow screens; nothing scrolls sideways. */
@@ -46,7 +51,12 @@
   max-width: 100%;
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-4);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-default) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-pill);
   background: transparent;
   color: var(--pal-text-muted);

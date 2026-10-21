@@ -1,8 +1,7 @@
-import 'server-only';
-
 import { uuidSchema, type MediaAssetView } from '@paldora/validation';
+import 'server-only';
 import { actionError, type ActionOutcome } from './action-result';
-
+import { type PreparedUpload } from './upload';
 /**
  * One call about an upload the person owns (complete, or read its status),
  * answered with the asset's status. Shared by the photo and camera actions.
@@ -23,11 +22,6 @@ export async function assetStatusOutcome(
 }
 
 /** What a reserved upload hands the browser: where to PUT, and how. */
-export interface PreparedPhotoUpload {
-  readonly mediaAssetId: string;
-  readonly url: string;
-  readonly headers: Readonly<Record<string, string>>;
-}
 
 export const photoCopy = {
   MEDIA_UPLOAD_MISMATCH: 'That photo didn’t upload completely. Try again.',
@@ -47,7 +41,7 @@ export async function reservePhotoUpload(
     upload: { url: string; headers: Readonly<Record<string, string>> };
   }>,
   copy: Readonly<Partial<Record<string, string>>> = photoCopy,
-): Promise<ActionOutcome<PreparedPhotoUpload>> {
+): Promise<ActionOutcome<PreparedUpload>> {
   try {
     const { mediaAsset, upload } = await reserve();
     return {

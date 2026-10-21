@@ -1,20 +1,16 @@
 import { chromium, expect, test, type Page } from '@playwright/test';
-import { provisionAccount } from './accounts';
-import {
-  expectAccessible,
-  expectNoOverflow,
-  personOnOwnSession,
-  sharedBox,
-  signedIn,
-} from './sessions';
-
+import { expectSound } from '../support/a11y';
+import { provisionAccount } from '../support/accounts';
+import { openPermalink, post } from '../support/flows';
+import { postOn } from '../support/locators';
+import { personOnOwnSession, sharedBox, signedIn } from '../support/sessions';
 /**
  * Camera reactions run on Chromium's fake camera (see the full-stack
  * config). Upload, the worker, and the projector all take a few polls, so
  * waits are generous; nothing sleeps for a fixed time.
  */
 const processed = { timeout: 45_000 };
-const postOn = (page: Page) => page.getByRole('article', { name: /Post by/ });
+
 const cameraButton = (page: Page) =>
   postOn(page).getByRole('button', { name: /camera/i });
 const cameraDialog = (page: Page) =>
@@ -22,26 +18,7 @@ const cameraDialog = (page: Page) =>
 const strip = (page: Page) =>
   postOn(page).getByRole('list', { name: 'Camera reactions' });
 
-async function post(page: Page, text: string) {
-  await page.getByLabel('Share with this Box').fill(text);
-  await page.getByRole('button', { name: 'Post', exact: true }).click();
-  await expect(page.getByText(text)).toBeVisible();
-}
-
-async function openPermalink(page: Page, boxUrl: string) {
-  await page.goto(boxUrl);
-  await postOn(page)
-    .getByRole('link', { name: 'Comment', exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/posts\/[0-9a-f-]{36}#comments$/);
-  return page.url().replace(/#comments$/, '');
-}
-
 /** The dialog fits and passes axe; checked from the top of the page. */
-async function expectCleanState(page: Page) {
-  await expectAccessible(page);
-  await expectNoOverflow(page);
-}
 
 test('a camera reaction is sent, shown, notified, and replaced by an emoji', async ({
   page,
@@ -63,14 +40,14 @@ test('a camera reaction is sent, shown, notified, and replaced by an emoji', asy
   const take = dialog.getByRole('button', { name: 'Take photo' });
   await expect(take).toBeEnabled(processed);
   await expect(dialog.getByLabel('Camera preview')).toBeVisible();
-  await expectCleanState(page);
+  await expectSound(page);
 
   // Captured: Retake goes back to live, then Send.
   await take.click();
   await expect(
     dialog.getByRole('img', { name: 'Your photo, ready to send' }),
   ).toBeVisible();
-  await expectCleanState(page);
+  await expectSound(page);
   await dialog.getByRole('button', { name: 'Retake' }).click();
   await expect(take).toBeEnabled(processed);
   await take.click();
@@ -78,7 +55,7 @@ test('a camera reaction is sent, shown, notified, and replaced by an emoji', asy
   await expect(
     dialog.getByText('Sent. Your camera reaction is on the post.'),
   ).toBeVisible(processed);
-  await expectCleanState(page);
+  await expectSound(page);
   await dialog.getByRole('button', { name: 'Done' }).click();
   await expect(dialog).toBeHidden();
 
@@ -108,7 +85,7 @@ test('a camera reaction is sent, shown, notified, and replaced by an emoji', asy
     'aria-current',
     'page',
   );
-  await expectCleanState(page);
+  await expectSound(page);
 
   // Ada hears about it, with the thumbnail.
   await ada.page.goto('/notifications');
@@ -120,7 +97,7 @@ test('a camera reaction is sent, shown, notified, and replaced by an emoji', asy
     await expect(notified).toBeVisible({ timeout: 2_000 });
   }).toPass(processed);
   await expect(notified.locator('img')).toHaveCount(1);
-  await expectCleanState(ada.page);
+  await expectSound(ada.page);
 
   // An emoji replaces the camera image, and the image is gone for good.
   await page.goto(permalink);
@@ -212,7 +189,7 @@ test('a blocked camera explains itself, retries, and leaves emoji working', asyn
   await expect(dialog.getByRole('button', { name: 'Take photo' })).toHaveCount(
     0,
   );
-  await expectCleanState(page);
+  await expectSound(page);
   expect(await requests()).toBe(1);
 
   // Try again really asks the browser again (and is told no again).

@@ -1,5 +1,4 @@
 import styles from './wordmark.module.css';
-
 interface WordmarkProps {
   /** Renders as a heading-level brand title instead of inline text. */
   size?: 'inline' | 'display';

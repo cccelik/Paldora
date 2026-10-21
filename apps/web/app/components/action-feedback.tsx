@@ -1,6 +1,5 @@
-import type { ActionResult } from '../lib/action-result';
+import { type ActionResult } from '../lib/action-result';
 import { FormMessage } from './ui';
-
 /** Renders a Server Action result in the form's live region. */
 export function ActionFeedback({ state }: { state: ActionResult<unknown> }) {
   if (state.status === 'idle') return <FormMessage />;

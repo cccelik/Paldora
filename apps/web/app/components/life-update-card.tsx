@@ -1,15 +1,14 @@
-import type { LifeUpdateView } from '@paldora/validation';
+import { type LifeUpdateView } from '@paldora/validation';
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { Route } from 'next';
 import { lifeUpdateHref } from '../lib/life-update-form';
 import { LifeUpdateActions } from './life-update-actions';
+import styles from './life-update-card.module.css';
 import { LifeUpdateContexts } from './life-update-contexts';
 import { LocalTime } from './local-time';
+import postStyles from './post-card.module.css';
 import { PostPhotos } from './post-photos';
 import { Avatar, Badge } from './ui';
-import postStyles from './post-card.module.css';
-import styles from './life-update-card.module.css';
-
 function LifeUpdateHeader({
   lifeUpdate,
   href,

@@ -1,10 +1,9 @@
-import type { Route } from 'next';
+import { type Route } from 'next';
 import Link from 'next/link';
 import { AppearanceForm } from '../../../components/appearance-form';
 import { roomHref } from '../../../lib/room-theme';
 import { completedUser } from '../../../lib/session';
 import styles from '../settings.module.css';
-
 export const metadata = { title: 'Appearance' };
 
 export default async function AppearanceSettingsPage() {

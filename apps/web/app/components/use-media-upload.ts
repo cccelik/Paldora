@@ -1,13 +1,12 @@
 'use client';
 
-import type { MediaAssetView } from '@paldora/validation';
+import { type MediaAssetView } from '@paldora/validation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ActionOutcome } from '../lib/action-result';
+import { type ActionOutcome } from '../lib/action-result';
 import { asContentType, putToSignedUrl } from '../lib/image-upload';
 import { untilSettled } from '../lib/media-polling';
-import type { MessageTone } from './ui';
-import type { PreparePhoto } from './use-photo-attachments';
-
+import { type MessageTone } from './ui';
+import { type PreparePhoto } from './use-photo-attachments';
 export type UploadPhase =
   'idle' | 'uploading' | 'processing' | 'ready' | 'failed';
 

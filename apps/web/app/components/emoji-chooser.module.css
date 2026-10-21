@@ -4,7 +4,12 @@
   max-height: calc(100dvh - 2 * var(--pal-space-4));
   margin: auto;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-default) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-lg);
   background: var(--pal-canvas);
   color: var(--pal-text);
@@ -32,7 +37,7 @@
 }
 
 .title {
-  font-size: 1.125rem;
+  font-size: var(--pal-font-size-lead);
   font-weight: 600;
 }
 
@@ -41,7 +46,12 @@
   min-width: var(--pal-size-touch-target);
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-4);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 30%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-pill);
   background: transparent;
   color: var(--pal-text);
@@ -71,7 +81,7 @@
   border: 0;
   border-radius: var(--pal-radius-md);
   background: transparent;
-  font-size: 1.5rem;
+  font-size: var(--pal-font-size-heading);
   line-height: 1;
   cursor: pointer;
 }
@@ -99,16 +109,21 @@
   min-width: 0;
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-4);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-md);
   background: var(--pal-canvas);
   color: var(--pal-text);
   font: inherit;
-  font-size: 1.25rem;
+  font-size: var(--pal-font-size-subtitle);
 }
 
 .problem {
   min-height: 1.5em;
   color: var(--pal-warning-text);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }

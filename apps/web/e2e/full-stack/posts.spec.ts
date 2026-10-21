@@ -1,13 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { provisionAccount } from './accounts';
+import { provisionAccount } from '../support/accounts';
 import {
   expectAccessible,
   expectNoOverflow,
   personOnOwnSession,
   sharedBox,
   signedIn,
-} from './sessions';
-
+} from '../support/sessions';
 test('a post is written, seen, edited, and deleted', async ({
   page,
   browser,

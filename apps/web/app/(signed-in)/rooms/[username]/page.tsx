@@ -3,9 +3,9 @@ import { RoomCanvas } from '../../../components/room-canvas';
 import { RoomOwnerStrip } from '../../../components/room-owner-strip';
 import { loadRoomPreviews } from '../../../lib/room-previews';
 import { roomUsernameParam } from '../../../lib/room-theme';
+import { ROOM_ABSENT } from '../../../lib/route-params';
 import { apiClient, completedUser, orNotFound } from '../../../lib/session';
 import styles from './page.module.css';
-
 export const metadata = { title: 'Room' };
 
 /**
@@ -20,7 +20,7 @@ export default async function RoomPage({
   const username = roomUsernameParam((await params).username);
   if (username === null) notFound();
   const api = await apiClient();
-  const room = await orNotFound(api.room(username), ['ROOM_NOT_FOUND']);
+  const room = await orNotFound(api.room(username), ROOM_ABSENT);
   const previews = await loadRoomPreviews(api, room);
   return (
     <div className={styles.page}>

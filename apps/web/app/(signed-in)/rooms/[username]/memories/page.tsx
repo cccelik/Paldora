@@ -1,39 +1,22 @@
-import type { Route } from 'next';
-import Link from 'next/link';
+import { type Route } from 'next';
 import { notFound } from 'next/navigation';
+import { MemoryScopePage } from '../../../../components/memory-scope-page';
 import { MemoryPeriod } from '../../../../components/memory-timeline';
-import { EmptyState, PageHeader } from '../../../../components/ui';
-import {
-  memoryHref,
-  monthName,
-  parseMemoryType,
-  parseMonth,
-  parseYear,
-} from '../../../../lib/memories';
+import { BackLink, EmptyState } from '../../../../components/ui';
+import { memoryHref, monthName, parsePeriod } from '../../../../lib/memories';
 import { roomHref, roomUsernameParam } from '../../../../lib/room-theme';
+import { ROOM_ABSENT } from '../../../../lib/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
 } from '../../../../lib/session';
-import styles from '../../../page-stack.module.css';
-
 export const metadata = { title: 'Room Memories' };
 
-const absent = ['ROOM_NOT_FOUND'];
-
-type Query = Awaited<PageProps<'/rooms/[username]/memories'>['searchParams']>;
+const absent = ROOM_ABSENT;
 
 /** `?year=&month=&type=`; anything present but malformed is not a page. */
-function parsePeriod(query: Query) {
-  const year = query.year === undefined ? undefined : parseYear(query.year);
-  const month = query.month === undefined ? undefined : parseMonth(query.month);
-  const type = parseMemoryType(query.type);
-  if (year === null || month === null || type === null) notFound();
-  if (month !== undefined && year === undefined) notFound();
-  return { year, month, type };
-}
 
 /**
  * What a Room's owner shared that the viewer can still see, by UTC month.
@@ -49,6 +32,7 @@ export default async function RoomMemoriesPage({
   if (username === null) notFound();
   const query = await searchParams;
   const period = parsePeriod(query);
+  if (period === null) notFound();
   const api = await apiClient();
   const [room, summary] = await Promise.all([
     orNotFound(api.room(username), absent),
@@ -72,22 +56,24 @@ export default async function RoomMemoriesPage({
   const scope = { kind: 'room', username: room.owner.username } as const;
   const where = period.month ? `${monthName(period.month)} ${year}` : year;
   return (
-    <div className={styles.stack}>
-      <p>
-        <Link href={roomHref(room.owner.username) as Route}>
-          ← {name}’s Room
-        </Link>
-      </p>
-      <PageHeader
-        title={where ? `${name}’s Memories: ${where}` : `${name}’s Memories`}
-        description={`What ${name} shared in Boxes you are in, by the month it was shared. Months follow UTC, so something shared near midnight can sit in the neighbouring month on your clock.`}
-      />
+    <MemoryScopePage
+      title={where ? `${name}’s Memories: ${where}` : `${name}’s Memories`}
+      description={`What ${name} shared in Boxes you are in, by the month it was shared. Months follow UTC, so something shared near midnight can sit in the neighbouring month on your clock.`}
+      back={
+        <>
+          {' '}
+          <BackLink href={roomHref(room.owner.username) as Route}>
+            {name}’s Room
+          </BackLink>{' '}
+        </>
+      }
+    >
       {period.month ? (
-        <p>
-          <Link href={memoryHref(scope, { year: year ?? undefined }) as Route}>
-            ← All of {year}
-          </Link>
-        </p>
+        <BackLink
+          href={memoryHref(scope, { year: year ?? undefined }) as Route}
+        >
+          All of {year}
+        </BackLink>
       ) : null}
       {year === null || page === null ? (
         <EmptyState>Nothing here to show yet.</EmptyState>
@@ -103,6 +89,6 @@ export default async function RoomMemoriesPage({
           viewerId={me.user.id}
         />
       )}
-    </div>
+    </MemoryScopePage>
   );
 }

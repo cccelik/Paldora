@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import { REALTIME_EVENT, type RealtimeHint } from '../lib/realtime';
-
 /**
  * Calls `onHint` for realtime hints the bridge re-dispatches. The handler
  * may change between renders without resubscribing.

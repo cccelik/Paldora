@@ -4,9 +4,9 @@ import {
   type MemorySummaryView,
   type MemoryType,
 } from '@paldora/validation';
-import type { Route } from 'next';
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
   countLabel,
   groupByMonth,
@@ -17,11 +17,10 @@ import {
   type MemoryScope,
 } from '../lib/memories';
 import { LifeUpdateCard } from './life-update-card';
+import styles from './memory-timeline.module.css';
 import { MoreLink } from './more-link';
 import { PostCard } from './post-card';
 import { EmptyState } from './ui';
-import styles from './memory-timeline.module.css';
-
 const allMonths = Array.from({ length: 12 }, (_, index) => index + 1);
 
 function NavLink({

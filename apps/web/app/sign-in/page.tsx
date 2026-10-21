@@ -1,6 +1,5 @@
-import { AuthLayout } from '../components/auth-layout';
 import { SignInForm } from '../components/auth-forms';
-
+import { AuthLayout } from '../components/auth-layout';
 export const metadata = { title: 'Sign in' };
 
 export default function SignInPage() {

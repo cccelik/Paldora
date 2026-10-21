@@ -1,10 +1,9 @@
-import type { NotificationView } from '@paldora/validation';
+import { type NotificationView } from '@paldora/validation';
 import { openNotificationAction } from '../actions/notifications';
 import { notificationSentence } from '../lib/notification-text';
 import { LocalTime } from './local-time';
-import { Avatar } from './ui';
 import styles from './notification-row.module.css';
-
+import { Avatar, HiddenFields } from './ui';
 /**
  * One notification. The whole row is a form button: it marks the
  * notification read and opens what it is about, with or without JavaScript.
@@ -18,19 +17,13 @@ export function NotificationRow({
   return (
     <li className={styles.item}>
       <form action={openNotificationAction} className={styles.form}>
-        <input type="hidden" name="notificationId" value={notification.id} />
-        <input type="hidden" name="postId" value={notification.postId} />
-        <input
-          type="hidden"
-          name="lifeUpdateId"
-          value={notification.lifeUpdateId ?? ''}
+        <HiddenFields values={{ notificationId: notification.id }} />
+        <HiddenFields values={{ postId: notification.postId }} />
+        <HiddenFields
+          values={{ lifeUpdateId: notification.lifeUpdateId ?? '' }}
         />
-        <input type="hidden" name="boxId" value={notification.box.id} />
-        <input
-          type="hidden"
-          name="commentId"
-          value={notification.commentId ?? ''}
-        />
+        <HiddenFields values={{ boxId: notification.box.id }} />
+        <HiddenFields values={{ commentId: notification.commentId ?? '' }} />
         <button
           type="submit"
           className={styles.row}

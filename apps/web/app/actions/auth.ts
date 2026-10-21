@@ -3,21 +3,17 @@
 import { ApiClientError } from '@paldora/api-client';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { actionError, type ActionResult } from '../lib/action-result';
+import {
+  actionError,
+  invalidOutcome,
+  type ActionResult,
+} from '../lib/action-result';
 import { APPEARANCE_COOKIE, appearanceCookieOptions } from '../lib/appearance';
 import { publicEnvironment } from '../lib/environment';
 import { textField } from '../lib/form-data';
 import { routeForOnboarding } from '../lib/onboarding';
 import { apiClientFor } from '../lib/session';
 import { createSupabaseServerClient } from '../lib/supabase/server';
-
-const failure = (message: string): ActionResult => ({
-  status: 'error',
-  code: 'VALIDATION_FAILED',
-  message,
-  tone: 'attention',
-});
-
 const secureCookies = () =>
   publicEnvironment().NEXT_PUBLIC_WEB_URL.startsWith('https://');
 
@@ -32,14 +28,15 @@ export async function signInAction(
 ): Promise<ActionResult> {
   const email = textField(formData, 'email').trim();
   const password = textField(formData, 'password');
-  if (!email || !password) return failure('Enter your email and password.');
+  if (!email || !password)
+    return invalidOutcome('Enter your email and password.');
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
   if (error || !data.session) {
-    return failure('That email and password don’t match an account.');
+    return invalidOutcome('That email and password don’t match an account.');
   }
   let destination;
   try {
@@ -57,7 +54,7 @@ export async function signInAction(
       (apiError.code === 'ACCOUNT_NOT_PROVISIONED' ||
         apiError.code === 'ACCOUNT_BLOCKED')
     ) {
-      return failure('This account isn’t set up for Paldora.');
+      return invalidOutcome('This account isn’t set up for Paldora.');
     }
     return actionError(apiError);
   }
@@ -70,7 +67,7 @@ export async function forgotPasswordAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const email = textField(formData, 'email').trim();
-  if (!email) return failure('Enter the email for your account.');
+  if (!email) return invalidOutcome('Enter the email for your account.');
   const supabase = await createSupabaseServerClient();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${publicEnvironment().NEXT_PUBLIC_WEB_URL}/auth/callback?next=/reset-password`,
@@ -101,15 +98,15 @@ export async function resetPasswordAction(
     password,
     textField(formData, 'confirmation'),
   );
-  if (problem) return failure(problem);
+  if (problem) return invalidOutcome(problem);
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) {
-    return failure('This reset link expired. Request a new one.');
+    return invalidOutcome('This reset link expired. Request a new one.');
   }
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
-    return failure(
+    return invalidOutcome(
       /same|different/i.test(error.message)
         ? 'Choose a password you haven’t used here before.'
         : 'That password couldn’t be saved. Try a longer one.',

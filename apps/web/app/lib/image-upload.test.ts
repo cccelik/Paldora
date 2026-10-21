@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { avatarFileProblem, putToSignedUrl } from './image-upload';
-
 describe('avatarFileProblem', () => {
   it.each([
     [{ type: 'image/png', size: 1024 }, null],

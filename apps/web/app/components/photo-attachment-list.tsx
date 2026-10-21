@@ -1,7 +1,6 @@
-import type { Attachment } from './use-photo-attachments';
-import { Button } from './ui';
 import styles from './photo-attachment-list.module.css';
-
+import { Button } from './ui';
+import { type Attachment } from './use-photo-attachments';
 const phaseText: Record<Attachment['phase'], string> = {
   uploading: 'Uploading…',
   processing: 'Preparing…',

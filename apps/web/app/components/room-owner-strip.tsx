@@ -2,13 +2,12 @@ import {
   ROOM_VISIBILITY_DESCRIPTIONS,
   ROOM_VISIBILITY_LABELS,
 } from '@paldora/domain';
-import type { RoomView } from '@paldora/validation';
-import type { Route } from 'next';
+import { type RoomView } from '@paldora/validation';
+import { type Route } from 'next';
 import Link from 'next/link';
 import { roomHref } from '../lib/room-theme';
-import { Badge, buttonClassName } from './ui';
 import styles from './room-owner-strip.module.css';
-
+import { Badge, buttonClassName } from './ui';
 /**
  * Trusted app chrome above a Room, outside `.room-canvas` and its theme.
  * Only the owner gets it: who can visit, and the way to Customize.

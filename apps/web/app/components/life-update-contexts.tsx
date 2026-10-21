@@ -1,13 +1,12 @@
 'use client';
 
-import type { LifeUpdateContextView } from '@paldora/validation';
-import type { Route } from 'next';
+import { type LifeUpdateContextView } from '@paldora/validation';
+import { type Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { lifeUpdateHref, nextTabIndex } from '../lib/life-update-form';
-import { PostInteractions } from './post-interactions';
 import styles from './life-update-card.module.css';
-
+import { PostInteractions } from './post-interactions';
 /**
  * One conversation per Box the viewer shares with the author, as tabs in
  * alphabetical order (the API's order). Each Box has its own comments and

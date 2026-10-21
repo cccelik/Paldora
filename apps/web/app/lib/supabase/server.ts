@@ -1,9 +1,7 @@
-import 'server-only';
-
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import 'server-only';
 import { publicEnvironment } from '../environment';
-
 /**
  * Supabase client bound to the request's session cookies. Server Components
  * cannot write cookies, so writes are ignored there; the proxy refreshes the

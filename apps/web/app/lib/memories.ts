@@ -5,7 +5,6 @@ import {
   type MemoryItemView,
   type MemoryType,
 } from '@paldora/validation';
-
 /**
  * Pure helpers for the Memories pages: URL parsing, links, and UTC month
  * grouping. Which items exist is the API's decision; nothing here filters.
@@ -127,3 +126,13 @@ export function countLabel(count: number): string {
 /** The honest note every Memories page carries about UTC months. */
 export const memoriesDescription =
   'Everything you can still see, by the month it was shared. Months follow UTC, so something shared near midnight can sit in the neighbouring month on your clock.';
+
+/** A scoped Memories period, or null for malformed or ambiguous URL values. */
+export function parsePeriod(query: Readonly<Record<string, Param>>) {
+  const year = query.year === undefined ? undefined : parseYear(query.year);
+  const month = query.month === undefined ? undefined : parseMonth(query.month);
+  const type = parseMemoryType(query.type);
+  if (year === null || month === null || type === null) return null;
+  if (month !== undefined && year === undefined) return null;
+  return { year, month, type };
+}

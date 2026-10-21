@@ -1,39 +1,21 @@
-import { uuidSchema } from '@paldora/validation';
-import type { Route } from 'next';
-import Link from 'next/link';
+import { type Route } from 'next';
 import { notFound } from 'next/navigation';
+import { MemoryScopePage } from '../../../../components/memory-scope-page';
 import { MemoryPeriod } from '../../../../components/memory-timeline';
-import { EmptyState, PageHeader } from '../../../../components/ui';
-import {
-  memoryHref,
-  monthName,
-  parseMemoryType,
-  parseMonth,
-  parseYear,
-} from '../../../../lib/memories';
+import { BackLink, EmptyState } from '../../../../components/ui';
+import { memoryHref, monthName, parsePeriod } from '../../../../lib/memories';
+import { BOX_ABSENT, uuidParam } from '../../../../lib/route-params';
 import {
   apiClient,
   completedUser,
   cursorParam,
   orNotFound,
 } from '../../../../lib/session';
-import styles from '../../../page-stack.module.css';
-
 export const metadata = { title: 'Box Memories' };
 
-const absent = ['BOX_NOT_FOUND', 'VALIDATION_FAILED'];
-
-type Query = Awaited<PageProps<'/boxes/[boxId]/memories'>['searchParams']>;
+const absent = BOX_ABSENT;
 
 /** `?year=&month=&type=`; anything present but malformed is not a page. */
-function parsePeriod(query: Query) {
-  const year = query.year === undefined ? undefined : parseYear(query.year);
-  const month = query.month === undefined ? undefined : parseMonth(query.month);
-  const type = parseMemoryType(query.type);
-  if (year === null || month === null || type === null) notFound();
-  if (month !== undefined && year === undefined) notFound();
-  return { year, month, type };
-}
 
 /**
  * One Box's Memories. Only current members get past the API; a former
@@ -44,11 +26,11 @@ export default async function BoxMemoriesPage({
   searchParams,
 }: PageProps<'/boxes/[boxId]/memories'>) {
   const me = await completedUser();
-  const parsedId = uuidSchema.safeParse((await params).boxId);
-  if (!parsedId.success) notFound();
-  const boxId = parsedId.data;
+  const parsedId = uuidParam((await params).boxId);
+  const boxId = parsedId;
   const query = await searchParams;
   const period = parsePeriod(query);
+  if (period === null) notFound();
   const api = await apiClient();
   const [box, summary] = await Promise.all([
     orNotFound(api.box(boxId), absent),
@@ -71,22 +53,22 @@ export default async function BoxMemoriesPage({
   const scope = { kind: 'box', boxId } as const;
   const where = period.month ? `${monthName(period.month)} ${year}` : year;
   return (
-    <div className={styles.stack}>
-      <p>
-        <Link href={`/boxes/${boxId}`}>← {box.name}</Link>
-      </p>
-      <PageHeader
-        title={
-          where ? `${box.name} Memories: ${where}` : `${box.name} Memories`
-        }
-        description={`Everything shared in ${box.name} that you can still see, by the month it was shared. Months follow UTC, so something shared near midnight can sit in the neighbouring month on your clock.`}
-      />
+    <MemoryScopePage
+      title={where ? `${box.name} Memories: ${where}` : `${box.name} Memories`}
+      description={`Everything shared in ${box.name} that you can still see, by the month it was shared. Months follow UTC, so something shared near midnight can sit in the neighbouring month on your clock.`}
+      back={
+        <>
+          {' '}
+          <BackLink href={`/boxes/${boxId}`}>{box.name}</BackLink>{' '}
+        </>
+      }
+    >
       {period.month ? (
-        <p>
-          <Link href={memoryHref(scope, { year: year ?? undefined }) as Route}>
-            ← All of {year}
-          </Link>
-        </p>
+        <BackLink
+          href={memoryHref(scope, { year: year ?? undefined }) as Route}
+        >
+          All of {year}
+        </BackLink>
       ) : null}
       {year === null || page === null ? (
         <EmptyState>
@@ -105,6 +87,6 @@ export default async function BoxMemoriesPage({
           viewerId={me.user.id}
         />
       )}
-    </div>
+    </MemoryScopePage>
   );
 }

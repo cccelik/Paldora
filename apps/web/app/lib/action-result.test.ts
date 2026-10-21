@@ -1,7 +1,6 @@
 import { ApiClientError } from '@paldora/api-client';
 import { describe, expect, it } from 'vitest';
 import { actionError } from './action-result';
-
 describe('actionError', () => {
   it('uses product copy for known codes', () => {
     const error = new ApiClientError(

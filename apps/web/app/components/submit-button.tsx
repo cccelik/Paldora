@@ -2,7 +2,6 @@
 
 import { useFormStatus } from 'react-dom';
 import { Button, type ButtonVariant } from './ui';
-
 /** A submit button that disables itself and says so while its form runs. */
 export function SubmitButton({
   children,

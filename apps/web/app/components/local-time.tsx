@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
 const format = (date: Date, timeZone?: string) =>
   new Intl.DateTimeFormat('en', {
     dateStyle: 'medium',

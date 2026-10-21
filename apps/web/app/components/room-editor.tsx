@@ -1,18 +1,17 @@
 'use client';
 
 import { DEFAULT_ROOM } from '@paldora/domain';
-import type { RoomView, UserSummary } from '@paldora/validation';
+import { type RoomView, type UserSummary } from '@paldora/validation';
 import { useCallback, useMemo, useState } from 'react';
 import { RoomAboutForm } from './room-about-form';
 import { RoomAppearanceForm } from './room-appearance-form';
 import { RoomAudienceForm } from './room-audience-form';
 import { RoomBannerEditor } from './room-banner-editor';
 import { RoomCanvas, type RoomPreviews } from './room-canvas';
+import styles from './room-editor.module.css';
 import { RoomTopFriendsEditor } from './room-top-friends-editor';
 import { RoomWidgetEditor } from './room-widget-editor';
-import type { RoomSaveContext } from './use-room-save';
-import styles from './room-editor.module.css';
-
+import { type RoomSaveContext } from './use-room-save';
 /**
  * The Room customizer. It holds the last saved Room and its version: every
  * section sends that version, and every save hands back the new one, so a

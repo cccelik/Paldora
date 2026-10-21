@@ -1,11 +1,10 @@
 'use client';
 
 import { useId, useRef } from 'react';
-import type { ActionOutcome } from '../lib/action-result';
+import { type ActionOutcome } from '../lib/action-result';
+import styles from './reaction-camera.module.css';
 import { Button } from './ui';
 import { useReactionCapture, type CaptureState } from './use-reaction-capture';
-import styles from './reaction-camera.module.css';
-
 const statusText: Readonly<Record<CaptureState['phase'], string>> = {
   idle: '',
   requesting: 'Starting the camera. Allow it if your browser asks.',

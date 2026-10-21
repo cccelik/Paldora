@@ -1,27 +1,23 @@
 'use client';
 
 import { POST_CONTENT_MAX_LENGTH, POST_MEDIA_MAX_ITEMS } from '@paldora/domain';
-import {
-  useActionState,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useActionState, useCallback, useRef, useState } from 'react';
 import { preparePostPhoto } from '../actions/post-photos';
 import { createPostAction } from '../actions/posts';
 import { idleResult } from '../lib/action-result';
+import { characterCount } from '../lib/character-count';
 import { PHOTO_ACCEPT } from '../lib/image-upload';
 import { ActionFeedback } from './action-feedback';
-import { SubmitButton } from './submit-button';
-import { Button, TextAreaField } from './ui';
 import { PhotoAttachmentList } from './photo-attachment-list';
+import styles from './post-card.module.css';
+import { SubmitButton } from './submit-button';
+import { Button, HiddenFields, TextAreaField } from './ui';
+import { useActionSuccess } from './use-action-success';
 import {
   usePhotoAttachments,
   type PreparePhoto,
 } from './use-photo-attachments';
-import styles from './post-card.module.css';
-
+import { useSubmitShortcut } from './use-submit-shortcut';
 /**
  * Write to a Box, with up to four photos. Cmd/Ctrl+Enter posts. Posting waits
  * until every chosen photo has finished processing; the text and photos stay
@@ -39,20 +35,18 @@ export function PostComposer({ boxId }: { boxId: string }) {
   const picker = useRef<HTMLInputElement>(null);
   const { clear } = photos;
 
-  useEffect(() => {
-    if (state.status !== 'success') return;
+  useActionSuccess(state, () => {
     setText('');
     clear();
-  }, [state, clear]);
+  });
 
   const empty = text.trim().length === 0 && photos.readyIds.length === 0;
+  const submitShortcut = useSubmitShortcut(form);
   return (
     <form ref={form} action={action} className={styles.composer}>
-      <input type="hidden" name="boxId" value={boxId} />
-      <input
-        type="hidden"
-        name="mediaAssetIds"
-        value={JSON.stringify(photos.readyIds)}
+      <HiddenFields values={{ boxId: boxId }} />
+      <HiddenFields
+        values={{ mediaAssetIds: JSON.stringify(photos.readyIds) }}
       />
       <TextAreaField
         label="Share with this Box"
@@ -62,13 +56,8 @@ export function PostComposer({ boxId }: { boxId: string }) {
         value={text}
         maxLength={POST_CONTENT_MAX_LENGTH}
         onChange={(event) => setText(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-            event.preventDefault();
-            form.current?.requestSubmit();
-          }
-        }}
-        help={`${text.length.toLocaleString('en')} / ${POST_CONTENT_MAX_LENGTH.toLocaleString('en')}`}
+        onKeyDown={submitShortcut}
+        help={characterCount(text, POST_CONTENT_MAX_LENGTH)}
       />
       <PhotoAttachmentList
         items={photos.items}

@@ -1,0 +1,7 @@
+.card {
+  display: grid;
+  gap: var(--pal-space-4);
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}

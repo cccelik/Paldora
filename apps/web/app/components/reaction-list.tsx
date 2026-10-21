@@ -1,10 +1,9 @@
 import { REAL_REACTION_KIND } from '@paldora/domain';
-import type { PostReactionEntry } from '@paldora/validation';
+import { type PostReactionEntry } from '@paldora/validation';
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { Route } from 'next';
 import { PersonList, PersonRow } from './person-row';
 import styles from './reaction-list.module.css';
-
 /** "All" or "Camera": two plain links, so filtering needs no script. */
 export function ReactionFilter({
   postId,

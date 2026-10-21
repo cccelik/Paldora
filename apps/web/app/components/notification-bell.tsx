@@ -1,9 +1,9 @@
 'use client';
 
-import type { UnreadCount } from '@paldora/validation';
+import { type UnreadCount } from '@paldora/validation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { unreadCountAction } from '../actions/notifications';
 import { unreadBadge, unreadLabel } from '../lib/notification-text';
 import {
@@ -11,10 +11,10 @@ import {
   isNotificationHint,
   type RealtimeHint,
 } from '../lib/realtime';
-import { useToast } from './toast';
-import { useRealtimeHint } from './use-realtime-hint';
 import styles from './notification-bell.module.css';
-
+import { useToast } from './toast';
+import { useDebouncedCallback } from './use-debounced-callback';
+import { useRealtimeHint } from './use-realtime-hint';
 /**
  * The header's way to /notifications. The first count comes from the
  * layout; after that a realtime hint makes it refetch. Hints carry no
@@ -25,7 +25,6 @@ export function NotificationBell({ initial }: { initial: UnreadCount }) {
   const [seen, setSeen] = useState(initial);
   const pathname = usePathname();
   const showToast = useToast();
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // A fresh server render (after mark-read, say) replaces the local count.
   if (initial !== seen) {
@@ -33,16 +32,11 @@ export function NotificationBell({ initial }: { initial: UnreadCount }) {
     setCount(initial);
   }
 
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const refetch = useCallback(() => {
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      void unreadCountAction().then((result) => {
-        if (result.status === 'success') setCount(result.data);
-      });
-    }, REALTIME_DEBOUNCE_MS.unreadCount);
-  }, []);
+  const refetch = useDebouncedCallback(() => {
+    void unreadCountAction().then((result) => {
+      if (result.status === 'success') setCount(result.data);
+    });
+  }, REALTIME_DEBOUNCE_MS.unreadCount);
 
   useRealtimeHint((hint: RealtimeHint) => {
     if (!isNotificationHint(hint)) return;

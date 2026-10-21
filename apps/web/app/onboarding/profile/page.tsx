@@ -1,7 +1,6 @@
 import { OnboardingLayout } from '../../components/onboarding-layout';
 import { ProfileStepForm } from '../../components/profile-forms';
 import { userOnStep } from '../../lib/session';
-
 export const metadata = { title: 'About you' };
 
 export default async function ProfileStepPage() {

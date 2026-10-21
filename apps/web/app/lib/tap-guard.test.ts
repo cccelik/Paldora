@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { DOUBLE_TAP_WINDOW_MS, idleTapGuard, settle, tap } from './tap-guard';
-
 describe('tap guard', () => {
   it('ignores a second press while the first is in flight', () => {
     const first = tap(idleTapGuard, 0);

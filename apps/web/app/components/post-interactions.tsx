@@ -1,9 +1,9 @@
 'use client';
 
 import { REAL_REACTION_KIND } from '@paldora/domain';
-import type { PostInteractionSummary } from '@paldora/validation';
+import { type PostInteractionSummary } from '@paldora/validation';
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { Route } from 'next';
 import { useCallback, useEffect, useRef } from 'react';
 import {
   postSummaryAction,
@@ -15,12 +15,11 @@ import {
   isInteractionHint,
   type RealtimeHint,
 } from '../lib/realtime';
+import styles from './post-interactions.module.css';
 import { ReactionBar } from './reaction-bar';
 import { ReactionCamera } from './reaction-camera';
 import { useOptimisticReaction } from './use-optimistic-reaction';
 import { useRealtimeHint } from './use-realtime-hint';
-import styles from './post-interactions.module.css';
-
 const commentsText = (count: number) =>
   count === 1 ? '1 comment' : `${count.toLocaleString('en')} comments`;
 

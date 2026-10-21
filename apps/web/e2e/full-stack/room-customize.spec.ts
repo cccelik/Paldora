@@ -1,7 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
 import { fullStackEnvironment } from '../playwright.fullstack.config';
-import { provisionAccount, type Account } from './accounts';
+import { expectAccessibleFromTop } from '../support/a11y';
+import { provisionAccount, type Account } from '../support/accounts';
 import {
   apiAs,
   befriend,
@@ -9,15 +10,13 @@ import {
   roomPath,
   shareBox,
   watchCsp,
-} from './room-helpers';
+} from '../support/rooms';
 import {
-  expectAccessible,
   expectNoOverflow,
   personOnOwnSession,
   signedIn,
   tabTo,
-} from './sessions';
-
+} from '../support/sessions';
 /**
  * Rooms (Phase 7, slice 7): the owner's customizer. Each section saves on
  * its own with the version it last saw; what it saves shows on the Room
@@ -32,10 +31,6 @@ const photoPath = fileURLToPath(
  * axe from the top of the page: after a save the page is scrolled, and the
  * sticky app header then really does cover the controls under it.
  */
-async function expectAccessibleFromTop(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expectAccessible(page);
-}
 
 const customizePath = (account: Account) => `${roomPath(account)}/customize`;
 

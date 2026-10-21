@@ -15,7 +15,7 @@ import {
   type RoomLayout,
   type RoomThemePreset,
 } from '@paldora/domain';
-import type { RoomView } from '@paldora/validation';
+import { type RoomView } from '@paldora/validation';
 import { updateRoomAction } from '../actions/rooms';
 import { roomThemeAttributes } from '../lib/room-theme';
 import {
@@ -24,9 +24,9 @@ import {
   RoomSectionFeedback,
   RoomVersionField,
 } from './room-editor-parts';
-import { useRoomSave, type RoomSaveContext } from './use-room-save';
 import styles from './room-editor.module.css';
-
+import { HiddenFields } from './ui';
+import { useRoomSave, type RoomSaveContext } from './use-room-save';
 type RoomStyle = RoomView['style'];
 
 const layoutDetail: Readonly<Record<RoomLayout, string>> = {
@@ -35,12 +35,12 @@ const layoutDetail: Readonly<Record<RoomLayout, string>> = {
 };
 
 /** A small, decorative sample of a theme: its own canvas, text, accent. */
-function ThemeSwatch({ style }: { style: RoomStyle }) {
+function ThemeSwatch({ appearance }: { appearance: RoomStyle }) {
   return (
     <span
       className={`room-canvas ${styles.swatch}`}
       aria-hidden="true"
-      {...roomThemeAttributes(style)}
+      {...roomThemeAttributes(appearance)}
     >
       <span className={styles.swatchText}>Aa</span>
       <span className={styles.swatchSurface} />
@@ -71,7 +71,7 @@ function ThemePicker({
                 checked={draft.themePreset === preset}
                 onChange={() => onChange(preset)}
               />
-              <ThemeSwatch style={{ ...draft, themePreset: preset }} />
+              <ThemeSwatch appearance={{ ...draft, themePreset: preset }} />
               <span className={styles.themeName}>{meta.label}</span>
               <span className={styles.themeScheme}>
                 {meta.scheme === 'dark' ? 'Dark' : 'Light'}
@@ -169,7 +169,7 @@ export function RoomAppearanceForm({
       description="Your Room’s look. It never changes the app around it: Light, Dark, or System is in Settings."
     >
       <form action={action} className={styles.form}>
-        <input type="hidden" name="section" value="appearance" />
+        <HiddenFields values={{ section: 'appearance' }} />
         <RoomVersionField context={context} />
         <ThemePicker
           draft={draft}

@@ -10,7 +10,12 @@
   display: grid;
   gap: var(--pal-space-3);
   padding: var(--pal-space-5);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 15%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-lg);
   background: var(--pal-canvas);
 }
@@ -43,7 +48,7 @@
   flex-wrap: wrap;
   gap: var(--pal-space-2);
   color: var(--pal-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--pal-font-size-sm);
 }
 
 .meta a {
@@ -79,5 +84,5 @@
 .sectionLabel {
   margin: 0;
   font-family: var(--pal-font-editorial);
-  font-size: 1.125rem;
+  font-size: var(--pal-font-size-lead);
 }

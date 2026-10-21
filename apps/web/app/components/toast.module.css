@@ -45,7 +45,12 @@
   gap: var(--pal-space-2);
   padding: var(--pal-space-1) var(--pal-space-1) var(--pal-space-1)
     var(--pal-space-4);
-  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(
+      in srgb,
+      var(--pal-text) calc(var(--pal-border-opacity-default) * 100%),
+      transparent
+    );
   border-radius: var(--pal-radius-md);
   background: var(--pal-surface);
   color: var(--pal-text);
@@ -89,7 +94,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 1.5rem;
+  font-size: var(--pal-font-size-heading);
   line-height: 1;
   cursor: pointer;
 }

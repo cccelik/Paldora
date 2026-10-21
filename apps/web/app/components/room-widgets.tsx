@@ -1,20 +1,19 @@
 import { ROOM_WIDGET_LABELS, type RoomWidgetType } from '@paldora/domain';
-import type {
-  LifeUpdateView,
-  MemorySummaryView,
-  PostView,
-  RoomPhotoView,
-  RoomView,
+import {
+  type LifeUpdateView,
+  type MemorySummaryView,
+  type PostView,
+  type RoomPhotoView,
+  type RoomView,
 } from '@paldora/validation';
-import type { Route } from 'next';
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { countLabel, memoryHref } from '../lib/memories';
 import { excerpt, musicLink, roomHref } from '../lib/room-theme';
 import { LocalTime } from './local-time';
-import { Avatar } from './ui';
 import styles from './room-widgets.module.css';
-
+import { Avatar } from './ui';
 /**
  * What the Room's content widgets show: the live items the viewer can reach
  * today, loaded only for enabled widgets (null when not loaded).

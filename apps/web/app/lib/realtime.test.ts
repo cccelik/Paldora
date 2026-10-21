@@ -10,7 +10,6 @@ import {
   shouldRefresh,
   shouldResync,
 } from './realtime';
-
 const BOX = '7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10';
 const POST = '0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22';
 

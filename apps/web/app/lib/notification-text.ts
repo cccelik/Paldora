@@ -1,7 +1,6 @@
 import { REAL_REACTION_KIND } from '@paldora/domain';
-import type { NotificationView } from '@paldora/validation';
+import { type NotificationView } from '@paldora/validation';
 import { lifeUpdateHref } from './life-update-form';
-
 /** How a notification reads, built only from what the API returned live. */
 export function notificationSentence(notification: NotificationView): string {
   const actor = notification.actor.displayName;

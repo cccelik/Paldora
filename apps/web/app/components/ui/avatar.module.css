@@ -19,11 +19,11 @@
 .small {
   width: 2.5rem;
   height: 2.5rem;
-  font-size: 1rem;
+  font-size: var(--pal-font-size-body);
 }
 
 .large {
   width: 7.5rem;
   height: 7.5rem;
-  font-size: 2.5rem;
+  font-size: var(--pal-font-size-display-large);
 }

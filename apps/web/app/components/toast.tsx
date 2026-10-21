@@ -1,7 +1,7 @@
 'use client';
 
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { Route } from 'next';
 import {
   createContext,
   useCallback,
@@ -11,7 +11,7 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import type { ActionResult } from '../lib/action-result';
+import { type ActionResult } from '../lib/action-result';
 import {
   initialToastState,
   isErrorTone,
@@ -21,7 +21,6 @@ import {
   type ToastInput,
 } from '../lib/toast-queue';
 import styles from './toast.module.css';
-
 type ShowToast = (toast: ToastInput) => void;
 
 const ToastContext = createContext<ShowToast>(() => undefined);

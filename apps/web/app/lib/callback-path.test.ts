@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { appearanceAttribute } from './appearance';
 import { safeCallbackPath } from './callback-path';
 import { routeForOnboarding } from './onboarding';
-
 describe('safeCallbackPath', () => {
   it.each([
     ['/reset-password', '/reset-password'],

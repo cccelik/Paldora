@@ -1,15 +1,17 @@
 'use client';
 
 import { COMMENT_CONTENT_MAX_LENGTH } from '@paldora/domain';
-import type { CommentView } from '@paldora/validation';
+import { type CommentView } from '@paldora/validation';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { createCommentAction } from '../actions/interactions';
 import { idleResult, type ActionResult } from '../lib/action-result';
+import { characterCount } from '../lib/character-count';
 import { ActionFeedback } from './action-feedback';
-import { SubmitButton } from './submit-button';
-import { Button, TextAreaField } from './ui';
 import styles from './comment-thread.module.css';
-
+import { SubmitButton } from './submit-button';
+import { Button, HiddenFields, TextAreaField } from './ui';
+import { useActionSuccess } from './use-action-success';
+import { useSubmitShortcut } from './use-submit-shortcut';
 const initial: ActionResult<CommentView | undefined> = idleResult;
 
 /**
@@ -34,25 +36,22 @@ export function CommentComposer({
   const [text, setText] = useState('');
   const form = useRef<HTMLFormElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
-  const handled = useRef(state);
 
   useEffect(() => {
     if (autoFocus) field.current?.focus();
   }, [autoFocus]);
 
-  useEffect(() => {
-    if (state === handled.current) return;
-    handled.current = state;
-    if (state.status !== 'success') return;
+  useActionSuccess(state, (data) => {
     setText('');
-    if (state.data) onPosted?.(state.data);
-  }, [state, onPosted]);
+    if (data) onPosted?.(data);
+  });
 
   const id = replyTo ? `reply-${replyTo.id}` : `comment-${postId}-new`;
+  const submitShortcut = useSubmitShortcut(form);
   return (
     <form ref={form} action={action} className={styles.composer}>
-      <input type="hidden" name="postId" value={postId} />
-      <input type="hidden" name="parentCommentId" value={replyTo?.id ?? ''} />
+      <HiddenFields values={{ postId: postId }} />
+      <HiddenFields values={{ parentCommentId: replyTo?.id ?? '' }} />
       {replyTo ? (
         <p className={styles.chip}>
           <span>Replying to {replyTo.name}</span>
@@ -73,13 +72,8 @@ export function CommentComposer({
         maxLength={COMMENT_CONTENT_MAX_LENGTH}
         required
         onChange={(event) => setText(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-            event.preventDefault();
-            form.current?.requestSubmit();
-          }
-        }}
-        help={`${text.length.toLocaleString('en')} / ${COMMENT_CONTENT_MAX_LENGTH.toLocaleString('en')}`}
+        onKeyDown={submitShortcut}
+        help={characterCount(text, COMMENT_CONTENT_MAX_LENGTH)}
       />
       <ActionFeedback state={state} />
       <div className={styles.row}>

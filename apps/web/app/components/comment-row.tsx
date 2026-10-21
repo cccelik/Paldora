@@ -1,7 +1,7 @@
 'use client';
 
 import { COMMENT_CONTENT_MAX_LENGTH } from '@paldora/domain';
-import type { CommentItemView, CommentView } from '@paldora/validation';
+import { type CommentItemView, type CommentView } from '@paldora/validation';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import {
   deleteCommentAction,
@@ -10,14 +10,13 @@ import {
 } from '../actions/interactions';
 import { idleResult, type ActionResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
+import styles from './comment-thread.module.css';
 import { ConfirmAction } from './confirm-action';
 import { LocalTime } from './local-time';
 import { ReactionBar } from './reaction-bar';
 import { SubmitButton } from './submit-button';
-import { Avatar, Button, TextAreaField } from './ui';
+import { Avatar, Button, HiddenFields, TextAreaField } from './ui';
 import { useOptimisticReaction } from './use-optimistic-reaction';
-import styles from './comment-thread.module.css';
-
 export interface ReplyTarget {
   readonly id: string;
   readonly name: string;
@@ -41,7 +40,7 @@ function EditCommentForm({
   }, [state, onDone]);
   return (
     <form action={action} className={styles.composer}>
-      <input type="hidden" name="commentId" value={comment.id} />
+      <HiddenFields values={{ commentId: comment.id }} />
       <TextAreaField
         label="Edit your comment"
         id={`edit-comment-${comment.id}`}

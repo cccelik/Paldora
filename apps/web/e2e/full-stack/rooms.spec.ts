@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { fullStackEnvironment } from '../playwright.fullstack.config';
-import { provisionAccount } from './accounts';
+import { expectSound } from '../support/a11y';
+import { provisionAccount } from '../support/accounts';
 import {
   ROOM_PRESETS,
   apiAs,
@@ -12,15 +13,8 @@ import {
   updateRoom,
   uploadBanner,
   watchCsp,
-} from './room-helpers';
-import {
-  expectAccessible,
-  expectNoOverflow,
-  personOnOwnSession,
-  signedIn,
-  tabTo,
-} from './sessions';
-
+} from '../support/rooms';
+import { personOnOwnSession, signedIn, tabTo } from '../support/sessions';
 /**
  * Rooms (Phase 7, slice 6): viewing a Room and getting there. Set-up that
  * belongs to other features (friends, Boxes, posts, Room settings, the
@@ -28,11 +22,6 @@ import {
  * time is spent on the Room itself. Customizing through the UI is in
  * `room-customize.spec.ts`.
  */
-
-async function expectSound(page: Page) {
-  await expectAccessible(page);
-  await expectNoOverflow(page);
-}
 
 /** Nothing inside the canvas is navigation, a form, or a trusted control. */
 async function expectNoTrustedControls(page: Page) {

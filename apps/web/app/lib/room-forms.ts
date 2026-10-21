@@ -4,7 +4,6 @@ import {
   updateRoomWidgetsSchema,
 } from '@paldora/validation';
 import { z } from 'zod';
-
 /**
  * Customizer form fields → Room API bodies. Server Actions are public
  * endpoints, so each body is validated by the same shared schema the API

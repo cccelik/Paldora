@@ -1,14 +1,13 @@
-import type { PaldoraApiClient } from '@paldora/api-client';
-import { uuidSchema, type BoxView } from '@paldora/validation';
-import Link from 'next/link';
+import { type PaldoraApiClient } from '@paldora/api-client';
+import { type BoxView } from '@paldora/validation';
 import {
   LifeUpdateComposer,
   type AudienceBox,
 } from '../../../components/life-update-composer';
-import { PageHeader } from '../../../components/ui';
+import { BackLink, PageHeader } from '../../../components/ui';
+import { optionalUuid } from '../../../lib/route-params';
 import { apiClient, completedUser } from '../../../lib/session';
 import styles from '../../page-stack.module.css';
-
 export const metadata = { title: 'New Life Update' };
 
 const PAGE_SIZE = 50;
@@ -35,7 +34,7 @@ export default async function NewLifeUpdatePage({
   searchParams,
 }: PageProps<'/life-updates/new'>) {
   await completedUser();
-  const box = uuidSchema.safeParse((await searchParams).box);
+  const box = optionalUuid((await searchParams).box);
   const { boxes, truncated } = await boxesFor(await apiClient());
   const audience = boxes
     .map((item) => ({
@@ -46,16 +45,14 @@ export default async function NewLifeUpdatePage({
     .sort(byName);
   return (
     <div className={styles.stack}>
-      <p>
-        <Link href="/life-updates">← Your Life Updates</Link>
-      </p>
+      <BackLink href="/life-updates">Your Life Updates</BackLink>
       <PageHeader
         title="New Life Update"
         description="A catch-up on what’s been going on. Every section is optional."
       />
       <LifeUpdateComposer
         boxes={audience}
-        preselectedBoxId={box.success ? box.data.toLowerCase() : undefined}
+        preselectedBoxId={box}
         truncated={truncated}
       />
     </div>

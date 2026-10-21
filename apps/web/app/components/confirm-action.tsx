@@ -3,11 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { idleResult } from '../lib/action-result';
 import { ActionFeedback } from './action-feedback';
-import type { FormAction, HiddenFields } from './action-types';
-import { SubmitButton } from './submit-button';
-import { Button, type ButtonVariant } from './ui';
+import { type FormAction, type HiddenFieldValues } from './action-types';
 import styles from './row-action-form.module.css';
-
+import { SubmitButton } from './submit-button';
+import { Button, type ButtonVariant, HiddenFields } from './ui';
 /**
  * A two-step control for anything that is hard to undo. The first press opens
  * a plain-language question; focus moves to Cancel, the safe choice, and
@@ -24,7 +23,7 @@ export function ConfirmAction({
   onSuccess,
 }: {
   action: FormAction;
-  fields: HiddenFields;
+  fields: HiddenFieldValues;
   label: string;
   prompt: string;
   confirmLabel: string;
@@ -66,9 +65,7 @@ export function ConfirmAction({
       role="group"
       aria-label={prompt}
     >
-      {Object.entries(fields).map(([name, value]) => (
-        <input key={name} type="hidden" name={name} value={value} />
-      ))}
+      <HiddenFields values={fields} />
       <p className={styles.prompt}>{prompt}</p>
       <div className={styles.buttons}>
         <SubmitButton variant={variant} pendingLabel={pendingLabel}>

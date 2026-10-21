@@ -1,10 +1,9 @@
-import type { Route } from 'next';
+import { type Route } from 'next';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { roomHref } from '../lib/room-theme';
-import { Avatar } from './ui';
 import styles from './person-row.module.css';
-
+import { Avatar } from './ui';
 export interface PersonLike {
   readonly username: string;
   readonly displayName: string;

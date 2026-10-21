@@ -1,5 +1,4 @@
-import type { CommentItemView } from '@paldora/validation';
-
+import { type CommentItemView } from '@paldora/validation';
 /** The ID of any comment row: a comment, a tombstone, or a placeholder. */
 export function itemId(item: CommentItemView): string {
   if (item.kind === 'comment') return item.comment.id;

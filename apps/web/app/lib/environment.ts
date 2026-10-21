@@ -2,7 +2,6 @@ import {
   parseWebPublicEnvironment,
   type WebPublicEnvironment,
 } from '@paldora/config';
-
 let cached: WebPublicEnvironment | undefined;
 
 /**

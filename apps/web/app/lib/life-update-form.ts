@@ -4,7 +4,6 @@ import {
   LIFE_UPDATE_TOTAL_MAX_LENGTH,
   type LifeUpdateSectionKey,
 } from '@paldora/domain';
-
 /** What someone typed into each section field, untrimmed. */
 export type SectionDrafts = Readonly<
   Partial<Record<LifeUpdateSectionKey, string>>

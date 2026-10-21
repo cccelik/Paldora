@@ -1,5 +1,4 @@
-import type { Route } from 'next';
-
+import { type Route } from 'next';
 const allowedCallbackPaths = new Set<Route>(['/home', '/reset-password']);
 
 /** Auth callbacks may only continue to known in-app paths. */

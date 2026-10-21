@@ -1,4 +1,4 @@
-import type { BoxInvitationView, BoxView } from '@paldora/validation';
+import { type BoxInvitationView, type BoxView } from '@paldora/validation';
 import {
   inviteToBoxAction,
   leaveBoxAction,
@@ -8,9 +8,8 @@ import { DeleteBoxForm, RenameBoxForm } from './box-forms';
 import { PendingInvitationList } from './box-members';
 import { ConfirmAction } from './confirm-action';
 import { RowActionForm } from './row-action-form';
-import { UsernameActionForm } from './username-action-form';
 import { EmptyState, Section } from './ui';
-
+import { UsernameActionForm } from './username-action-form';
 /** Owners and admins: invite by username and see who is still pending. */
 export function InviteSection({
   box,

@@ -6,7 +6,6 @@ import {
   roomTopFriendsFormSchema,
   roomWidgetsFormSchema,
 } from './room-forms';
-
 const VERSION = '2026-10-20T10:00:00.123456Z';
 const FRIEND = '0A7C1D6E-2F13-4D8B-9F54-5C3E6D1B7A22';
 

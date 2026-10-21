@@ -21,6 +21,15 @@ component.
 | `FormMessage`                | A form's live region; `success`, `attention`, `failure` tones.              |
 | `Avatar`                     | Photo or initials; signed URLs render as plain `img`.                       |
 
+- `BackLink`, `Card`, and `Stack` own repeated return links, panel geometry,
+  and page rhythm. `Section` composes `Card`; `MemoryScopePage` composes `Stack`
+  and the shared page header while routes retain their own denial codes.
+- `HiddenFields` renders named form values; actions still validate every value.
+- `useSubmitShortcut`, `useActionSuccess`, and `useDebouncedCallback` own the
+  shared keyboard, result, and timer lifecycles. `lib/character-count.ts` owns
+  the locale-stable character counter. `lib/upload.ts` owns `PreparedUpload`,
+  upload schemas, and file-validation copy.
+
 ## Product components
 
 | Component                                               | Owns                                                                                                                                                                                                                                                                                  |

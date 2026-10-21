@@ -1,5 +1,4 @@
 import styles from './avatar.module.css';
-
 /** Initials from a display name, or the first letter of a username. */
 export function initialsOf(name: string | null | undefined): string {
   const words = (name ?? '').trim().split(/\s+/u).filter(Boolean);

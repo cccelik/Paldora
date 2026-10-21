@@ -1,16 +1,19 @@
 'use server';
 
-import type { ProfileChanges } from '@paldora/api-client';
+import { type ProfileChanges } from '@paldora/api-client';
 import { appearanceSchema } from '@paldora/validation';
+import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
-import { actionError, type ActionResult } from '../lib/action-result';
+import {
+  actionError,
+  invalidOutcome,
+  type ActionResult,
+} from '../lib/action-result';
 import { APPEARANCE_COOKIE, appearanceCookieOptions } from '../lib/appearance';
 import { publicEnvironment } from '../lib/environment';
 import { textField } from '../lib/form-data';
 import { apiClient } from '../lib/session';
-
 const profileCopy = {
   USERNAME_UNAVAILABLE: 'That username is taken. Try another.',
   ONBOARDING_INCOMPLETE: 'Finish the earlier steps first.',
@@ -80,12 +83,7 @@ export async function saveAppearanceAction(
 ): Promise<ActionResult> {
   const parsed = appearanceSchema.safeParse(textField(formData, 'appearance'));
   if (!parsed.success) {
-    return {
-      status: 'error',
-      code: 'VALIDATION_FAILED',
-      message: 'Choose light, dark, or system.',
-      tone: 'attention',
-    };
+    return invalidOutcome('Choose light, dark, or system.');
   }
   try {
     const saved = await (

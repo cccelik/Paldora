@@ -1,14 +1,13 @@
-import { existsSync } from 'node:fs';
-import { loadEnvFile } from 'node:process';
-import { fileURLToPath } from 'node:url';
 import {
   isDeployedEnvironment,
   parseWebPublicEnvironment,
   webPublicEnvironmentKeys,
 } from '@paldora/config';
-import type { NextConfig } from 'next';
+import { type NextConfig } from 'next';
+import { existsSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { securityHeaders } from './app/lib/security-headers';
-
 // Local development shares the repository-root .env. Values already present
 // in the environment (CI, hosting platforms) take precedence.
 const rootEnvironmentPath = fileURLToPath(
