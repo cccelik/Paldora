@@ -229,6 +229,23 @@ export const TOP_FRIENDS_VISIBILITIES = [
 ] as const;
 export type TopFriendsVisibility = (typeof TOP_FRIENDS_VISIBILITIES)[number];
 
+export const TOP_FRIENDS_VISIBILITY_LABELS: Readonly<
+  Record<TopFriendsVisibility, string>
+> = {
+  visible: 'Everyone who can visit',
+  friends: 'Friends only',
+  hidden: 'Only me',
+};
+
+export const TOP_FRIENDS_VISIBILITY_DESCRIPTIONS: Readonly<
+  Record<TopFriendsVisibility, string>
+> = {
+  visible: 'Anyone who can visit your Room sees who your Top Friends are.',
+  friends:
+    'Only your accepted friends see them. Box members who visit see that you keep them private.',
+  hidden: 'Only you see your Top Friends.',
+};
+
 export const ROOM_LOCATION_MAX = 120;
 export const ROOM_CURRENTLY_MAX = 240;
 export const ROOM_MUSIC_TEXT_MAX = 120;

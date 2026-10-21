@@ -101,3 +101,26 @@ Tests: `apps/api/src/social/block.integration.test.ts`,
 `apps/api/src/memories/memories.integration.test.ts`, and the full-stack
 `apps/web/e2e/full-stack/{life-updates,memories}.spec.ts`. Still to do: Rooms
 and Top Friends (7).
+
+## Addendum: Phase 7 rows (2026-10-20)
+
+D1 applies to Rooms and Top Friends through the same `hiddenByBlock`
+definition and its SQL twin `paldora.is_blocked_between`
+([ADR 017](017-rooms.md)). Rows added to the matrix, tested in both
+directions with unblock and re-block:
+
+| Surface                             | Behaviour across a block (either direction)                                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Room view (`GET /rooms/{username}`) | `ROOM_NOT_FOUND` for both people at every visibility, byte-identical to a missing Room; the web shows the shared not-found page with a 404                       |
+| Room content, summary, photos       | The same `ROOM_NOT_FOUND` (one access query runs first)                                                                                                          |
+| Top Friends of the pair             | The entry is deleted in the block's transaction (trigger on `user_blocks`, plus the friendship trigger), both directions; re-adding is `TOP_FRIEND_NOT_ELIGIBLE` |
+| A visitor blocked with a Top Friend | That one entry is omitted for that visitor, with no placeholder and no count; everyone else still sees it                                                        |
+| Previews of a third author          | Not possible: previews show only the owner's content, already filtered by `hiddenByBlock`                                                                        |
+| Unblock                             | The Room follows its normal visibility again; removed Top Friends are not restored (the friendship is gone)                                                      |
+
+Tests: `apps/api/src/social/block.integration.test.ts` ("Rooms and Top
+Friends across a block"), `apps/api/src/rooms/room-access.integration.test.ts`
+(parity), `apps/api/src/rooms/room-top-friends.integration.test.ts` (races),
+`packages/database/src/schema.integration.test.ts` (triggers), and the
+full-stack `apps/web/e2e/full-stack/{rooms,room-customize}.spec.ts`. The
+matrix now covers every Phase 1–7 surface.

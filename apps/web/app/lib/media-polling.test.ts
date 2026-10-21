@@ -1,7 +1,7 @@
 import type { MediaAssetView } from '@paldora/validation';
 import { describe, expect, it, vi } from 'vitest';
 import type { ActionOutcome } from './action-result';
-import { MEDIA_POLL_MS, untilProcessed } from './media-polling';
+import { MEDIA_POLL_MS, untilProcessed, untilSettled } from './media-polling';
 
 type Status = MediaAssetView['status'];
 const ok = (data: Status): ActionOutcome<Status> => ({
@@ -54,5 +54,24 @@ describe('untilProcessed', () => {
     const wait = vi.fn(() => Promise.resolve());
     await untilProcessed('id', sequence(ok('ready')), { wait });
     expect(wait).toHaveBeenCalledWith(MEDIA_POLL_MS);
+  });
+});
+
+describe('untilSettled', () => {
+  it('reports a wait that ran out as still processing', async () => {
+    const check = vi.fn(() => Promise.resolve(ok('processing')));
+    await expect(
+      untilSettled('id', check, { ...instant, maxPolls: 2 }),
+    ).resolves.toBe('processing');
+    expect(check).toHaveBeenCalledTimes(2);
+  });
+
+  it('settles on ready and on failure like untilProcessed', async () => {
+    await expect(
+      untilSettled('id', sequence(ok('processing'), ok('ready')), instant),
+    ).resolves.toBe('ready');
+    await expect(
+      untilSettled('id', sequence(ok('deleted')), instant),
+    ).resolves.toBe('failed');
   });
 });

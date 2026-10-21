@@ -56,3 +56,32 @@ describe('RedisRateLimiter', () => {
     expect(decisions.filter((decision) => decision.allowed)).toHaveLength(5);
   });
 });
+
+describe('Redis cold start', () => {
+  it('serves concurrent first requests on a fresh lazy connection', async () => {
+    // Right after boot nothing has connected yet. The first caller starts
+    // the connection; the others must wait for it, not fail closed.
+    const fresh = new InfrastructureService({
+      DATABASE_URL: DATABASE_URL ?? '',
+      DATABASE_POOL_MAX: 1,
+      REDIS_URL: REDIS_URL ?? '',
+    } as ConstructorParameters<typeof InfrastructureService>[0]);
+    try {
+      expect(fresh.redis.status).toBe('wait');
+      const coldLimiter = new RedisRateLimiter(fresh.redis);
+      const policy = {
+        scope: `test-${run}-cold`,
+        limit: 50,
+        windowSeconds: 60,
+      };
+      const decisions = await Promise.all(
+        Array.from({ length: 8 }, (_, index) =>
+          coldLimiter.consume(`user:${index}`, policy),
+        ),
+      );
+      expect(decisions.every((decision) => decision.allowed)).toBe(true);
+    } finally {
+      await fresh.onApplicationShutdown();
+    }
+  });
+});

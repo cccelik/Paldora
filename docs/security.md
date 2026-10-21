@@ -325,7 +325,7 @@ not-found decision. Full-stack tests in `apps/web/e2e/full-stack/
 memories.spec.ts` cover dedupe with tabs, deletion, removal, a stranger, a
 block, and Only Me at desktop and 390px.
 
-## Authorization matrix: Phase 7 (Rooms, slices 3–5)
+## Authorization matrix: Phase 7 (Rooms)
 
 Every Room route starts at `RoomAccessService` (`apps/api/src/rooms/`), one
 statement that resolves the owner (active, with a username), the Room row or
@@ -401,6 +401,21 @@ or off, so they reveal nothing about the owner's layout. These are reads
 and have no rate limit (plan §E, K8). Covered by
 `rooms/room-content.integration.test.ts` and the Room rows of
 `social/block.integration.test.ts`.
+
+**Web.** `/rooms/[username]/customize` renders only for the signed-in
+person's own username (compared normalized); every other name, including a
+friend's Room they may visit, is the shared not-found page with a 404, the
+same as a missing Room. It is a convenience only: the writes go to
+`/me/room…`, which name no username, and each Server Action validates its
+body with the shared schema before the API validates it again. A Room's
+look is `data-room-*` attributes selecting static, generated CSS, so the
+production CSP (no inline style) holds and no color comes from input; the
+music link is re-checked with `isSafeMusicUrl` on input and on render and
+is a plain `rel="noopener noreferrer nofollow ugc"` link (no embed, no
+fetch). `.room-canvas` contains no navigation, forms, buttons, or trusted
+controls and sets no z-index, and the customizer's preview canvas is
+`inert`. Full-stack tests: `apps/web/e2e/full-stack/{rooms,room-customize}
+.spec.ts` (desktop and 390px, axe, CSP console check).
 
 ## Assumptions
 

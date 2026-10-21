@@ -59,10 +59,26 @@ function isPersonalMemories(path: string): boolean {
 /**
  * A Room and its Memories: access depends on shared Boxes, and previews can
  * hold the owner's content from any Box the viewer is in. Its pages show no
- * interaction controls that need a page refresh.
+ * interaction controls that need a page refresh. The customizer is left out
+ * on purpose: a refresh there would replace the saved Room under drafts the
+ * owner has not saved yet, and its own saves already return the new Room.
  */
 function isRoom(path: string): boolean {
-  return path.startsWith('/rooms/');
+  return path.startsWith('/rooms/') && !isRoomCustomizer(path);
+}
+
+/**
+ * After a reconnect (`resync`) a page may have missed hints, so it
+ * refreshes, except the customizer, which never refreshes under drafts.
+ */
+export function shouldResync(pathname: string): boolean {
+  return !isRoomCustomizer(pathname.toLowerCase());
+}
+
+/** `/rooms/{username}/customize` (and anything below it). */
+export function isRoomCustomizer(path: string): boolean {
+  const [, rooms, username, page] = path.split('/');
+  return rooms === 'rooms' && Boolean(username) && page === 'customize';
 }
 
 /**

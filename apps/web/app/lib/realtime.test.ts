@@ -5,8 +5,10 @@ import {
   concernsPosts,
   isInteractionHint,
   isNotificationHint,
+  isRoomCustomizer,
   parseHint,
   shouldRefresh,
+  shouldResync,
 } from './realtime';
 
 const BOX = '7d2f4f3e-8a71-4c55-9b16-2f1f0c6d2a10';
@@ -121,6 +123,24 @@ describe('shouldRefresh', () => {
     expect(shouldRefresh('/roomsx', { type: 'memberships.changed' })).toBe(
       false,
     );
+  });
+
+  it('never refreshes the Room customizer, so unsaved drafts survive', () => {
+    for (const path of ['/rooms/ada/customize', '/Rooms/Ada/Customize']) {
+      for (const hint of [
+        { type: 'memberships.changed' },
+        { type: 'post.created', boxId: BOX, postId: POST },
+        { type: 'post.deleted', boxId: BOX, postId: POST },
+      ]) {
+        expect(shouldRefresh(path, hint), `${path} ${hint.type}`).toBe(false);
+      }
+      expect(shouldResync(path), path).toBe(false);
+    }
+    expect(isRoomCustomizer('/rooms/ada/customize')).toBe(true);
+    expect(isRoomCustomizer('/rooms/customize')).toBe(false);
+    expect(isRoomCustomizer('/rooms/ada')).toBe(false);
+    expect(shouldResync('/rooms/ada')).toBe(true);
+    expect(shouldResync('/home')).toBe(true);
   });
 
   it('refreshes membership-shaped pages on membership changes and nothing else', () => {

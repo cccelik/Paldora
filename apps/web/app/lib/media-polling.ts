@@ -22,9 +22,10 @@ export interface PollOptions {
 
 /**
  * Polls an upload's status until the worker finishes (`ready`), gives up
- * (`failed`, `deleted`, an error), or the wait runs out (also `failed`).
+ * (`failed`, `deleted`, an error), or the wait runs out (`processing`: the
+ * asset may still become ready, so the caller decides what to say).
  */
-export async function untilProcessed(
+export async function untilSettled(
   mediaAssetId: string,
   check: StatusCheck,
   {
@@ -32,7 +33,7 @@ export async function untilProcessed(
     maxPolls = MEDIA_MAX_POLLS,
     wait = sleep,
   }: PollOptions = {},
-): Promise<'ready' | 'failed'> {
+): Promise<'ready' | 'failed' | 'processing'> {
   for (let poll = 0; poll < maxPolls; poll += 1) {
     // One poll at a time by design: each waits for the previous answer.
     // eslint-disable-next-line no-await-in-loop
@@ -43,5 +44,15 @@ export async function untilProcessed(
     if (result.data === 'ready') return 'ready';
     if (result.data === 'failed' || result.data === 'deleted') return 'failed';
   }
-  return 'failed';
+  return 'processing';
+}
+
+/** Like `untilSettled`, but running out of time also counts as `failed`. */
+export async function untilProcessed(
+  mediaAssetId: string,
+  check: StatusCheck,
+  options: PollOptions = {},
+): Promise<'ready' | 'failed'> {
+  const outcome = await untilSettled(mediaAssetId, check, options);
+  return outcome === 'ready' ? 'ready' : 'failed';
 }

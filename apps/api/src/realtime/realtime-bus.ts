@@ -7,6 +7,7 @@ import {
 } from '@paldora/validation';
 import type { Redis } from 'ioredis';
 import type { Infrastructure } from '../platform/infrastructure.service.js';
+import { redisReady } from '../platform/redis-ready.js';
 import { INFRASTRUCTURE, LOGGER } from '../platform/tokens.js';
 
 // Channel names live in the contract package so the worker shares them.
@@ -38,6 +39,9 @@ export class RealtimeBus implements OnApplicationShutdown {
   ): Promise<void> {
     try {
       const message: RealtimeEvent = { ...event, at: new Date().toISOString() };
+      // A hint published before anything else used Redis would otherwise be
+      // dropped on the not-yet-open lazy connection.
+      await redisReady(this.infrastructure.redis);
       await this.infrastructure.redis.publish(channel, JSON.stringify(message));
     } catch (error) {
       this.logger.warn({ err: error, channel }, 'realtime publish failed');

@@ -9,6 +9,7 @@ import {
   parseHint,
   REALTIME_EVENT,
   shouldRefresh,
+  shouldResync,
   type RealtimeHint,
 } from '../lib/realtime';
 
@@ -84,7 +85,7 @@ export function RealtimeBridge({
           if (!signal.aborted) setConnected(true);
           // The first connection already rendered fresh data; later ones
           // may have missed events while disconnected.
-          if (connectedBefore) refresh();
+          if (connectedBefore && shouldResync(pathRef.current)) refresh();
           connectedBefore = true;
         } else if (hint.type !== 'ping') {
           // Components that show one item (a card's summary, the bell)

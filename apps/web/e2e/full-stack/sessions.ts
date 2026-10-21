@@ -13,7 +13,15 @@ const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 export async function expectAccessible(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
-  expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+  expect(
+    results.violations.map((v) => `${v.id}: ${v.help}`),
+    // Where each violation is, so a failure names the element.
+    JSON.stringify(
+      results.violations.map((v) =>
+        v.nodes.map((n) => [n.target, n.failureSummary]),
+      ),
+    ),
+  ).toEqual([]);
 }
 
 export async function expectNoOverflow(page: Page) {

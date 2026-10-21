@@ -1,0 +1,362 @@
+/*
+ * The Room customizer. This is trusted app chrome: it uses only the app's
+ * `--pal-*` tokens. The theme swatches and the live preview are the only
+ * places that use `.room-canvas` and its `--room-*` variables, and they
+ * stay inside their own frames. Nothing here sets a z-index.
+ */
+.layout {
+  display: grid;
+  gap: var(--pal-space-6);
+  align-items: start;
+}
+
+.sections {
+  display: grid;
+  gap: var(--pal-space-6);
+  min-width: 0;
+}
+
+.preview {
+  display: grid;
+  gap: var(--pal-space-3);
+  min-width: 0;
+}
+
+.previewFrame {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .preview {
+    order: 2;
+  }
+}
+
+.section {
+  display: grid;
+  gap: var(--pal-space-4);
+  min-width: 0;
+  padding: var(--pal-space-5);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}
+
+.sectionTitle {
+  font-family: var(--pal-font-editorial);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.sectionDetail,
+.hint {
+  color: var(--pal-text-muted);
+}
+
+.invalid {
+  color: var(--pal-danger-text);
+  font-weight: 600;
+}
+
+.form {
+  display: grid;
+  gap: var(--pal-space-5);
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--pal-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--pal-space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+.option,
+.check,
+.theme {
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-3);
+  min-height: var(--pal-size-touch-target);
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+  cursor: pointer;
+}
+
+.option:has(input:checked),
+.theme:has(input:checked) {
+  border-color: var(--pal-accent);
+  box-shadow: inset 0 0 0 1px var(--pal-accent);
+}
+
+.option:has(input:focus-visible),
+.check:has(input:focus-visible),
+.theme:has(input:focus-visible) {
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus);
+  outline-offset: 2px;
+}
+
+.option input,
+.check input,
+.theme input,
+.inlineCheck input {
+  /* At least 24×24 on its own (WCAG 2.5.8), whatever is nearby. */
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--pal-accent);
+}
+
+.optionLabel {
+  display: block;
+  font-weight: 600;
+}
+
+.optionDetail {
+  display: block;
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-3);
+}
+
+/* Theme picker: one card per preset, name and Light/Dark in words. */
+.themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--pal-space-3);
+}
+
+.theme {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'radio swatch'
+    'name name'
+    'scheme scheme';
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.theme input {
+  grid-area: radio;
+}
+
+.swatch {
+  grid-area: swatch;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+  min-height: 2.75rem;
+  padding: var(--pal-space-2);
+  border: 1px solid var(--room-border);
+  border-radius: var(--pal-radius-sm);
+  background: var(--room-canvas);
+  color: var(--room-text);
+}
+
+.swatchText {
+  font-family: var(--room-font);
+  font-weight: 600;
+}
+
+.swatchSurface {
+  flex: 1;
+  height: 1rem;
+  border: 1px solid var(--room-border);
+  border-radius: var(--pal-radius-sm);
+  background: var(--room-surface);
+}
+
+.swatchAccent {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--room-accent);
+}
+
+.themeName {
+  grid-area: name;
+  font-weight: 600;
+}
+
+.themeScheme {
+  grid-area: scheme;
+  color: var(--pal-text-muted);
+  font-size: 0.875rem;
+}
+
+.selects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--pal-space-4);
+}
+
+.control {
+  display: grid;
+  gap: var(--pal-space-2);
+  min-width: 0;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.select {
+  width: 100%;
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-3);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+  color: var(--pal-text);
+  font: inherit;
+}
+
+.select:focus-visible {
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus);
+  outline-offset: 1px;
+}
+
+/* Reorderable rows (widgets and Top Friends). */
+.rows {
+  display: grid;
+  gap: var(--pal-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2) var(--pal-space-4);
+  padding: var(--pal-space-2) var(--pal-space-3);
+  border: 1px solid color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+}
+
+.rowName {
+  display: flex;
+  flex: 1 1 10rem;
+  align-items: center;
+  gap: var(--pal-space-3);
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rowPosition {
+  color: var(--pal-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.inlineCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+  min-height: var(--pal-size-touch-target);
+  cursor: pointer;
+}
+
+.inlineControl {
+  flex: 0 1 11rem;
+  min-width: 9rem;
+}
+
+.moves {
+  display: inline-flex;
+  gap: var(--pal-space-1);
+}
+
+.moves .move {
+  min-width: var(--pal-size-touch-target);
+  padding-inline: 0;
+  border-color: color-mix(in srgb, var(--pal-text) 30%, transparent);
+  text-decoration: none;
+}
+
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--pal-space-3);
+}
+
+.add .control {
+  flex: 1 1 14rem;
+}
+
+/* Banner: the processed 3:1 photo, or the chosen file while it uploads. */
+.banner {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  aspect-ratio: 3 / 1;
+  border: 1px dashed color-mix(in srgb, var(--pal-text) 30%, transparent);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+}
+
+.bannerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.busy {
+  opacity: 0.7;
+}
+
+.bannerEmpty {
+  color: var(--pal-text-muted);
+}
+
+/* A stale save: stays until the person reloads. */
+.stale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+  padding: var(--pal-space-3) var(--pal-space-4);
+  border: 1px solid var(--pal-warning-text);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-canvas);
+  color: var(--pal-text);
+}
+
+.stale p {
+  flex: 1 1 16rem;
+}
+
+.locked {
+  color: var(--pal-warning-text);
+}

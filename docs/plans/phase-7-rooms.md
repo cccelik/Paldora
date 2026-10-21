@@ -1,6 +1,6 @@
 # Phase 7 plan: Rooms
 
-Status: in implementation (2026-10-20). Section B recommended defaults were adopted by the lead under the owner's standing "continue" delegation; the owner has not reviewed them individually and can overrule any of B1-B16 and K1-K8. Drafted from the repo at commit `715c39d`. Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 7, CLAUDE.md §A/§C/§D/§G/§I/§R3/§R7/§R8, [ADR 005](../adr/005-design-tokens-and-styling.md), [ADR 011](../adr/011-media-pipeline.md), [ADR 013](../adr/013-directional-blocks.md) and [ADR 016](../adr/016-life-updates-and-memories.md). It follows the format of [phase-6-life-updates-memories.md](phase-6-life-updates-memories.md). Legacy behaviour (`legacy/docs/themes.md`, `legacy/apps/api/src/room*.ts`, `legacy/packages/domain` theme registry, `legacy/apps/web` `RoomCanvas` and the room editors, the legacy `rooms`/`room_widgets`/`room_top_friends` tables) was read for behaviour only. Nothing is imported from it.
+Status: delivered (2026-10-20); see the Phase 7 delivery notes in [REBUILD_PLAN.md](../../REBUILD_PLAN.md) and [ADR 017](../adr/017-rooms.md). K4 (the changed hex values) awaits owner sign-off. Section B recommended defaults were adopted by the lead under the owner's standing "continue" delegation; the owner has not reviewed them individually and can overrule any of B1-B16 and K1-K8. Drafted from the repo at commit `715c39d`. Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 7, CLAUDE.md §A/§C/§D/§G/§I/§R3/§R7/§R8, [ADR 005](../adr/005-design-tokens-and-styling.md), [ADR 011](../adr/011-media-pipeline.md), [ADR 013](../adr/013-directional-blocks.md) and [ADR 016](../adr/016-life-updates-and-memories.md). It follows the format of [phase-6-life-updates-memories.md](phase-6-life-updates-memories.md). Legacy behaviour (`legacy/docs/themes.md`, `legacy/apps/api/src/room*.ts`, `legacy/packages/domain` theme registry, `legacy/apps/web` `RoomCanvas` and the room editors, the legacy `rooms`/`room_widgets`/`room_top_friends` tables) was read for behaviour only. Nothing is imported from it.
 
 Facts about the current code that drive the design:
 
@@ -487,8 +487,24 @@ lives in `app-nav.tsx` (one shared link renderer); the z-index scan is in
 widget links each thumbnail to its post or Life Update instead of opening a
 lightbox (no dialog inside the canvas); in two columns the DOM is grouped by
 column and narrow screens restore the global order with CSS `order`, so
-focus follows column order when an owner interleaves positions. Next:
-slice 7.
+focus follows column order when an owner interleaves positions. Slice 7
+built: `/rooms/[username]/customize` (own normalized username only, else
+the shared not-found page), `actions/rooms.ts` (`updateRoomAction`,
+`updateRoomWidgetsAction`, `updateRoomTopFriendsAction`,
+`prepareRoomBanner`, `saveRoomBanner`; form fields become API bodies in
+`lib/room-forms.ts` and are validated by the shared schemas), `RoomEditor`
+with six section forms, `lib/room-editor.ts` (ordering, announcements,
+draft checks), `useMediaUpload` (the avatar hook generalized; the avatar
+keeps its behavior), `lib/room-previews.ts` (shared by the Room page and
+the customizer), and `room-customize.spec.ts`. Decision on realtime: the
+bridge never refreshes `/rooms/*/customize`, also not on `resync`, and the
+actions do not revalidate, so a refresh can never land under unsaved
+drafts (`realtime.test.ts`). Deviations: the live preview reflects the
+appearance draft only (other sections preview after saving); the preview
+canvas is `inert`; a stale answer locks every section until a reload;
+Top Friends visibility labels joined the domain registry; the customizer
+loads every preview and at most 200 friends. Slice 8 built the close-out
+docs and the Redis cold-start fix (risk below).
 
 Run `pnpm typecheck`, `pnpm lint` and the unit tests in every slice. Run integration tests through `scripts/with-test-database.mjs`.
 
@@ -538,6 +554,23 @@ Run `pnpm typecheck`, `pnpm lint` and the unit tests in every slice. Run integra
 - **Bottom nav and sticky overlap**: bottom padding on `main`, safe-area insets, and keeping Room content below `zIndex.sticky` are verified in e2e at 390px. Five items must fit at 320px.
 - **Username reuse**: after a rename, an old bookmark may land on a different person's Room. This is accepted and documented in B12.
 - **Next 16 pitfalls from Phase 6 carry over**: Server Actions as `async function` declarations, typed-route string casts, Prettier-reformatted code (use real edits), hermetic integration tests, `exactOptionalPropertyTypes` spreads, worker integration files run serially.
+- **Redis fails closed on the first rate-limited requests right after API
+  boot (lazy connection).** Reported during the slice 6 runs: the API's Redis
+  client is `lazyConnect` with `enableOfflineQueue: false`; only a caller
+  that saw status `wait` opened it, and concurrent callers arriving while
+  it was `connecting` were rejected at once ("Stream isn't writeable"), so
+  the guard answered `RATE_LIMIT_UNAVAILABLE`. Fixed in slice 8:
+  `apps/api/src/platform/redis-ready.ts` waits (at most 2 s) for `ready`
+  in the rate limiter, the readiness probe, and realtime publishing; a
+  connection that does not come up still fails closed. Tests:
+  `redis-ready.test.ts` and the cold-start case in
+  `infrastructure.integration.test.ts`.
+- **Phase 8 hooks (nothing built).** Scoped custom CSS or sandboxed widgets
+  would plug in only at the `.room-canvas` boundary (isolated, contained,
+  clipped, no trusted controls) and target the `data-room-*` attributes and
+  each widget's `data-position`, as a server-sanitized static stylesheet,
+  never `style=`. See ADR 017, "Phase 8 hooks". Phase 7 adds no CSS, HTML,
+  or script feature.
 - **Account deletion (Phase 9)** must retire the banner and null `rooms.banner_media_id` before removing the user, because `media_assets.owner_user_id` is RESTRICT.
 
 **Open questions for the owner**

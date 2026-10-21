@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Redis } from 'ioredis';
+import { redisReady } from '../redis-ready.js';
 import type { RateLimitPolicy } from './rate-limit.decorator.js';
 
 export interface RateLimitDecision {
@@ -40,7 +41,7 @@ export class RedisRateLimiter implements RateLimiter {
     subject: string,
     policy: RateLimitPolicy,
   ): Promise<RateLimitDecision> {
-    if (this.redis.status === 'wait') await this.redis.connect();
+    await redisReady(this.redis);
     const [allowed, retryAfterMs] = (await this.redis.eval(
       slidingWindowScript,
       1,

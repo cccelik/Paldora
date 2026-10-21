@@ -6,6 +6,7 @@ import {
   type PaldoraDatabase,
 } from '@paldora/database';
 import { Redis } from 'ioredis';
+import { redisReady } from './redis-ready.js';
 import { API_ENVIRONMENT } from './tokens.js';
 
 export interface Infrastructure {
@@ -62,7 +63,7 @@ export class InfrastructureService
   }
 
   private async pingRedis(): Promise<void> {
-    if (this.redis.status === 'wait') await this.redis.connect();
+    await redisReady(this.redis);
     await this.redis.ping();
   }
 }

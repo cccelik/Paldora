@@ -46,6 +46,7 @@ export async function reservePhotoUpload(
     mediaAsset: { id: string };
     upload: { url: string; headers: Readonly<Record<string, string>> };
   }>,
+  copy: Readonly<Partial<Record<string, string>>> = photoCopy,
 ): Promise<ActionOutcome<PreparedPhotoUpload>> {
   try {
     const { mediaAsset, upload } = await reserve();
@@ -59,6 +60,6 @@ export async function reservePhotoUpload(
       },
     };
   } catch (error) {
-    return actionError(error, photoCopy);
+    return actionError(error, copy);
   }
 }

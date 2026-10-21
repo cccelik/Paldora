@@ -312,6 +312,56 @@ type filter, cursor paging, summary counts) with no stored copy
 omitted from Memories with no placeholder (decision 15); feeds keep the
 neutral placeholder.
 
+## Phase 7 delivery notes (2026-10-20)
+
+**Delivered (the whole [plan](docs/plans/phase-7-rooms.md), recommended
+defaults B1–B16):** Rooms at `/rooms/[username]` with nested visibility
+(`hidden` ⊂ `friends` ⊂ `members`, where members means a shared active or
+archived Box) and one byte-identical `ROOM_NOT_FOUND` for every denial; 14
+token-only themes with two-sided accents, five system fonts, decorations
+and reduced-motion sparkles; single and two-column layouts; seven closed-
+registry widgets; Top Friends (4/8/12, own audience) removed by database
+triggers on unfriend and block; an HTTPS-only music card; a processed 3:1
+banner (`room_banner` media purpose); previews derived from the Memories
+candidates; the owner-only customizer at `/rooms/[username]/customize` with
+per-section saves, required `expectedUpdatedAt`, a persistent reload notice
+on a stale save, a live inert preview, and keyboard reordering; the mobile
+bottom nav with My Room; Room links from friend and member rows
+([ADR 017](docs/adr/017-rooms.md), addendum in ADR 013).
+
+**Deviations from the plan, as reported by each slice:** listed in the
+plan's section J progress note. In short: one `RoomWriteService` for all
+three writes (rows created only on a real change; a lost insert race is
+`ROOM_UPDATE_STALE`); `GET /me/room` and the writes answer `ROOM_NOT_FOUND`
+until the caller has a username; Top Friends saves take sorted `lockPair`
+locks (no deadlock, no 40P01 retry); the photo preview query pages items
+(1–12, default 6); `BottomNav` lives in `app-nav.tsx`; photo thumbnails
+link to their post or Life Update instead of opening a lightbox inside the
+canvas; the customizer loads every preview (a widget can be switched on
+before its preview is saved) and the first 200 friends for the picker; the
+banner reuses the avatar's single-photo upload hook (`useMediaUpload`).
+
+**Fixed on the way:** concurrent first requests after API boot failed
+closed with `RATE_LIMIT_UNAVAILABLE`, because the lazy, no-offline-queue
+Redis connection was opened only by a caller that saw status `wait`;
+callers arriving while it was `connecting` sent into an unwritable stream.
+`platform/redis-ready.ts` now makes them wait (bounded, 2 s) for `ready`, in
+the rate limiter, the readiness probe, and realtime publishing (an
+integration test reproduces the cold start).
+
+**Parity checklist (legacy Room behavior):** presets 14/14, layouts,
+widgets with visibility/order/placement and keyboard reordering, Top
+Friends 4/8/12 with separate visibility and atomic removal, HTTPS music
+card with no embeds, private processed banner, stale-save detection, and
+app appearance kept separate: all covered by automated tests. Deliberate
+differences: `members` no longer means every signed-in user (B2), the
+independent `background` override is gone and legacy hex values were
+nudged for AA (B9/B10, **K4 sign-off pending**), Top Friends default to
+`friends` (B7). Not yet done for the overall Phase 7 parity checkpoint: the
+hosted smoke list (`legacy/docs/deployment.md` §6) has not run against a
+hosted build, and CI has not run on GitHub; `legacy/` stays until one
+release has shipped.
+
 ## Phases 1–9: Web product (rebuild to parity, then beyond)
 
 Every phase delivers: migration(s), domain + Zod + OpenAPI entries, policy +
@@ -373,13 +423,14 @@ before it is designed.
    Then implement the slice and report the exact gate results.
 4. Update this file's status table below when a phase exits.
 
-| Phase | Status                                                                      |
-| ----- | --------------------------------------------------------------------------- |
-| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run  |
-| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending     |
-| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                      |
-| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green            |
-| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open          |
-| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications    |
-| 6     | Delivered 2026-10-20 (local gates green); Life Updates and derived Memories |
-| 7–12  | Not started                                                                 |
+| Phase | Status                                                                              |
+| ----- | ----------------------------------------------------------------------------------- |
+| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed. Awaiting a first green CI run          |
+| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending             |
+| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                              |
+| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green                    |
+| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open                  |
+| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications            |
+| 6     | Delivered 2026-10-20 (local gates green); Life Updates and derived Memories         |
+| 7     | Delivered 2026-10-20 (local gates green); Rooms and customizer; K4 sign-off pending |
+| 8–12  | Not started                                                                         |

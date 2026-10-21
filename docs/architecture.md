@@ -145,7 +145,7 @@ Comments and reactions on a delivery are ordinary Phase 5 interactions on its
 backing post, so each Box keeps its own conversation and the projector needs
 no change.
 
-## Room flow (Phase 7, slices 3–5)
+## Room flow (Phase 7)
 
 ```text
 GET /rooms/{username}, GET /me/room ─ RoomAccessService: ONE statement
@@ -174,6 +174,27 @@ exports its page and summary services); Top Friends removal on unfriend and
 block is database triggers, so SocialModule has no Room code. Previews reuse
 the Memories candidate query, so the Room shows nothing the viewer could not
 already find in their own Memories.
+
+```text
+web /rooms/[username] ─ roomUsernameParam (else notFound) → api.room
+    → loadRoomPreviews (enabled widgets only, in parallel) → RoomOwnerStrip
+    (trusted, outside the canvas) + RoomCanvas (data-room-* attributes →
+    static room-themes.css; no inline style, no z-index, no controls)
+web /rooms/[username]/customize ─ own normalized username only (else
+    notFound) → api.myRoom + loadRoomPreviews(every) + loadFriendChoices
+  → RoomEditor (client): saved Room + version; one form and Server Action
+    per section (actions/rooms.ts → runFormWithData → shared Zod schema →
+    PATCH | PUT widgets | PUT top-friends); each answer replaces the saved
+    Room and version; ROOM_UPDATE_STALE locks every section with a Reload
+    notice; live preview = inert RoomCanvas(saved content, draft style)
+  banner: useMediaUpload (reserve room_banner → PUT → complete → poll)
+    → saveRoomBanner (PATCH bannerMediaId) with the then-current version
+```
+
+Room pages have no `loading.tsx` (a streamed fallback would turn
+`ROOM_NOT_FOUND` into a 200). Realtime refreshes `/rooms/*` on membership
+and post hints, but never the customizer, which would otherwise re-render
+under unsaved drafts; the customizer's actions do not revalidate it either.
 
 ## Principles
 

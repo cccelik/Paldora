@@ -18,6 +18,9 @@ import {
   ROOM_WIDGET_TYPES,
   TOP_FRIENDS_MAX,
   TOP_FRIENDS_SIZES,
+  TOP_FRIENDS_VISIBILITIES,
+  TOP_FRIENDS_VISIBILITY_DESCRIPTIONS,
+  TOP_FRIENDS_VISIBILITY_LABELS,
   resolveRoomStyle,
 } from './rooms.js';
 
@@ -59,6 +62,14 @@ describe('room registry', () => {
     expect(Object.keys(ROOM_VISIBILITY_DESCRIPTIONS).sort()).toEqual(
       [...ROOM_VISIBILITIES].sort(),
     );
+    for (const labels of [
+      TOP_FRIENDS_VISIBILITY_LABELS,
+      TOP_FRIENDS_VISIBILITY_DESCRIPTIONS,
+    ]) {
+      expect(Object.keys(labels).sort()).toEqual(
+        [...TOP_FRIENDS_VISIBILITIES].sort(),
+      );
+    }
   });
 
   it('gives every preset a known scheme, accent, and decoration', () => {

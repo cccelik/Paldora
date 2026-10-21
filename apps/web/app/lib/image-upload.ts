@@ -2,6 +2,7 @@ import {
   MEDIA_CONTENT_TYPES,
   MEDIA_PURPOSE_POLICIES,
   type MediaContentType,
+  type MediaPurpose,
 } from '@paldora/domain';
 
 const accepted = new Set<string>(MEDIA_CONTENT_TYPES);
@@ -10,22 +11,23 @@ export const AVATAR_ACCEPT = MEDIA_CONTENT_TYPES.join(',');
 export const PHOTO_ACCEPT = AVATAR_ACCEPT;
 
 /** Mirrors the server policy so people hear about a bad file immediately. */
-function fileProblem(
+export function mediaFileProblem(
   file: Pick<File, 'type' | 'size'>,
-  purpose: 'avatar' | 'post_image',
+  purpose: MediaPurpose,
 ): string | null {
   if (!accepted.has(file.type)) return 'Choose a JPEG, PNG, or WebP photo.';
   if (file.size <= 0) return 'That file is empty.';
   if (file.size > MEDIA_PURPOSE_POLICIES[purpose].maxBytes) {
-    return 'Choose a photo up to 10 MB.';
+    const megabytes = MEDIA_PURPOSE_POLICIES[purpose].maxBytes / 1024 / 1024;
+    return `Choose a photo up to ${megabytes.toLocaleString('en')} MB.`;
   }
   return null;
 }
 
 export const avatarFileProblem = (file: Pick<File, 'type' | 'size'>) =>
-  fileProblem(file, 'avatar');
+  mediaFileProblem(file, 'avatar');
 export const photoFileProblem = (file: Pick<File, 'type' | 'size'>) =>
-  fileProblem(file, 'post_image');
+  mediaFileProblem(file, 'post_image');
 
 export const asContentType = (type: string) => type as MediaContentType;
 

@@ -1,9 +1,8 @@
 # ADR 017: Rooms are lazy rows with a closed registry, token-only themes, and database-enforced Top Friends
 
-Status: accepted; Phase 7 in implementation (2026-10-20). Slices 1–2 (tokens,
-registry, validation, migration `0007_rooms`, banner media purpose) are
-built; slice 8 completes this record with the API and web outcomes. Plan:
-[phase-7-rooms.md](../plans/phase-7-rooms.md). Builds on
+Status: accepted; delivered with Phase 7 (2026-10-20). The changed hex
+values below await the owner's sign-off (plan question K4, pending owner
+review). Plan: [phase-7-rooms.md](../plans/phase-7-rooms.md). Builds on
 [ADR 005](005-design-tokens-and-styling.md) (tokens),
 [ADR 011](011-media-pipeline.md) (media), [ADR 013](013-directional-blocks.md)
 (blocks), and [ADR 016](016-life-updates-and-memories.md) (derived
@@ -84,8 +83,42 @@ banner_purpose)` → `media_assets (id, owner_user_id, purpose)` makes a
   unique index makes it serve one Room. The API claims it in the Room save;
   the reaper expires an unclaimed ready banner after 24 h. Uploads are
   limited to 20 reservations per hour, failing closed.
-- **Previews are derived** from the Memories candidate builder with an
-  author filter (slices 3–5), so a Room never widens access.
+- **Previews are derived**, never stored. Posts, Life Updates, photos, and
+  Memories year chips come from the Memories candidate builder
+  (`memoryCandidates` with `authorId` = owner, `includeOnlyMe: false`,
+  `withPhotos` for the photo strip). It starts from the _viewer's_ active
+  memberships and applies `hiddenByBlock`, and every item is loaded again
+  through `PostPageService` / `LifeUpdateViewService`, which re-authorize
+  and sign photos only for survivors. So a Room never widens access: a
+  former member, a stranger, or a blocked person reaches nothing, Only Me
+  never appears (not even to the owner), and counts always match items.
+- **One write protocol.** `RoomWriteService` runs every section (settings
+  and banner via `PATCH /me/room`, widgets, Top Friends) the same way:
+  lock the row (`SELECT … FOR UPDATE`), compare the requested state with
+  the stored one (an unchanged request is a 200 that bumps nothing, so a
+  retry after a lost response is not a false conflict), check
+  `expectedUpdatedAt`, then write. A roomless account inserts its row only
+  on a real change; losing that insert race is `ROOM_UPDATE_STALE`. A Top
+  Friends save takes sorted `lockPair` locks and the friendships `FOR SHARE`
+  first, so it cannot deadlock with an unfriend or block. All three writes
+  share one 120/h `room-update` limit; reads have none.
+- **The customizer is one version, many drafts.** `/rooms/[username]/customize`
+  opens only for the signed-in person's own (normalized) username; any
+  other name is the shared not-found page. Each section (Appearance, Who
+  can visit, About, Banner, Widgets, Top Friends) is its own form and Server
+  Action and keeps its own draft; all of them send the one version the
+  editor last saw and adopt the version each save returns. A stale answer
+  shows a persistent "Reload" notice and locks every section; nothing is
+  merged or overwritten silently. The actions do not revalidate the page,
+  and the realtime bridge never refreshes `/rooms/*/customize` (also not on
+  `resync`), so unsaved drafts survive both. The live preview is the real
+  `RoomCanvas` with the saved content and the draft style, rendered `inert`
+  (not focusable, not read twice, links inactive). Widget and Top Friends
+  order use "Move up" / "Move down" buttons that name the item and its
+  place, keep focus with the moved item, and announce each move; there is
+  no drag-and-drop dependency. The banner reuses the single-photo upload
+  hook (`useMediaUpload`, shared with the avatar), then one Room write
+  attaches it.
 
 ### Changed values (AA nudges)
 
@@ -153,8 +186,11 @@ New muted text and borders (minimum against canvas and surface):
 
 `textMuted` is the text color mixed toward the canvas as far as 4.8:1
 allows; `border` is the text mixed toward the surface as far as 3.2:1 allows
-(a small margin above the minimums). The owner signs off on these values
-(open question K4 in the plan).
+(a small margin above the minimums). **Pending owner review:** the owner
+has not yet signed off on these values or on dropping the `background`
+override (plan question K4). Until then they stand as the lead's default
+under the standing delegation; a change is a token edit plus the
+generated contrast test.
 
 ## Rejected alternatives
 
@@ -191,6 +227,25 @@ allows; `border` is the text mixed toward the surface as far as 3.2:1 allows
   (`media_assets.owner_user_id` is RESTRICT); a moderator hide adds one
   condition to the Room access query.
 - Swift and Kotlin receive all room constants automatically.
+
+## Phase 8 hooks (nothing built)
+
+Phase 8 (advanced personalization, only after a dedicated security review)
+has two places to plug in, and Phase 7 adds no CSS, HTML, or script
+feature at either:
+
+- **The canvas boundary.** Everything a person styles is inside
+  `.room-canvas`, which isolates its stacking context, contains layout and
+  paint, clips overflow, and holds no navigation, forms, or trusted
+  controls. Scoped custom CSS would be compiled and sanitized server-side
+  into rules prefixed by a per-Room selector under `.room-canvas`, served as
+  a static stylesheet (never `style=`), and could never reach the app shell,
+  the owner strip, toasts, or dialogs.
+- **The `data-room-*` attributes** (`theme`, `scheme`, `accent`, `font`,
+  `decoration`, `sparkles`, `layout`) and each widget's `data-position` are
+  the stable selectors such rules would target. A sandboxed widget would be
+  a new closed-registry widget type rendered in a sandboxed frame inside
+  the canvas, with a CSP change reviewed on its own.
 
 ## Revisit when
 
