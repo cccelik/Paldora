@@ -1,3 +1,4 @@
+import { MEDIA_DELETE_JOB, MEDIA_PROCESS_JOB } from '@paldora/domain';
 import type { JobHandler } from './job-router.js';
 import { reap } from './maintenance/reaper.js';
 import { createDeleteMediaHandler } from './media/delete-media.js';
@@ -26,7 +27,7 @@ export function createJobHandlers(
         : logger.info.bind(logger);
       log(result, 'maintenance reaper ran');
     },
-    'media.process': createProcessMediaHandler(dependencies),
-    'media.delete': createDeleteMediaHandler(dependencies),
+    [MEDIA_PROCESS_JOB]: createProcessMediaHandler(dependencies),
+    [MEDIA_DELETE_JOB]: createDeleteMediaHandler(dependencies),
   };
 }

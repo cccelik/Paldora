@@ -1,7 +1,7 @@
 # Paldora rebuild plan
 
 This is the plan for rebuilding Paldora from an empty root, one verified
-milestone at a time. [CLAUDE.md](CLAUDE.md) holds the durable rules: product
+milestone at a time. [CLAUDE.md](../CLAUDE.md) holds the durable rules: product
 principles, security invariants, standards, and the Keep/Improve/Replace
 decisions (§Q–§R). This file holds the execution order, the deliverables, and
 the exit gates.
@@ -19,7 +19,7 @@ the exit gates.
   next milestone starts.
 - **Parity is measured.** Each phase lists the legacy behaviors it must
   reproduce. The manual flows in
-  [legacy/docs/development.md](legacy/docs/development.md) become automated
+  [legacy/docs/development.md](../legacy/docs/development.md) become automated
   acceptance tests.
 - **Retire `legacy/`** after Phase 7 reaches parity and one release has been
   stable on the new code: delete it in a dedicated commit. Git history keeps it.
@@ -42,7 +42,7 @@ packages/
   storage/      ObjectStorage interface + S3 adapter + test fake
   observability/ logger, redaction, correlation helpers
   tokens/       generated CSS/TS from design/tokens (Swift/Kotlin outputs too)
-contracts/      openapi.yaml (generated from validation, committed, drift-checked)
+contracts/      openapi.json (generated from validation, committed, drift-checked)
                + conformance fixtures shared by web, iOS, Android
 design/         brand assets, tokens/*.json (DTCG source), approved artboards
 docs/           architecture, api, database, security, deployment, adr/
@@ -55,15 +55,15 @@ The legacy `auth` and `ui` packages are dropped. Principal types move to
 
 ## Decisions that need your approval before the dependent phase
 
-| #   | Decision                                                                                                                          | Needed by | Recommendation                                                                                                                   |
-| --- | --------------------------------------------------------------------------------------------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Inside a shared Box, are a blocked user's **posts** hidden from the blocker? Legacy hides their Life Updates but not their posts. | Phase 2   | **Confirmed 2026-10-19** ([ADR 013](docs/adr/013-directional-blocks.md)): hidden in both directions, neutral placeholder.        |
-| D2  | Keep uploaded **originals**, which retain EXIF/GPS, after processing?                                                             | Phase 1   | **Confirmed 2026-10-18** ([ADR 011](docs/adr/011-media-pipeline.md)): metadata-free re-encoded master; raw upload deleted.       |
-| D3  | Web styling approach.                                                                                                             | Phase 0   | **Confirmed 2026-10-18** ([ADR 005](docs/adr/005-design-tokens-and-styling.md)): CSS Modules + generated tokens; no Tailwind.    |
-| D4  | Keep Supabase Auth as the identity provider.                                                                                      | Phase 0   | **Confirmed 2026-10-18** ([ADR 003](docs/adr/003-supabase-identity.md)).                                                         |
-| D5  | Production hosting target (not the free demo topology).                                                                           | Phase 4   | Decide with current pricing; requirements are in CLAUDE.md §N.                                                                   |
-| D6  | Node runtime line.                                                                                                                | Phase 0   | **Confirmed 2026-10-18** ([ADR 006](docs/adr/006-runtime-and-dependencies.md)): Node 24 "Krypton", the Active LTS on 2026-10-18. |
-| D7  | Accessible text variants for Deep Gold, success, and warning, which fail WCAG AA as text on light surfaces.                       | Phase 1   | **Confirmed 2026-10-18**: darkened variants in `design/tokens/paldora.tokens.json` (`color.accessible.*`).                       |
+| #   | Decision                                                                                                                          | Needed by | Recommendation                                                                                                              |
+| --- | --------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Inside a shared Box, are a blocked user's **posts** hidden from the blocker? Legacy hides their Life Updates but not their posts. | Phase 2   | **Confirmed 2026-10-19** ([ADR 013](adr/013-directional-blocks.md)): hidden in both directions, neutral placeholder.        |
+| D2  | Keep uploaded **originals**, which retain EXIF/GPS, after processing?                                                             | Phase 1   | **Confirmed 2026-10-18** ([ADR 011](adr/011-media-pipeline.md)): metadata-free re-encoded master; raw upload deleted.       |
+| D3  | Web styling approach.                                                                                                             | Phase 0   | **Confirmed 2026-10-18** ([ADR 005](adr/005-design-tokens-and-styling.md)): CSS Modules + generated tokens; no Tailwind.    |
+| D4  | Keep Supabase Auth as the identity provider.                                                                                      | Phase 0   | **Confirmed 2026-10-18** ([ADR 003](adr/003-supabase-identity.md)).                                                         |
+| D5  | Production hosting target (not the free demo topology).                                                                           | Phase 4   | Decide with current pricing; requirements are in CLAUDE.md §N.                                                              |
+| D6  | Node runtime line.                                                                                                                | Phase 0   | **Confirmed 2026-10-18** ([ADR 006](adr/006-runtime-and-dependencies.md)): Node 24 "Krypton", the Active LTS on 2026-10-18. |
+| D7  | Accessible text variants for Deep Gold, success, and warning, which fail WCAG AA as text on light surfaces.                       | Phase 1   | **Confirmed 2026-10-18**: darkened variants in `design/tokens/paldora.tokens.json` (`color.accessible.*`).                  |
 
 ## Phase 0: Foundation (first milestone, detailed)
 
@@ -96,7 +96,7 @@ Work in this order. Each step is reviewable on its own.
    - A declarative rate-limit decorator with a sliding-window Lua script (R6). Fails closed.
 7. **Contract pipeline (R2).**
    - Spike, then record an ADR: Zod 4 → OpenAPI 3.1 generation, plus a generated TS client.
-   - `contracts/openapi.yaml` is committed. CI fails on drift.
+   - `contracts/openapi.json` is committed. CI fails on drift.
    - Conformance fixture format for errors, cursors, and DTOs.
 8. **Tokens pipeline (R7).**
    - Reconcile the three diverging legacy token sets into `design/tokens/*.json`. Source of truth: `legacy/design/design-system.md`. Get approval.
@@ -212,7 +212,7 @@ Friends, Boxes, and Box pages are responsive and tested at 390px.
   DELETE bodies are unreliable across HTTP clients and OpenAPI generators.
 - **Box deletion cleanup** covers memberships and invitations only; media and
   content cleanup lands with the phases that add them (see
-  [docs/database.md](docs/database.md)).
+  [docs/database.md](database.md)).
 - **No notifications yet.** Invitations and requests appear on their pages;
   durable notifications arrive in Phase 5.
 
@@ -220,14 +220,14 @@ Friends, Boxes, and Box pages are responsive and tested at 390px.
 
 ## Phase 3 delivery notes (2026-10-19)
 
-**Delivered (the whole [plan](docs/plans/phase-3-posts-feeds-realtime.md)):**
+**Delivered (the whole [plan](plans/delivered/phase-3-posts-feeds-realtime.md)):**
 text posts, Box and Home chronological feeds with keyset paging, permalink
 page, author-only edit and delete (text erased), archived Boxes read-only, and
 D1 block placeholders. Recommended defaults were used for every open question.
 
 **Realtime delivered as well (steps 5–6):** the `/me/events` stream, a Redis
 bus, membership-change publishing, and a web bridge that refreshes only the
-affected pages ([ADR 012](docs/adr/012-realtime.md)). Integration and
+affected pages ([ADR 012](adr/012-realtime.md)). Integration and
 full-stack tests now run in a dedicated `paldora_test` database
 (`scripts/with-test-database.mjs`). Still open: the first GitHub CI run.
 
@@ -236,7 +236,7 @@ full-stack tests now run in a dedicated `paldora_test` database
 **Delivered:** photos on posts (up to 4), worker processing for the `post_image`
 purpose, a keyboard-accessible viewer, no-orphan cleanup on post and Box
 deletion, a hardened reaper (unclaimed photos, dead-deletion retries, outbox
-retention), and fault-injection tests ([ADR 011](docs/adr/011-media-pipeline.md)).
+retention), and fault-injection tests ([ADR 011](adr/011-media-pipeline.md)).
 
 **Not done:** D5 (production hosting) is still open. Nothing built here depends
 on it, but a managed storage lifecycle policy and metrics-based alerting wait for
@@ -244,7 +244,7 @@ it. Alerts today are error logs.
 
 ## Phase 5 delivery notes (2026-10-20)
 
-**Delivered (the whole [plan](docs/plans/phase-5-interactions-notifications.md),
+**Delivered (the whole [plan](plans/delivered/phase-5-interactions-notifications.md),
 all recommended defaults):** comments with one reply level enforced in the
 database, tombstones, and deep links; one emoji or camera reaction per person
 per post and per comment, with the guarded double tap; five personal reaction
@@ -253,7 +253,7 @@ by the worker, shown as a thumbnail strip with a paged reactions list; the
 `activity_events` outbox and a worker projector with savepoints, dedupe keys,
 backoff, and dead-lettering; ID-only notifications with read-time visibility,
 a live bell, and a notifications page; toasts; and targeted realtime refresh
-through a window event ([ADR 015](docs/adr/015-interactions-and-activity-projector.md),
+through a window event ([ADR 015](adr/015-interactions-and-activity-projector.md),
 addenda in ADR 012 and 013).
 
 **Deviations from the plan, as reported by each slice:**
@@ -284,7 +284,7 @@ server's answer fills the strip with the signed thumbnail.
 
 ## Phase 6 delivery notes (2026-10-20)
 
-**Delivered (the whole [plan](docs/plans/phase-6-life-updates-memories.md),
+**Delivered (the whole [plan](plans/delivered/phase-6-life-updates-memories.md),
 all recommended defaults):** Life Updates with nine optional sections and up
 to four photos, shared once to 1–20 Boxes or kept Only Me; one backing post
 per Box, so each Box keeps its own conversation; an audience that the
@@ -292,7 +292,7 @@ database makes immutable; edit and delete across every Box at once; Home
 dedupe into one card with alphabetical Box tabs; Box-deletion tombstones and
 a worker sweep; and derived Memories (personal and per Box, UTC year/month,
 type filter, cursor paging, summary counts) with no stored copy
-([ADR 016](docs/adr/016-life-updates-and-memories.md), addendum in ADR 013).
+([ADR 016](adr/016-life-updates-and-memories.md), addendum in ADR 013).
 
 **Deviations from the plan, as reported by each slice:**
 
@@ -314,7 +314,7 @@ neutral placeholder.
 
 ## Phase 7 delivery notes (2026-10-20)
 
-**Delivered (the whole [plan](docs/plans/phase-7-rooms.md), recommended
+**Delivered (the whole [plan](plans/delivered/phase-7-rooms.md), recommended
 defaults B1–B16):** Rooms at `/rooms/[username]` with nested visibility
 (`hidden` ⊂ `friends` ⊂ `members`, where members means a shared active or
 archived Box) and one byte-identical `ROOM_NOT_FOUND` for every denial; 14
@@ -327,7 +327,7 @@ candidates; the owner-only customizer at `/rooms/[username]/customize` with
 per-section saves, required `expectedUpdatedAt`, a persistent reload notice
 on a stale save, a live inert preview, and keyboard reordering; the mobile
 bottom nav with My Room; Room links from friend and member rows
-([ADR 017](docs/adr/017-rooms.md), addendum in ADR 013).
+([ADR 017](adr/017-rooms.md), addendum in ADR 013).
 
 **Deviations from the plan, as reported by each slice:** listed in the
 plan's section J progress note. In short: one `RoomWriteService` for all

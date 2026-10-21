@@ -2,10 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
-import { concernsPosts, type RealtimeHint } from '../lib/realtime';
+import {
+  REALTIME_DEBOUNCE_MS,
+  concernsPosts,
+  type RealtimeHint,
+} from '../lib/realtime';
 import { useRealtimeHint } from './use-realtime-hint';
-
-const REFRESH_DEBOUNCE_MS = 400;
 
 /**
  * Re-renders the page (through its normal authorized queries) when a
@@ -23,7 +25,10 @@ export function RefreshOnPosts({ postIds }: { postIds: readonly string[] }) {
   useRealtimeHint((hint: RealtimeHint) => {
     if (!concernsPosts(shown, hint)) return;
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => router.refresh(), REFRESH_DEBOUNCE_MS);
+    timer.current = setTimeout(
+      () => router.refresh(),
+      REALTIME_DEBOUNCE_MS.routeRefresh,
+    );
   });
   return null;
 }

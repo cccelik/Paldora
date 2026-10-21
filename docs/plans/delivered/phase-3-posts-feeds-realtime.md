@@ -1,8 +1,8 @@
 # Phase 3 plan: posts, feeds, realtime
 
 Status: delivered 2026-10-19 (all steps).
-Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 3 and
-[ADR 012](../adr/012-realtime.md). Photos on posts are Phase 4.
+Scope comes from [docs/rebuild-plan.md](../../rebuild-plan.md) Phase 3 and
+[ADR 012](../../adr/012-realtime.md). Photos on posts are Phase 4.
 
 ## Start here (small, do first)
 
@@ -140,7 +140,7 @@ Server Actions must be `async function` declarations; typed routes need a
 5. Realtime bus, SSE endpoint, membership-change publishing; integration tests.
 6. Web realtime bridge; e2e with live updates.
 7. Docs (security matrix, API, database, architecture), ADR 012 accepted,
-   REBUILD_PLAN status, all gates, commit.
+   rebuild plan status, all gates, commit.
 
 Steps 1–4 fit one session; 5–6 are a second. Stop at the end of 4 if usage is
 short; the product is usable (post and read) without live updates.
@@ -148,7 +148,7 @@ short; the product is usable (post and read) without live updates.
 ## Risks
 
 - Server Actions and typed routes bit twice in Phase 2; follow the notes in
-  [apps/web/app/components/README.md](../../apps/web/app/components/README.md).
+  [apps/web/app/components/README.md](../../../apps/web/app/components/README.md).
 - Long-lived SSE behind proxies: disable buffering, send heartbeats, and verify
   Express flushes headers; test through the production web build.
 - Redis subscriber reconnects must resubscribe every channel; cover it.

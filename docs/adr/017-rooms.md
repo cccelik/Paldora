@@ -2,7 +2,7 @@
 
 Status: accepted; delivered with Phase 7 (2026-10-20). The changed hex
 values below await the owner's sign-off (plan question K4, pending owner
-review). Plan: [phase-7-rooms.md](../plans/phase-7-rooms.md). Builds on
+review). Plan: [phase-7-rooms.md](../plans/delivered/phase-7-rooms.md). Builds on
 [ADR 005](005-design-tokens-and-styling.md) (tokens),
 [ADR 011](011-media-pipeline.md) (media), [ADR 013](013-directional-blocks.md)
 (blocks), and [ADR 016](016-life-updates-and-memories.md) (derived

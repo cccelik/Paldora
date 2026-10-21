@@ -97,7 +97,8 @@ Then run `pnpm test:integration` with Docker up, `pnpm test:e2e`, and
 
 ## Full-stack browser tests
 
-`pnpm test:e2e:full` (config: `playwright.fullstack.config.ts`) starts the
+`pnpm test:e2e:full` (config: `apps/web/e2e/playwright.fullstack.config.ts`,
+sharing `apps/web/e2e/playwright.shared.ts` with `pnpm test:e2e`) starts the
 real API, worker, and production web build against local PostgreSQL, Redis,
 and MinIO. Only Supabase Auth is replaced, by
 `apps/web/e2e/full-stack/fake-auth-server.mjs`: a loopback stand-in that

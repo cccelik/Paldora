@@ -10,14 +10,16 @@ import {
   setPostReactionAction,
 } from '../actions/interactions';
 import { setCameraReactionAction } from '../actions/reaction-media';
-import { isInteractionHint, type RealtimeHint } from '../lib/realtime';
+import {
+  REALTIME_DEBOUNCE_MS,
+  isInteractionHint,
+  type RealtimeHint,
+} from '../lib/realtime';
 import { ReactionBar } from './reaction-bar';
 import { ReactionCamera } from './reaction-camera';
 import { useOptimisticReaction } from './use-optimistic-reaction';
 import { useRealtimeHint } from './use-realtime-hint';
 import styles from './post-interactions.module.css';
-
-const REFETCH_DEBOUNCE_MS = 500;
 
 const commentsText = (count: number) =>
   count === 1 ? '1 comment' : `${count.toLocaleString('en')} comments`;
@@ -101,7 +103,7 @@ export function PostInteractions({
       void postSummaryAction(postId).then((result) => {
         if (result.status === 'success') setSummary(result.data);
       });
-    }, REFETCH_DEBOUNCE_MS);
+    }, REALTIME_DEBOUNCE_MS.postInteractions);
   }, [postId, setSummary]);
 
   useRealtimeHint((hint: RealtimeHint) => {

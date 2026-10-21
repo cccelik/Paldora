@@ -1,4 +1,5 @@
 import { mediaAssets, type PaldoraDatabase } from '@paldora/database';
+import { MEDIA_PROCESS_JOB } from '@paldora/domain';
 import type { Logger } from '@paldora/observability';
 import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
@@ -24,7 +25,11 @@ export async function recordJobFailure(
   if (!row) return;
   await database.transaction(async (transaction) => {
     await recordFailure(transaction, outboxId, { error: error.message, dead });
-    if (!dead || row.jobType !== 'media.process' || !row.payload.mediaAssetId) {
+    if (
+      !dead ||
+      row.jobType !== MEDIA_PROCESS_JOB ||
+      !row.payload.mediaAssetId
+    ) {
       return;
     }
     const [asset] = await transaction

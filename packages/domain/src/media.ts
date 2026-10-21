@@ -150,3 +150,5 @@ export const SIGNED_READ_TTL_SECONDS = 900;
 
 export const MEDIA_JOB_TYPES = ['media.process', 'media.delete'] as const;
 export type MediaJobType = (typeof MEDIA_JOB_TYPES)[number];
+export const MEDIA_PROCESS_JOB = 'media.process' satisfies MediaJobType;
+export const MEDIA_DELETE_JOB = 'media.delete' satisfies MediaJobType;

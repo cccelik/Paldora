@@ -1,7 +1,7 @@
 # ADR 015: Interactions and the activity projector
 
 Status: accepted; built in Phase 5 (2026-10-20). Plan:
-[phase-5-interactions-notifications.md](../plans/phase-5-interactions-notifications.md).
+[phase-5-interactions-notifications.md](../plans/delivered/phase-5-interactions-notifications.md).
 Builds on [ADR 011](011-media-pipeline.md) (camera images),
 [ADR 012](012-realtime.md) (hints), and [ADR 013](013-directional-blocks.md)
 (blocks).

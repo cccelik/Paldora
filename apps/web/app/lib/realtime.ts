@@ -10,6 +10,19 @@ export interface RealtimeHint {
 /** The window event the bridge dispatches for each hint (a `RealtimeHint`). */
 export const REALTIME_EVENT = 'paldora:realtime';
 
+/**
+ * How long a burst of hints is coalesced before the page reacts. One set of
+ * values, named by what each reaction costs.
+ */
+export const REALTIME_DEBOUNCE_MS = {
+  /** A full `router.refresh()` of the route. */
+  routeRefresh: 400,
+  /** The header's unread-count refetch. */
+  unreadCount: 300,
+  /** One post's interaction summary refetch. */
+  postInteractions: 500,
+} as const;
+
 const idFields = ['boxId', 'postId', 'commentId', 'notificationId'] as const;
 
 export function parseHint(data: string): RealtimeHint | null {

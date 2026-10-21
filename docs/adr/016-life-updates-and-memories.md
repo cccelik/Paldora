@@ -1,7 +1,7 @@
 # ADR 016: Life Updates are stored once and delivered per Box; Memories are derived
 
 Status: accepted; built in Phase 6 (2026-10-20). Plan:
-[phase-6-life-updates-memories.md](../plans/phase-6-life-updates-memories.md).
+[phase-6-life-updates-memories.md](../plans/delivered/phase-6-life-updates-memories.md).
 Builds on [ADR 011](011-media-pipeline.md) (photos),
 [ADR 012](012-realtime.md) (hints), [ADR 013](013-directional-blocks.md)
 (blocks), and [ADR 015](015-interactions-and-activity-projector.md)

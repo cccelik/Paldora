@@ -1,3 +1,4 @@
+import { MEDIA_DELETE_JOB, MEDIA_PROCESS_JOB } from '@paldora/domain';
 import { inArray } from 'drizzle-orm';
 import type { DatabaseExecutor } from './index.js';
 import { mediaAssets, mediaJobOutbox, type MediaAssetRow } from './schema.js';
@@ -22,7 +23,7 @@ export function storedObjectKeys(asset: StoredKeys): string[] {
 }
 
 export const mediaProcessJob = (mediaAssetId: string): OutboxInsert => ({
-  jobType: 'media.process',
+  jobType: MEDIA_PROCESS_JOB,
   payload: { mediaAssetId },
 });
 
@@ -33,7 +34,7 @@ export const mediaProcessJob = (mediaAssetId: string): OutboxInsert => ({
 export const mediaDeletionJob = (
   objectKeys: readonly string[],
 ): OutboxInsert => ({
-  jobType: 'media.delete',
+  jobType: MEDIA_DELETE_JOB,
   payload: { objectKeys: [...new Set(objectKeys)] },
 });
 

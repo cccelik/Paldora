@@ -7,6 +7,7 @@ import { readEventStream } from '../lib/event-stream';
 import {
   backoffDelay,
   parseHint,
+  REALTIME_DEBOUNCE_MS,
   REALTIME_EVENT,
   shouldRefresh,
   shouldResync,
@@ -18,8 +19,6 @@ interface RealtimeBridgeProps {
   supabaseUrl: string;
   supabaseAnonKey: string;
 }
-
-const REFRESH_DEBOUNCE_MS = 400;
 
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
@@ -61,7 +60,10 @@ export function RealtimeBridge({
 
     const refresh = () => {
       clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => router.refresh(), REFRESH_DEBOUNCE_MS);
+      refreshTimer = setTimeout(
+        () => router.refresh(),
+        REALTIME_DEBOUNCE_MS.routeRefresh,
+      );
     };
 
     async function listenOnce(): Promise<void> {

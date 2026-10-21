@@ -21,7 +21,7 @@ accepted when their phase is built.
 | [011](011-media-pipeline.md)                      | One media module; tracked outbox completion and a reaper                                             | Accepted (D2; Phase 4 hardening)                       |
 | [012](012-realtime.md)                            | One SSE stream per tab, scoped channels, targeted refresh                                            | Accepted                                               |
 | [013](013-directional-blocks.md)                  | Directional `user_blocks` table                                                                      | Accepted (Phase 2, D1)                                 |
-| [014](014-release-topology.md)                    | Migrations run as a release job, separate services                                                   | Proposed (Phase 4)                                     |
+| [014](014-release-topology.md)                    | Migrations run as a release job, separate services                                                   | Proposed (waits on D5 production hosting)              |
 | [015](015-interactions-and-activity-projector.md) | One reaction per target; activity outbox projected by the worker; ID-only notifications              | Accepted (Phase 5)                                     |
 | [016](016-life-updates-and-memories.md)           | Life Updates stored once with a backing post per Box; immutable audience; derived Memories           | Accepted (Phase 6)                                     |
 | [017](017-rooms.md)                               | Lazy Room rows, closed widget registry, token-only themes, DB-enforced Top Friends, derived previews | Accepted (Phase 7; K4 hex values pending owner review) |

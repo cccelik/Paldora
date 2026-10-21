@@ -9,5 +9,3 @@ export const FRIENDSHIP_DIRECTIONS = [
   'established',
 ] as const;
 export type FriendshipDirection = (typeof FRIENDSHIP_DIRECTIONS)[number];
-
-export const FRIEND_REQUEST_LIMIT_PER_HOUR = 20;

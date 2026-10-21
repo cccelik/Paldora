@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { fullStackEnvironment } from '../../../../playwright.fullstack.config';
+import { fullStackEnvironment } from '../playwright.fullstack.config';
 import { provisionAccount, type Account } from './accounts';
 import {
   apiAs,

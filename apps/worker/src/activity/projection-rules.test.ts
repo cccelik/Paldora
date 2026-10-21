@@ -1,3 +1,4 @@
+import { ACTIVITY_EVENT_TYPES } from '@paldora/domain';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 import {
@@ -5,11 +6,7 @@ import {
   MAX_ACTIVITY_ATTEMPTS,
   backoffMs,
 } from './activity-store.js';
-import {
-  ACTIVITY_EVENT_TYPES,
-  projectEvent,
-  projectionStatement,
-} from './projection-rules.js';
+import { projectEvent, projectionStatement } from './projection-rules.js';
 
 const dialect = new PgDialect();
 const eventId = '0a7c1d6e-2f13-4d8b-9f54-5c3e6d1b7a22';

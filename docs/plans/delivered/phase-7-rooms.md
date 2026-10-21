@@ -1,6 +1,6 @@
 # Phase 7 plan: Rooms
 
-Status: delivered (2026-10-20); see the Phase 7 delivery notes in [REBUILD_PLAN.md](../../REBUILD_PLAN.md) and [ADR 017](../adr/017-rooms.md). K4 (the changed hex values) awaits owner sign-off. Section B recommended defaults were adopted by the lead under the owner's standing "continue" delegation; the owner has not reviewed them individually and can overrule any of B1-B16 and K1-K8. Drafted from the repo at commit `715c39d`. Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 7, CLAUDE.md §A/§C/§D/§G/§I/§R3/§R7/§R8, [ADR 005](../adr/005-design-tokens-and-styling.md), [ADR 011](../adr/011-media-pipeline.md), [ADR 013](../adr/013-directional-blocks.md) and [ADR 016](../adr/016-life-updates-and-memories.md). It follows the format of [phase-6-life-updates-memories.md](phase-6-life-updates-memories.md). Legacy behaviour (`legacy/docs/themes.md`, `legacy/apps/api/src/room*.ts`, `legacy/packages/domain` theme registry, `legacy/apps/web` `RoomCanvas` and the room editors, the legacy `rooms`/`room_widgets`/`room_top_friends` tables) was read for behaviour only. Nothing is imported from it.
+Status: delivered (2026-10-20); see the Phase 7 delivery notes in [docs/rebuild-plan.md](../../rebuild-plan.md) and [ADR 017](../../adr/017-rooms.md). K4 (the changed hex values) awaits owner sign-off. Section B recommended defaults were adopted by the lead under the owner's standing "continue" delegation; the owner has not reviewed them individually and can overrule any of B1-B16 and K1-K8. Drafted from the repo at commit `715c39d`. Scope comes from [docs/rebuild-plan.md](../../rebuild-plan.md) Phase 7, CLAUDE.md §A/§C/§D/§G/§I/§R3/§R7/§R8, [ADR 005](../../adr/005-design-tokens-and-styling.md), [ADR 011](../../adr/011-media-pipeline.md), [ADR 013](../../adr/013-directional-blocks.md) and [ADR 016](../../adr/016-life-updates-and-memories.md). It follows the format of [phase-6-life-updates-memories.md](phase-6-life-updates-memories.md). Legacy behaviour (`legacy/docs/themes.md`, `legacy/apps/api/src/room*.ts`, `legacy/packages/domain` theme registry, `legacy/apps/web` `RoomCanvas` and the room editors, the legacy `rooms`/`room_widgets`/`room_top_friends` tables) was read for behaviour only. Nothing is imported from it.
 
 Facts about the current code that drive the design:
 
@@ -11,7 +11,7 @@ Facts about the current code that drive the design:
 - Usernames are editable after onboarding (`PATCH /me/profile`). Lookup is by `profiles.username_normalized` (unique, partial). `UserDirectoryService.findByUsername` filters `users.status='active'`.
 - `memoryCandidates({viewerId, boxId?, type, window?})` already builds the viewer-membership-driven, block-filtered `(item_kind, item_id, at)` rows for posts and Life Updates, and `window` is optional (the summary uses it that way). `MemoryQueryService` and `PostPageService.itemsForPosts` and `LifeUpdateViewService.byIds` re-authorize on read.
 - Production CSP (`apps/web/app/lib/csp.ts`) allows no inline styles (`style-src 'self' 'nonce-…'`) and `font-src 'self'`. So a Room theme cannot use `style=` attributes or `background-image:url(…)` set inline. Themes must be static CSS selected by `data-*` attributes, and the banner must be an `<img>`.
-- The signed-in shell has a wrapping top nav and no bottom nav yet (`app-nav.tsx`). There is no `/rooms` code in `apps/web` or `apps/api`. `docs/plans/phase-6…` and `REBUILD_PLAN.md` line 181 reserve "My Room" for this phase.
+- The signed-in shell has a wrapping top nav and no bottom nav yet (`app-nav.tsx`). There is no `/rooms` code in `apps/web` or `apps/api`. `docs/plans/phase-6…` and `docs/rebuild-plan.md` line 181 reserve "My Room" for this phase.
 - Next 16 pitfall recorded in Phase 6: a `loading.tsx` turns `notFound()` into a 200. Room pages must not have one, or ROOM_NOT_FOUND would not be a 404.
 
 ---
@@ -297,7 +297,7 @@ Add `packages/validation/src/rooms.ts`. Append to `routes.ts` (registry and `api
 
 ### api-client (`packages/api-client/src/index.ts`)
 
-Add `myRoom`, `room`, `roomContent`, `roomContentSummary`, `roomPhotos`, `updateMyRoom`, `updateMyRoomWidgets`, `updateMyRoomTopFriends`. Update the `conformance.test.ts` and `openapi.test.ts` fixtures and regenerate `contracts/openapi.yaml`.
+Add `myRoom`, `room`, `roomContent`, `roomContentSummary`, `roomPhotos`, `updateMyRoom`, `updateMyRoomWidgets`, `updateMyRoomTopFriends`. Update the `conformance.test.ts` and `openapi.test.ts` fixtures and regenerate `contracts/openapi.json`.
 
 ---
 
@@ -530,8 +530,8 @@ Run `pnpm typecheck`, `pnpm lint` and the unit tests in every slice. Run integra
 7. **Web: customize.**
    - `room-editor` and sub-forms, theme picker, banner uploader (generalized upload hook), widget and Top Friends editors with keyboard reordering, `actions/rooms.ts`, `rooms/[username]/customize/page.tsx`, stale handling, `room-customize.spec.ts`. Depends on 4 and 6.
 8. **Close-out and docs.**
-   - ADR 017 (Rooms: lazy rows, closed widget registry, tokens-only themes, trigger-enforced Top Friends removal, derived previews), an ADR 013 addendum (Room rows), updates to `docs/{database,api,security,architecture}.md`, the components README, and the REBUILD_PLAN Phase 7 delivery notes, status row and parity checklist. A "Phase 8 hooks" note records where scoped CSS would plug in (`data-*` attributes, the canvas boundary) without adding any.
-   - Verify the parity checkpoint list in REBUILD_PLAN, leaving `legacy/` retirement until one release has shipped, as the plan says.
+   - ADR 017 (Rooms: lazy rows, closed widget registry, tokens-only themes, trigger-enforced Top Friends removal, derived previews), an ADR 013 addendum (Room rows), updates to `docs/{database,api,security,architecture}.md`, the components README, and the rebuild plan Phase 7 delivery notes, status row and parity checklist. A "Phase 8 hooks" note records where scoped CSS would plug in (`data-*` attributes, the canvas boundary) without adding any.
+   - Verify the parity checkpoint list in the rebuild plan, leaving `legacy/` retirement until one release has shipped, as the plan says.
 
 ---
 

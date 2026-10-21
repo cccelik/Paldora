@@ -6,12 +6,14 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { unreadCountAction } from '../actions/notifications';
 import { unreadBadge, unreadLabel } from '../lib/notification-text';
-import { isNotificationHint, type RealtimeHint } from '../lib/realtime';
+import {
+  REALTIME_DEBOUNCE_MS,
+  isNotificationHint,
+  type RealtimeHint,
+} from '../lib/realtime';
 import { useToast } from './toast';
 import { useRealtimeHint } from './use-realtime-hint';
 import styles from './notification-bell.module.css';
-
-const REFETCH_DEBOUNCE_MS = 300;
 
 /**
  * The header's way to /notifications. The first count comes from the
@@ -39,7 +41,7 @@ export function NotificationBell({ initial }: { initial: UnreadCount }) {
       void unreadCountAction().then((result) => {
         if (result.status === 'success') setCount(result.data);
       });
-    }, REFETCH_DEBOUNCE_MS);
+    }, REALTIME_DEBOUNCE_MS.unreadCount);
   }, []);
 
   useRealtimeHint((hint: RealtimeHint) => {

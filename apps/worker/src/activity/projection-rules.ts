@@ -1,4 +1,5 @@
 import { hiddenByBlock, type DatabaseExecutor } from '@paldora/database';
+import { ACTIVITY_EVENT_TYPES, type ActivityEventType } from '@paldora/domain';
 import { sql, type SQL } from 'drizzle-orm';
 
 /** What a projection created; the publisher turns it into a realtime hint. */
@@ -7,13 +8,6 @@ export interface CreatedNotification {
   readonly recipientUserId: string;
   readonly postId: string;
 }
-
-export const ACTIVITY_EVENT_TYPES = [
-  'comment.created',
-  'post.reaction.set',
-  'comment.reaction.set',
-] as const;
-export type ActivityEventType = (typeof ACTIVITY_EVENT_TYPES)[number];
 
 const isActivityEventType = (type: string): type is ActivityEventType =>
   (ACTIVITY_EVENT_TYPES as readonly string[]).includes(type);

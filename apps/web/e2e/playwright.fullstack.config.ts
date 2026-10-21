@@ -1,4 +1,10 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
+import {
+  productionWebServer,
+  repoRoot,
+  sharedConfig,
+  viewportProjects,
+} from './playwright.shared';
 
 /**
  * Full-stack browser tests: real web (production build), API, worker,
@@ -64,27 +70,15 @@ const env = { ...process.env, ...fullStackEnvironment } as Record<
 >;
 
 export default defineConfig({
-  testDir: './apps/web/e2e/full-stack',
-  fullyParallel: true,
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['github'], ['list']] : 'list',
+  ...sharedConfig,
+  testDir: './full-stack',
   timeout: 60_000,
   use: { baseURL: webUrl, trace: 'retain-on-failure' },
-  projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], ...fakeCamera } },
-    {
-      name: 'mobile-390',
-      use: {
-        ...devices['Pixel 7'],
-        viewport: { width: 390, height: 844 },
-        ...fakeCamera,
-      },
-    },
-  ],
+  projects: viewportProjects(fakeCamera),
   webServer: [
     {
       command: 'node apps/web/e2e/full-stack/fake-auth-server.mjs',
+      cwd: repoRoot,
       url: `${authUrl}/health`,
       reuseExistingServer: false,
       env,
@@ -92,6 +86,7 @@ export default defineConfig({
     {
       // `pnpm test:e2e:full` builds the API, worker, and web dependencies first.
       command: 'node apps/api/dist/main.js',
+      cwd: repoRoot,
       url: `${apiUrl}/health/ready`,
       reuseExistingServer: false,
       timeout: 180_000,
@@ -99,18 +94,13 @@ export default defineConfig({
     },
     {
       command: 'node apps/worker/dist/main.js',
+      cwd: repoRoot,
       wait: { stdout: /Paldora worker listening/ },
       stdout: 'pipe',
       reuseExistingServer: false,
       timeout: 180_000,
       env,
     },
-    {
-      command: `pnpm --filter @paldora/web build && pnpm --filter @paldora/web start --hostname 127.0.0.1 --port ${webPort}`,
-      url: webUrl,
-      reuseExistingServer: false,
-      timeout: 300_000,
-      env,
-    },
+    productionWebServer(webPort, 300_000, env),
   ],
 });

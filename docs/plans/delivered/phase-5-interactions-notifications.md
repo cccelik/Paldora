@@ -1,6 +1,6 @@
 # Phase 5 plan: comments, reactions, camera reactions, notifications, toasts
 
-Status: delivered (2026-10-20); accepted by the owner with all recommended defaults (2026-10-19). Drafted by a smaller model, reviewed by the lead. Scope comes from [REBUILD_PLAN.md](../../REBUILD_PLAN.md) Phase 5, [ADR 011](../adr/011-media-pipeline.md), [ADR 012](../adr/012-realtime.md) and [ADR 013](../adr/013-directional-blocks.md). It follows the format of [phase-3-posts-feeds-realtime.md](phase-3-posts-feeds-realtime.md). Behaviour is taken from `legacy/` and nothing is imported from it. Several legacy weaknesses are fixed here: the 681-line `interaction.service.ts`, the projector running inside the API process, whole-page refresh, and friendship-row block checks.
+Status: delivered (2026-10-20); accepted by the owner with all recommended defaults (2026-10-19). Drafted by a smaller model, reviewed by the lead. Scope comes from [docs/rebuild-plan.md](../../rebuild-plan.md) Phase 5, [ADR 011](../../adr/011-media-pipeline.md), [ADR 012](../../adr/012-realtime.md) and [ADR 013](../../adr/013-directional-blocks.md). It follows the format of [phase-3-posts-feeds-realtime.md](phase-3-posts-feeds-realtime.md). Behaviour is taken from `legacy/` and nothing is imported from it. Several legacy weaknesses are fixed here: the 681-line `interaction.service.ts`, the projector running inside the API process, whole-page refresh, and friendship-row block checks.
 
 All claims below about existing code were checked against the repo at commit `fb9a5c5`.
 
@@ -542,7 +542,7 @@ Read `apps/web/node_modules/next/dist/docs/` for Server Actions and `useOptimist
 
 **Slice 8: web camera, final e2e, docs**
 
-- Files: `components/reaction-camera.tsx`, `use-reaction-capture.ts`, `app/actions/reaction-media.ts`, `lib/media-polling.ts` (extracted), `use-photo-attachments.ts`, `playwright.fullstack.config.ts` (fake-camera flags), camera e2e, `docs/{api,database,security,architecture}.md`, new `docs/adr/015-interactions-and-activity-projector.md`, ADR 012 and 013 addenda, `REBUILD_PLAN.md` (Phase 5 delivery notes and status), components README.
+- Files: `components/reaction-camera.tsx`, `use-reaction-capture.ts`, `app/actions/reaction-media.ts`, `lib/media-polling.ts` (extracted), `use-photo-attachments.ts`, `playwright.fullstack.config.ts` (fake-camera flags), camera e2e, `docs/{api,database,security,architecture}.md`, new `docs/adr/015-interactions-and-activity-projector.md`, ADR 012 and 013 addenda, `docs/rebuild-plan.md` (Phase 5 delivery notes and status), components README.
 - Depends on slices 4 and 7.
 - Exit gate: all standard gates from CLAUDE.md §M, plus the full-stack suite.
 

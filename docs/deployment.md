@@ -1,8 +1,8 @@
 # Deployment
 
-Phase 0 ships no hosted environment. The production topology is decided in
-Phase 4 (decision D5, [ADR 014](adr/014-release-topology.md)) against current
-official provider pricing and limits.
+No hosted environment exists yet. The production topology waits on decision
+D5 ([ADR 014](adr/014-release-topology.md), still proposed), to be made against
+current official provider pricing and limits.
 
 ## Artifacts
 

@@ -4,7 +4,10 @@ import {
   mediaJobOutbox,
   type PaldoraDatabase,
 } from '@paldora/database';
-import { UPLOAD_COMPLETION_GRACE_SECONDS } from '@paldora/domain';
+import {
+  MEDIA_DELETE_JOB,
+  UPLOAD_COMPLETION_GRACE_SECONDS,
+} from '@paldora/domain';
 import { and, count, eq, inArray, lt } from 'drizzle-orm';
 import {
   retainActivity,
@@ -121,7 +124,7 @@ async function retryDeadDeletions(
     .where(
       and(
         eq(mediaJobOutbox.status, 'dead'),
-        eq(mediaJobOutbox.jobType, 'media.delete'),
+        eq(mediaJobOutbox.jobType, MEDIA_DELETE_JOB),
         lt(mediaJobOutbox.attempts, MAX_DELETE_ATTEMPTS),
         lt(
           mediaJobOutbox.updatedAt,

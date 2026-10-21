@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page } from '@playwright/test';
-import { fullStackEnvironment } from '../../../../playwright.fullstack.config';
+import { fullStackEnvironment } from '../playwright.fullstack.config';
 
 const provisionScript = fileURLToPath(
   new URL('../../../api/dist/provisioning/provision.js', import.meta.url),
