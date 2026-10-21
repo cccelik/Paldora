@@ -59,6 +59,9 @@ export const userReports = paldoraSchema.table(
       table.createdAt.desc(),
       table.id.desc(),
     ),
+    index('user_reports_retention_index')
+      .on(table.closedAt)
+      .where(sql`${table.status} = 'closed'`),
     check(
       'user_reports_detail_check',
       sql`${table.detail} is null or char_length(${table.detail}) between 1 and 2000`,

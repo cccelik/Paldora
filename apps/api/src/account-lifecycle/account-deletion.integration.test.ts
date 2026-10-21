@@ -82,4 +82,32 @@ describe('seven-day account deletion request', () => {
       );
     expect(owners.map((row) => row.userId)).toEqual([member.id]);
   });
+
+  it('closes cancellation at the seven-day deadline even if the worker is late', async () => {
+    const person = await app.person('late-cancellation');
+    const requested = accountDeletionSchema.parse(
+      await json(
+        await scenes(app)
+          .as(person)
+          .post('/me/deletion', { password: 'correct-password' }),
+        201,
+      ),
+    );
+    const requestedAt = new Date(Date.now() - 8 * 24 * 60 * 60_000);
+    await app.database
+      .update(accountDeletionRequests)
+      .set({
+        requestedAt,
+        dueAt: new Date(requestedAt.getTime() + 7 * 24 * 60 * 60_000),
+      })
+      .where(eq(accountDeletionRequests.id, requested.id));
+    await expectError(
+      await app.request(person, '/me/deletion', {
+        method: 'DELETE',
+        body: { password: 'correct-password' },
+      }),
+      409,
+      'ACCOUNT_DELETION_WINDOW_CLOSED',
+    );
+  });
 });

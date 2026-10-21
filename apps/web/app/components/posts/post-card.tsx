@@ -2,6 +2,7 @@ import { LocalTime } from '@/components/common/local-time';
 import { PostInteractions } from '@/components/interactions/post-interactions';
 import { LifeUpdateCard } from '@/components/life-updates/life-update-card';
 import { PostPhotos } from '@/components/media/post-photos';
+import { ReportControl } from '@/components/moderation/report-control';
 import { PostActions } from '@/components/posts/post-actions';
 import styles from '@/components/posts/post-card.module.css';
 import { Avatar, Badge, EmptyState } from '@/components/ui';
@@ -61,6 +62,7 @@ export function PostCard({
           leaveAfterDelete={leaveAfterDelete}
         />
       ) : null}
+      <ReportControl targetKind="post" targetId={post.id} />
     </article>
   );
 }

@@ -18,6 +18,7 @@ import {
   type DeliverylessResult,
 } from './deliveryless-life-updates.js';
 import { expireUnattachedMedia } from './unattached-media.js';
+import { retainClosedModerationCases } from './moderation-retention.js';
 
 /** A published row whose job left Redis without finishing (e.g. a flush). */
 export const STALLED_PUBLISH_MS = 30 * 60 * 1_000;
@@ -37,6 +38,7 @@ export interface ReapResult
   readonly requeued: number;
   readonly retriedDeletions: number;
   readonly purged: number;
+  readonly purgedModerationCases: number;
   /** Rows still dead after this run: these need a human. */
   readonly dead: number;
 }
@@ -172,6 +174,7 @@ export async function reap(
   const requeued = await requeueStalled(database, now);
   const retriedDeletions = await retryDeadDeletions(database, now);
   const purged = await purgeFinished(database, now);
+  const purgedModerationCases = await retainClosedModerationCases(database);
   const activity = await retainActivity(database, now);
   const lifeUpdates = await sweepDeliverylessLifeUpdates(
     database,
@@ -188,6 +191,7 @@ export async function reap(
     requeued,
     retriedDeletions,
     purged,
+    purgedModerationCases,
     dead: deadRows?.value ?? 0,
     ...activity,
     ...lifeUpdates,

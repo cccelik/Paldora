@@ -11,6 +11,7 @@ import { ConfirmAction } from '@/components/forms/confirm-action';
 import { SubmitButton } from '@/components/forms/submit-button';
 import styles from '@/components/interactions/comment-row.module.css';
 import { ReactionBar } from '@/components/interactions/reaction-bar';
+import { ReportControl } from '@/components/moderation/report-control';
 import { useOptimisticReaction } from '@/components/interactions/use-optimistic-reaction';
 import { Avatar, Button, HiddenFields, TextAreaField } from '@/components/ui';
 import { idleResult, type ActionResult } from '@/lib/actions/action-result';
@@ -213,6 +214,7 @@ function CommentBody({
           onDeleted={() => setDeleted(true)}
         />
       )}
+      <ReportControl targetKind="comment" targetId={comment.id} />
     </article>
   );
 }

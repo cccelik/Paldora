@@ -1,7 +1,7 @@
 .nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pal-space-2);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pal-space-3);
 }
 
 .link {
@@ -13,6 +13,13 @@
   color: var(--pal-text-muted);
   font-weight: 600;
   text-decoration: none;
+}
+
+@media (min-width: 40rem) {
+  .nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
 }
 
 .link[aria-current='page'] {

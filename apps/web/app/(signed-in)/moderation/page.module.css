@@ -1,0 +1,28 @@
+.page {
+  display: grid;
+  gap: var(--pal-space-5);
+}
+
+.list {
+  display: grid;
+  gap: var(--pal-space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-3);
+  align-items: center;
+  padding: var(--pal-space-4);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+}
+
+.item a {
+  min-height: var(--pal-size-touch-target);
+  display: inline-flex;
+  align-items: center;
+  color: var(--pal-text);
+}

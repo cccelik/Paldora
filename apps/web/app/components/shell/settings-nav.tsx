@@ -7,6 +7,7 @@ const sections = [
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/appearance', label: 'Appearance' },
   { href: '/settings/reactions', label: 'Reactions' },
+  { href: '/settings/reports', label: 'Your reports' },
 ] as const;
 
 export function SettingsNav() {

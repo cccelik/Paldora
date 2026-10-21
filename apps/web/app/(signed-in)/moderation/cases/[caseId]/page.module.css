@@ -1,0 +1,24 @@
+.page {
+  display: grid;
+  gap: var(--pal-space-5);
+}
+
+.details {
+  display: grid;
+  gap: var(--pal-space-3);
+  overflow-wrap: anywhere;
+}
+
+.details > div {
+  display: grid;
+  gap: var(--pal-space-1);
+}
+
+.details dt {
+  color: var(--pal-text-muted);
+}
+
+.detail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,14 @@
+.stack,
+.form {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  color: var(--pal-text);
+  text-underline-offset: 0.2em;
+}

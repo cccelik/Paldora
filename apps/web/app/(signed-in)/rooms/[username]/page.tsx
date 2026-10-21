@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import styles from '@/(signed-in)/rooms/[username]/page.module.css';
+import { ReportControl } from '@/components/moderation/report-control';
 import { RoomCanvas } from '@/components/rooms/room-canvas';
 import { RoomOwnerStrip } from '@/components/rooms/room-owner-strip';
 import { loadRoomPreviews } from '@/lib/rooms/room-previews';
@@ -44,6 +45,9 @@ export default async function RoomPage({
         room={room}
         previews={previews}
       />
+      {room.relationship !== 'owner' ? (
+        <ReportControl targetKind="user" targetId={room.owner.id} />
+      ) : null}
     </div>
   );
 }

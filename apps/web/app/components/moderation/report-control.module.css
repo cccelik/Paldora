@@ -1,0 +1,33 @@
+.control {
+  margin-top: var(--pal-space-3);
+}
+
+.summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  cursor: pointer;
+  color: var(--pal-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.form {
+  display: grid;
+  gap: var(--pal-space-3);
+  padding-block: var(--pal-space-3);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.select {
+  min-height: var(--pal-size-touch-target);
+  padding: var(--pal-space-2);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-sm);
+  background: var(--pal-surface);
+  color: var(--pal-text);
+}

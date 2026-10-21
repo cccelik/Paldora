@@ -32,6 +32,11 @@ const deletionNotFound = defineError(
   'ACCOUNT_DELETION_NOT_FOUND',
   'No active deletion request was found.',
 );
+const cancellationWindowClosed = defineError(
+  HttpStatus.CONFLICT,
+  'ACCOUNT_DELETION_WINDOW_CLOSED',
+  'The seven-day cancellation window has ended.',
+);
 
 const view = (row: typeof accountDeletionRequests.$inferSelect) => ({
   id: row.id,
@@ -136,6 +141,7 @@ export class AccountDeletionService {
         .for('update')
         .limit(1);
       if (!row) throw deletionNotFound();
+      if (row.dueAt <= new Date()) throw cancellationWindowClosed();
       const [cancelled] = await tx
         .update(accountDeletionRequests)
         .set({ status: 'cancelled', cancelledAt: new Date() })

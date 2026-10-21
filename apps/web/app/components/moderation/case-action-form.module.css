@@ -1,0 +1,14 @@
+.form {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.select {
+  min-height: var(--pal-size-touch-target);
+  padding: var(--pal-space-2);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-sm);
+  background: var(--pal-surface);
+  color: var(--pal-text);
+}

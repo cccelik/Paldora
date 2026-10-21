@@ -33,10 +33,15 @@ Room banner foreign key.
 - Suspension uses `users.status='suspended'`. The existing principal resolver
   blocks the next API request; realtime streams must also stop when the state
   changes, without waiting for token expiry.
-- Account deletion is an idempotent workflow. Before user removal it retires
-  owned media through the outbox and clears `rooms.banner_media_id`. No claimed
-  deletion is complete until object retirement and reference cleanup are
-  verified. Export is a separate private, expiring artifact.
+- Account deletion requires password reauthentication and transfer of owned
+  Boxes. The seven-day cancellation window ends at the recorded deadline,
+  even if the worker runs late. The worker first blocks account access, then
+  retires owned objects and exports, clears `rooms.banner_media_id`, deletes
+  the Auth identity, and removes the database user. Failed external steps
+  leave a retryable erasure request. Export is a private JSON archive.
+- Closed report detail and case-specific audit rows are purged after 90 days.
+  Database triggers reject mutation before that boundary. Staff-grant and
+  account-lookup audit rows are outside case evidence and remain append-only.
 - Public signup remains disabled until all moderation and account-lifecycle
   paths, abuse controls, and hosted smoke tests pass and the owner approves
   activation.
@@ -54,8 +59,9 @@ Room banner foreign key.
 ## Revisit triggers
 
 The owner selected a seven-day deletion cancellation window, 90-day evidence
-retention after case closure, and immediate object retirement on takedown.
-Appeal operations and export format remain to be finalized. A production hosting decision
+retention after case closure, immediate object retirement on takedown, Box
+ownership transfer before deletion, and a JSON export archive. Appeal
+operations remain to be finalized. A production hosting decision
 (D5) is needed before the hosted public-signup gate. If legal retention duties
 require keeping deleted account data, specify the exact fields, access, and
 schedule in a superseding ADR; this record makes no legal-retention claim.

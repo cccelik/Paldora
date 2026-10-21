@@ -2,6 +2,10 @@
 
 Status: in progress. Phase 8 is delivered; public registration remains disabled. Scope follows [the rebuild plan](../rebuild-plan.md) and the authorization rules in [security.md](../security.md). This phase has no legacy implementation to copy.
 
+The implemented local operating procedures are in
+[the Phase 9 runbook](../operations/phase-9.md). Hosted abuse and lifecycle
+smoke checks remain open until hosting decision D5 is resolved.
+
 ## Outcome and boundaries
 
 Members can report a user, post, comment, or Box. Authorized moderators can investigate a bounded queue, hide violating content, suspend accounts, and record a durable reason and actor for every action. Members can request a portable export and permanent account deletion. Public signup is enabled only after the moderation, deletion, and abuse gates pass in CI and the owner approves the operating model.

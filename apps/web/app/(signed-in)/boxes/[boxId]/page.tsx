@@ -7,6 +7,7 @@ import {
   SettingsSection,
 } from '@/components/boxes/box-sections';
 import { MoreLink } from '@/components/common/more-link';
+import { ReportControl } from '@/components/moderation/report-control';
 import { PostFeed } from '@/components/posts/post-card';
 import { PostComposer } from '@/components/posts/post-composer';
 import {
@@ -73,6 +74,7 @@ export default async function BoxPage({
             : undefined
         }
       />
+      <ReportControl targetKind="box" targetId={boxId} />
       <Section id="posts" title="Posts">
         {box.status === 'active' ? <PostComposer boxId={boxId} /> : null}
         <div className={styles.actions}>
