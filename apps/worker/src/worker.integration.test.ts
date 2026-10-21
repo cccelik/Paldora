@@ -1,21 +1,17 @@
-import { requireEnvironmentVariables } from '@paldora/config';
+import { mediaAssets, mediaJobOutbox, profiles } from '@paldora/database';
 import {
-  createDatabaseConnection,
-  mediaAssets,
-  mediaJobOutbox,
-  mediaProcessJob,
-  profiles,
-  users,
-  type MediaJobOutboxRow,
-} from '@paldora/database';
-import { createLogger } from '@paldora/observability';
+  backdate,
+  beforeAnyRun,
+  createPerson,
+  deletionJobsFor,
+} from '@paldora/database/testing';
 import { MemoryObjectStorage } from '@paldora/storage';
 import { Queue, QueueEvents, Worker, type Job } from 'bullmq';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
-import { afterAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createJobRouter } from './job-router.js';
 import { createJobHandlers } from './jobs.js';
 import { reap } from './maintenance/reaper.js';
@@ -23,129 +19,48 @@ import { derivativeKeys } from './media/process-media.js';
 import { dispatchOnce } from './outbox/dispatcher.js';
 import { recordJobFailure } from './outbox/failures.js';
 import { claimDue } from './outbox/outbox-store.js';
-
-const { DATABASE_URL, REDIS_URL } = requireEnvironmentVariables(
-  ['DATABASE_URL', 'REDIS_URL'],
-  process.env,
-);
-const connection = createDatabaseConnection({
-  connectionString: DATABASE_URL ?? '',
-  poolMax: 6,
-  applicationName: 'paldora-worker-test',
-});
-const database = connection.database;
-const storage = new MemoryObjectStorage();
-const logger = createLogger({
-  service: 'worker',
-  environment: 'test',
-  level: 'silent',
-});
-const handlers = createJobHandlers({ database, storage });
-const run = createJobRouter(handlers, { logger });
-
-afterAll(() => connection.close());
+import { connectTestDatabase, silentLogger } from './test-support/database.js';
+import {
+  assetRow as assetRowIn,
+  fakeJob,
+  jpegWithGps as gpsJpeg,
+  outboxRow as outboxRowIn,
+  queuedUpload,
+} from './test-support/media.js';
 
 /**
  * The database may hold other suites' (or a developer's) rows, so tests never
- * touch rows they did not create. Dispatcher tests backdate their own rows so
- * the oldest-first claim order reaches them first: to an instant earlier than
- * any earlier run used, so rows an interrupted run left behind never win.
+ * touch rows they did not create. Dispatcher tests `backdate` their own rows
+ * so the oldest-first claim order reaches them first.
  */
-async function backdate(ids: readonly string[]): Promise<void> {
-  await database
-    .update(mediaJobOutbox)
-    .set({ availableAt: new Date(-Date.now()) })
-    .where(inArray(mediaJobOutbox.id, [...ids]));
-}
+const { database, env } = connectTestDatabase('paldora-worker-test', {
+  required: ['DATABASE_URL', 'REDIS_URL'],
+});
+const { REDIS_URL } = env;
+const storage = new MemoryObjectStorage();
+const logger = silentLogger();
+const handlers = createJobHandlers({ database, storage });
+const run = createJobRouter(handlers, { logger });
 
-async function createUser(): Promise<string> {
-  const email = `worker-${randomUUID()}@example.test`;
-  const [user] = await database
-    .insert(users)
-    .values({
-      authSubject: `subject-${randomUUID()}`,
-      email,
-      emailNormalized: email,
-    })
-    .returning({ id: users.id });
-  if (!user) throw new Error('user insert failed');
-  await database.insert(profiles).values({ userId: user.id });
-  return user.id;
-}
+const createUser = () => createPerson(database, { label: 'worker' });
+const jpegWithGps = () =>
+  gpsJpeg({ width: 900, height: 600, background: '#a85', orientation: 6 });
 
-async function jpegWithGps(): Promise<Uint8Array> {
-  return new Uint8Array(
-    await sharp({
-      create: { width: 900, height: 600, channels: 3, background: '#a85' },
-    })
-      .withMetadata({ orientation: 6 })
-      .withExifMerge({
-        IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '52/1 31/1 0/1' },
-      })
-      .jpeg()
-      .toBuffer(),
-  );
-}
-
-async function uploadedAsset(
+/** An avatar upload waiting for the worker, its bytes in this suite's storage. */
+const uploadedAsset = (
   ownerUserId: string,
   bytes: Uint8Array,
   createdAt = new Date(),
-) {
-  const uploadObjectKey = `uploads/${randomUUID()}`;
-  storage.put(uploadObjectKey, 'image/jpeg', bytes);
-  const [asset] = await database
-    .insert(mediaAssets)
-    .values({
-      ownerUserId,
-      purpose: 'avatar',
-      status: 'processing',
-      contentType: 'image/jpeg',
-      contentLength: bytes.byteLength,
-      uploadObjectKey,
-      uploadExpiresAt: new Date(Date.now() + 300_000),
-      createdAt,
-    })
-    .returning();
-  if (!asset) throw new Error('asset insert failed');
-  const [outbox] = await database
-    .insert(mediaJobOutbox)
-    .values(mediaProcessJob(asset.id))
-    .returning();
-  if (!outbox) throw new Error('outbox insert failed');
-  return { asset, outbox };
-}
+) =>
+  queuedUpload(database, storage, {
+    ownerUserId,
+    purpose: 'avatar',
+    bytes,
+    createdAt,
+  });
 
-const fakeJob = (row: Pick<MediaJobOutboxRow, 'id' | 'jobType'>) =>
-  ({ id: row.id, name: row.jobType, data: { outboxId: row.id } }) as Job;
-
-async function outboxRow(id: string) {
-  const [row] = await database
-    .select()
-    .from(mediaJobOutbox)
-    .where(eq(mediaJobOutbox.id, id));
-  return row;
-}
-
-async function assetRow(id: string) {
-  const [row] = await database
-    .select()
-    .from(mediaAssets)
-    .where(eq(mediaAssets.id, id));
-  return row;
-}
-
-async function deletionJobsFor(key: string) {
-  return database
-    .select()
-    .from(mediaJobOutbox)
-    .where(
-      and(
-        eq(mediaJobOutbox.jobType, 'media.delete'),
-        sql`${mediaJobOutbox.payload} -> 'objectKeys' ? ${key}`,
-      ),
-    );
-}
+const outboxRow = (id: string) => outboxRowIn(database, id);
+const assetRow = (id: string) => assetRowIn(database, id);
 
 describe('media.process', () => {
   it('stores metadata-free derivatives, attaches the avatar, and discards the raw upload', async () => {
@@ -174,7 +89,10 @@ describe('media.process', () => {
       expect((await sharp(stored?.body).metadata()).exif).toBeUndefined();
     }
     // D2: the raw upload is queued for deletion, then actually removed.
-    const [rawDeletion] = await deletionJobsFor(asset.uploadObjectKey);
+    const [rawDeletion] = await deletionJobsFor(
+      database,
+      asset.uploadObjectKey,
+    );
     expect(rawDeletion).toBeDefined();
     await run(fakeJob(rawDeletion!));
     expect(storage.objects.has(asset.uploadObjectKey)).toBe(false);
@@ -203,7 +121,9 @@ describe('media.process', () => {
       failureReason: 'undecodable',
     });
     expect(await outboxRow(outbox.id)).toMatchObject({ status: 'completed' });
-    expect(await deletionJobsFor(asset.uploadObjectKey)).toHaveLength(1);
+    expect(await deletionJobsFor(database, asset.uploadObjectKey)).toHaveLength(
+      1,
+    );
     const [profile] = await database
       .select()
       .from(profiles)
@@ -239,7 +159,10 @@ describe('media.process', () => {
     expect(profile?.avatarMediaId).toBe(second.asset.id);
     expect((await assetRow(first.asset.id))?.status).toBe('deleted');
     expect(
-      await deletionJobsFor(derivativeKeys(first.asset.id).masterObjectKey),
+      await deletionJobsFor(
+        database,
+        derivativeKeys(first.asset.id).masterObjectKey,
+      ),
     ).toHaveLength(1);
   });
 
@@ -280,7 +203,9 @@ describe('failure mirroring', () => {
       status: 'failed',
       failureReason: 'processing_exhausted',
     });
-    expect(await deletionJobsFor(asset.uploadObjectKey)).toHaveLength(1);
+    expect(await deletionJobsFor(database, asset.uploadObjectKey)).toHaveLength(
+      1,
+    );
   });
 
   it('only counts an attempt while retries remain', async () => {
@@ -308,7 +233,7 @@ describe('dispatcher', () => {
         async () => (await uploadedAsset(userId, new Uint8Array(1))).outbox.id,
       ),
     );
-    await backdate(created);
+    await backdate(database, created);
     const [left, right] = await Promise.all([
       claimDue(database, 3),
       claimDue(database, 3),
@@ -335,7 +260,7 @@ describe('dispatcher', () => {
         userId,
         await jpegWithGps(),
       );
-      await backdate([outbox.id]);
+      await backdate(database, [outbox.id]);
       expect(await dispatchOnce(database, queue, 1)).toBe(1);
       expect((await outboxRow(outbox.id))?.status).toBe('published');
       const job = await queue.getJob(outbox.id);
@@ -354,6 +279,7 @@ describe('dispatcher', () => {
 
 describe('reaper', () => {
   it('expires abandoned reservations and requeues stalled rows', async () => {
+    const now = beforeAnyRun();
     const userId = await createUser();
     const uploadObjectKey = `uploads/${randomUUID()}`;
     const [abandoned] = await database
@@ -364,7 +290,7 @@ describe('reaper', () => {
         contentType: 'image/png',
         contentLength: 10,
         uploadObjectKey,
-        uploadExpiresAt: new Date(Date.now() - 2 * 3_600_000),
+        uploadExpiresAt: new Date(now.getTime() - 2 * 3_600_000),
       })
       .returning();
     const { outbox } = await uploadedAsset(userId, new Uint8Array(1));
@@ -372,18 +298,18 @@ describe('reaper', () => {
       .update(mediaJobOutbox)
       .set({
         status: 'published',
-        publishedAt: new Date(Date.now() - 3_600_000),
+        publishedAt: new Date(now.getTime() - 3_600_000),
       })
       .where(eq(mediaJobOutbox.id, outbox.id));
 
-    const result = await reap(database);
+    const result = await reap(database, now);
     expect(result.expiredUploads).toBeGreaterThanOrEqual(1);
     expect(result.requeued).toBeGreaterThanOrEqual(1);
     expect(await assetRow(abandoned!.id)).toMatchObject({
       status: 'failed',
       failureReason: 'expired',
     });
-    expect(await deletionJobsFor(uploadObjectKey)).toHaveLength(1);
+    expect(await deletionJobsFor(database, uploadObjectKey)).toHaveLength(1);
     expect(await outboxRow(outbox.id)).toMatchObject({
       status: 'pending',
       claimedAt: null,

@@ -1,88 +1,44 @@
-import { requireEnvironmentVariables } from '@paldora/config';
 import {
-  boxMemberships,
   boxes,
-  createDatabaseConnection,
   lifeUpdateDeliveries,
   lifeUpdateMedia,
   lifeUpdates,
   mediaAssets,
-  mediaJobOutbox,
   posts,
-  profiles,
-  users,
 } from '@paldora/database';
-import { and, eq, sql } from 'drizzle-orm';
+import {
+  createBox,
+  createPerson,
+  deletionsFor,
+  readyMediaAsset,
+} from '@paldora/database/testing';
+import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { afterAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { connectTestDatabase } from '../test-support/database.js';
 import {
   DELIVERYLESS_GRACE_MS,
   sweepDeliverylessLifeUpdates,
 } from './deliveryless-life-updates.js';
 
-const { DATABASE_URL } = requireEnvironmentVariables(
-  ['DATABASE_URL', 'REDIS_URL'],
-  process.env,
-);
-const connection = createDatabaseConnection({
-  connectionString: DATABASE_URL ?? '',
+const { database } = connectTestDatabase('paldora-deliveryless-test', {
   poolMax: 4,
-  applicationName: 'paldora-deliveryless-test',
+  required: ['DATABASE_URL', 'REDIS_URL'],
 });
-const database = connection.database;
-afterAll(() => connection.close());
 
-async function person(): Promise<string> {
-  const email = `deliveryless-${randomUUID()}@example.test`;
-  const [user] = await database
-    .insert(users)
-    .values({
-      authSubject: `subject-${randomUUID()}`,
-      email,
-      emailNormalized: email,
-    })
-    .returning({ id: users.id });
-  if (!user) throw new Error('user insert failed');
-  await database.insert(profiles).values({ userId: user.id });
-  return user.id;
-}
-
-async function boxOf(ownerId: string): Promise<string> {
-  const [box] = await database
-    .insert(boxes)
-    .values({ name: `Sweep ${randomUUID().slice(0, 8)}` })
-    .returning({ id: boxes.id });
-  if (!box) throw new Error('box insert failed');
-  await database
-    .insert(boxMemberships)
-    .values({ boxId: box.id, userId: ownerId, role: 'owner' });
-  return box.id;
-}
+const person = () => createPerson(database, { label: 'deliveryless' });
+const boxOf = (ownerId: string) =>
+  createBox(database, ownerId, [], {
+    name: `Sweep ${randomUUID().slice(0, 8)}`,
+  });
 
 async function photoOf(ownerId: string) {
-  const id = randomUUID();
-  const objectKeys = {
-    uploadObjectKey: `uploads/${id}`,
-    masterObjectKey: `media/${id}/master.webp`,
-    displayObjectKey: `media/${id}/display.webp`,
-    thumbnailObjectKey: `media/${id}/thumbnail.webp`,
-  };
-  await database.insert(mediaAssets).values({
-    id,
-    ownerUserId: ownerId,
+  const { id, keys } = await readyMediaAsset(database, {
+    ownerId,
     purpose: 'life_update_image',
-    status: 'ready',
-    contentType: 'image/jpeg',
-    contentLength: 1_000,
-    uploadExpiresAt: new Date(),
-    ...objectKeys,
-    width: 1600,
-    height: 1200,
   });
-  const keys = Object.values(objectKeys);
-  return { id, keys };
+  return { id, keys: Object.values(keys) };
 }
-
 /** A Life Update delivered to `boxIds`, as the API's publish writes it. */
 async function publish(
   authorId: string,
@@ -140,19 +96,6 @@ async function stateOf(lifeUpdateId: string, photoId: string) {
   return { update, photo: photo?.status };
 }
 
-const deletionsFor = async (keys: readonly string[]) => {
-  const [row] = await database
-    .select({ count: sql<number>`count(*)::int` })
-    .from(mediaJobOutbox)
-    .where(
-      and(
-        eq(mediaJobOutbox.jobType, 'media.delete'),
-        sql`${mediaJobOutbox.payload} -> 'objectKeys' @> ${JSON.stringify(keys)}::jsonb`,
-      ),
-    );
-  return row?.count ?? 0;
-};
-
 describe('deliveryless Life Update sweep', () => {
   it('tombstones a Life Update whose every Box was deleted, and retires its photos', async () => {
     const author = await person();
@@ -173,10 +116,10 @@ describe('deliveryless Life Update sweep', () => {
       update: { status: 'deleted', sections: {} },
       photo: 'deleted',
     });
-    expect(await deletionsFor(photo.keys)).toBe(1);
+    expect(await deletionsFor(database, photo.keys)).toBe(1);
     // Safe to repeat.
     await sweepDeliverylessLifeUpdates(database, later(), 200);
-    expect(await deletionsFor(photo.keys)).toBe(1);
+    expect(await deletionsFor(database, photo.keys)).toBe(1);
   });
 
   it('leaves a Life Update that still has a Box alone', async () => {

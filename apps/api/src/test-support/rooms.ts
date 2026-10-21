@@ -1,15 +1,9 @@
-import { mediaAssets, mediaJobOutbox } from '@paldora/database';
-import {
-  blockedUserSchema,
-  boxInvitationSchema,
-  boxSchema,
-  friendshipSchema,
-  roomSchema,
-  type RoomView,
-} from '@paldora/validation';
+import { mediaJobOutbox, type mediaAssets } from '@paldora/database';
+import { readyMediaAsset } from '@paldora/database/testing';
+import { roomSchema, type RoomView } from '@paldora/validation';
 import { and, eq, sql } from 'drizzle-orm';
-import { randomUUID } from 'node:crypto';
-import { client, json } from './http.js';
+import { json } from './http.js';
+import { scenes } from './scenes.js';
 import type { TestApp, TestUser } from './test-app.js';
 
 /**
@@ -18,51 +12,9 @@ import type { TestApp, TestUser } from './test-app.js';
  * (with its objects in the in-memory storage), standing in for the worker.
  */
 export function roomTools(app: TestApp) {
-  const as = (user: TestUser) => client(app, user);
-
-  async function befriend(first: TestUser, second: TestUser) {
-    const sent = friendshipSchema.parse(
-      await json(
-        await as(first).post('/friend-requests', {
-          username: second.username,
-        }),
-        201,
-      ),
-    );
-    await json(await as(second).post(`/friend-requests/${sent.id}/accept`));
-    return sent.id;
-  }
-
-  async function block(blocker: TestUser, target: TestUser) {
-    blockedUserSchema.parse(
-      await json(
-        await as(blocker).post('/blocks', { username: target.username }),
-        201,
-      ),
-    );
-  }
-
-  /** A Box `owner` made, with `guests` as accepted members. */
-  async function sharedBox(owner: TestUser, ...guests: TestUser[]) {
-    const box = boxSchema.parse(
-      await json(await as(owner).post('/boxes', { name: 'Shared' }), 201),
-    );
-    await Promise.all(
-      guests.map(async (guest) => {
-        const invitation = boxInvitationSchema.parse(
-          await json(
-            await as(owner).post(`/boxes/${box.id}/invitations`, {
-              username: guest.username,
-            }),
-            201,
-          ),
-        );
-        await json(
-          await as(guest).post(`/box-invitations/${invitation.id}/accept`),
-        );
-      }),
-    );
-    return box;
+  const { as, befriend, sharedBox } = scenes(app);
+  async function block(blocker: TestUser, target: TestUser): Promise<void> {
+    await scenes(app).block(blocker, target);
   }
 
   async function myRoom(user: TestUser): Promise<RoomView> {
@@ -111,23 +63,9 @@ export function roomTools(app: TestApp) {
     user: TestUser,
     overrides: Partial<typeof mediaAssets.$inferInsert> = {},
   ) {
-    const id = randomUUID();
-    const keys = {
-      uploadObjectKey: `uploads/${id}`,
-      masterObjectKey: `media/${id}/master.webp`,
-      displayObjectKey: `media/${id}/display.webp`,
-      thumbnailObjectKey: `media/${id}/thumbnail.webp`,
-    };
-    await app.database.insert(mediaAssets).values({
-      id,
-      ownerUserId: user.id,
+    const { id, keys } = await readyMediaAsset(app.database, {
+      ownerId: user.id,
       purpose: 'room_banner',
-      status: 'ready',
-      contentType: 'image/jpeg',
-      contentLength: 1_000,
-      uploadExpiresAt: new Date(),
-      ...keys,
-      width: 1600,
       height: 533,
       ...overrides,
     });

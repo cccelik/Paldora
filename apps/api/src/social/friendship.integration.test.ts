@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { client, expectError, json, ok } from '../test-support/http.js';
+import { scenes } from '../test-support/scenes.js';
 import { createTestApp, type TestApp } from '../test-support/test-app.js';
 
 let app: TestApp;
@@ -12,23 +13,8 @@ beforeAll(async () => {
 });
 afterAll(() => app.close());
 
-async function befriend(
-  first: Awaited<ReturnType<TestApp['person']>>,
-  second: typeof first,
-) {
-  const sent = friendshipSchema.parse(
-    await json(
-      await client(app, first).post('/friend-requests', {
-        username: second.username,
-      }),
-      201,
-    ),
-  );
-  await json(
-    await client(app, second).post(`/friend-requests/${sent.id}/accept`),
-  );
-  return sent.id;
-}
+const befriend: ReturnType<typeof scenes>['befriend'] = (...args) =>
+  scenes(app).befriend(...args);
 
 describe('friend requests', () => {
   it('flow from request to friendship, seen from both sides', async () => {

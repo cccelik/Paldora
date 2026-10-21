@@ -1,10 +1,10 @@
-import { mediaAssets } from '@paldora/database';
+import type { mediaAssets } from '@paldora/database';
+import { readyMediaAsset } from '@paldora/database/testing';
 import {
   lifeUpdatePageSchema,
   lifeUpdateSchema,
   type LifeUpdateView,
 } from '@paldora/validation';
-import { randomUUID } from 'node:crypto';
 import { client, json } from './http.js';
 import type { TestApp, TestUser } from './test-app.js';
 
@@ -69,24 +69,9 @@ export function lifeUpdateTools(app: TestApp) {
     owner: TestUser,
     overrides: Partial<typeof mediaAssets.$inferInsert> = {},
   ) {
-    const id = randomUUID();
-    const keys = {
-      uploadObjectKey: `uploads/${id}`,
-      masterObjectKey: `media/${id}/master.webp`,
-      displayObjectKey: `media/${id}/display.webp`,
-      thumbnailObjectKey: `media/${id}/thumbnail.webp`,
-    };
-    await app.database.insert(mediaAssets).values({
-      id,
-      ownerUserId: owner.id,
+    const { id, keys } = await readyMediaAsset(app.database, {
+      ownerId: owner.id,
       purpose: 'life_update_image',
-      status: 'ready',
-      contentType: 'image/jpeg',
-      contentLength: 1_000,
-      uploadExpiresAt: new Date(),
-      ...keys,
-      width: 1600,
-      height: 1200,
       ...overrides,
     });
     return { id, keys };

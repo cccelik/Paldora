@@ -1,3 +1,4 @@
+import { readyMediaAsset } from '@paldora/database/testing';
 import { mediaAssets, users } from '@paldora/database';
 import { DEFAULT_ROOM_WIDGETS } from '@paldora/domain';
 import {
@@ -71,22 +72,10 @@ const total = (summary: { years: readonly { count: number }[] }) =>
 
 /** A processed `post_image` in `boxId`, as the worker leaves it. */
 async function postPhoto(owner: TestUser, boxId: string) {
-  const id = randomUUID();
-  await app.database.insert(mediaAssets).values({
-    id,
-    ownerUserId: owner.id,
+  const { id } = await readyMediaAsset(app.database, {
+    ownerId: owner.id,
     boxId,
     purpose: 'post_image',
-    status: 'ready',
-    contentType: 'image/jpeg',
-    contentLength: 1_000,
-    uploadExpiresAt: new Date(),
-    uploadObjectKey: `uploads/${id}`,
-    masterObjectKey: `media/${id}/master.webp`,
-    displayObjectKey: `media/${id}/display.webp`,
-    thumbnailObjectKey: `media/${id}/thumbnail.webp`,
-    width: 1600,
-    height: 1200,
   });
   return id;
 }

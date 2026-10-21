@@ -4,9 +4,8 @@ import {
   mediaJobOutbox,
   postMedia,
 } from '@paldora/database';
+import { readyMediaAsset } from '@paldora/database/testing';
 import {
-  boxInvitationSchema,
-  boxSchema,
   feedPageSchema,
   mediaUploadSchema,
   postSchema,
@@ -14,7 +13,8 @@ import {
 import { eq, inArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { client, expectError, json, ok } from '../test-support/http.js';
+import { expectError, json, ok } from '../test-support/http.js';
+import { scenes } from '../test-support/scenes.js';
 import {
   createTestApp,
   type TestApp,
@@ -27,25 +27,13 @@ beforeAll(async () => {
 });
 afterAll(() => app.close());
 
-const as = (user: TestUser) => client(app, user);
+const as = (user: TestUser) => scenes(app).as(user);
 
-async function newBox(owner: TestUser, name = 'Crew') {
-  return boxSchema.parse(
-    await json(await as(owner).post('/boxes', { name }), 201),
-  );
-}
+const newBox: ReturnType<typeof scenes>['newBox'] = (...args) =>
+  scenes(app).newBox(...args);
 
-async function join(owner: TestUser, boxId: string, guest: TestUser) {
-  const invitation = boxInvitationSchema.parse(
-    await json(
-      await as(owner).post(`/boxes/${boxId}/invitations`, {
-        username: guest.username,
-      }),
-      201,
-    ),
-  );
-  await json(await as(guest).post(`/box-invitations/${invitation.id}/accept`));
-}
+const join: ReturnType<typeof scenes>['join'] = (...args) =>
+  scenes(app).join(...args);
 
 /** A photo as the worker leaves it when processing has finished. */
 async function photo(
@@ -53,27 +41,12 @@ async function photo(
   boxId: string,
   status: 'ready' | 'processing' = 'ready',
 ) {
-  const id = randomUUID();
-  const keys = {
-    uploadObjectKey: `uploads/${id}`,
-    masterObjectKey: `media/${id}/master.webp`,
-    displayObjectKey: `media/${id}/display.webp`,
-    thumbnailObjectKey: `media/${id}/thumbnail.webp`,
-  };
-  await app.database.insert(mediaAssets).values({
-    id,
-    ownerUserId: owner.id,
+  return readyMediaAsset(app.database, {
+    ownerId: owner.id,
     boxId,
     purpose: 'post_image',
     status,
-    contentType: 'image/jpeg',
-    contentLength: 1_000,
-    uploadExpiresAt: new Date(),
-    ...(status === 'ready'
-      ? { ...keys, width: 1600, height: 1200 }
-      : { uploadObjectKey: keys.uploadObjectKey }),
   });
-  return { id, keys };
 }
 
 const post = (user: TestUser, boxId: string, body: unknown) =>

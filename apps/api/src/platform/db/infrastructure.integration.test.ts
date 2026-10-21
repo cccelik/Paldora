@@ -1,7 +1,7 @@
 import { requireEnvironmentVariables } from '@paldora/config';
 import { afterAll, describe, expect, it } from 'vitest';
-import { InfrastructureService } from './infrastructure.service.js';
 import { RedisRateLimiter } from '../rate-limit/rate-limiter.js';
+import { InfrastructureService } from './infrastructure.service.js';
 
 const { DATABASE_URL, REDIS_URL } = requireEnvironmentVariables(
   ['DATABASE_URL', 'REDIS_URL'],

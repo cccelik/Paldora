@@ -30,6 +30,23 @@ only fixture routes, and only on desktop Chromium.
   blocks in both directions, former members, guessed IDs, deleted or archived
   content, concurrency, and outage recovery.
 
+## Shared fixtures and suite boundaries (2026-10-21)
+
+Row fixtures live in `packages/database/src/testing`, exported only through the
+explicit `@paldora/database/testing` subpath. ESLint forbids production code from
+importing them. This keeps one standard media-key shape and one implementation
+of people, Boxes, and friendship setup across API, worker, and database tests
+without adding a production dependency on Vitest. The helpers accept database
+executors, including transactions.
+
+API scenes exercise real HTTP policy; only provisioning and completed worker
+assets use direct row setup. Application `test-support/` folders own their
+harnesses and are excluded from production builds. Suites split at behavior
+boundaries below 600 lines, preserving parameterized rows and race rounds.
+Integration runs remain serial across packages, and worker files remain serial
+because maintenance scans share the dedicated database. Support changes require
+two integration runs with unchanged case counts.
+
 ## Revisit when
 
 CI time exceeds about 15 minutes; then shard Playwright and parallelize

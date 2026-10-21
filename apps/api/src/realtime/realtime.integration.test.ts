@@ -1,11 +1,8 @@
-import {
-  boxInvitationSchema,
-  boxSchema,
-  postSchema,
-} from '@paldora/validation';
+import { postSchema } from '@paldora/validation';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { client, expectError, json, ok } from '../test-support/http.js';
 import { openStream, type OpenStream } from '../test-support/event-stream.js';
+import { expectError, json, ok } from '../test-support/http.js';
+import { scenes } from '../test-support/scenes.js';
 import {
   createTestApp,
   type TestApp,
@@ -22,7 +19,7 @@ afterEach(() => {
 });
 afterAll(() => app.close());
 
-const as = (user: TestUser) => client(app, user);
+const as = (user: TestUser) => scenes(app).as(user);
 
 async function listen(user: TestUser, token = user.token) {
   const stream = await openStream(app.baseUrl, token);
@@ -32,23 +29,11 @@ async function listen(user: TestUser, token = user.token) {
   return stream;
 }
 
-async function newBox(owner: TestUser, name = 'Crew') {
-  return boxSchema.parse(
-    await json(await as(owner).post('/boxes', { name }), 201),
-  );
-}
+const newBox: ReturnType<typeof scenes>['newBox'] = (...args) =>
+  scenes(app).newBox(...args);
 
-async function join(owner: TestUser, boxId: string, guest: TestUser) {
-  const invitation = boxInvitationSchema.parse(
-    await json(
-      await as(owner).post(`/boxes/${boxId}/invitations`, {
-        username: guest.username,
-      }),
-      201,
-    ),
-  );
-  await json(await as(guest).post(`/box-invitations/${invitation.id}/accept`));
-}
+const join: ReturnType<typeof scenes>['join'] = (...args) =>
+  scenes(app).join(...args);
 
 const say = async (user: TestUser, boxId: string, content: string) =>
   postSchema.parse(

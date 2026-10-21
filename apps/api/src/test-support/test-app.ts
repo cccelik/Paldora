@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { createPerson } from '@paldora/database/testing';
 import type { INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
@@ -9,12 +10,11 @@ import {
   mediaJobOutbox,
   profiles,
   userPreferences,
-  users,
   type DatabaseConnection,
 } from '@paldora/database';
-import { and, eq, inArray, sql } from 'drizzle-orm';
 import { createLogger } from '@paldora/observability';
 import { MemoryObjectStorage } from '@paldora/storage';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from '../app.module.js';
 import { configureApp } from '../configure-app.js';
@@ -136,18 +136,13 @@ export async function createTestApp(): Promise<TestApp> {
     issuer,
     async createUser(options = {}) {
       const subject = `subject-${randomUUID()}`;
-      const email = `person-${randomUUID()}@example.test`;
-      const [user] = await connection.database
-        .insert(users)
-        .values({
-          authSubject: subject,
-          email,
-          emailNormalized: email,
-          status: options.status ?? 'active',
-        })
-        .returning({ id: users.id });
-      if (!user) throw new Error('user insert failed');
-      createdUserIds.push(user.id);
+      const id = await createPerson(connection.database, {
+        authSubject: subject,
+        status: options.status ?? 'active',
+        profile: false,
+      });
+      const user = { id };
+      createdUserIds.push(id);
       await connection.database.insert(profiles).values({
         userId: user.id,
         ...(options.username

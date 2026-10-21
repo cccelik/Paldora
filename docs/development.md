@@ -72,6 +72,29 @@ modified. In CI (`CI=true`) the job's own clean database is used as is. Redis
 and MinIO are shared, but test keys are unique. To reset the test data, drop
 the database: `docker exec paldora-v2-postgres-1 psql -U paldora -d paldora -c 'drop database paldora_test'`.
 
+## Integration test support
+
+`packages/database/src/testing` (`@paldora/database/testing`) is the shared,
+test-only fixture home for API, worker, and database suites. It provides
+`createPerson`, `createBox`, `befriend`, `readyMediaAsset`, standard media keys,
+asset/outbox queries, and time helpers. Production imports are forbidden by
+ESLint; test harnesses under `src/test-support` are excluded from application
+builds. Database fixtures accept an executor so transaction tests keep writes
+inside their transaction.
+
+API setup goes through `scenes(app)` and `test-support/http.ts` for Boxes,
+invitations, friendships, blocks, posts, comments, and reactions. Direct row
+fixtures stand in for provisioning or worker processing, never for the API
+operation under test. `lifeUpdateTools` and `roomTools` add their feature flows
+on these shared helpers. Worker support owns queue/storage setup and lifecycle;
+database support owns connection teardown and PostgreSQL failure inspection.
+
+Integration suites are split by behavior (including block matrices, comment
+lifecycle, camera reactions, Room constraints and races, projector skip rules,
+media fault injection, and maintenance). Keep every suite below 600 lines and
+retain all cases when splitting. Run integration twice after a support refactor
+to catch interference from leftovers in the dedicated test database.
+
 ## Focused runs
 
 ```bash

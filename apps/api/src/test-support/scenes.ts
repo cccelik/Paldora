@@ -1,7 +1,7 @@
-import { mediaAssets } from '@paldora/database';
+import { relationshipScenes } from './relationships.js';
+import type { mediaAssets } from '@paldora/database';
+import { readyMediaAsset } from '@paldora/database/testing';
 import {
-  boxInvitationSchema,
-  boxSchema,
   commentInteractionSummarySchema,
   commentSchema,
   commentThreadPageSchema,
@@ -10,8 +10,7 @@ import {
   type CommentView,
   type PostView,
 } from '@paldora/validation';
-import { randomUUID } from 'node:crypto';
-import { client, json } from './http.js';
+import { json } from './http.js';
 import type { TestApp, TestUser } from './test-app.js';
 
 /**
@@ -20,27 +19,8 @@ import type { TestApp, TestUser } from './test-app.js';
  * capture is written straight to the database, standing in for the worker.
  */
 export function scenes(app: TestApp) {
-  const as = (user: TestUser) => client(app, user);
-
-  async function newBox(owner: TestUser, name = 'Crew') {
-    return boxSchema.parse(
-      await json(await as(owner).post('/boxes', { name }), 201),
-    );
-  }
-
-  async function join(owner: TestUser, boxId: string, guest: TestUser) {
-    const invitation = boxInvitationSchema.parse(
-      await json(
-        await as(owner).post(`/boxes/${boxId}/invitations`, {
-          username: guest.username,
-        }),
-        201,
-      ),
-    );
-    await json(
-      await as(guest).post(`/box-invitations/${invitation.id}/accept`),
-    );
-  }
+  const { as, newBox, join, invite, befriend, block, sharedBox } =
+    relationshipScenes(app);
 
   /** An owner, an admin, a member, and a stranger around one Box. */
   async function room() {
@@ -125,20 +105,10 @@ export function scenes(app: TestApp) {
     boxId: string,
     overrides: Partial<typeof mediaAssets.$inferInsert> = {},
   ) {
-    const id = randomUUID();
-    await app.database.insert(mediaAssets).values({
-      id,
-      ownerUserId: user.id,
-      boxId,
+    const { id } = await readyMediaAsset(app.database, {
+      ownerId: user.id,
       purpose: 'reaction_image',
-      status: 'ready',
-      contentType: 'image/jpeg',
-      contentLength: 1_000,
-      uploadExpiresAt: new Date(),
-      uploadObjectKey: `uploads/${id}`,
-      masterObjectKey: `media/${id}/master.webp`,
-      displayObjectKey: `media/${id}/display.webp`,
-      thumbnailObjectKey: `media/${id}/thumbnail.webp`,
+      boxId,
       width: 1024,
       height: 768,
       ...overrides,
@@ -160,6 +130,10 @@ export function scenes(app: TestApp) {
 
   return {
     as,
+    invite,
+    befriend,
+    block,
+    sharedBox,
     newBox,
     join,
     room,

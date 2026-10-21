@@ -88,3 +88,28 @@ worker, web, packages and repo root).
 - Injectable clock for services with expiry logic.
 - Pruning unused type exports (confirm with knip first).
 - Trimming the legacy-oriented sections of `CLAUDE.md` (editorial decision).
+
+## Step 3 implementation
+
+Shared row fixtures now live in `packages/database/src/testing` with a test-only
+export and production-import lint guard. API scenes own HTTP relationships;
+feature tools reuse the shared media fixtures. Worker support owns storage,
+queue, activity, and connection setup. Database support owns constraint fixtures
+and error inspection. Block, Box lifecycle, comment lifecycle/summaries, camera,
+projector, media fault, maintenance, schema, and Room suites are split by
+behavior; the largest integration file is 589 lines.
+
+The reaper test uses the shared historical clock to exclude unrelated expired
+reservations from its bounded batch. This changes test setup only. Schema tests
+that intentionally omit memberships still create bare Boxes locally; production
+policy and migrations are unchanged. The unrelated `.claude/` backup is left
+untouched.
+
+Step 3 validation: format, zero-warning lint, typecheck, contract and token
+checks, build, and client-bundle scan passed. Unit: 988. Integration: 585 on
+each of two consecutive runs (API 418, database 114, worker 47, storage 6).
+Browser: 31 passed, one expected skip. Full-stack: 80 passed on rerun; the
+first attempt passed 79 and hit a local auth `ECONNRESET` before the remaining
+test's privacy assertions. No production behavior was changed to hide it.
+Compose returned a nonzero status after the successful one-shot bucket init;
+all three services were available and exercised by the gates.
