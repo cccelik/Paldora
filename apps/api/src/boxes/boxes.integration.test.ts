@@ -9,13 +9,13 @@ import {
 import { and, eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { client, expectError, json, ok } from '../testing/http.js';
+import { client, expectError, json, ok } from '../test-support/http.js';
 import {
   createTestApp,
   uniqueUsername,
   type TestApp,
   type TestUser,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 let app: TestApp;
 beforeAll(async () => {

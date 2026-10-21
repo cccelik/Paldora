@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { userPreferences } from '@paldora/database';
+import { userPreferences, type PaldoraDatabase } from '@paldora/database';
 import type { UserId } from '@paldora/domain';
 import type { Preferences, UpdatePreferencesInput } from '@paldora/validation';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 
 const saved = {
   appearance: userPreferences.appearance,
@@ -17,7 +16,7 @@ const saved = {
 @Injectable()
 export class PreferencesService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
   ) {}
 
   /** Idempotent full replacement of the app preferences. */
@@ -25,7 +24,7 @@ export class PreferencesService {
     userId: UserId,
     preferences: UpdatePreferencesInput,
   ): Promise<Preferences> {
-    const [row] = await this.infrastructure.database
+    const [row] = await this.database
       .insert(userPreferences)
       .values({ userId, appearance: preferences.appearance })
       .onConflictDoUpdate({
@@ -47,7 +46,7 @@ export class PreferencesService {
     presets: readonly string[],
   ): Promise<Preferences> {
     const reactionPresets = [...presets];
-    const [row] = await this.infrastructure.database
+    const [row] = await this.database
       .insert(userPreferences)
       .values({ userId, reactionPresets })
       .onConflictDoUpdate({

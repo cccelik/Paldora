@@ -1,35 +1,37 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { profiles, userBlocks, users } from '@paldora/database';
+import {
+  profiles,
+  userBlocks,
+  users,
+  type PaldoraDatabase,
+} from '@paldora/database';
 import { normalizeUsername } from '@paldora/validation';
 import { and, eq, isNotNull } from 'drizzle-orm';
-import { ApiError } from '../platform/api-error.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { defineError } from '../platform/http/api-error.js';
+import { DATABASE } from '../platform/config/tokens.js';
 
-export const userNotFound = () =>
-  new ApiError(
-    HttpStatus.NOT_FOUND,
-    'USER_NOT_FOUND',
-    'No one with that username was found.',
-  );
+export const userNotFound = defineError(
+  HttpStatus.NOT_FOUND,
+  'USER_NOT_FOUND',
+  'No one with that username was found.',
+);
 
-export const userBlocked = () =>
-  new ApiError(
-    HttpStatus.FORBIDDEN,
-    'USER_BLOCKED',
-    'You blocked this person. Unblock them first.',
-  );
+export const userBlocked = defineError(
+  HttpStatus.FORBIDDEN,
+  'USER_BLOCKED',
+  'You blocked this person. Unblock them first.',
+);
 
 /** Finds people by username for actions that target someone (ADR 013). */
 @Injectable()
 export class UserDirectoryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
   ) {}
 
   /** An active person with this username, or null. Ignores blocks. */
   public async findByUsername(username: string): Promise<string | null> {
-    const [row] = await this.infrastructure.database
+    const [row] = await this.database
       .select({ id: users.id })
       .from(profiles)
       .innerJoin(users, eq(users.id, profiles.userId))
@@ -58,7 +60,7 @@ export class UserDirectoryService {
   ): Promise<string> {
     const targetId = await this.findByUsername(username);
     if (!targetId) throw userNotFound();
-    const blocks = await this.infrastructure.database
+    const blocks = await this.database
       .select({ blockerId: userBlocks.blockerId })
       .from(userBlocks)
       .where(
@@ -69,7 +71,7 @@ export class UserDirectoryService {
       )
       .limit(1);
     if (blocks.length > 0) throw userBlocked();
-    const reverse = await this.infrastructure.database
+    const reverse = await this.database
       .select({ blockerId: userBlocks.blockerId })
       .from(userBlocks)
       .where(

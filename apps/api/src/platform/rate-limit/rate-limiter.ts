@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Redis } from 'ioredis';
-import { redisReady } from '../redis-ready.js';
+import { redisReady } from '../db/redis-ready.js';
 import type { RateLimitPolicy } from './rate-limit.decorator.js';
 
 export interface RateLimitDecision {

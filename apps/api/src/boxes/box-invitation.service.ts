@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  activeMembership,
   boxInvitations,
   boxMemberships,
   boxes,
@@ -16,42 +17,41 @@ import type {
   BoxView,
   UserSummary,
 } from '@paldora/validation';
-import { and, desc, eq, gt, lte, not, or } from 'drizzle-orm';
+import { and, eq, gt, lte, not, or } from 'drizzle-orm';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
 import {
   UserDirectoryService,
   userNotFound,
 } from '../identity/user-directory.service.js';
-import { isUniqueViolation } from '../platform/database-errors.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
+import { isUniqueViolation } from '../platform/db/database-errors.js';
 import {
-  afterCursor,
+  keysetWindow,
   cursorTimestamp,
   decodeCursor,
   pageOf,
   type Page,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+  type PageQuery,
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { RealtimeBus } from '../realtime/realtime-bus.js';
 import {
   alreadyBoxMember,
-  boxArchived,
   boxNotFound,
   cannotInviteSelf,
   invitationAlreadyPending,
   invitationExpired,
   invitationNotFound,
 } from './box-errors.js';
+import { lockOpenBox } from './box-lock.js';
 import { BoxPolicyService } from './box-policy.service.js';
 import { loadBoxView } from './box-views.js';
-import type { PageQuery } from './box-query.service.js';
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
 
 @Injectable()
 export class BoxInvitationService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(UserDirectoryService)
@@ -59,10 +59,6 @@ export class BoxInvitationService {
     @Inject(ProfileSummaryService)
     private readonly summaries: ProfileSummaryService,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   /**
    * Invites anyone by username. Blocks are decided inside the pair lock, so a
@@ -90,24 +86,11 @@ export class BoxInvitationService {
         if (await isBlockedBetween(transaction, inviterId, inviteeId)) {
           throw userNotFound();
         }
-        const [box] = await transaction
-          .select({ status: boxes.status })
-          .from(boxes)
-          .where(eq(boxes.id, boxId))
-          .for('share')
-          .limit(1);
-        if (!box) throw boxNotFound();
-        if (box.status !== 'active') throw boxArchived();
+        await lockOpenBox(transaction, boxId, { missing: boxNotFound });
         const [member] = await transaction
           .select({ userId: boxMemberships.userId })
           .from(boxMemberships)
-          .where(
-            and(
-              eq(boxMemberships.boxId, boxId),
-              eq(boxMemberships.userId, inviteeId),
-              eq(boxMemberships.status, 'active'),
-            ),
-          )
+          .where(activeMembership(boxId, inviteeId))
           .limit(1);
         if (member) throw alreadyBoxMember();
         // A stale pending row would block the unique index; retire it first.
@@ -267,14 +250,9 @@ export class BoxInvitationService {
         await this.setStatus(transaction, invitation.id, 'expired');
         return { expired: true as const };
       }
-      const [box] = await transaction
-        .select({ status: boxes.status })
-        .from(boxes)
-        .where(eq(boxes.id, invitation.boxId))
-        .for('share')
-        .limit(1);
-      if (!box) throw invitationNotFound();
-      if (box.status !== 'active') throw boxArchived();
+      await lockOpenBox(transaction, invitation.boxId, {
+        missing: invitationNotFound,
+      });
       await this.setStatus(transaction, invitation.id, 'accepted');
       await transaction
         .insert(boxMemberships)
@@ -366,6 +344,12 @@ export class BoxInvitationService {
     where: ReturnType<typeof and>,
     query: PageQuery,
   ): Promise<Page<BoxInvitationView>> {
+    const keyset = keysetWindow(
+      boxInvitations.createdAt,
+      boxInvitations.id,
+      decodeCursor(query.cursor),
+      'desc',
+    );
     const rows = await this.database
       .select({
         invitation: boxInvitations,
@@ -374,18 +358,8 @@ export class BoxInvitationService {
       })
       .from(boxInvitations)
       .innerJoin(boxes, eq(boxes.id, boxInvitations.boxId))
-      .where(
-        and(
-          where,
-          afterCursor(
-            boxInvitations.createdAt,
-            boxInvitations.id,
-            decodeCursor(query.cursor),
-            'desc',
-          ),
-        ),
-      )
-      .orderBy(desc(boxInvitations.createdAt), desc(boxInvitations.id))
+      .where(and(where, keyset.after))
+      .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     const names = new Map(
       rows.map((row) => [row.invitation.boxId, row.boxName]),

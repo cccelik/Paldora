@@ -16,9 +16,8 @@ import { and, eq, ne } from 'drizzle-orm';
 import {
   isCheckViolation,
   isUniqueViolation,
-} from '../platform/database-errors.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+} from '../platform/db/database-errors.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import {
   invalidOnboardingTransition,
   onboardingIncomplete,
@@ -77,12 +76,8 @@ function profileUpdate(input: UpdateProfileInput): ProfileUpdate {
 @Injectable()
 export class ProfileService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   /** Advisory only: the unique index decides when the profile is saved. */
   public async usernameAvailability(

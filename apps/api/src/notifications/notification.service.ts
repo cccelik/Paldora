@@ -1,20 +1,18 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { notifications } from '@paldora/database';
+import { notifications, type PaldoraDatabase } from '@paldora/database';
 import { and, eq, isNull } from 'drizzle-orm';
-import { ApiError } from '../platform/api-error.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
-import { RealtimeBus, userChannel } from '../realtime/realtime-bus.js';
+import { defineError } from '../platform/http/api-error.js';
+import { DATABASE } from '../platform/config/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { NotificationQueryService } from './notification-query.service.js';
 import { visibleTo } from './notification-visibility.js';
 
 /** Someone else's, hidden, and missing notifications all look the same. */
-export const notificationNotFound = () =>
-  new ApiError(
-    HttpStatus.NOT_FOUND,
-    'NOTIFICATION_NOT_FOUND',
-    'That notification isn’t available.',
-  );
+export const notificationNotFound = defineError(
+  HttpStatus.NOT_FOUND,
+  'NOTIFICATION_NOT_FOUND',
+  'That notification isn’t available.',
+);
 
 /**
  * Marking notifications read. Both operations are idempotent set-state
@@ -24,15 +22,11 @@ export const notificationNotFound = () =>
 @Injectable()
 export class NotificationService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(NotificationQueryService)
     private readonly queries: NotificationQueryService,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
-
-  private get database() {
-    return this.infrastructure.database;
-  }
 
   /**
    * Visibility is confirmed first, so another person's ID, or one whose
@@ -58,7 +52,8 @@ export class NotificationService {
         ),
       )
       .returning({ id: notifications.id });
-    if (changed.length > 0) await this.announce(viewerId);
+    if (changed.length > 0)
+      await this.bus.userEvent(viewerId, 'notifications.changed');
   }
 
   /** Marks every notification the viewer can currently see as read. */
@@ -68,12 +63,7 @@ export class NotificationService {
       .set({ readAt: new Date() })
       .where(and(visibleTo(viewerId), isNull(notifications.readAt)))
       .returning({ id: notifications.id });
-    if (changed.length > 0) await this.announce(viewerId);
-  }
-
-  private announce(viewerId: string): Promise<void> {
-    return this.bus.publish(userChannel(viewerId), {
-      type: 'notifications.changed',
-    });
+    if (changed.length > 0)
+      await this.bus.userEvent(viewerId, 'notifications.changed');
   }
 }

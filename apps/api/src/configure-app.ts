@@ -2,7 +2,7 @@ import { VersioningType, type INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { Logger } from '@paldora/observability';
 import helmet from 'helmet';
-import { requestContextMiddleware } from './platform/request-context.js';
+import { requestContextMiddleware } from './platform/http/request-context.js';
 
 export interface HttpConfiguration {
   webOrigin: string;

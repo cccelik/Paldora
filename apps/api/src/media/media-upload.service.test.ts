@@ -2,8 +2,8 @@ import type { UserId } from '@paldora/domain';
 import { MemoryObjectStorage } from '@paldora/storage';
 import type { CreateMediaUploadInput } from '@paldora/validation';
 import { describe, expect, it, vi } from 'vitest';
-import type { ApiError } from '../platform/api-error.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
+import type { ApiError } from '../platform/http/api-error.js';
+import type { PaldoraDatabase } from '@paldora/database';
 import type { RateLimiter } from '../platform/rate-limit/rate-limiter.js';
 import { MediaUploadService } from './media-upload.service.js';
 
@@ -23,7 +23,7 @@ const input = (purpose: 'post_image' | 'reaction_image') =>
 function service(consume: RateLimiter['consume']) {
   const limiter = { consume: vi.fn(consume) };
   const uploads = new MediaUploadService(
-    {} as Infrastructure,
+    {} as PaldoraDatabase,
     new MemoryObjectStorage(),
     limiter,
   );

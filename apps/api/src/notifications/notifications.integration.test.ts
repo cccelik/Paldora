@@ -4,15 +4,15 @@ import { eq, inArray } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { openStream, type OpenStream } from '../testing/event-stream.js';
-import { client, expectError, json, ok } from '../testing/http.js';
-import { notificationTools } from '../testing/notifications.js';
-import { scenes } from '../testing/scenes.js';
+import { openStream, type OpenStream } from '../test-support/event-stream.js';
+import { client, expectError, json, ok } from '../test-support/http.js';
+import { notificationTools } from '../test-support/notifications.js';
+import { scenes } from '../test-support/scenes.js';
 import {
   createTestApp,
   type TestApp,
   type TestUser,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 let app: TestApp;
 let redis: Redis;

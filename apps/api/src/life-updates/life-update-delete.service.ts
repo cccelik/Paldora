@@ -7,10 +7,9 @@ import {
   type PaldoraDatabase,
 } from '@paldora/database';
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
-import { erasePostInteractions } from '../interactions/interaction-erasure.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
-import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
+import { erasePostInteractions } from '../interactions/shared/interaction-erasure.js';
+import { DATABASE } from '../platform/config/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { LifeUpdatePolicyService } from './life-update-policy.service.js';
 import type { Delivery } from './life-update-publish.service.js';
 
@@ -25,15 +24,11 @@ import type { Delivery } from './life-update-publish.service.js';
 @Injectable()
 export class LifeUpdateDeleteService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(LifeUpdatePolicyService)
     private readonly policy: LifeUpdatePolicyService,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   public async remove(viewerId: string, lifeUpdateId: string): Promise<void> {
     const removed = await this.database.transaction(async (transaction) => {
@@ -52,15 +47,7 @@ export class LifeUpdateDeleteService {
       await tombstoneLifeUpdates(transaction, [lifeUpdateId]);
       return deliveries;
     });
-    await Promise.all(
-      removed.map(({ boxId, postId }) =>
-        this.bus.publish(boxChannel(boxId), {
-          type: 'post.deleted',
-          boxId,
-          postId,
-        }),
-      ),
-    );
+    await this.bus.announceDeliveries('post.deleted', removed);
   }
 
   /**

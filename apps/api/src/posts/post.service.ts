@@ -1,25 +1,24 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
-  boxes,
   mediaAssets,
   postMedia,
   posts,
   type DatabaseExecutor,
   type PaldoraDatabase,
+  retireMediaAssets,
 } from '@paldora/database';
 import type { NewPost, PostView } from '@paldora/validation';
 import { and, eq, inArray } from 'drizzle-orm';
 import { boxArchived } from '../boxes/box-errors.js';
+import { lockOpenBox } from '../boxes/box-lock.js';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
-import { erasePostInteractions } from '../interactions/interaction-erasure.js';
+import { erasePostInteractions } from '../interactions/shared/interaction-erasure.js';
 import { mediaNotFound } from '../media/media-errors.js';
 import { assertPhotosUsable } from '../media/photo-claim.js';
-import { retireAssets } from '../media/media-retirement.js';
-import { ApiError } from '../platform/api-error.js';
-import { isUniqueViolation } from '../platform/database-errors.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
-import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
+import { defineError } from '../platform/http/api-error.js';
+import { isUniqueViolation } from '../platform/db/database-errors.js';
+import { DATABASE } from '../platform/config/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { loadPostContext, type PostContext } from './post-context.js';
 import {
   postAccessDenied,
@@ -41,25 +40,20 @@ const usedByPosts = async (
   return new Set(rows.map((row) => row.id));
 };
 
-const needsSomething = () =>
-  new ApiError(
-    HttpStatus.BAD_REQUEST,
-    'VALIDATION_FAILED',
-    'content: Write something or add a photo first.',
-  );
+const needsSomething = defineError(
+  HttpStatus.BAD_REQUEST,
+  'VALIDATION_FAILED',
+  'content: Write something or add a photo first.',
+);
 
 @Injectable()
 export class PostService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(PostQueryService) private readonly queries: PostQueryService,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   /**
    * The Box row is locked `FOR SHARE`, so archiving cannot slip in between.
@@ -79,13 +73,7 @@ export class PostService {
     const created = await this.database
       .transaction(async (transaction) => {
         await this.policy.membership(authorId, boxId, transaction);
-        const [box] = await transaction
-          .select({ status: boxes.status })
-          .from(boxes)
-          .where(eq(boxes.id, boxId))
-          .for('share')
-          .limit(1);
-        if (box?.status !== 'active') throw boxArchived();
+        await lockOpenBox(transaction, boxId);
         await assertPhotosUsable(transaction, {
           ownerId: authorId,
           purpose: 'post_image',
@@ -115,7 +103,7 @@ export class PostService {
           throw mediaNotFound();
         throw error;
       });
-    await this.announce('post.created', boxId, created.id);
+    await this.bus.boxEvent(boxId, 'post.created', { postId: created.id });
     return this.view(authorId, created.id);
   }
 
@@ -146,7 +134,7 @@ export class PostService {
       .returning({ id: posts.id });
     // Deleted between the read and the write: the post is gone.
     if (changed.length === 0) throw postNotFound();
-    await this.announce('post.updated', context.post.boxId, postId);
+    await this.bus.boxEvent(context.post.boxId, 'post.updated', { postId });
     return this.view(viewerId, postId);
   }
 
@@ -194,22 +182,13 @@ export class PostService {
         .where(eq(postMedia.postId, postId))
         .for('update');
       await transaction.delete(postMedia).where(eq(postMedia.postId, postId));
-      await retireAssets(
+      await retireMediaAssets(
         transaction,
         photos.map((row) => row.asset),
       );
       await erasePostInteractions(transaction, [postId]);
     });
-    await this.announce('post.deleted', context.post.boxId, postId);
-  }
-
-  /** After commit and best effort: the hint carries IDs, never content. */
-  private announce(
-    type: 'post.created' | 'post.updated' | 'post.deleted',
-    boxId: string,
-    postId: string,
-  ): Promise<void> {
-    return this.bus.publish(boxChannel(boxId), { type, boxId, postId });
+    await this.bus.boxEvent(context.post.boxId, 'post.deleted', { postId });
   }
 
   /**

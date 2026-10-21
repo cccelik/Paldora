@@ -1,17 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  activeMembership,
   boxMemberships,
   boxes,
   type DatabaseExecutor,
+  type PaldoraDatabase,
 } from '@paldora/database';
 import {
   canManageMembers,
   type BoxRole,
   type BoxStatus,
 } from '@paldora/domain';
-import { and, eq } from 'drizzle-orm';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { eq } from 'drizzle-orm';
+import { DATABASE } from '../platform/config/tokens.js';
 import { boxAccessDenied, boxNotFound } from './box-errors.js';
 
 export interface BoxMembership {
@@ -29,26 +30,20 @@ export interface BoxMembership {
 @Injectable()
 export class BoxPolicyService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
   ) {}
 
   /** The caller’s active membership, or BOX_NOT_FOUND. */
   public async membership(
     userId: string,
     boxId: string,
-    executor: DatabaseExecutor = this.infrastructure.database,
+    executor: DatabaseExecutor = this.database,
   ): Promise<BoxMembership> {
     const [row] = await executor
       .select({ role: boxMemberships.role, boxStatus: boxes.status })
       .from(boxMemberships)
       .innerJoin(boxes, eq(boxes.id, boxMemberships.boxId))
-      .where(
-        and(
-          eq(boxMemberships.boxId, boxId),
-          eq(boxMemberships.userId, userId),
-          eq(boxMemberships.status, 'active'),
-        ),
-      )
+      .where(activeMembership(boxId, userId))
       .limit(1);
     if (!row) throw boxNotFound();
     return { boxId, userId, role: row.role, boxStatus: row.boxStatus };

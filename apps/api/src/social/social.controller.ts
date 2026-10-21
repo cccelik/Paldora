@@ -10,27 +10,26 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import type { AuthenticatedPrincipal } from '@paldora/domain';
 import {
   createBlockSchema,
   createFriendRequestSchema,
-  cursorPageQuerySchema,
 } from '@paldora/validation';
 import type { z } from 'zod';
+import {
+  cursorPageQuery,
+  HOUR,
+  type PageQuery,
+  type Principal,
+} from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import {
   RateLimit,
   RateLimitExempt,
 } from '../platform/rate-limit/rate-limit.decorator.js';
-import { uuidParam } from '../platform/uuid-param.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
+import { uuidParam } from '../platform/http/uuid-param.js';
+import { ZodPipe } from '../platform/http/zod.pipe.js';
 import { BlockService } from './block.service.js';
 import { FriendshipService } from './friendship.service.js';
-
-type Principal = AuthenticatedPrincipal;
-type PageQuery = z.output<typeof cursorPageQuerySchema>;
-const pageQuery = new ZodPipe(cursorPageQuerySchema);
-const hour = 3_600;
 
 @Controller()
 export class FriendshipController {
@@ -41,7 +40,7 @@ export class FriendshipController {
   @Get('friends')
   public friends(
     @CurrentPrincipal() me: Principal,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.friendships.friends(me.userId, query);
   }
@@ -49,13 +48,13 @@ export class FriendshipController {
   @Get('friend-requests')
   public requests(
     @CurrentPrincipal() me: Principal,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.friendships.requests(me.userId, query);
   }
 
   @Post('friend-requests')
-  @RateLimit({ scope: 'friend-request', limit: 20, windowSeconds: hour })
+  @RateLimit({ scope: 'friend-request', limit: 20, windowSeconds: HOUR })
   public request(
     @CurrentPrincipal() me: Principal,
     @Body(new ZodPipe(createFriendRequestSchema))
@@ -116,13 +115,13 @@ export class BlockController {
   @Get()
   public list(
     @CurrentPrincipal() me: Principal,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.blocks.list(me.userId, query);
   }
 
   @Post()
-  @RateLimit({ scope: 'block-create', limit: 60, windowSeconds: hour })
+  @RateLimit({ scope: 'block-create', limit: 60, windowSeconds: HOUR })
   public create(
     @CurrentPrincipal() me: Principal,
     @Body(new ZodPipe(createBlockSchema))

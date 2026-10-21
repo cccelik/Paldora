@@ -1,19 +1,33 @@
 import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import type { Logger } from '@paldora/observability';
 import {
+  boxChannel,
   realtimeEventSchema,
   userChannel,
   type RealtimeEvent,
 } from '@paldora/validation';
 import type { Redis } from 'ioredis';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { redisReady } from '../platform/redis-ready.js';
-import { INFRASTRUCTURE, LOGGER } from '../platform/tokens.js';
+import type { Infrastructure } from '../platform/db/infrastructure.service.js';
+import { redisReady } from '../platform/db/redis-ready.js';
+import { INFRASTRUCTURE, LOGGER } from '../platform/config/tokens.js';
 
 // Channel names live in the contract package so the worker shares them.
 export { boxChannel, userChannel } from '@paldora/validation';
 
 type Handler = (event: RealtimeEvent) => void;
+type EventType = RealtimeEvent['type'];
+
+/** The IDs a Box hint names: always the post, sometimes a comment. */
+export interface BoxEventIds {
+  readonly postId: string;
+  readonly commentId?: string;
+}
+
+/** One backing post of a Life Update in one Box. */
+export interface DeliveryRef {
+  readonly boxId: string;
+  readonly postId: string;
+}
 
 /**
  * Redis pub/sub for invalidation hints (R5). One subscriber connection serves
@@ -48,11 +62,40 @@ export class RealtimeBus implements OnApplicationShutdown {
     }
   }
 
+  /**
+   * One hint to a Box's members: `{ type, boxId, postId, commentId? }`,
+   * after commit and best effort. IDs only, never content.
+   */
+  public boxEvent(
+    boxId: string,
+    type: EventType,
+    ids: BoxEventIds,
+  ): Promise<void> {
+    return this.publish(boxChannel(boxId), { type, boxId, ...ids });
+  }
+
+  /** The same hint for each delivery of a Life Update, in its own Box. */
+  public async announceDeliveries(
+    type: EventType,
+    deliveries: readonly DeliveryRef[],
+  ): Promise<void> {
+    await Promise.all(
+      deliveries.map(({ boxId, postId }) =>
+        this.boxEvent(boxId, type, { postId }),
+      ),
+    );
+  }
+
+  /** One hint to one person: just the type. */
+  public userEvent(userId: string, type: EventType): Promise<void> {
+    return this.publish(userChannel(userId), { type });
+  }
+
   /** Tells each person to recompute which Boxes they belong to. */
   public async membershipsChanged(userIds: readonly string[]): Promise<void> {
     await Promise.all(
       [...new Set(userIds)].map((userId) =>
-        this.publish(userChannel(userId), { type: 'memberships.changed' }),
+        this.userEvent(userId, 'memberships.changed'),
       ),
     );
   }

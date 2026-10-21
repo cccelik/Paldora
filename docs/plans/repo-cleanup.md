@@ -45,13 +45,13 @@ worker, web, packages and repo root).
      controller support (`Principal`, `PageQuery`, `HOUR`), realtime
      `boxEvent` / `announceDeliveries`, `iso` / `isoOrNull`, `defineError`,
      a `DATABASE` provider replacing the 24 `private get database()` copies,
-     `keysetWindow` helper, `hiddenCommentThread`.
+     `keysetWindow` helper, `keysetWindow`.
    - Keep lock order unchanged (see lock-order comments in life-update-erasure,
      room-top-friends and life-update-delete).
    - Folder layout: `platform/` split into `config`, `http`, `rate-limit`,
      `db`, `route-inventory`; `interactions/` into `comments`, `reactions`,
-     `shared`; `rooms/` into `services` and `records`; feature folders under
-     `features/`. `testing/` becomes `test-support/`.
+     `shared`; `rooms/` into `services` and `records`; feature folders stay at
+     `src/` top level (no `features/` wrapper). `testing/` becomes `test-support/`.
 3. **Test support and test sizes.**
    - Shared fixtures (`createPerson`, `createBox`, `readyMediaAsset`, outbox and
      asset assertions) used by api, worker and database integration tests;

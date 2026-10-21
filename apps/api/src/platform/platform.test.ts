@@ -21,7 +21,7 @@ import { Writable } from 'node:stream';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { configureApp } from '../configure-app.js';
-import { authenticationRequired } from './api-error.js';
+import { authenticationRequired } from './http/api-error.js';
 import {
   accountBlocked,
   accountNotProvisioned,
@@ -30,8 +30,8 @@ import { Public } from './auth/public.decorator.js';
 import { PlatformModule } from './platform.module.js';
 import { RateLimit } from './rate-limit/rate-limit.decorator.js';
 import type { RateLimiter } from './rate-limit/rate-limiter.js';
-import { InfrastructureService } from './infrastructure.service.js';
-import { REQUEST_CONTEXT_TEST_IDENTITY } from './testing.js';
+import { InfrastructureService } from './db/infrastructure.service.js';
+import { REQUEST_CONTEXT_TEST_IDENTITY } from '../test-support/test-identity.js';
 import {
   ACCESS_TOKEN_VERIFIER,
   API_ENVIRONMENT,
@@ -39,8 +39,8 @@ import {
   OBJECT_STORAGE,
   PRINCIPAL_RESOLVER,
   RATE_LIMITER,
-} from './tokens.js';
-import { ZodPipe } from './zod.pipe.js';
+} from './config/tokens.js';
+import { ZodPipe } from './http/zod.pipe.js';
 
 const webOrigin = 'http://web.test';
 const logLines: string[] = [];

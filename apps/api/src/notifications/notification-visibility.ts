@@ -25,7 +25,8 @@ const activeComment = sql`exists (
  *
  * - it is the viewer's own row;
  * - the post is active and the viewer is an active member of its Box (a
- *   former member sees nothing);
+ *   former member sees nothing; the shared `activeMembership` rule, written
+ *   out here and cross-checked by a unit test);
  * - the actor is active, has a public face, and no block exists in either
  *   direction (the shared `hiddenByBlock` definition);
  * - the target is still live: the comment is active (comments and replies),

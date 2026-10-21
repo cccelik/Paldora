@@ -4,15 +4,14 @@ import {
   Injectable,
   type MessageEvent,
 } from '@nestjs/common';
-import { boxMemberships } from '@paldora/database';
+import { boxMemberships, type PaldoraDatabase } from '@paldora/database';
 import type { AuthenticatedPrincipal } from '@paldora/domain';
 import type { Logger } from '@paldora/observability';
 import type { RealtimeEvent } from '@paldora/validation';
 import { and, eq } from 'drizzle-orm';
 import { Observable } from 'rxjs';
-import { ApiError } from '../platform/api-error.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE, LOGGER } from '../platform/tokens.js';
+import { ApiError } from '../platform/http/api-error.js';
+import { DATABASE, LOGGER } from '../platform/config/tokens.js';
 import { boxChannel, RealtimeBus, userChannel } from './realtime-bus.js';
 
 export const MAX_STREAMS_PER_USER = 5;
@@ -115,7 +114,7 @@ export class RealtimeStreamService {
   private readonly open = new Map<string, number>();
 
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
     @Inject(LOGGER) private readonly logger: Logger,
   ) {}
@@ -155,7 +154,7 @@ export class RealtimeStreamService {
   }
 
   private async activeBoxIds(userId: string): Promise<string[]> {
-    const rows = await this.infrastructure.database
+    const rows = await this.database
       .select({ boxId: boxMemberships.boxId })
       .from(boxMemberships)
       .where(

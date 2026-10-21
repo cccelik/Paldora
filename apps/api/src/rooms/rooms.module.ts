@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
 import { MediaModule } from '../media/media.module.js';
 import { MemoriesModule } from '../memories/memories.module.js';
-import { RoomAccessService } from './room-access.service.js';
-import { RoomContentService } from './room-content.service.js';
-import { RoomTopFriendsService } from './room-top-friends.service.js';
-import { RoomUpdateService } from './room-update.service.js';
-import { RoomViewService } from './room-view.service.js';
-import { RoomWidgetService } from './room-widget.service.js';
-import { RoomWriteService } from './room-write.service.js';
+import { RoomAccessService } from './services/room-access.service.js';
+import { RoomContentService } from './services/room-content.service.js';
+import { RoomTopFriendsService } from './services/room-top-friends.service.js';
+import { RoomUpdateService } from './services/room-update.service.js';
+import { RoomViewService } from './services/room-view.service.js';
+import { RoomWidgetService } from './services/room-widget.service.js';
+import { RoomWriteService } from './services/room-write.service.js';
 import { RoomsController } from './rooms.controller.js';
 
 /**

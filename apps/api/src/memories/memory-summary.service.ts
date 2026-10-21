@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { PaldoraDatabase } from '@paldora/database';
 import type { MemorySummaryView } from '@paldora/validation';
 import { sql } from 'drizzle-orm';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { memoryCandidates } from './memory-candidates.js';
 import type { MemoryPageScope } from './memory-query.service.js';
 
@@ -41,7 +41,7 @@ export function summarize(
 @Injectable()
 export class MemorySummaryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(BoxPolicyService) private readonly boxes: BoxPolicyService,
   ) {}
 
@@ -69,7 +69,7 @@ export class MemorySummaryService {
     year: number | undefined,
   ): Promise<MemorySummaryView> {
     const candidates = memoryCandidates({ ...scope, viewerId, type: 'all' });
-    const { rows } = await this.infrastructure.database.execute<MonthCount>(
+    const { rows } = await this.database.execute<MonthCount>(
       sql`select
           extract(year from c.at at time zone 'utc')::int as year,
           extract(month from c.at at time zone 'utc')::int as month,

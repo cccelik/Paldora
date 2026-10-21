@@ -4,13 +4,13 @@ import {
   postSchema,
 } from '@paldora/validation';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { client, expectError, json, ok } from '../testing/http.js';
-import { openStream, type OpenStream } from '../testing/event-stream.js';
+import { client, expectError, json, ok } from '../test-support/http.js';
+import { openStream, type OpenStream } from '../test-support/event-stream.js';
 import {
   createTestApp,
   type TestApp,
   type TestUser,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 let app: TestApp;
 const open: OpenStream[] = [];

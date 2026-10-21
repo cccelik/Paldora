@@ -2,24 +2,28 @@ import { Global, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { parseApiEnvironment, type ApiEnvironment } from '@paldora/config';
 import { createLogger } from '@paldora/observability';
-import { ApiExceptionFilter } from './api-exception.filter.js';
+import { ApiExceptionFilter } from './http/api-exception.filter.js';
 import { S3ObjectStorage } from '@paldora/storage';
 import { createSupabaseTokenVerifier } from './auth/access-token-verifier.js';
 import { AuthGuard } from './auth/auth.guard.js';
 import { DatabasePrincipalResolver } from './auth/principal-resolver.js';
-import { HealthController } from './health.controller.js';
-import { InfrastructureService } from './infrastructure.service.js';
+import { HealthController } from './http/health.controller.js';
+import {
+  InfrastructureService,
+  type Infrastructure,
+} from './db/infrastructure.service.js';
 import { RateLimitGuard } from './rate-limit/rate-limit.guard.js';
 import { RedisRateLimiter } from './rate-limit/rate-limiter.js';
 import {
   ACCESS_TOKEN_VERIFIER,
   API_ENVIRONMENT,
+  DATABASE,
   INFRASTRUCTURE,
   LOGGER,
   OBJECT_STORAGE,
   PRINCIPAL_RESOLVER,
   RATE_LIMITER,
-} from './tokens.js';
+} from './config/tokens.js';
 
 /**
  * Cross-cutting runtime: configuration, infrastructure, storage,
@@ -47,6 +51,13 @@ import {
     },
     InfrastructureService,
     { provide: INFRASTRUCTURE, useExisting: InfrastructureService },
+    // Services that need only PostgreSQL inject this; Redis users keep
+    // INFRASTRUCTURE.
+    {
+      provide: DATABASE,
+      inject: [INFRASTRUCTURE],
+      useFactory: (infrastructure: Infrastructure) => infrastructure.database,
+    },
     {
       provide: ACCESS_TOKEN_VERIFIER,
       inject: [API_ENVIRONMENT],
@@ -81,6 +92,7 @@ import {
     API_ENVIRONMENT,
     LOGGER,
     INFRASTRUCTURE,
+    DATABASE,
     ACCESS_TOKEN_VERIFIER,
     OBJECT_STORAGE,
     // Services enforce body-dependent limits (e.g. camera uploads) directly.

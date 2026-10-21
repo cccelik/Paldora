@@ -5,8 +5,8 @@ import {
   type ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { PaldoraRequest } from '../request-context.js';
-import { RATE_LIMITER } from '../tokens.js';
+import type { PaldoraRequest } from '../http/request-context.js';
+import { RATE_LIMITER } from '../config/tokens.js';
 import { assertWithinLimit, userSubject } from './assert-within-limit.js';
 import {
   RATE_LIMIT_KEY,

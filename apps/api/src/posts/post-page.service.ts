@@ -1,21 +1,22 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  activeMembership,
   boxMemberships,
   boxes,
   hiddenByBlock,
   mediaAssets,
   postMedia,
   posts,
+  type PaldoraDatabase,
 } from '@paldora/database';
 import type { BoxStatus } from '@paldora/domain';
 import type { PostView } from '@paldora/validation';
 import { and, asc, eq, inArray, not } from 'drizzle-orm';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
-import { InteractionSummaryService } from '../interactions/interaction-summary.service.js';
+import { InteractionSummaryService } from '../interactions/shared/interaction-summary.service.js';
 import { MediaUrlService } from '../media/media-urls.service.js';
 import { signPhotos } from '../media/signed-photos.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import {
   toPostView,
   type MediaByPost,
@@ -40,7 +41,7 @@ export type OrdinaryPageData = Omit<PostPageData, 'viewerId' | 'lifeUpdates'>;
 @Injectable()
 export class PostPageService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(ProfileSummaryService)
     private readonly summaries: ProfileSummaryService,
     @Inject(MediaUrlService) private readonly mediaUrls: MediaUrlService,
@@ -74,18 +75,11 @@ export class PostPageService {
     postIds: readonly string[],
   ): Promise<Map<string, PostView>> {
     if (postIds.length === 0) return new Map();
-    const rows = await this.infrastructure.database
+    const rows = await this.database
       .select({ post: posts, boxName: boxes.name, boxStatus: boxes.status })
       .from(posts)
       .innerJoin(boxes, eq(boxes.id, posts.boxId))
-      .innerJoin(
-        boxMemberships,
-        and(
-          eq(boxMemberships.boxId, posts.boxId),
-          eq(boxMemberships.userId, viewerId),
-          eq(boxMemberships.status, 'active'),
-        ),
-      )
+      .innerJoin(boxMemberships, activeMembership(posts.boxId, viewerId))
       .where(
         and(
           inArray(posts.id, [...new Set(postIds)]),
@@ -123,7 +117,7 @@ export class PostPageService {
   /** Signed URLs for the ready photos of already-authorized posts. */
   private async mediaFor(postIds: readonly string[]): Promise<MediaByPost> {
     if (postIds.length === 0) return new Map();
-    const rows = await this.infrastructure.database
+    const rows = await this.database
       .select({ postId: postMedia.postId, asset: mediaAssets })
       .from(postMedia)
       .innerJoin(mediaAssets, eq(mediaAssets.id, postMedia.mediaAssetId))

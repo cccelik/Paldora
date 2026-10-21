@@ -3,7 +3,7 @@ import type { MediaAssetRow } from '@paldora/database';
 import { SIGNED_READ_TTL_SECONDS } from '@paldora/domain';
 import type { Logger } from '@paldora/observability';
 import type { ObjectStorage } from '@paldora/storage';
-import { LOGGER, OBJECT_STORAGE } from '../platform/tokens.js';
+import { LOGGER, OBJECT_STORAGE } from '../platform/config/tokens.js';
 
 export interface SignedImage {
   readonly url: string;

@@ -1,18 +1,17 @@
 import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
-import type { AuthenticatedPrincipal } from '@paldora/domain';
 import {
   memoryQuerySchema,
   memorySummaryQuerySchema,
   type MemoryQuery,
   type MemorySummaryQuery,
 } from '@paldora/validation';
+import type { Principal } from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
-import { uuidParam } from '../platform/uuid-param.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
+import { uuidParam } from '../platform/http/uuid-param.js';
+import { ZodPipe } from '../platform/http/zod.pipe.js';
 import { MemoryQueryService } from './memory-query.service.js';
 import { MemorySummaryService } from './memory-summary.service.js';
 
-type Principal = AuthenticatedPrincipal;
 const pageQuery = new ZodPipe(memoryQuerySchema);
 const summaryQuery = new ZodPipe(memorySummaryQuerySchema);
 

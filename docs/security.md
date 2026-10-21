@@ -145,7 +145,7 @@ re-block in `block.integration.test.ts`: comments become neutral placeholders,
 replies inside your thread become placeholders, reactions and camera previews
 are omitted and not counted, hidden comments cannot be fetched or replied to,
 and a comment racing a block never becomes visible to the blocker. Reaction
-block rows (`interactions/reactions.integration.test.ts`): reacting across a
+block rows (`interactions/reactions/reactions.integration.test.ts`): reacting across a
 block with the post author answers `POST_NOT_FOUND` in both directions; with
 the comment's or its root's author `COMMENT_NOT_FOUND`; blocked reactors are
 omitted from `listPostReactions` and from counts and previews.
@@ -154,7 +154,7 @@ Races decided by the database: an edit racing a delete (`UPDATE … WHERE
 status = 'active'`), a comment racing an archive (the Box row is held `FOR
 SHARE`), and reply depth (the composite self-reference). Deleting a post
 erases its comments, reactions, notifications, and camera images in the same
-transaction. Tests: `interactions/comments.integration.test.ts`.
+transaction. Tests: `interactions/comments/comments.integration.test.ts`.
 
 Reactions are set-state under a per-person, per-target advisory lock, with the
 primary key as the final word: five simultaneous sets by one person end as one
@@ -345,7 +345,7 @@ the defaults, and every relationship fact (`roomAccessConditions` in
 | Suspended or username-less owner, old username | `ROOM_NOT_FOUND` | `ROOM_NOT_FOUND`         | `ROOM_NOT_FOUND` |
 | Guessed, malformed, over-long username         | `ROOM_NOT_FOUND` | `ROOM_NOT_FOUND`         | `ROOM_NOT_FOUND` |
 
-A parity test (`rooms/room-access.integration.test.ts`) compares nine denial
+A parity test (`rooms/services/room-access.integration.test.ts`) compares nine denial
 reasons and requires identical status, body (minus `requestId`) and headers
 (minus `x-request-id`, `date`, and `etag`, which is a hash of a body carrying
 the request ID). Visitors never receive owner-only fields. Top Friends follow
@@ -365,7 +365,7 @@ unfriend or a block instead of deadlocking. The banner claim locks the asset
 and reuses `assertPhotosUsable`; the replaced banner is retired through
 `retireMediaAssets` in the same transaction. Every Room write shares the
 120/h `room-update` limit (fail-closed). Covered by
-`rooms/room-{access,writes,top-friends}.integration.test.ts` and the Phase 7
+`rooms/services/room-{access,writes,top-friends}.integration.test.ts` and the Phase 7
 rows of `social/block.integration.test.ts`.
 
 **Content previews** (`GET /rooms/{username}/content`, `/content/summary`,
@@ -399,7 +399,7 @@ of the viewer's own Boxes as its link target. Widget switches are
 presentation only: the data routes answer the same whether a widget is on
 or off, so they reveal nothing about the owner's layout. These are reads
 and have no rate limit (plan §E, K8). Covered by
-`rooms/room-content.integration.test.ts` and the Room rows of
+`rooms/services/room-content.integration.test.ts` and the Room rows of
 `social/block.integration.test.ts`.
 
 **Web.** `/rooms/[username]/customize` renders only for the signed-in

@@ -9,30 +9,28 @@ import {
   type DatabaseTransaction,
   type LifeUpdateRow,
   type PaldoraDatabase,
+  retireMediaAssets,
 } from '@paldora/database';
 import type { LifeUpdateChanges, LifeUpdateView } from '@paldora/validation';
 import { and, count, eq, inArray, ne } from 'drizzle-orm';
 import { boxArchived } from '../boxes/box-errors.js';
 import { mediaNotFound } from '../media/media-errors.js';
-import { retireAssets } from '../media/media-retirement.js';
 import { assertPhotosUsable } from '../media/photo-claim.js';
-import { ApiError } from '../platform/api-error.js';
-import { isUniqueViolation } from '../platform/database-errors.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
-import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
+import { defineError } from '../platform/http/api-error.js';
+import { isUniqueViolation } from '../platform/db/database-errors.js';
+import { DATABASE } from '../platform/config/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { mayEdit } from './life-update-access.js';
 import { lifeUpdateNotFound } from './life-update-errors.js';
 import { LifeUpdatePolicyService } from './life-update-policy.service.js';
 import type { Delivery } from './life-update-publish.service.js';
 import { LifeUpdateViewService } from './life-update-view.service.js';
 
-const needsSomething = () =>
-  new ApiError(
-    HttpStatus.BAD_REQUEST,
-    'VALIDATION_FAILED',
-    'sections: Keep at least one section or photo.',
-  );
+const needsSomething = defineError(
+  HttpStatus.BAD_REQUEST,
+  'VALIDATION_FAILED',
+  'sections: Keep at least one section or photo.',
+);
 
 /** Photos some other Life Update already claimed (this one's are fine). */
 const usedElsewhere =
@@ -64,17 +62,13 @@ const usedElsewhere =
 @Injectable()
 export class LifeUpdateEditService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(LifeUpdatePolicyService)
     private readonly policy: LifeUpdatePolicyService,
     @Inject(LifeUpdateViewService)
     private readonly views: LifeUpdateViewService,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   public async update(
     viewerId: string,
@@ -121,7 +115,7 @@ export class LifeUpdateEditService {
           throw mediaNotFound();
         throw error;
       });
-    await this.announce(deliveries);
+    await this.bus.announceDeliveries('post.updated', deliveries);
     const view = (await this.views.byIds(viewerId, [lifeUpdateId])).views.get(
       lifeUpdateId,
     );
@@ -194,7 +188,7 @@ export class LifeUpdateEditService {
         })),
       );
     }
-    await retireAssets(
+    await retireMediaAssets(
       transaction,
       retiring.filter((asset) => asset.status !== 'deleted'),
     );
@@ -216,18 +210,5 @@ export class LifeUpdateEditService {
         ),
       )
       .where(eq(lifeUpdateDeliveries.lifeUpdateId, lifeUpdateId));
-  }
-
-  /** After commit and best effort; IDs only. Only Me publishes nothing. */
-  private async announce(deliveries: readonly Delivery[]): Promise<void> {
-    await Promise.all(
-      deliveries.map(({ boxId, postId }) =>
-        this.bus.publish(boxChannel(boxId), {
-          type: 'post.updated',
-          boxId,
-          postId,
-        }),
-      ),
-    );
   }
 }

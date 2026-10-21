@@ -345,7 +345,7 @@ banner reuses the avatar's single-photo upload hook (`useMediaUpload`).
 closed with `RATE_LIMIT_UNAVAILABLE`, because the lazy, no-offline-queue
 Redis connection was opened only by a caller that saw status `wait`;
 callers arriving while it was `connecting` sent into an unwritable stream.
-`platform/redis-ready.ts` now makes them wait (bounded, 2 s) for `ready`, in
+`platform/db/redis-ready.ts` now makes them wait (bounded, 2 s) for `ready`, in
 the rate limiter, the readiness probe, and realtime publishing (an
 integration test reproduces the cold start).
 

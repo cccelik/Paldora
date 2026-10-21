@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  activeMembership,
   boxMemberships,
-  boxes,
   lifeUpdateDeliveries,
   lifeUpdateMedia,
   lifeUpdates,
@@ -11,14 +11,14 @@ import {
   type PaldoraDatabase,
 } from '@paldora/database';
 import type { LifeUpdateView, NewLifeUpdate } from '@paldora/validation';
-import { and, asc, eq, inArray } from 'drizzle-orm';
-import { boxArchived, boxNotFound } from '../boxes/box-errors.js';
+import { inArray } from 'drizzle-orm';
+import { boxNotFound } from '../boxes/box-errors.js';
+import { lockOpenBoxes } from '../boxes/box-lock.js';
 import { mediaNotFound } from '../media/media-errors.js';
 import { assertPhotosUsable } from '../media/photo-claim.js';
-import { isUniqueViolation } from '../platform/database-errors.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
-import { boxChannel, RealtimeBus } from '../realtime/realtime-bus.js';
+import { isUniqueViolation } from '../platform/db/database-errors.js';
+import { DATABASE } from '../platform/config/tokens.js';
+import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { lifeUpdateNotFound } from './life-update-errors.js';
 import { LifeUpdateViewService } from './life-update-view.service.js';
 
@@ -49,15 +49,11 @@ export const usedByLifeUpdates = async (
 @Injectable()
 export class LifeUpdatePublishService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(LifeUpdateViewService)
     private readonly views: LifeUpdateViewService,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   public async create(
     authorId: string,
@@ -89,7 +85,8 @@ export class LifeUpdatePublishService {
           throw mediaNotFound();
         throw error;
       });
-    await this.announce(published.deliveries);
+    // After commit and best effort; IDs only. Only Me publishes nothing.
+    await this.bus.announceDeliveries('post.created', published.deliveries);
     const view = (await this.views.byIds(authorId, [published.id])).views.get(
       published.id,
     );
@@ -113,22 +110,9 @@ export class LifeUpdatePublishService {
     const memberships = await transaction
       .select({ boxId: boxMemberships.boxId })
       .from(boxMemberships)
-      .where(
-        and(
-          inArray(boxMemberships.boxId, [...boxIds]),
-          eq(boxMemberships.userId, authorId),
-          eq(boxMemberships.status, 'active'),
-        ),
-      );
+      .where(activeMembership(boxIds, authorId));
     if (memberships.length !== boxIds.length) throw boxNotFound();
-    const locked = await transaction
-      .select({ id: boxes.id, status: boxes.status })
-      .from(boxes)
-      .where(inArray(boxes.id, [...boxIds]))
-      .orderBy(asc(boxes.id))
-      .for('share');
-    if (locked.length !== boxIds.length) throw boxNotFound();
-    if (locked.some((box) => box.status !== 'active')) throw boxArchived();
+    await lockOpenBoxes(transaction, boxIds);
   }
 
   private async insertUpdate(
@@ -204,19 +188,6 @@ export class LifeUpdatePublishService {
         mediaAssetId,
         position,
       })),
-    );
-  }
-
-  /** After commit and best effort; IDs only. Only Me publishes nothing. */
-  private async announce(deliveries: readonly Delivery[]): Promise<void> {
-    await Promise.all(
-      deliveries.map(({ boxId, postId }) =>
-        this.bus.publish(boxChannel(boxId), {
-          type: 'post.created',
-          boxId,
-          postId,
-        }),
-      ),
     );
   }
 }

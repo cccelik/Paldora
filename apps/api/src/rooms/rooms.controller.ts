@@ -8,7 +8,6 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import type { AuthenticatedPrincipal } from '@paldora/domain';
 import {
   roomContentQuerySchema,
   roomContentSummaryQuerySchema,
@@ -23,19 +22,19 @@ import {
   type UpdateRoomTopFriendsInput,
   type UpdateRoomWidgetsInput,
 } from '@paldora/validation';
+import { HOUR, type Principal } from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import {
   RateLimit,
   type RateLimitPolicy,
 } from '../platform/rate-limit/rate-limit.decorator.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
-import { RoomContentService } from './room-content.service.js';
-import { RoomTopFriendsService } from './room-top-friends.service.js';
-import { RoomUpdateService } from './room-update.service.js';
-import { RoomViewService } from './room-view.service.js';
-import { RoomWidgetService } from './room-widget.service.js';
+import { ZodPipe } from '../platform/http/zod.pipe.js';
+import { RoomContentService } from './services/room-content.service.js';
+import { RoomTopFriendsService } from './services/room-top-friends.service.js';
+import { RoomUpdateService } from './services/room-update.service.js';
+import { RoomViewService } from './services/room-view.service.js';
+import { RoomWidgetService } from './services/room-widget.service.js';
 
-type Principal = AuthenticatedPrincipal;
 const contentQuery = new ZodPipe(roomContentQuerySchema);
 const summaryQuery = new ZodPipe(roomContentSummaryQuerySchema);
 const photoQuery = new ZodPipe(roomPhotoQuerySchema);
@@ -44,7 +43,7 @@ const photoQuery = new ZodPipe(roomPhotoQuerySchema);
 const roomWrites: RateLimitPolicy = {
   scope: 'room-update',
   limit: 120,
-  windowSeconds: 3_600,
+  windowSeconds: HOUR,
 };
 
 /**

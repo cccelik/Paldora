@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  activeMembership,
   boxMemberships,
   boxes,
   mediaAssets,
@@ -25,7 +26,6 @@ import type {
 } from '@paldora/validation';
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { boxArchived, boxNotFound } from '../boxes/box-errors.js';
 import {
   assertWithinLimit,
@@ -34,10 +34,10 @@ import {
 import type { RateLimitPolicy } from '../platform/rate-limit/rate-limit.decorator.js';
 import type { RateLimiter } from '../platform/rate-limit/rate-limiter.js';
 import {
-  INFRASTRUCTURE,
+  DATABASE,
   OBJECT_STORAGE,
   RATE_LIMITER,
-} from '../platform/tokens.js';
+} from '../platform/config/tokens.js';
 import {
   mediaNotFound,
   storageUnavailable,
@@ -81,14 +81,10 @@ export const PURPOSE_UPLOAD_LIMITS: Readonly<
 @Injectable()
 export class MediaUploadService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
     @Inject(RATE_LIMITER) private readonly limiter: RateLimiter,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   public async create(
     userId: UserId,
@@ -153,13 +149,7 @@ export class MediaUploadService {
       .select({ status: boxes.status })
       .from(boxMemberships)
       .innerJoin(boxes, eq(boxes.id, boxMemberships.boxId))
-      .where(
-        and(
-          eq(boxMemberships.boxId, boxId),
-          eq(boxMemberships.userId, userId),
-          eq(boxMemberships.status, 'active'),
-        ),
-      )
+      .where(activeMembership(boxId, userId))
       .limit(1);
     if (!row) throw boxNotFound();
     if (row.status !== 'active') throw boxArchived();

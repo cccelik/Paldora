@@ -1,4 +1,5 @@
 import {
+  activeMembership,
   boxMemberships,
   boxes,
   hiddenByBlock,
@@ -8,7 +9,7 @@ import {
   type PostRow,
 } from '@paldora/database';
 import type { BoxStatus } from '@paldora/domain';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 /**
  * A post as one viewer relates to it. Interactions build on this, so it
@@ -45,14 +46,7 @@ export async function loadPostContext(
     })
     .from(posts)
     .innerJoin(boxes, eq(boxes.id, posts.boxId))
-    .innerJoin(
-      boxMemberships,
-      and(
-        eq(boxMemberships.boxId, posts.boxId),
-        eq(boxMemberships.userId, viewerId),
-        eq(boxMemberships.status, 'active'),
-      ),
-    )
+    .innerJoin(boxMemberships, activeMembership(posts.boxId, viewerId))
     .leftJoin(lifeUpdateDeliveries, eq(lifeUpdateDeliveries.postId, posts.id))
     .where(eq(posts.id, postId))
     .limit(1);

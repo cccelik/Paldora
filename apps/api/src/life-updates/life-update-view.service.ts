@@ -5,15 +5,15 @@ import {
   lifeUpdates,
   mediaAssets,
   type LifeUpdateRow,
+  type PaldoraDatabase,
 } from '@paldora/database';
 import type { LifeUpdateView } from '@paldora/validation';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
-import { InteractionSummaryService } from '../interactions/interaction-summary.service.js';
+import { InteractionSummaryService } from '../interactions/shared/interaction-summary.service.js';
 import { MediaUrlService } from '../media/media-urls.service.js';
 import { signPhotos } from '../media/signed-photos.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import {
   isVisible,
   loadContexts,
@@ -54,17 +54,13 @@ const groupContexts = (contexts: readonly AccessibleContext[]) => {
 @Injectable()
 export class LifeUpdateViewService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(ProfileSummaryService)
     private readonly people: ProfileSummaryService,
     @Inject(MediaUrlService) private readonly mediaUrls: MediaUrlService,
     @Inject(InteractionSummaryService)
     private readonly interactions: InteractionSummaryService,
   ) {}
-
-  private get database() {
-    return this.infrastructure.database;
-  }
 
   public async byIds(
     viewerId: string,

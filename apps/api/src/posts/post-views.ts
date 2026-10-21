@@ -6,6 +6,7 @@ import type {
   PostView,
   UserSummary,
 } from '@paldora/validation';
+import { isoOrNull } from '../platform/http/iso.js';
 import type { PostContext } from './post-context.js';
 
 export type { PostContext } from './post-context.js';
@@ -49,7 +50,7 @@ export function toPostView(
     content: post.content ?? '',
     media: [...media],
     createdAt: post.createdAt.toISOString(),
-    editedAt: post.editedAt?.toISOString() ?? null,
+    editedAt: isoOrNull(post.editedAt),
     canEdit:
       post.kind === 'post' &&
       post.authorUserId === viewerId &&

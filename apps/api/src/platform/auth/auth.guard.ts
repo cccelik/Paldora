@@ -5,9 +5,9 @@ import {
   type ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { authenticationRequired } from '../api-error.js';
-import type { PaldoraRequest } from '../request-context.js';
-import { ACCESS_TOKEN_VERIFIER, PRINCIPAL_RESOLVER } from '../tokens.js';
+import { authenticationRequired } from '../http/api-error.js';
+import type { PaldoraRequest } from '../http/request-context.js';
+import { ACCESS_TOKEN_VERIFIER, PRINCIPAL_RESOLVER } from '../config/tokens.js';
 import type { AccessTokenVerifier } from './access-token-verifier.js';
 import type { PrincipalResolver } from './principal-resolver.js';
 import { IS_PUBLIC_KEY } from './public.decorator.js';

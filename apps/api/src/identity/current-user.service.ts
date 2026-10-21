@@ -11,8 +11,7 @@ import type { CurrentUser } from '@paldora/validation';
 import { and, eq, exists, gt, isNull, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { MediaUrlService } from '../media/media-urls.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 
 const newerAvatar = alias(mediaAssets, 'newer_avatar');
 
@@ -20,13 +19,9 @@ const newerAvatar = alias(mediaAssets, 'newer_avatar');
 @Injectable()
 export class CurrentUserService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(MediaUrlService) private readonly mediaUrls: MediaUrlService,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   public async load(userId: UserId): Promise<CurrentUser> {
     const [row] = await this.database

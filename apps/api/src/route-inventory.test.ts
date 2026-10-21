@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { apiRoutes } from '@paldora/validation';
 import { describe, expect, it } from 'vitest';
 import { AppModule } from './app.module.js';
-import { inventoryRoutes } from './platform/route-inventory.js';
+import { inventoryRoutes } from './platform/route-inventory/route-inventory.js';
 
 const routes = inventoryRoutes(AppModule);
 const contract = Object.values(apiRoutes);

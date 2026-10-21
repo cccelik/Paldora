@@ -7,44 +7,41 @@ import {
   type PaldoraDatabase,
 } from '@paldora/database';
 import type { BoxMemberView, BoxView } from '@paldora/validation';
-import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
 import {
-  afterCursor,
+  keysetWindow,
   cursorTimestamp,
   decodeCursor,
   pageOf,
   type Page,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+  type PageQuery,
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { boxNotFound } from './box-errors.js';
 import { BoxPolicyService } from './box-policy.service.js';
 import { loadBoxView, memberCounts, toBoxView } from './box-views.js';
 
-export interface PageQuery {
-  readonly cursor?: string | undefined;
-  readonly limit: number;
-}
-
 @Injectable()
 export class BoxQueryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(ProfileSummaryService)
     private readonly summaries: ProfileSummaryService,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   /** The viewer's active Boxes, newest membership first. */
   public async list(
     viewerId: string,
     query: PageQuery,
   ): Promise<Page<BoxView>> {
+    const keyset = keysetWindow(
+      boxMemberships.joinedAt,
+      boxes.id,
+      decodeCursor(query.cursor),
+      'desc',
+    );
     const rows = await this.database
       .select({
         box: boxes,
@@ -57,15 +54,10 @@ export class BoxQueryService {
         and(
           eq(boxMemberships.userId, viewerId),
           eq(boxMemberships.status, 'active'),
-          afterCursor(
-            boxMemberships.joinedAt,
-            boxes.id,
-            decodeCursor(query.cursor),
-            'desc',
-          ),
+          keyset.after,
         ),
       )
-      .orderBy(desc(boxMemberships.joinedAt), desc(boxes.id))
+      .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     const counts = await memberCounts(
       this.database,
@@ -97,6 +89,12 @@ export class BoxQueryService {
     query: PageQuery,
   ): Promise<Page<BoxMemberView>> {
     await this.policy.membership(viewerId, boxId);
+    const keyset = keysetWindow(
+      boxMemberships.joinedAt,
+      boxMemberships.userId,
+      decodeCursor(query.cursor),
+      'asc',
+    );
     const rows = await this.database
       .select({
         membership: boxMemberships,
@@ -111,15 +109,10 @@ export class BoxQueryService {
           eq(boxMemberships.status, 'active'),
           eq(users.status, 'active'),
           isNotNull(profiles.username),
-          afterCursor(
-            boxMemberships.joinedAt,
-            boxMemberships.userId,
-            decodeCursor(query.cursor),
-            'asc',
-          ),
+          keyset.after,
         ),
       )
-      .orderBy(asc(boxMemberships.joinedAt), asc(boxMemberships.userId))
+      .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     const people = await this.summaries.summaries(
       rows.map((row) => row.membership.userId),

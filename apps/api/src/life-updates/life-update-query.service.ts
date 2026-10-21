@@ -1,28 +1,23 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { lifeUpdates } from '@paldora/database';
+import { lifeUpdates, type PaldoraDatabase } from '@paldora/database';
 import type { LifeUpdateView } from '@paldora/validation';
-import { and, desc, eq } from 'drizzle-orm';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
+import { and, eq } from 'drizzle-orm';
 import {
-  afterCursor,
+  keysetWindow,
   cursorTimestamp,
   decodeCursor,
   encodeCursor,
   type Page,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+  type PageQuery,
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { lifeUpdateNotFound } from './life-update-errors.js';
 import { LifeUpdateViewService } from './life-update-view.service.js';
-
-export interface PageQuery {
-  readonly cursor?: string | undefined;
-  readonly limit: number;
-}
 
 @Injectable()
 export class LifeUpdateQueryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(LifeUpdateViewService)
     private readonly views: LifeUpdateViewService,
   ) {}
@@ -48,7 +43,13 @@ export class LifeUpdateQueryService {
     viewerId: string,
     query: PageQuery,
   ): Promise<Page<LifeUpdateView>> {
-    const rows = await this.infrastructure.database
+    const keyset = keysetWindow(
+      lifeUpdates.createdAt,
+      lifeUpdates.id,
+      decodeCursor(query.cursor),
+      'desc',
+    );
+    const rows = await this.database
       .select({
         id: lifeUpdates.id,
         cursorAt: cursorTimestamp(lifeUpdates.createdAt),
@@ -58,15 +59,10 @@ export class LifeUpdateQueryService {
         and(
           eq(lifeUpdates.authorUserId, viewerId),
           eq(lifeUpdates.status, 'active'),
-          afterCursor(
-            lifeUpdates.createdAt,
-            lifeUpdates.id,
-            decodeCursor(query.cursor),
-            'desc',
-          ),
+          keyset.after,
         ),
       )
-      .orderBy(desc(lifeUpdates.createdAt), desc(lifeUpdates.id))
+      .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     const page = rows.slice(0, query.limit);
     const { views } = await this.views.byIds(

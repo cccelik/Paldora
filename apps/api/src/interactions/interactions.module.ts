@@ -2,15 +2,15 @@ import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
 import { MediaModule } from '../media/media.module.js';
 import { RealtimeModule } from '../realtime/realtime.module.js';
-import { CommentQueryService } from './comment-query.service.js';
-import { CommentReactionService } from './comment-reaction.service.js';
-import { CommentService } from './comment.service.js';
-import { CommentsController } from './comments.controller.js';
-import { InteractionPolicyService } from './interaction-policy.service.js';
-import { InteractionSummaryService } from './interaction-summary.service.js';
-import { PostReactionService } from './post-reaction.service.js';
-import { ReactionQueryService } from './reaction-query.service.js';
-import { ReactionsController } from './reactions.controller.js';
+import { CommentQueryService } from './comments/comment-query.service.js';
+import { CommentReactionService } from './reactions/comment-reaction.service.js';
+import { CommentService } from './comments/comment.service.js';
+import { CommentsController } from './comments/comments.controller.js';
+import { InteractionPolicyService } from './shared/interaction-policy.service.js';
+import { InteractionSummaryService } from './shared/interaction-summary.service.js';
+import { PostReactionService } from './reactions/post-reaction.service.js';
+import { ReactionQueryService } from './reactions/reaction-query.service.js';
+import { ReactionsController } from './reactions/reactions.controller.js';
 
 /**
  * Comments and reactions on posts. Access always starts from the post's

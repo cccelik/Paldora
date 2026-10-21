@@ -60,6 +60,35 @@ apps/* ─> config, observability, database, storage, tokens
   resolves the internal user, so feature modules receive a principal and never
   see the identity provider.
 
+## API source layout
+
+`apps/api/src` has one folder per Nest module (`identity`, `media`, `social`,
+`boxes`, `posts`, `interactions`, `life-updates`, `memories`, `notifications`,
+`realtime`, `rooms`) plus `platform`, `provisioning`, and `test-support`
+(integration-test helpers, excluded from the build). Large modules have
+subfolders; the module graph is the same.
+
+| Folder                                      | Holds                                                                                                                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `platform/`                                 | `platform.module.ts` (global providers) and its HTTP-level test                                                                                                                                   |
+| `platform/config/`                          | DI tokens: `API_ENVIRONMENT`, `LOGGER`, `INFRASTRUCTURE` (PostgreSQL + Redis), `DATABASE` (PostgreSQL only), and others                                                                           |
+| `platform/http/`                            | `ApiError` + `defineError`, the exception filter, request context, `ZodPipe`, `uuidParam`, `isoOrNull`, health, and `controller-support.ts` (`Principal`, `PageQuery`, `cursorPageQuery`, `HOUR`) |
+| `platform/auth/`                            | Token verifier, principal resolver, global guard, `@Public()`, `@CurrentPrincipal()`                                                                                                              |
+| `platform/rate-limit/`                      | `@RateLimit` / `@RateLimitExempt`, the guard, the Redis limiter, `assertWithinLimit`                                                                                                              |
+| `platform/pagination/`                      | Cursors, `afterCursor`, `keysetWindow` (condition and order from one column pair), `pageOf`, `PageQuery`                                                                                          |
+| `platform/db/`                              | `InfrastructureService`, Redis readiness, PostgreSQL error classifiers                                                                                                                            |
+| `platform/route-inventory/`                 | The static route list the root `route-inventory.test.ts` checks against the contract                                                                                                              |
+| `interactions/{comments,reactions,shared}/` | Comment and reaction services and controllers; `shared` has the policy, summaries, activity events, erasure                                                                                       |
+| `rooms/{services,records}/`                 | Room services (and their integration tests); records, settings, views, banner, and Top Friends reads                                                                                              |
+
+Shared rules live in one place: `activeMembership` (and `hiddenByBlock`) in
+`@paldora/database`; `lockOpenBox` / `lockOpenBoxes` in `boxes/box-lock.ts`
+(Box rows `FOR SHARE`, several in ascending ID order), which posts,
+interactions, and Life Updates call as plain functions, like
+`posts/post-context.ts`; and `RealtimeBus.boxEvent` / `announceDeliveries` /
+`userEvent` for every hint. Services that need only PostgreSQL inject
+`DATABASE`; Redis users inject `INFRASTRUCTURE`.
+
 ## Media flow (R4, ADR 011)
 
 ```text

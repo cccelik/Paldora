@@ -12,8 +12,7 @@ import {
 } from '@paldora/domain';
 import type { BoxView } from '@paldora/validation';
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { RealtimeBus } from '../realtime/realtime-bus.js';
 import {
   boxAccessDenied,
@@ -37,13 +36,9 @@ interface LockedMember {
 @Injectable()
 export class BoxMemberService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   private async lockActive(
     transaction: DatabaseTransaction,

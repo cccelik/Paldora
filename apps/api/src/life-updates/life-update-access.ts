@@ -1,4 +1,5 @@
 import {
+  activeMembership,
   boxMemberships,
   boxes,
   lifeUpdateDeliveries,
@@ -53,11 +54,7 @@ export async function loadContexts(
     .innerJoin(boxes, eq(boxes.id, lifeUpdateDeliveries.boxId))
     .innerJoin(
       boxMemberships,
-      and(
-        eq(boxMemberships.boxId, lifeUpdateDeliveries.boxId),
-        eq(boxMemberships.userId, viewerId),
-        eq(boxMemberships.status, 'active'),
-      ),
+      activeMembership(lifeUpdateDeliveries.boxId, viewerId),
     )
     .where(
       and(

@@ -1,17 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { PaldoraDatabase } from '@paldora/database';
 import type { MemoryItemView, MemoryQuery } from '@paldora/validation';
 import { sql } from 'drizzle-orm';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
 import { LifeUpdateViewService } from '../life-updates/life-update-view.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
 import {
   afterCursor,
   cursorTimestamp,
   decodeCursor,
   encodeCursor,
   type Page,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { PostPageService } from '../posts/post-page.service.js';
 import { memoryCandidates, type MemoryScope } from './memory-candidates.js';
 import { memoryWindow } from './memory-window.js';
@@ -48,7 +48,7 @@ interface CandidateRow extends Record<string, unknown> {
 @Injectable()
 export class MemoryQueryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(BoxPolicyService) private readonly boxes: BoxPolicyService,
     @Inject(PostPageService) private readonly posts: PostPageService,
     @Inject(LifeUpdateViewService)
@@ -97,7 +97,7 @@ export class MemoryQueryService {
       decodeCursor(query.cursor),
       'desc',
     );
-    const { rows } = await this.infrastructure.database.execute<CandidateRow>(
+    const { rows } = await this.database.execute<CandidateRow>(
       sql`select c.item_kind, c.item_id, ${cursorTimestamp(sql`c.at`)} as cursor_at
         from (${candidates}) c
         ${after ? sql`where ${after}` : sql``}

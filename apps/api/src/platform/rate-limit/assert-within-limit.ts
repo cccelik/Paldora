@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ApiError } from '../api-error.js';
+import { ApiError } from '../http/api-error.js';
 import type { RateLimitPolicy } from './rate-limit.decorator.js';
 import type { RateLimitDecision, RateLimiter } from './rate-limiter.js';
 

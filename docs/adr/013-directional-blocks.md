@@ -75,7 +75,7 @@ tested in both directions with unblock and re-block:
 | Races                | A comment racing a block never becomes visible to the blocker                                                                                                |
 
 Tests: `apps/api/src/social/block.integration.test.ts`,
-`apps/api/src/interactions/reactions.integration.test.ts`,
+`apps/api/src/interactions/reactions/reactions.integration.test.ts`,
 `apps/api/src/notifications/notifications.integration.test.ts`, and
 `apps/worker/src/activity/projector.integration.test.ts`. Still to do: Life
 Updates (6), Rooms and Top Friends (7).
@@ -119,8 +119,8 @@ directions with unblock and re-block:
 | Unblock                             | The Room follows its normal visibility again; removed Top Friends are not restored (the friendship is gone)                                                      |
 
 Tests: `apps/api/src/social/block.integration.test.ts` ("Rooms and Top
-Friends across a block"), `apps/api/src/rooms/room-access.integration.test.ts`
-(parity), `apps/api/src/rooms/room-top-friends.integration.test.ts` (races),
+Friends across a block"), `apps/api/src/rooms/services/room-access.integration.test.ts`
+(parity), `apps/api/src/rooms/services/room-top-friends.integration.test.ts` (races),
 `packages/database/src/schema.integration.test.ts` (triggers), and the
 full-stack `apps/web/e2e/full-stack/{rooms,room-customize}.spec.ts`. The
 matrix now covers every Phase 1–7 surface.

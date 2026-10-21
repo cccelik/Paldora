@@ -23,15 +23,21 @@ import {
 } from '@paldora/validation';
 import { and, eq, inArray, not } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { client, errorOf, expectError, json, ok } from '../testing/http.js';
-import { lifeUpdateTools } from '../testing/life-updates.js';
-import { notificationTools } from '../testing/notifications.js';
-import { scenes } from '../testing/scenes.js';
+import {
+  client,
+  errorOf,
+  expectError,
+  json,
+  ok,
+} from '../test-support/http.js';
+import { lifeUpdateTools } from '../test-support/life-updates.js';
+import { notificationTools } from '../test-support/notifications.js';
+import { scenes } from '../test-support/scenes.js';
 import {
   createTestApp,
   type TestApp,
   type TestUser,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 /**
  * ADR 013 authorization matrix for Phase 2. Rows are the things a person can

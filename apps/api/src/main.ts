@@ -5,7 +5,7 @@ import type { ApiEnvironment } from '@paldora/config';
 import type { Logger } from '@paldora/observability';
 import { AppModule } from './app.module.js';
 import { configureApp } from './configure-app.js';
-import { API_ENVIRONMENT, LOGGER } from './platform/tokens.js';
+import { API_ENVIRONMENT, LOGGER } from './platform/config/tokens.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {

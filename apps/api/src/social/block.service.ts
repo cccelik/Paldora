@@ -9,43 +9,44 @@ import {
   type PaldoraDatabase,
 } from '@paldora/database';
 import type { BlockedUserView } from '@paldora/validation';
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { BoxInvitationService } from '../boxes/box-invitation.service.js';
 import {
   UserDirectoryService,
   userNotFound,
 } from '../identity/user-directory.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
 import {
-  afterCursor,
+  keysetWindow,
   cursorTimestamp,
   decodeCursor,
   pageOf,
   type Page,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
-import type { PageQuery } from './friendship.service.js';
+  type PageQuery,
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { cannotBlockSelf } from './social-errors.js';
 
 @Injectable()
 export class BlockService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(UserDirectoryService)
     private readonly directory: UserDirectoryService,
     @Inject(BoxInvitationService)
     private readonly boxInvitations: BoxInvitationService,
   ) {}
 
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
-
   /** Only the blocker's own blocks are ever listed. */
   public async list(
     viewerId: string,
     query: PageQuery,
   ): Promise<Page<BlockedUserView>> {
+    const keyset = keysetWindow(
+      userBlocks.createdAt,
+      userBlocks.blockedId,
+      decodeCursor(query.cursor),
+      'desc',
+    );
     const rows = await this.database
       .select({
         block: userBlocks,
@@ -60,15 +61,10 @@ export class BlockService {
         and(
           eq(userBlocks.blockerId, viewerId),
           isNotNull(profiles.username),
-          afterCursor(
-            userBlocks.createdAt,
-            userBlocks.blockedId,
-            decodeCursor(query.cursor),
-            'desc',
-          ),
+          keyset.after,
         ),
       )
-      .orderBy(desc(userBlocks.createdAt), desc(userBlocks.blockedId))
+      .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     return pageOf(
       rows,

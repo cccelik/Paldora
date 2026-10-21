@@ -12,22 +12,22 @@ import {
 } from '@paldora/database';
 import type { FriendshipDirection } from '@paldora/domain';
 import type { FriendshipView, UserSummary } from '@paldora/validation';
-import { and, desc, eq, isNotNull, not, or, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, not, or, sql } from 'drizzle-orm';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
 import {
   userNotFound,
   UserDirectoryService,
 } from '../identity/user-directory.service.js';
-import { isUniqueViolation } from '../platform/database-errors.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
+import { isUniqueViolation } from '../platform/db/database-errors.js';
 import {
-  afterCursor,
+  keysetWindow,
   cursorTimestamp,
   decodeCursor,
   pageOf,
   type Page,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+  type PageQuery,
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import {
   alreadyFriends,
   cannotFriendSelf,
@@ -35,11 +35,6 @@ import {
   friendshipNotFound,
   requestAlreadyPending,
 } from './social-errors.js';
-
-export interface PageQuery {
-  readonly cursor?: string | undefined;
-  readonly limit: number;
-}
 
 function directionOf(
   row: FriendshipRow,
@@ -70,16 +65,12 @@ const otherPartyOf = (row: FriendshipRow, viewerId: string): string =>
 @Injectable()
 export class FriendshipService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(UserDirectoryService)
     private readonly directory: UserDirectoryService,
     @Inject(ProfileSummaryService)
     private readonly summaries: ProfileSummaryService,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   public friends(
     viewerId: string,
@@ -106,6 +97,12 @@ export class FriendshipService {
   ): Promise<Page<FriendshipView>> {
     const otherId = sql<string>`case when ${friendships.userLowId} = ${viewerId}::uuid
       then ${friendships.userHighId} else ${friendships.userLowId} end`;
+    const keyset = keysetWindow(
+      friendships.updatedAt,
+      friendships.id,
+      decodeCursor(query.cursor),
+      'desc',
+    );
     const rows = await this.database
       .select({
         friendship: friendships,
@@ -125,15 +122,10 @@ export class FriendshipService {
           eq(users.status, 'active'),
           isNotNull(profiles.username),
           not(hiddenByBlock(viewerId, users.id)),
-          afterCursor(
-            friendships.updatedAt,
-            friendships.id,
-            decodeCursor(query.cursor),
-            'desc',
-          ),
+          keyset.after,
         ),
       )
-      .orderBy(desc(friendships.updatedAt), desc(friendships.id))
+      .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     const people = await this.summaries.summaries(
       rows.map((row) => row.otherId),

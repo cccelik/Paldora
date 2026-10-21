@@ -11,6 +11,7 @@ import type {
   PostMediaView,
   UserSummary,
 } from '@paldora/validation';
+import { isoOrNull } from '../platform/http/iso.js';
 import { mayEdit, type AccessibleContext } from './life-update-access.js';
 
 /** Non-empty sections in the canonical order, with their shared labels. */
@@ -78,7 +79,7 @@ export function toLifeUpdateView(parts: LifeUpdateParts): LifeUpdateView {
     sections: toSections(update.sections),
     media: [...parts.media],
     createdAt: update.createdAt.toISOString(),
-    editedAt: update.editedAt?.toISOString() ?? null,
+    editedAt: isoOrNull(update.editedAt),
     canEdit: mayEdit(update, parts.viewerId, contexts),
     contexts: sortContexts(views),
   };

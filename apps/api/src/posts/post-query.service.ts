@@ -1,34 +1,31 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  activeMembership,
   boxMemberships,
   boxes,
   hiddenByBlock,
   lifeUpdateDeliveries,
   posts,
   representativeDelivery,
+  type PaldoraDatabase,
 } from '@paldora/database';
 import type { FeedItemView } from '@paldora/validation';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
 import { LifeUpdateViewService } from '../life-updates/life-update-view.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
 import {
-  afterCursor,
+  keysetWindow,
   cursorTimestamp,
   decodeCursor,
   pageOf,
   type Page,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+  type PageQuery,
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { isReadable, loadPostContext } from './post-context.js';
 import { postNotFound } from './post-errors.js';
 import { PostPageService } from './post-page.service.js';
 import { toFeedItem } from './post-views.js';
-
-export interface PageQuery {
-  readonly cursor?: string | undefined;
-  readonly limit: number;
-}
 
 /**
  * Feeds are fan-out-on-read and strictly chronological: the viewer's active
@@ -42,7 +39,7 @@ export interface PageQuery {
 @Injectable()
 export class PostQueryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(PostPageService) private readonly pages: PostPageService,
     @Inject(LifeUpdateViewService)
@@ -71,7 +68,13 @@ export class PostQueryService {
     boxId: string | undefined,
     query: PageQuery,
   ): Promise<Page<FeedItemView>> {
-    const rows = await this.infrastructure.database
+    const keyset = keysetWindow(
+      posts.createdAt,
+      posts.id,
+      decodeCursor(query.cursor),
+      'desc',
+    );
+    const rows = await this.database
       .select({
         post: posts,
         boxName: boxes.name,
@@ -82,14 +85,7 @@ export class PostQueryService {
       })
       .from(posts)
       .innerJoin(boxes, eq(boxes.id, posts.boxId))
-      .innerJoin(
-        boxMemberships,
-        and(
-          eq(boxMemberships.boxId, posts.boxId),
-          eq(boxMemberships.userId, viewerId),
-          eq(boxMemberships.status, 'active'),
-        ),
-      )
+      .innerJoin(boxMemberships, activeMembership(posts.boxId, viewerId))
       .leftJoin(lifeUpdateDeliveries, eq(lifeUpdateDeliveries.postId, posts.id))
       .where(
         and(
@@ -97,15 +93,10 @@ export class PostQueryService {
           boxId === undefined
             ? representativeDelivery(viewerId)
             : eq(posts.boxId, boxId),
-          afterCursor(
-            posts.createdAt,
-            posts.id,
-            decodeCursor(query.cursor),
-            'desc',
-          ),
+          keyset.after,
         ),
       )
-      .orderBy(desc(posts.createdAt), desc(posts.id))
+      .orderBy(...keyset.orderBy)
       .limit(query.limit + 1);
     // Authors, photos, and interactions only for rows the viewer may see;
     // Life Updates are assembled (batched) by their own read side.
@@ -143,11 +134,7 @@ export class PostQueryService {
   }
 
   public async get(viewerId: string, postId: string) {
-    const context = await loadPostContext(
-      this.infrastructure.database,
-      viewerId,
-      postId,
-    );
+    const context = await loadPostContext(this.database, viewerId, postId);
     if (!isReadable(context)) throw postNotFound();
     const { post } = context;
     // A backing post has no content or photos of its own to load.

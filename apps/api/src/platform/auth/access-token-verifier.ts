@@ -5,7 +5,7 @@ import {
   type JWTPayload,
   type JWTVerifyGetKey,
 } from 'jose';
-import { authenticationRequired } from '../api-error.js';
+import { authenticationRequired } from '../http/api-error.js';
 
 export interface AccessTokenVerifier {
   /** Resolves the identity or throws `AUTHENTICATION_REQUIRED`. */

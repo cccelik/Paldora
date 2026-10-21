@@ -1,14 +1,13 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { users } from '@paldora/database';
+import { users, type PaldoraDatabase } from '@paldora/database';
 import type {
   AuthenticatedPrincipal,
   UserId,
   VerifiedIdentity,
 } from '@paldora/domain';
 import { eq } from 'drizzle-orm';
-import { ApiError } from '../api-error.js';
-import type { Infrastructure } from '../infrastructure.service.js';
-import { INFRASTRUCTURE } from '../tokens.js';
+import { defineError } from '../http/api-error.js';
+import { DATABASE } from '../config/tokens.js';
 
 export interface PrincipalResolver {
   /**
@@ -18,19 +17,17 @@ export interface PrincipalResolver {
   resolve(identity: VerifiedIdentity): Promise<AuthenticatedPrincipal>;
 }
 
-export const accountNotProvisioned = () =>
-  new ApiError(
-    HttpStatus.FORBIDDEN,
-    'ACCOUNT_NOT_PROVISIONED',
-    'This account has not been set up for Paldora.',
-  );
+export const accountNotProvisioned = defineError(
+  HttpStatus.FORBIDDEN,
+  'ACCOUNT_NOT_PROVISIONED',
+  'This account has not been set up for Paldora.',
+);
 
-export const accountBlocked = () =>
-  new ApiError(
-    HttpStatus.FORBIDDEN,
-    'ACCOUNT_BLOCKED',
-    'This account is not available.',
-  );
+export const accountBlocked = defineError(
+  HttpStatus.FORBIDDEN,
+  'ACCOUNT_BLOCKED',
+  'This account is not available.',
+);
 
 /**
  * One indexed lookup per request. Status is read fresh every time, so a
@@ -39,13 +36,13 @@ export const accountBlocked = () =>
 @Injectable()
 export class DatabasePrincipalResolver implements PrincipalResolver {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
   ) {}
 
   public async resolve(
     identity: VerifiedIdentity,
   ): Promise<AuthenticatedPrincipal> {
-    const [user] = await this.infrastructure.database
+    const [user] = await this.database
       .select({ id: users.id, status: users.status })
       .from(users)
       .where(eq(users.authSubject, identity.subject))

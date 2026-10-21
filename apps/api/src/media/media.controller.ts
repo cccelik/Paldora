@@ -14,9 +14,10 @@ import {
   uuidSchema,
   type CreateMediaUploadInput,
 } from '@paldora/validation';
+import { HOUR } from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import { RateLimit } from '../platform/rate-limit/rate-limit.decorator.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
+import { ZodPipe } from '../platform/http/zod.pipe.js';
 import { MediaUploadService } from './media-upload.service.js';
 
 const mediaAssetIdPipe = new ZodPipe(uuidSchema);
@@ -28,7 +29,7 @@ export class MediaController {
   ) {}
 
   @Post('uploads')
-  @RateLimit({ scope: 'media-upload', limit: 480, windowSeconds: 3_600 })
+  @RateLimit({ scope: 'media-upload', limit: 480, windowSeconds: HOUR })
   public create(
     @CurrentPrincipal() principal: AuthenticatedPrincipal,
     @Body(new ZodPipe(createMediaUploadSchema)) body: CreateMediaUploadInput,
@@ -41,7 +42,7 @@ export class MediaController {
   @RateLimit({
     scope: 'media-upload-complete',
     limit: 480,
-    windowSeconds: 3_600,
+    windowSeconds: HOUR,
   })
   public complete(
     @CurrentPrincipal() principal: AuthenticatedPrincipal,

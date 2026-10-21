@@ -42,7 +42,9 @@ export const mediaDeletionJob = (
  * Tombstones assets and queues deletion of every object they own, in the
  * caller's transaction. Keys are snapshotted now, so a later cascade or
  * update cannot lose track of an object (R4). The caller locks the rows
- * (`FOR UPDATE`) first. Shared by the API and the worker's reaper.
+ * (`FOR UPDATE`) first. Keys the worker has not yet recorded (derivatives
+ * of an upload still being processed) are removed by the worker itself when
+ * it finds the asset retired. Shared by the API and the worker's reaper.
  */
 export async function retireMediaAssets(
   executor: DatabaseExecutor,

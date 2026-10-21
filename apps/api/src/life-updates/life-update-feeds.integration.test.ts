@@ -14,15 +14,15 @@ import {
 import { eq, inArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { expectError, json, ok } from '../testing/http.js';
-import { lifeUpdateTools } from '../testing/life-updates.js';
-import { countQueries } from '../testing/query-count.js';
-import { scenes } from '../testing/scenes.js';
+import { expectError, json, ok } from '../test-support/http.js';
+import { lifeUpdateTools } from '../test-support/life-updates.js';
+import { countQueries } from '../test-support/query-count.js';
+import { scenes } from '../test-support/scenes.js';
 import {
   createTestApp,
   type TestApp,
   type TestUser,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 let app: TestApp;
 let scene: ReturnType<typeof scenes>;

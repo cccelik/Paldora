@@ -1,10 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { mediaAssets, profiles, users } from '@paldora/database';
+import {
+  mediaAssets,
+  profiles,
+  users,
+  type PaldoraDatabase,
+} from '@paldora/database';
 import type { UserSummary } from '@paldora/validation';
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import { MediaUrlService } from '../media/media-urls.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 
 /**
  * Turns user IDs into the public face of a person: name, username, and a
@@ -15,7 +19,7 @@ import { INFRASTRUCTURE } from '../platform/tokens.js';
 @Injectable()
 export class ProfileSummaryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(MediaUrlService) private readonly mediaUrls: MediaUrlService,
   ) {}
 
@@ -25,7 +29,7 @@ export class ProfileSummaryService {
   ): Promise<Map<string, UserSummary>> {
     const unique = [...new Set(userIds)];
     if (unique.length === 0) return new Map();
-    const rows = await this.infrastructure.database
+    const rows = await this.database
       .select({
         id: users.id,
         username: profiles.username,

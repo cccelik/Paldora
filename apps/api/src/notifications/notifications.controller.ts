@@ -8,23 +8,23 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import type { AuthenticatedPrincipal } from '@paldora/domain';
-import { cursorPageQuerySchema } from '@paldora/validation';
-import type { z } from 'zod';
+import {
+  cursorPageQuery,
+  HOUR,
+  type PageQuery,
+  type Principal,
+} from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import { RateLimit } from '../platform/rate-limit/rate-limit.decorator.js';
-import { uuidParam } from '../platform/uuid-param.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
+import { uuidParam } from '../platform/http/uuid-param.js';
 import { NotificationQueryService } from './notification-query.service.js';
 import { NotificationService } from './notification.service.js';
-
-type Principal = AuthenticatedPrincipal;
 
 /** Mark one and mark all share one scope: 600 per person per hour. */
 const readLimit = {
   scope: 'notification-read',
   limit: 600,
-  windowSeconds: 3_600,
+  windowSeconds: HOUR,
 } as const;
 
 @Controller('me/notifications')
@@ -39,8 +39,7 @@ export class NotificationsController {
   @Get()
   public list(
     @CurrentPrincipal() me: Principal,
-    @Query(new ZodPipe(cursorPageQuerySchema))
-    query: z.output<typeof cursorPageQuerySchema>,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.queries.list(me.userId, query);
   }

@@ -6,13 +6,16 @@ import {
   type PostView,
 } from '@paldora/validation';
 import { describe, expect, it } from 'vitest';
-import { relationshipFor, type AccessFacts } from './room-access.service.js';
-import { isShareable, toRoomPhotos } from './room-content-views.js';
-import { assertFresh, DEFAULT_ROOM_STATE } from './room-records.js';
-import { settingsChanges } from './room-settings.js';
-import { sameTopFriends } from './room-top-friends.service.js';
-import { sameWidgets } from './room-widget.service.js';
-import { mayViewTopFriends, toRoomView } from './room-views.js';
+import {
+  relationshipFor,
+  type AccessFacts,
+} from './services/room-access.service.js';
+import { isShareable, toRoomPhotos } from './records/room-content-views.js';
+import { assertFresh, DEFAULT_ROOM_STATE } from './records/room-records.js';
+import { settingsChanges } from './records/room-settings.js';
+import { sameTopFriends } from './services/room-top-friends.service.js';
+import { sameWidgets } from './services/room-widget.service.js';
+import { mayViewTopFriends, toRoomView } from './records/room-views.js';
 
 const none: AccessFacts = {
   isOwner: false,

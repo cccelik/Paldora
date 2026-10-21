@@ -8,30 +8,26 @@ import {
   postReactions,
   posts,
   type DatabaseExecutor,
+  type PaldoraDatabase,
 } from '@paldora/database';
 import {
   UNREAD_COUNT_CAP,
   type NotificationPage,
   type UnreadCount,
 } from '@paldora/validation';
-import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, count, eq, isNull, sql } from 'drizzle-orm';
 import { ProfileSummaryService } from '../identity/profile-summary.service.js';
 import { MediaUrlService } from '../media/media-urls.service.js';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
 import {
-  afterCursor,
+  keysetWindow,
   cursorTimestamp,
   decodeCursor,
   pageOf,
-} from '../platform/pagination.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+  type PageQuery,
+} from '../platform/pagination/pagination.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { toNotificationView } from './notification-views.js';
 import { visibleTo } from './notification-visibility.js';
-
-export interface NotificationPageQuery {
-  readonly cursor?: string | undefined;
-  readonly limit: number;
-}
 
 /**
  * Reading notifications. Every query applies `visibleTo`, so a row whose
@@ -43,22 +39,24 @@ export interface NotificationPageQuery {
 @Injectable()
 export class NotificationQueryService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(ProfileSummaryService)
     private readonly people: ProfileSummaryService,
     @Inject(MediaUrlService) private readonly mediaUrls: MediaUrlService,
   ) {}
 
-  private get database() {
-    return this.infrastructure.database;
-  }
-
   /** Newest first, keyset on (created_at, id), with the unread count. */
   public async list(
     viewerId: string,
-    query: NotificationPageQuery,
+    query: PageQuery,
   ): Promise<NotificationPage> {
     const cursor = decodeCursor(query.cursor);
+    const keyset = keysetWindow(
+      notifications.createdAt,
+      notifications.id,
+      cursor,
+      'desc',
+    );
     const [rows, unreadCount] = await Promise.all([
       this.database
         .select({
@@ -98,18 +96,8 @@ export class NotificationQueryService {
           ),
         )
         .leftJoin(mediaAssets, eq(mediaAssets.id, postReactions.mediaAssetId))
-        .where(
-          and(
-            visibleTo(viewerId),
-            afterCursor(
-              notifications.createdAt,
-              notifications.id,
-              cursor,
-              'desc',
-            ),
-          ),
-        )
-        .orderBy(desc(notifications.createdAt), desc(notifications.id))
+        .where(and(visibleTo(viewerId), keyset.after))
+        .orderBy(...keyset.orderBy)
         .limit(query.limit + 1),
       this.unreadCount(viewerId),
     ]);

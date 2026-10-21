@@ -11,25 +11,25 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import type { AuthenticatedPrincipal } from '@paldora/domain';
 import {
   createLifeUpdateSchema,
-  cursorPageQuerySchema,
   updateLifeUpdateSchema,
 } from '@paldora/validation';
 import type { z } from 'zod';
+import {
+  cursorPageQuery,
+  HOUR,
+  type PageQuery,
+  type Principal,
+} from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import { RateLimit } from '../platform/rate-limit/rate-limit.decorator.js';
-import { uuidParam } from '../platform/uuid-param.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
+import { uuidParam } from '../platform/http/uuid-param.js';
+import { ZodPipe } from '../platform/http/zod.pipe.js';
 import { LifeUpdateDeleteService } from './life-update-delete.service.js';
 import { LifeUpdateEditService } from './life-update-edit.service.js';
 import { LifeUpdatePublishService } from './life-update-publish.service.js';
 import { LifeUpdateQueryService } from './life-update-query.service.js';
-
-type Principal = AuthenticatedPrincipal;
-type PageQuery = z.output<typeof cursorPageQuerySchema>;
-const hour = 3_600;
 
 @Controller()
 export class LifeUpdatesController {
@@ -45,7 +45,7 @@ export class LifeUpdatesController {
   ) {}
 
   @Post('life-updates')
-  @RateLimit({ scope: 'life-update-create', limit: 30, windowSeconds: hour })
+  @RateLimit({ scope: 'life-update-create', limit: 30, windowSeconds: HOUR })
   public create(
     @CurrentPrincipal() me: Principal,
     @Body(new ZodPipe(createLifeUpdateSchema))
@@ -57,7 +57,7 @@ export class LifeUpdatesController {
   @Get('me/life-updates')
   public listMine(
     @CurrentPrincipal() me: Principal,
-    @Query(new ZodPipe(cursorPageQuerySchema)) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.queries.listMine(me.userId, query);
   }
@@ -71,7 +71,7 @@ export class LifeUpdatesController {
   }
 
   @Patch('life-updates/:lifeUpdateId')
-  @RateLimit({ scope: 'life-update-edit', limit: 30, windowSeconds: hour })
+  @RateLimit({ scope: 'life-update-edit', limit: 30, windowSeconds: HOUR })
   public update(
     @CurrentPrincipal() me: Principal,
     @Param('lifeUpdateId', uuidParam) lifeUpdateId: string,
@@ -83,7 +83,7 @@ export class LifeUpdatesController {
 
   @Delete('life-updates/:lifeUpdateId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RateLimit({ scope: 'life-update-delete', limit: 30, windowSeconds: hour })
+  @RateLimit({ scope: 'life-update-delete', limit: 30, windowSeconds: HOUR })
   public async remove(
     @CurrentPrincipal() me: Principal,
     @Param('lifeUpdateId', uuidParam) lifeUpdateId: string,

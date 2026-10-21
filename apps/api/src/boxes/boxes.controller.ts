@@ -12,34 +12,32 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import type { AuthenticatedPrincipal } from '@paldora/domain';
 import {
   createBoxInvitationSchema,
   createBoxSchema,
-  cursorPageQuerySchema,
   deleteBoxQuerySchema,
   transferBoxOwnershipSchema,
   updateBoxMemberSchema,
   updateBoxSchema,
 } from '@paldora/validation';
 import type { z } from 'zod';
+import {
+  cursorPageQuery,
+  HOUR,
+  type PageQuery,
+  type Principal,
+} from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import {
   RateLimit,
   RateLimitExempt,
 } from '../platform/rate-limit/rate-limit.decorator.js';
-import { uuidParam } from '../platform/uuid-param.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
+import { uuidParam } from '../platform/http/uuid-param.js';
+import { ZodPipe } from '../platform/http/zod.pipe.js';
 import { BoxInvitationService } from './box-invitation.service.js';
 import { BoxLifecycleService } from './box-lifecycle.service.js';
 import { BoxMemberService } from './box-member.service.js';
 import { BoxQueryService } from './box-query.service.js';
-
-type Principal = AuthenticatedPrincipal;
-type PageQuery = z.output<typeof cursorPageQuerySchema>;
-const pageQuery = new ZodPipe(cursorPageQuerySchema);
-
-const hour = 3_600;
 
 @Controller('boxes')
 export class BoxesController {
@@ -55,13 +53,13 @@ export class BoxesController {
   @Get()
   public list(
     @CurrentPrincipal() me: Principal,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.queries.list(me.userId, query);
   }
 
   @Post()
-  @RateLimit({ scope: 'box-create', limit: 20, windowSeconds: hour })
+  @RateLimit({ scope: 'box-create', limit: 20, windowSeconds: HOUR })
   public create(
     @CurrentPrincipal() me: Principal,
     @Body(new ZodPipe(createBoxSchema)) body: z.output<typeof createBoxSchema>,
@@ -78,7 +76,7 @@ export class BoxesController {
   }
 
   @Patch(':boxId')
-  @RateLimit({ scope: 'box-update', limit: 60, windowSeconds: hour })
+  @RateLimit({ scope: 'box-update', limit: 60, windowSeconds: HOUR })
   public update(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
@@ -89,7 +87,7 @@ export class BoxesController {
 
   @Delete(':boxId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RateLimit({ scope: 'box-delete', limit: 20, windowSeconds: hour })
+  @RateLimit({ scope: 'box-delete', limit: 20, windowSeconds: HOUR })
   public async remove(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
@@ -103,7 +101,7 @@ export class BoxesController {
   public listMembers(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.queries.members(me.userId, boxId, query);
   }
@@ -122,7 +120,7 @@ export class BoxesController {
   }
 
   @Patch(':boxId/members/:userId')
-  @RateLimit({ scope: 'box-member-update', limit: 120, windowSeconds: hour })
+  @RateLimit({ scope: 'box-member-update', limit: 120, windowSeconds: HOUR })
   public async changeRole(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
@@ -137,7 +135,7 @@ export class BoxesController {
 
   @Delete(':boxId/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RateLimit({ scope: 'box-member-remove', limit: 120, windowSeconds: hour })
+  @RateLimit({ scope: 'box-member-remove', limit: 120, windowSeconds: HOUR })
   public async removeMember(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
@@ -147,7 +145,7 @@ export class BoxesController {
   }
 
   @Put(':boxId/owner')
-  @RateLimit({ scope: 'box-transfer', limit: 20, windowSeconds: hour })
+  @RateLimit({ scope: 'box-transfer', limit: 20, windowSeconds: HOUR })
   public transfer(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
@@ -162,7 +160,7 @@ export class BoxesController {
   }
 
   @Post(':boxId/invitations')
-  @RateLimit({ scope: 'box-invite', limit: 60, windowSeconds: hour })
+  @RateLimit({ scope: 'box-invite', limit: 60, windowSeconds: HOUR })
   public invite(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
@@ -176,7 +174,7 @@ export class BoxesController {
   public listInvitations(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.invitations.listForBox(me.userId, boxId, query);
   }
@@ -204,7 +202,7 @@ export class BoxInvitationsController {
   @Get('me/box-invitations')
   public mine(
     @CurrentPrincipal() me: Principal,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.invitations.listMine(me.userId, query);
   }

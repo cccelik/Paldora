@@ -1,7 +1,7 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '@paldora/domain';
-import { authenticationRequired } from '../api-error.js';
-import type { PaldoraRequest } from '../request-context.js';
+import { authenticationRequired } from '../http/api-error.js';
+import type { PaldoraRequest } from '../http/request-context.js';
 
 /**
  * Injects the principal the global guard resolved. Throws if used on a

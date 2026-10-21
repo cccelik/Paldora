@@ -4,13 +4,12 @@ import {
   boxes,
   mediaAssets,
   type PaldoraDatabase,
+  retireMediaAssets,
 } from '@paldora/database';
 import type { BoxView, UpdateBoxInput } from '@paldora/validation';
 import { and, eq, ne } from 'drizzle-orm';
-import type { Infrastructure } from '../platform/infrastructure.service.js';
 import { tombstoneLifeUpdatesLosingLastBox } from '../life-updates/life-update-erasure.js';
-import { retireAssets } from '../media/media-retirement.js';
-import { INFRASTRUCTURE } from '../platform/tokens.js';
+import { DATABASE } from '../platform/config/tokens.js';
 import { RealtimeBus } from '../realtime/realtime-bus.js';
 import { boxNotFound, deleteConfirmationMismatch } from './box-errors.js';
 import { BoxPolicyService } from './box-policy.service.js';
@@ -19,14 +18,10 @@ import { loadBoxView, toBoxView } from './box-views.js';
 @Injectable()
 export class BoxLifecycleService {
   public constructor(
-    @Inject(INFRASTRUCTURE) private readonly infrastructure: Infrastructure,
+    @Inject(DATABASE) private readonly database: PaldoraDatabase,
     @Inject(BoxPolicyService) private readonly policy: BoxPolicyService,
     @Inject(RealtimeBus) private readonly bus: RealtimeBus,
   ) {}
-
-  private get database(): PaldoraDatabase {
-    return this.infrastructure.database;
-  }
 
   /** The Box and its owner membership appear together or not at all. */
   public async create(ownerId: string, name: string): Promise<BoxView> {
@@ -116,7 +111,7 @@ export class BoxLifecycleService {
           and(eq(mediaAssets.boxId, boxId), ne(mediaAssets.status, 'deleted')),
         )
         .for('update');
-      await retireAssets(transaction, photos);
+      await retireMediaAssets(transaction, photos);
       await transaction.delete(boxes).where(eq(boxes.id, boxId));
       return affected.map((row) => row.userId);
     });

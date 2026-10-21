@@ -11,7 +11,7 @@ import {
   createTestApp,
   uniqueUsername,
   type TestApp,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 let app: TestApp;
 

@@ -9,15 +9,15 @@ import { lifeUpdateSchema, type LifeUpdateView } from '@paldora/validation';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { openStream, type OpenStream } from '../testing/event-stream.js';
-import { expectError, json, ok } from '../testing/http.js';
-import { lifeUpdateTools } from '../testing/life-updates.js';
-import { scenes } from '../testing/scenes.js';
+import { openStream, type OpenStream } from '../test-support/event-stream.js';
+import { expectError, json, ok } from '../test-support/http.js';
+import { lifeUpdateTools } from '../test-support/life-updates.js';
+import { scenes } from '../test-support/scenes.js';
 import {
   createTestApp,
   type TestApp,
   type TestUser,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 let app: TestApp;
 let scene: ReturnType<typeof scenes>;

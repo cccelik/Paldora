@@ -11,25 +11,21 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import type { AuthenticatedPrincipal } from '@paldora/domain';
-import {
-  createPostSchema,
-  cursorPageQuerySchema,
-  updatePostSchema,
-} from '@paldora/validation';
+import { createPostSchema, updatePostSchema } from '@paldora/validation';
 import type { z } from 'zod';
+import {
+  cursorPageQuery,
+  HOUR,
+  type PageQuery,
+  type Principal,
+} from '../platform/http/controller-support.js';
 import { CurrentPrincipal } from '../platform/auth/current-principal.decorator.js';
 import { RateLimit } from '../platform/rate-limit/rate-limit.decorator.js';
-import { uuidParam } from '../platform/uuid-param.js';
-import { ZodPipe } from '../platform/zod.pipe.js';
+import { uuidParam } from '../platform/http/uuid-param.js';
+import { ZodPipe } from '../platform/http/zod.pipe.js';
 import { PostQueryService } from './post-query.service.js';
 import { PostService } from './post.service.js';
 import { toPostView } from './post-views.js';
-
-type Principal = AuthenticatedPrincipal;
-type PageQuery = z.output<typeof cursorPageQuerySchema>;
-const pageQuery = new ZodPipe(cursorPageQuerySchema);
-const hour = 3_600;
 
 @Controller()
 export class PostsController {
@@ -39,7 +35,7 @@ export class PostsController {
   ) {}
 
   @Post('boxes/:boxId/posts')
-  @RateLimit({ scope: 'post-create', limit: 120, windowSeconds: hour })
+  @RateLimit({ scope: 'post-create', limit: 120, windowSeconds: HOUR })
   public create(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
@@ -53,7 +49,7 @@ export class PostsController {
   public boxFeed(
     @CurrentPrincipal() me: Principal,
     @Param('boxId', uuidParam) boxId: string,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.queries.boxFeed(me.userId, boxId, query);
   }
@@ -61,7 +57,7 @@ export class PostsController {
   @Get('me/feed')
   public homeFeed(
     @CurrentPrincipal() me: Principal,
-    @Query(pageQuery) query: PageQuery,
+    @Query(cursorPageQuery) query: PageQuery,
   ) {
     return this.queries.homeFeed(me.userId, query);
   }
@@ -79,7 +75,7 @@ export class PostsController {
   }
 
   @Patch('posts/:postId')
-  @RateLimit({ scope: 'post-update', limit: 120, windowSeconds: hour })
+  @RateLimit({ scope: 'post-update', limit: 120, windowSeconds: HOUR })
   public update(
     @CurrentPrincipal() me: Principal,
     @Param('postId', uuidParam) postId: string,
@@ -91,7 +87,7 @@ export class PostsController {
 
   @Delete('posts/:postId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RateLimit({ scope: 'post-delete', limit: 60, windowSeconds: hour })
+  @RateLimit({ scope: 'post-delete', limit: 60, windowSeconds: HOUR })
   public async remove(
     @CurrentPrincipal() me: Principal,
     @Param('postId', uuidParam) postId: string,

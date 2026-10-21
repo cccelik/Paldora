@@ -14,12 +14,12 @@ import {
 import { eq, inArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { client, expectError, json, ok } from '../testing/http.js';
+import { client, expectError, json, ok } from '../test-support/http.js';
 import {
   createTestApp,
   type TestApp,
   type TestUser,
-} from '../testing/test-app.js';
+} from '../test-support/test-app.js';
 
 let app: TestApp;
 beforeAll(async () => {

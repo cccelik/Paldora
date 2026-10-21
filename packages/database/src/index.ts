@@ -49,5 +49,6 @@ export function createDatabaseConnection(
 export * from './schema.js';
 export * from './media-outbox.js';
 export * from './blocks.js';
+export * from './memberships.js';
 export * from './life-updates.js';
 export * from './rooms.js';
