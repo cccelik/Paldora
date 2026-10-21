@@ -69,6 +69,9 @@ export const API_ERROR_CODES = [
   'ROOM_NOT_FOUND',
   'ROOM_UPDATE_STALE',
   'TOP_FRIEND_NOT_ELIGIBLE',
+  // Private reports and staff-only case access (Phase 9).
+  'REPORT_NOT_FOUND',
+  'MODERATION_FORBIDDEN',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

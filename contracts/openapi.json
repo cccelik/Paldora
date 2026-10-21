@@ -3155,6 +3155,65 @@
         }
       }
     },
+    "/me/reports": {
+      "get": {
+        "operationId": "listMyReports",
+        "summary": "Private receipts owned by the reporter; no other reporter or case evidence.",
+        "tags": [
+          "Reports"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportReceiptPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/room": {
       "get": {
         "operationId": "getMyRoom",
@@ -4039,6 +4098,112 @@
         }
       }
     },
+    "/moderation/cases": {
+      "get": {
+        "operationId": "listModerationCases",
+        "summary": "Minimal newest-first case queue; explicit staff grant required.",
+        "tags": [
+          "Moderation"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationCasePage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, MODERATION_FORBIDDEN, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/cases/{caseId}": {
+      "get": {
+        "operationId": "getModerationCase",
+        "summary": "Staff-only case evidence read, recorded in the append-only audit.",
+        "tags": [
+          "Moderation"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationCase"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, MODERATION_FORBIDDEN, REPORT_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/posts/{postId}": {
       "delete": {
         "operationId": "deletePost",
@@ -4487,6 +4652,97 @@
           },
           "default": {
             "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, POST_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports": {
+      "post": {
+        "operationId": "createReport",
+        "summary": "Private allegation about a currently accessible active target. Duplicate submissions return the existing receipt. A missing or inaccessible target uses its ordinary absence response. Rate limited to 20 per hour.",
+        "tags": [
+          "Reports"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "targetKind": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "box",
+                      "post",
+                      "comment"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "harassment",
+                      "spam",
+                      "privacy",
+                      "other"
+                    ]
+                  },
+                  "detail": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "targetKind",
+                  "targetId",
+                  "category",
+                  "detail"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope. Possible codes: AUTHENTICATION_REQUIRED, ACCOUNT_NOT_PROVISIONED, ACCOUNT_BLOCKED, USER_NOT_FOUND, BOX_NOT_FOUND, POST_NOT_FOUND, COMMENT_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, RATE_LIMIT_UNAVAILABLE, INTERNAL_ERROR.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8758,6 +9014,180 @@
         ],
         "additionalProperties": false
       },
+      "ModerationCase": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "targetKind": {
+            "type": "string",
+            "enum": [
+              "user",
+              "box",
+              "post",
+              "comment"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "harassment",
+              "spam",
+              "privacy",
+              "other"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reporterUserId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "targetKind",
+          "targetId",
+          "category",
+          "status",
+          "createdAt",
+          "detail",
+          "reporterUserId",
+          "closedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ModerationCasePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ReportReceipt"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "ReportReceipt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "targetKind": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "box",
+                  "post",
+                  "comment"
+                ]
+              },
+              "targetId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "harassment",
+                  "spam",
+                  "privacy",
+                  "other"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "closed"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "required": [
+              "id",
+              "targetKind",
+              "targetId",
+              "category",
+              "status",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
       "NotificationPage": {
         "type": "object",
         "properties": {
@@ -9577,6 +10007,143 @@
           "at"
         ],
         "additionalProperties": false
+      },
+      "ReportReceipt": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "targetKind": {
+            "type": "string",
+            "enum": [
+              "user",
+              "box",
+              "post",
+              "comment"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "harassment",
+              "spam",
+              "privacy",
+              "other"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "id",
+          "targetKind",
+          "targetId",
+          "category",
+          "status",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "ReportReceiptPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ReportReceipt"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "ReportReceipt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "targetKind": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "box",
+                  "post",
+                  "comment"
+                ]
+              },
+              "targetId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "harassment",
+                  "spam",
+                  "privacy",
+                  "other"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "closed"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "required": [
+              "id",
+              "targetKind",
+              "targetId",
+              "category",
+              "status",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          }
+        }
       },
       "Room": {
         "type": "object",

@@ -3,6 +3,12 @@ import {
   getRoomPersonalization,
   updateMyRoomPersonalization,
 } from './personalization.js';
+import {
+  createReport,
+  listMyReports,
+  listModerationCases,
+  getModerationCase,
+} from './reports.js';
 import type { RouteDefinition } from '../route.js';
 import { getLiveness, getReadiness } from './platform.js';
 import {
@@ -113,9 +119,14 @@ export * from './notifications.js';
 export * from './life-updates.js';
 export * from './memories.js';
 export * from './rooms.js';
+export * from './reports.js';
 
 /** Every operation in the public contract. Add new routes here. */
 export const apiRoutes = {
+  createReport,
+  listMyReports,
+  listModerationCases,
+  getModerationCase,
   getMyRoomPersonalization,
   getRoomPersonalization,
   updateMyRoomPersonalization,

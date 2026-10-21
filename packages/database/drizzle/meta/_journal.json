@@ -71,6 +71,13 @@
       "when": 1792600123798,
       "tag": "0009_moderation_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792600510106,
+      "tag": "0010_reports",
+      "breakpoints": true
     }
   ]
 }

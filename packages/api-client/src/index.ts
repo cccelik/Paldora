@@ -17,6 +17,7 @@ import {
   type UpdateRoomWidgetsRequest,
   type RouteDefinition,
   type RouteResponse,
+  type CreateReportInput,
 } from '@paldora/validation';
 import type { z } from 'zod';
 
@@ -133,6 +134,22 @@ export class PaldoraApiClient {
 
   public currentUser() {
     return this.call(apiRoutes.getCurrentUser);
+  }
+
+  public createReport(body: CreateReportInput) {
+    return this.call(apiRoutes.createReport, { body });
+  }
+
+  public myReports(page: PageOptions = {}) {
+    return this.call(apiRoutes.listMyReports, { query: page });
+  }
+
+  public moderationCases(page: PageOptions = {}) {
+    return this.call(apiRoutes.listModerationCases, { query: page });
+  }
+
+  public moderationCase(caseId: string) {
+    return this.call(apiRoutes.getModerationCase, { params: { caseId } });
   }
 
   /** Accepts the wire input; the server validates and normalizes it. */

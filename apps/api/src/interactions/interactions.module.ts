@@ -29,6 +29,6 @@ import { ReactionsController } from './reactions/reactions.controller.js';
     CommentReactionService,
     ReactionQueryService,
   ],
-  exports: [InteractionSummaryService],
+  exports: [InteractionSummaryService, InteractionPolicyService],
 })
 export class InteractionsModule {}

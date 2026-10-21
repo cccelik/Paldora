@@ -1,0 +1,58 @@
+import { z } from 'zod';
+import {
+  cursorPageSchema,
+  isoTimestampSchema,
+  uuidSchema,
+} from './primitives.js';
+
+export const reportTargetKindSchema = z.enum([
+  'user',
+  'box',
+  'post',
+  'comment',
+]);
+export const reportCategorySchema = z.enum([
+  'harassment',
+  'spam',
+  'privacy',
+  'other',
+]);
+
+export const createReportSchema = z
+  .object({
+    targetKind: reportTargetKindSchema,
+    targetId: uuidSchema,
+    category: reportCategorySchema,
+    detail: z.string().trim().min(1).max(2000).nullable(),
+  })
+  .strict()
+  .meta({ id: 'CreateReport' });
+
+export const reportReceiptSchema = z
+  .object({
+    id: uuidSchema,
+    targetKind: reportTargetKindSchema,
+    targetId: uuidSchema,
+    category: reportCategorySchema,
+    status: z.enum(['open', 'closed']),
+    createdAt: isoTimestampSchema,
+  })
+  .meta({ id: 'ReportReceipt' });
+
+export const reportReceiptPageSchema = cursorPageSchema(
+  reportReceiptSchema,
+).meta({ id: 'ReportReceiptPage' });
+
+export const moderationCaseSchema = reportReceiptSchema
+  .extend({
+    detail: z.string().nullable(),
+    reporterUserId: uuidSchema.nullable(),
+    closedAt: isoTimestampSchema.nullable(),
+  })
+  .meta({ id: 'ModerationCase' });
+
+export const moderationCasePageSchema = cursorPageSchema(
+  reportReceiptSchema,
+).meta({ id: 'ModerationCasePage' });
+
+export type CreateReportInput = z.infer<typeof createReportSchema>;

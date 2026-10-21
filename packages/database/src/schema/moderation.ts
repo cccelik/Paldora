@@ -10,6 +10,66 @@ import {
 import { createdAt, paldoraSchema } from './_shared.js';
 import { users } from './identity.js';
 
+export const reportTargetKind = paldoraSchema.enum('report_target_kind', [
+  'user',
+  'box',
+  'post',
+  'comment',
+]);
+
+export const reportCategory = paldoraSchema.enum('report_category', [
+  'harassment',
+  'spam',
+  'privacy',
+  'other',
+]);
+
+export const reportStatus = paldoraSchema.enum('report_status', [
+  'open',
+  'closed',
+]);
+
+/** IDs remain after target deletion so the queue can close stale allegations. */
+export const userReports = paldoraSchema.table(
+  'user_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reporterUserId: uuid('reporter_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    targetKind: reportTargetKind('target_kind').notNull(),
+    targetId: uuid('target_id').notNull(),
+    category: reportCategory('category').notNull(),
+    detail: text('detail'),
+    status: reportStatus('status').notNull().default('open'),
+    createdAt: createdAt(),
+    closedAt: timestamp('closed_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('user_reports_reporter_target_unique')
+      .on(table.reporterUserId, table.targetKind, table.targetId)
+      .where(sql`${table.reporterUserId} is not null`),
+    index('user_reports_queue_index').on(
+      table.status,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    index('user_reports_reporter_index').on(
+      table.reporterUserId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    check(
+      'user_reports_detail_check',
+      sql`${table.detail} is null or char_length(${table.detail}) between 1 and 2000`,
+    ),
+    check(
+      'user_reports_closed_check',
+      sql`(${table.status} = 'closed') = (${table.closedAt} is not null)`,
+    ),
+  ],
+);
+
 export const staffRole = paldoraSchema.enum('staff_role', [
   'moderator',
   'administrator',

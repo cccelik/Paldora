@@ -1,5 +1,18 @@
 # Security
 
+## Phase 9 reporting foundation
+
+`POST /reports` accepts only a currently readable user, Box, post, or active
+comment. Missing IDs, blocks in either direction, former Box membership, and
+deleted content use the target's existing absence code. A reporter sees only
+their own opaque receipts through `GET /me/reports`; duplicates return the same
+receipt, and writes are limited to 20 per hour. The staff queue and case detail
+require an explicit `staff_grants` row; opening case detail appends a database-
+immutable audit event. Case detail and receipt responses are private/no-store.
+The [Phase 9 threat model](threat-models/phase-9-moderation-account-lifecycle.md)
+tracks the remaining takedown, suspension-stream, export, deletion, and hosted
+signup gates. Public signup remains disabled.
+
 Paldora is private by default, and authorization is deny-by-default. The
 non-negotiable invariants live in [CLAUDE.md §G](../CLAUDE.md). This page
 records the controls that are implemented and how each one is verified.

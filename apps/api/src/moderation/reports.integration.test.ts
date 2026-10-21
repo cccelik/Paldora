@@ -1,0 +1,148 @@
+import { moderationAudit, staffGrants, userReports } from '@paldora/database';
+import {
+  reportReceiptPageSchema,
+  reportReceiptSchema,
+} from '@paldora/validation';
+import { eq } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { expectError, json } from '../test-support/http.js';
+import { scenes } from '../test-support/scenes.js';
+import {
+  createTestApp,
+  type TestApp,
+  type TestUser,
+} from '../test-support/test-app.js';
+
+let app: TestApp;
+beforeAll(async () => {
+  app = await createTestApp();
+});
+afterAll(() => app.close());
+
+const as = (user: TestUser) => scenes(app).as(user);
+const report = (
+  targetKind: 'user' | 'box' | 'post' | 'comment',
+  targetId: string,
+) => ({
+  targetKind,
+  targetId,
+  category: 'harassment',
+  detail: 'This content needs a private review.',
+});
+
+describe('private reports and case access', () => {
+  it('returns one private receipt for a visible user, and only staff can open it', async () => {
+    const reporter = await app.person();
+    const subject = await app.person();
+    const stranger = await app.person();
+    const first = await as(reporter).post(
+      '/reports',
+      report('user', subject.id),
+    );
+    expect(first.status).toBe(201);
+    expect(first.headers.get('cache-control')).toContain('no-store');
+    const receipt = reportReceiptSchema.parse(await json(first, 201));
+    const second = reportReceiptSchema.parse(
+      await json(
+        await as(reporter).post('/reports', report('user', subject.id)),
+        201,
+      ),
+    );
+    expect(second.id).toBe(receipt.id);
+    expect(
+      reportReceiptPageSchema.parse(
+        await json(await as(stranger).get('/me/reports')),
+      ).items,
+    ).toEqual([]);
+    const mine = reportReceiptPageSchema.parse(
+      await json(await as(reporter).get('/me/reports')),
+    );
+    expect(mine.items.map((item) => item.id)).toContain(receipt.id);
+    await expectError(
+      await as(stranger).get('/moderation/cases'),
+      403,
+      'MODERATION_FORBIDDEN',
+    );
+    await expectError(
+      await as(stranger).get(`/moderation/cases/${receipt.id}`),
+      403,
+      'MODERATION_FORBIDDEN',
+    );
+
+    await app.database
+      .insert(staffGrants)
+      .values({ userId: stranger.id, role: 'moderator' });
+    const queue = await json<{ items: { id: string }[] }>(
+      await as(stranger).get('/moderation/cases'),
+    );
+    expect(queue.items.some((item) => item.id === receipt.id)).toBe(true);
+    const opened = await json<{
+      id: string;
+      reporterUserId: string;
+      detail: string;
+    }>(await as(stranger).get(`/moderation/cases/${receipt.id}`));
+    expect(opened).toMatchObject({
+      id: receipt.id,
+      reporterUserId: reporter.id,
+    });
+    expect(opened.detail).toBe('This content needs a private review.');
+    const [audit] = await app.database
+      .select()
+      .from(moderationAudit)
+      .where(eq(moderationAudit.subjectId, receipt.id));
+    expect(audit).toMatchObject({
+      event: 'case.viewed',
+      actorUserId: stranger.id,
+    });
+  });
+
+  it('uses the ordinary absence response for guessed and blocked people', async () => {
+    const reporter = await app.person();
+    const target = await app.person();
+    await expectError(
+      await as(reporter).post('/reports', report('user', randomUUID())),
+      404,
+      'USER_NOT_FOUND',
+    );
+    await as(target).post('/blocks', { username: reporter.username });
+    await expectError(
+      await as(reporter).post('/reports', report('user', target.id)),
+      404,
+      'USER_NOT_FOUND',
+    );
+    const [row] = await app.database
+      .select()
+      .from(userReports)
+      .where(eq(userReports.reporterUserId, reporter.id));
+    expect(row).toBeUndefined();
+  });
+
+  it('requires current Box and post access before storing allegations', async () => {
+    const owner = await app.person();
+    const viewer = await app.person();
+    const box = await scenes(app).newBox(owner);
+    await expectError(
+      await as(viewer).post('/reports', report('box', box.id)),
+      404,
+      'BOX_NOT_FOUND',
+    );
+    await scenes(app).join(owner, box.id, viewer);
+    const boxReceipt = await as(viewer).post('/reports', report('box', box.id));
+    expect(boxReceipt.status).toBe(201);
+    const post = await json<{ id: string }>(
+      await as(owner).post(`/boxes/${box.id}/posts`, {
+        content: 'A post to review',
+      }),
+      201,
+    );
+    expect(
+      (await as(viewer).post('/reports', report('post', post.id))).status,
+    ).toBe(201);
+    await expectError(
+      await as(viewer).post('/reports', report('post', randomUUID())),
+      404,
+      'POST_NOT_FOUND',
+    );
+  });
+});

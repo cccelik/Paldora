@@ -11,6 +11,7 @@ import { PostsModule } from './posts/posts.module.js';
 import { PlatformModule } from './platform/platform.module.js';
 import { RoomsModule } from './rooms/rooms.module.js';
 import { SocialModule } from './social/social.module.js';
+import { ModerationModule } from './moderation/moderation.module.js';
 
 /**
  * Composition root. Each product phase adds one feature module here
@@ -32,6 +33,7 @@ import { SocialModule } from './social/social.module.js';
     LifeUpdatesModule,
     MemoriesModule,
     RoomsModule,
+    ModerationModule,
   ],
 })
 export class AppModule {}
