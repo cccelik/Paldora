@@ -3,6 +3,10 @@ import type { JobHandler } from './job-router.js';
 import { reap } from './maintenance/reaper.js';
 import { createDeleteMediaHandler } from './media/delete-media.js';
 import {
+  buildNextExport,
+  expireNextExport,
+} from './account-export/export-archive.js';
+import {
   createProcessMediaHandler,
   type MediaJobDependencies,
 } from './media/process-media.js';
@@ -18,6 +22,14 @@ export function createJobHandlers(
   return {
     [MAINTENANCE_REAPER_JOB]: async (_job, { logger }) => {
       const result = await reap(dependencies.database);
+      const exportBuilt = await buildNextExport(
+        dependencies.database,
+        dependencies.storage,
+      );
+      const exportExpired = await expireNextExport(
+        dependencies.database,
+        dependencies.storage,
+      );
       const needsHuman =
         result.dead > 0 ||
         result.deadActivityEvents > 0 ||
@@ -25,7 +37,7 @@ export function createJobHandlers(
       const log = needsHuman
         ? logger.error.bind(logger)
         : logger.info.bind(logger);
-      log(result, 'maintenance reaper ran');
+      log({ ...result, exportBuilt, exportExpired }, 'maintenance reaper ran');
     },
     [MEDIA_PROCESS_JOB]: createProcessMediaHandler(dependencies),
     [MEDIA_DELETE_JOB]: createDeleteMediaHandler(dependencies),

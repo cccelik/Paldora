@@ -1,0 +1,4 @@
+UPDATE "paldora"."account_exports" SET "object_key" = 'exports/' || "id"::text || '/archive.json' WHERE "status" = 'pending';--> statement-breakpoint
+ALTER TABLE "paldora"."account_exports" DROP CONSTRAINT "account_exports_ready_check";--> statement-breakpoint
+ALTER TABLE "paldora"."account_exports" ADD CONSTRAINT "account_exports_ready_check" CHECK (("paldora"."account_exports"."status" = 'ready') = ("paldora"."account_exports"."ready_at" is not null and "paldora"."account_exports"."expires_at" is not null));--> statement-breakpoint
+ALTER TABLE "paldora"."account_exports" ADD CONSTRAINT "account_exports_key_check" CHECK (("paldora"."account_exports"."status" in ('pending', 'ready') and "paldora"."account_exports"."object_key" is not null) or ("paldora"."account_exports"."status" = 'expired' and "paldora"."account_exports"."object_key" is null));

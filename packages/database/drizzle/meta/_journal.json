@@ -99,6 +99,20 @@
       "when": 1792603500000,
       "tag": "0013_content_takedown",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792604500000,
+      "tag": "0014_account_exports",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792605500000,
+      "tag": "0015_export_retry_key",
+      "breakpoints": true
     }
   ]
 }

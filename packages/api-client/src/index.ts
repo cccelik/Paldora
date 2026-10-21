@@ -137,6 +137,18 @@ export class PaldoraApiClient {
     return this.call(apiRoutes.getCurrentUser);
   }
 
+  public requestAccountExport() {
+    return this.call(apiRoutes.requestAccountExport);
+  }
+
+  public accountExport() {
+    return this.call(apiRoutes.getAccountExport);
+  }
+
+  public downloadAccountExport(exportId: string) {
+    return this.call(apiRoutes.downloadAccountExport, { params: { exportId } });
+  }
+
   public createReport(body: CreateReportInput) {
     return this.call(apiRoutes.createReport, { body });
   }

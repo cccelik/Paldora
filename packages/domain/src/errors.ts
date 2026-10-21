@@ -73,6 +73,8 @@ export const API_ERROR_CODES = [
   'REPORT_NOT_FOUND',
   'REPORT_ACTION_UNAVAILABLE',
   'MODERATION_FORBIDDEN',
+  'EXPORT_NOT_FOUND',
+  'EXPORT_NOT_READY',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
