@@ -66,3 +66,11 @@ export const moderationActionSchema = z
 
 export type CreateReportInput = z.infer<typeof createReportSchema>;
 export type ModerationActionInput = z.infer<typeof moderationActionSchema>;
+
+export const moderationAccountSchema = z
+  .object({
+    id: uuidSchema,
+    username: z.string().nullable(),
+    status: z.enum(['active', 'suspended', 'deleted']),
+  })
+  .meta({ id: 'ModerationAccount' });

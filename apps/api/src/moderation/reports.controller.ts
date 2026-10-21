@@ -79,4 +79,14 @@ export class ReportsController {
   ) {
     return this.reports.act(me.userId, caseId, input);
   }
+
+  @Get('moderation/accounts/:accountId')
+  @Header('Cache-Control', 'private, no-store')
+  @RateLimit({ scope: 'moderation-lookup', limit: 30, windowSeconds: HOUR })
+  public account(
+    @CurrentPrincipal() me: Principal,
+    @Param('accountId', uuidParam) accountId: string,
+  ) {
+    return this.reports.account(me.userId, accountId);
+  }
 }

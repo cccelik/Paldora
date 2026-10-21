@@ -91,6 +91,7 @@ export const moderationAuditEvent = paldoraSchema.enum(
     'staff.revoked',
     'case.viewed',
     'case.closed',
+    'account.lookup',
     'content.hidden',
     'content.restored',
     'account.suspended',

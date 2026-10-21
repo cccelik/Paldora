@@ -32,6 +32,41 @@ const report = (
 });
 
 describe('private reports and case access', () => {
+  it('limits exact account lookup to administrators and audits hits and misses', async () => {
+    const administrator = await app.person();
+    const moderator = await app.person();
+    const subject = await app.person();
+    await app.database.insert(staffGrants).values([
+      { userId: administrator.id, role: 'administrator' },
+      { userId: moderator.id, role: 'moderator' },
+    ]);
+    const path = `/moderation/accounts/${subject.id}`;
+    await expectError(
+      await as(moderator).get(path),
+      403,
+      'MODERATION_FORBIDDEN',
+    );
+    expect(await json(await as(administrator).get(path))).toEqual({
+      id: subject.id,
+      username: subject.username,
+      status: 'active',
+    });
+    const absent = randomUUID();
+    await expectError(
+      await as(administrator).get(`/moderation/accounts/${absent}`),
+      404,
+      'USER_NOT_FOUND',
+    );
+    const lookups = await app.database
+      .select()
+      .from(moderationAudit)
+      .where(eq(moderationAudit.actorUserId, administrator.id));
+    expect(
+      lookups.filter((event) => event.event === 'account.lookup'),
+    ).toHaveLength(2);
+    expect(lookups.map((event) => event.subjectId)).toContain(absent);
+  });
+
   it('audits idempotent suspension and restoration, blocking new account requests', async () => {
     const moderator = await app.person();
     const reporter = await app.person();

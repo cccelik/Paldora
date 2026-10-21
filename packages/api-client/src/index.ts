@@ -153,6 +153,10 @@ export class PaldoraApiClient {
     return this.call(apiRoutes.getModerationCase, { params: { caseId } });
   }
 
+  public moderationAccount(accountId: string) {
+    return this.call(apiRoutes.getModerationAccount, { params: { accountId } });
+  }
+
   public actOnModerationCase(caseId: string, body: ModerationActionInput) {
     return this.call(apiRoutes.actOnModerationCase, {
       params: { caseId },

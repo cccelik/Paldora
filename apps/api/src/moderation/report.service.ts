@@ -160,13 +160,40 @@ export class ReportService {
     return receipt(row);
   }
 
-  private async staff(userId: string): Promise<void> {
+  private async staff(
+    userId: string,
+    requiredRole?: 'administrator',
+  ): Promise<void> {
     const [grant] = await this.db
-      .select({ userId: staffGrants.userId })
+      .select({ role: staffGrants.role })
       .from(staffGrants)
       .where(eq(staffGrants.userId, userId))
       .limit(1);
-    if (!grant) throw moderationForbidden();
+    if (!grant || (requiredRole && grant.role !== requiredRole))
+      throw moderationForbidden();
+  }
+
+  public async account(actorId: string, accountId: string) {
+    await this.staff(actorId, 'administrator');
+    const [row] = await this.db
+      .select({
+        id: users.id,
+        status: users.status,
+        username: profiles.username,
+      })
+      .from(users)
+      .leftJoin(profiles, eq(profiles.userId, users.id))
+      .where(eq(users.id, accountId))
+      .limit(1);
+    await this.db.insert(moderationAudit).values({
+      actorUserId: actorId,
+      subjectId: accountId,
+      event: 'account.lookup',
+      reason: 'Administrator exact-ID account lookup.',
+      idempotencyKey: randomUUID(),
+    });
+    if (!row) throw userNotFound();
+    return row;
   }
 
   public async mine(userId: string, query: PageQuery) {

@@ -4,6 +4,7 @@ import {
   moderationCasePageSchema,
   moderationCaseSchema,
   moderationActionSchema,
+  moderationAccountSchema,
   reportReceiptPageSchema,
   reportReceiptSchema,
 } from '../reports.js';
@@ -83,4 +84,17 @@ export const actOnModerationCase = defineRoute({
     'REPORT_NOT_FOUND',
     'REPORT_ACTION_UNAVAILABLE',
   ],
+});
+
+export const getModerationAccount = defineRoute({
+  operationId: 'getModerationAccount',
+  method: 'GET',
+  path: '/moderation/accounts/{accountId}',
+  summary:
+    'Administrator-only exact-ID account lookup. Every lookup, including a miss, is audited and rate limited to 30 per hour.',
+  tag: 'Moderation',
+  access: 'authenticated',
+  successStatus: 200,
+  response: moderationAccountSchema,
+  errors: ['MODERATION_FORBIDDEN', 'USER_NOT_FOUND'],
 });

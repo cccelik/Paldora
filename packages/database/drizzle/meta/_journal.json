@@ -85,6 +85,13 @@
       "when": 1792601147376,
       "tag": "0011_moderation_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792602500000,
+      "tag": "0012_account_lookup",
+      "breakpoints": true
     }
   ]
 }

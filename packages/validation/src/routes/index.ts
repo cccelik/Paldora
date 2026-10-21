@@ -9,6 +9,7 @@ import {
   listModerationCases,
   getModerationCase,
   actOnModerationCase,
+  getModerationAccount,
 } from './reports.js';
 import type { RouteDefinition } from '../route.js';
 import { getLiveness, getReadiness } from './platform.js';
@@ -129,6 +130,7 @@ export const apiRoutes = {
   listModerationCases,
   getModerationCase,
   actOnModerationCase,
+  getModerationAccount,
   getMyRoomPersonalization,
   getRoomPersonalization,
   updateMyRoomPersonalization,
