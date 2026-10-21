@@ -5,6 +5,8 @@ table, and open decisions live in [docs/rebuild-plan.md](../rebuild-plan.md).
 
 - [repo-cleanup.md](repo-cleanup.md): the behavior-preserving repository
   cleanup (in progress).
+- [Phase 9: moderation and account lifecycle](phase-9-moderation-account-lifecycle.md):
+  proposed plan; public signup remains gated.
 - [delivered/](delivered/): plans whose phase has shipped. They are history:
   verify them against the code before relying on them.
   - [Phase 3: posts, feeds, realtime](delivered/phase-3-posts-feeds-realtime.md)

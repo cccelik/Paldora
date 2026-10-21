@@ -64,6 +64,13 @@
       "when": 1792584415240,
       "tag": "0008_curly_nehzno",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792600123798,
+      "tag": "0009_moderation_foundation",
+      "breakpoints": true
     }
   ]
 }

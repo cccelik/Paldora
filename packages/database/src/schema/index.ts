@@ -10,3 +10,4 @@ export * from './activity.js';
 export * from './life-updates.js';
 export * from './rooms.js';
 export * from './personalization.js';
+export * from './moderation.js';
