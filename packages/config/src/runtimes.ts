@@ -43,6 +43,8 @@ const apiEnvironmentSchema = z
     ...databaseShape,
     ...redisShape,
     ...storageShape,
+    ROOM_CUSTOM_CSS_ENABLED: booleanFlag,
+    ROOM_CUSTOM_WIDGETS_ENABLED: booleanFlag,
     API_HOST: z.string().min(1).default('0.0.0.0'),
     API_PORT: z.coerce.number().int().positive().max(65_535).default(4000),
     WEB_ORIGIN: httpUrl,

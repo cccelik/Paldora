@@ -39,9 +39,8 @@ export const roomTopFriendsVisibility = paldoraSchema.enum(
  * A person's Room settings, created lazily on the first save (ADR 017). A
  * missing row means the default configuration (`DEFAULT_ROOM` in
  * packages/domain, equal to these column defaults). The allowlists below
- * mirror the domain registry; a test asserts they agree. There is no column
- * that could hold CSS, HTML, a URL other than the HTTPS music link, or a
- * color. Triggers (migration 0007) keep `user_id` and `created_at` fixed,
+ * mirror the domain registry; a test asserts they agree. This settings table holds no CSS, HTML or arbitrary color. Phase 8
+ * source rows live in separate bounded Room-owned tables (ADR 018). Triggers (migration 0007) keep `user_id` and `created_at` fixed,
  * make `updated_at` strictly increase on every write (the stale-save
  * version), and trim Top Friends when the size is lowered.
  */

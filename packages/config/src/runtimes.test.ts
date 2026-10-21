@@ -36,10 +36,31 @@ describe('API environment', () => {
     const environment = parseApiEnvironment(localApi);
     expect(environment.PALDORA_ENV).toBe('local');
     expect(environment.API_PORT).toBe(4000);
+    expect(environment.ROOM_CUSTOM_CSS_ENABLED).toBe(false);
+    expect(environment.ROOM_CUSTOM_WIDGETS_ENABLED).toBe(false);
     expect(environment.DATABASE_POOL_MAX).toBe(10);
     expect(environment.WEB_ORIGIN).toBe('http://localhost:3000');
     expect(environment.S3_FORCE_PATH_STYLE).toBe(true);
     expect(environment.S3_REGION).toBe('us-east-1');
+  });
+
+  it('enables each personalization surface independently', () => {
+    const css = parseApiEnvironment({
+      ...localApi,
+      ROOM_CUSTOM_CSS_ENABLED: 'true',
+    });
+    expect([
+      css.ROOM_CUSTOM_CSS_ENABLED,
+      css.ROOM_CUSTOM_WIDGETS_ENABLED,
+    ]).toEqual([true, false]);
+    const widgets = parseApiEnvironment({
+      ...localApi,
+      ROOM_CUSTOM_WIDGETS_ENABLED: 'true',
+    });
+    expect([
+      widgets.ROOM_CUSTOM_CSS_ENABLED,
+      widgets.ROOM_CUSTOM_WIDGETS_ENABLED,
+    ]).toEqual([false, true]);
   });
 
   it('names every invalid key without echoing values', () => {

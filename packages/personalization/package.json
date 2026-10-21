@@ -1,0 +1,26 @@
+{
+  "name": "@paldora/personalization",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Bounded Room CSS and static HTML compilers. Server-only.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "vitest": "4.1.11"
+  },
+  "dependencies": {
+    "parse5": "8.0.1",
+    "postcss": "8.5.31"
+  }
+}
