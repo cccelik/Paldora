@@ -1,6 +1,6 @@
 # Phase 9 plan: moderation and account lifecycle
 
-Status: proposed. Phase 8 is delivered; public registration remains disabled. Scope follows [the rebuild plan](../rebuild-plan.md) and the authorization rules in [security.md](../security.md). This phase has no legacy implementation to copy.
+Status: in progress. Phase 8 is delivered; public registration remains disabled. Scope follows [the rebuild plan](../rebuild-plan.md) and the authorization rules in [security.md](../security.md). This phase has no legacy implementation to copy.
 
 ## Outcome and boundaries
 
@@ -19,6 +19,11 @@ Do not add arbitrary admin SQL, a generic content-edit endpoint, public report c
 | Deletion             | Reauthenticate, show irreversible effects, schedule a short cancellation window, then erase through an idempotent worker workflow. Legal retention exceptions, if any, need explicit policy before implementation. | Account deletion    |
 | Export               | Private, expiring download containing the member's own data and authorized media, with an auditable request. Never include other members' private content merely because it appeared in a shared Box.              | Data export         |
 | Signup               | Keep disabled until queue staffing, abuse limits, appeal/contact path, and deletion/export operations are demonstrated on a hosted environment.                                                                    | Public signup       |
+
+The owner chose a **7-day cancellation window** before account erasure,
+**90 days after case closure** as the default evidence-retention period
+(subject to any specific legal duty), and **immediate object retirement** for
+moderator takedowns. Restoring retired media requires a new upload.
 
 ## Data and contract
 

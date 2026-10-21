@@ -1,6 +1,6 @@
 # ADR 019: Moderation authority and durable audit
 
-Status: Proposed (Phase 9)
+Status: Accepted for the Phase 9 foundation; lifecycle implementation continues.
 
 ## Context
 
@@ -53,8 +53,9 @@ Room banner foreign key.
 
 ## Revisit triggers
 
-The owner decides evidence retention, appeal operations, deletion window, and
-export format before their dependent slices ship. A production hosting decision
+The owner selected a seven-day deletion cancellation window, 90-day evidence
+retention after case closure, and immediate object retirement on takedown.
+Appeal operations and export format remain to be finalized. A production hosting decision
 (D5) is needed before the hosted public-signup gate. If legal retention duties
 require keeping deleted account data, specify the exact fields, access, and
 schedule in a superseding ADR; this record makes no legal-retention claim.

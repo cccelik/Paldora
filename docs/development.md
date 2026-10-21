@@ -1,5 +1,17 @@
 # Development
 
+## Staff grants during Phase 9
+
+Staff authority is assigned only from a trusted operator shell, never an HTTP
+endpoint or a JWT claim. Set `DATABASE_URL` in the shell without printing it.
+For the first administrator, run
+`pnpm --filter @paldora/api staff --actor <user-uuid> --target <same-uuid> --action grant --role administrator --bootstrap --reason "Initial operator assignment approved by the owner"`.
+Bootstrap succeeds only while the staff table is empty. Later grants and
+revocations require an existing administrator as `--actor`; omit `--bootstrap`
+and use `--action grant --role moderator` or `--action revoke`. The command
+records every actual change in the append-only moderation audit. Granting staff
+access does not enable public signup.
+
 ## Prerequisites
 
 - **Node 24 LTS** (`.nvmrc`). With nvm: `nvm use`.

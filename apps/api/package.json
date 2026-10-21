@@ -12,7 +12,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --exclude '**/*.integration.test.ts'",
     "test:integration": "vitest run integration.test",
-    "provision": "tsx --env-file-if-exists=../../.env src/provisioning/provision.ts"
+    "provision": "tsx --env-file-if-exists=../../.env src/provisioning/provision.ts",
+    "staff": "tsx src/moderation/staff-command.ts"
   },
   "dependencies": {
     "@nestjs/common": "11.2.1",

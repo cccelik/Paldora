@@ -26,4 +26,4 @@ accepted when their phase is built.
 | [016](016-life-updates-and-memories.md)           | Life Updates stored once with a backing post per Box; immutable audience; derived Memories           | Accepted (Phase 6)                                     |
 | [017](017-rooms.md)                               | Lazy Room rows, closed widget registry, token-only themes, DB-enforced Top Friends, derived previews | Accepted (Phase 7; K4 hex values pending owner review) |
 | [018](018-room-personalization-boundaries.md)     | Constrained typography and static widgets with authorized opaque srcdoc delivery                     | Accepted; production flags default off                 |
-| [019](019-moderation-authority-and-audit.md)      | Explicit staff grants, private reports, durable audit, and gated account lifecycle                   | Proposed (Phase 9)                                     |
+| [019](019-moderation-authority-and-audit.md)      | Explicit staff grants, private reports, durable audit, and gated account lifecycle                   | Accepted foundation; lifecycle in progress             |
