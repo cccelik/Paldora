@@ -4,21 +4,26 @@ export interface PrototypeBox {
   id: string;
   name: string;
   ownerId: string;
-  status: 'active';
+  status: 'active' | 'archived';
   version: number;
 }
 
 export interface PrototypeMembership {
   boxId: string;
   userId: string;
-  role: 'owner' | 'member';
-  status: 'active' | 'removed';
+  role: 'owner' | 'admin' | 'member';
+  status: 'active' | 'left' | 'removed';
 }
 
 export class BoxPrototypeError extends Error {
   public constructor(
     public readonly code:
-      'BOX_NOT_FOUND' | 'BOX_ACCESS_DENIED' | 'BOX_ACTION_UNAVAILABLE',
+      | 'BOX_NOT_FOUND'
+      | 'BOX_ACCESS_DENIED'
+      | 'BOX_MEMBER_NOT_FOUND'
+      | 'BOX_OWNER_CANNOT_LEAVE'
+      | 'BOX_ARCHIVED'
+      | 'BOX_ACTION_UNAVAILABLE',
   ) {
     super(code);
   }
@@ -65,18 +70,25 @@ export class BoxOwnershipPrototype {
     });
   }
 
-  public async addMember(boxId: string, ownerId: string, userId: string) {
+  public async addMember(boxId: string, actorId: string, userId: string) {
     const boxRef = this.boxRef(boxId);
+    const actorRef = this.memberRef(boxId, actorId);
     const memberRef = this.memberRef(boxId, userId);
     await this.db.runTransaction(async (tx) => {
-      const [box, member] = await Promise.all([
+      const [box, actor, member] = await Promise.all([
         tx.get(boxRef),
+        tx.get(actorRef),
         tx.get(memberRef),
       ]);
       if (!box.exists) throw new BoxPrototypeError('BOX_NOT_FOUND');
       const row = box.data() as PrototypeBox;
-      if (row.ownerId !== ownerId)
+      const actorData = actor.data() as PrototypeMembership | undefined;
+      if (actorData?.status !== 'active')
+        throw new BoxPrototypeError('BOX_NOT_FOUND');
+      if (actorData.role === 'member')
         throw new BoxPrototypeError('BOX_ACCESS_DENIED');
+      if (row.status === 'archived')
+        throw new BoxPrototypeError('BOX_ARCHIVED');
       if (
         member.exists &&
         (member.data() as PrototypeMembership).status === 'active'
@@ -103,6 +115,11 @@ export class BoxOwnershipPrototype {
       ]);
       if (!box.exists) throw new BoxPrototypeError('BOX_NOT_FOUND');
       const row = box.data() as PrototypeBox;
+      if (
+        (oldMember.data() as PrototypeMembership | undefined)?.status !==
+        'active'
+      )
+        throw new BoxPrototypeError('BOX_NOT_FOUND');
       if (row.ownerId !== ownerId)
         throw new BoxPrototypeError('BOX_ACCESS_DENIED');
       if (
@@ -115,30 +132,101 @@ export class BoxOwnershipPrototype {
       )
         throw new BoxPrototypeError('BOX_ACTION_UNAVAILABLE');
       tx.update(boxRef, { ownerId: nextOwnerId, version: row.version + 1 });
-      tx.update(oldRef, { role: 'member' });
+      tx.update(oldRef, { role: 'admin' });
       tx.update(nextRef, { role: 'owner' });
     });
   }
 
-  public async remove(boxId: string, ownerId: string, userId: string) {
+  public async changeRole(
+    boxId: string,
+    actorId: string,
+    targetId: string,
+    next: 'admin' | 'member',
+  ) {
     const boxRef = this.boxRef(boxId);
-    const memberRef = this.memberRef(boxId, userId);
+    const actorRef = this.memberRef(boxId, actorId);
+    const targetRef = this.memberRef(boxId, targetId);
+    await this.db.runTransaction(async (tx) => {
+      const [box, actor, target] = await Promise.all([
+        tx.get(boxRef),
+        tx.get(actorRef),
+        tx.get(targetRef),
+      ]);
+      if (
+        !box.exists ||
+        (actor.data() as PrototypeMembership | undefined)?.status !== 'active'
+      )
+        throw new BoxPrototypeError('BOX_NOT_FOUND');
+      const actorRole = (actor.data() as PrototypeMembership).role;
+      if (actorRole === 'member')
+        throw new BoxPrototypeError('BOX_ACCESS_DENIED');
+      const targetData = target.data() as PrototypeMembership | undefined;
+      if (targetData?.status !== 'active')
+        throw new BoxPrototypeError('BOX_MEMBER_NOT_FOUND');
+      if (
+        targetData.role === 'owner' ||
+        targetData.role === next ||
+        (actorRole === 'admin' &&
+          (targetData.role !== 'member' || next !== 'admin'))
+      )
+        throw new BoxPrototypeError('BOX_ACCESS_DENIED');
+      tx.update(targetRef, { role: next });
+    });
+  }
+
+  public async setStatus(
+    boxId: string,
+    ownerId: string,
+    status: 'active' | 'archived',
+  ) {
+    const boxRef = this.boxRef(boxId);
+    const ownerRef = this.memberRef(boxId, ownerId);
     await this.db.runTransaction(async (tx) => {
       const [box, member] = await Promise.all([
         tx.get(boxRef),
+        tx.get(ownerRef),
+      ]);
+      if (
+        !box.exists ||
+        (member.data() as PrototypeMembership | undefined)?.status !== 'active'
+      )
+        throw new BoxPrototypeError('BOX_NOT_FOUND');
+      if ((box.data() as PrototypeBox).ownerId !== ownerId)
+        throw new BoxPrototypeError('BOX_ACCESS_DENIED');
+      tx.update(boxRef, { status });
+    });
+  }
+
+  public async remove(boxId: string, actorId: string, userId: string) {
+    const boxRef = this.boxRef(boxId);
+    const actorRef = this.memberRef(boxId, actorId);
+    const memberRef = this.memberRef(boxId, userId);
+    await this.db.runTransaction(async (tx) => {
+      const [box, actor, member] = await Promise.all([
+        tx.get(boxRef),
+        tx.get(actorRef),
         tx.get(memberRef),
       ]);
-      if (!box.exists) throw new BoxPrototypeError('BOX_NOT_FOUND');
-      const row = box.data() as PrototypeBox;
-      if (row.ownerId !== ownerId)
-        throw new BoxPrototypeError('BOX_ACCESS_DENIED');
       if (
-        userId === ownerId ||
-        !member.exists ||
-        (member.data() as PrototypeMembership).status !== 'active'
+        !box.exists ||
+        (actor.data() as PrototypeMembership | undefined)?.status !== 'active'
       )
-        throw new BoxPrototypeError('BOX_ACTION_UNAVAILABLE');
-      tx.update(memberRef, { role: 'member', status: 'removed' });
+        throw new BoxPrototypeError('BOX_NOT_FOUND');
+      const actorRole = (actor.data() as PrototypeMembership).role;
+      const leaving = actorId === userId;
+      if (leaving && actorRole === 'owner')
+        throw new BoxPrototypeError('BOX_OWNER_CANNOT_LEAVE');
+      if (!leaving && actorRole === 'member')
+        throw new BoxPrototypeError('BOX_ACCESS_DENIED');
+      const target = member.data() as PrototypeMembership | undefined;
+      if (target?.status !== 'active')
+        throw new BoxPrototypeError('BOX_MEMBER_NOT_FOUND');
+      if (!leaving && target.role === 'owner')
+        throw new BoxPrototypeError('BOX_ACCESS_DENIED');
+      tx.update(memberRef, {
+        role: 'member',
+        status: leaving ? 'left' : 'removed',
+      });
     });
   }
 

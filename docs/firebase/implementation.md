@@ -17,6 +17,9 @@ production paths just because a local emulator test passes.
       Firestore/Storage rules. Verify anonymous requests are rejected.
 - [x] Isolate a Firestore Box-ownership transaction prototype and exercise
       create, transfer, read denial, and transfer/removal concurrency in emulator.
+- [x] Extend Box transaction prototype with owner/admin role policy, transfer
+      demotion, leave/remove states, archive admission, returning-member reset,
+      and concurrent role-change checks (10 emulator tests across P1/P2).
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,
@@ -142,6 +145,9 @@ both role documents together. The emulator tests cover one-owner and race
 behavior but **do not yet prove** full Box parity, query cost, production IAM,
 or hosted latency. The prototype collection names must not become production
 names without the Phase 1 collection review.
+The role/leave/archive tests cover more of the current Box policy, while
+invitations, block-pair serialization, deletion with content cleanup, account
+suspension, and hosted contention measurements remain open P1 work.
 Its `HomeFeedPrototype` proves one bounded chunk-and-merge path for 31 Boxes,
 while deliberately refusing a high-membership page whose scan budget cannot
 preserve pagination safety. It accepts a test-supplied blocked-author set and

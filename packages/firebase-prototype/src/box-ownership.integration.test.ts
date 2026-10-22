@@ -56,6 +56,9 @@ describe('Firestore Box ownership prototype', () => {
     await boxes.transfer(boxId, owner, successor);
     const state = await boxes.inspect(boxId);
     expect(state.box?.version).toBe(2);
+    expect(
+      state.memberships.find((member) => member.userId === owner)?.role,
+    ).toBe('admin');
     assertOneOwner(state);
     await expect(boxes.remove(boxId, owner, successor)).rejects.toMatchObject({
       code: 'BOX_ACCESS_DENIED',
@@ -96,5 +99,81 @@ describe('Firestore Box ownership prototype', () => {
       results.filter((result) => result.status === 'fulfilled'),
     ).toHaveLength(1);
     assertOneOwner(await boxes.inspect(boxId));
+  });
+
+  it('matches owner and admin role permissions and lets former owners leave', async () => {
+    const boxId = box();
+    const owner = person();
+    const admin = person();
+    const member = person();
+    await boxes.create(boxId, owner, 'Crew');
+    await boxes.addMember(boxId, owner, admin);
+    await boxes.addMember(boxId, owner, member);
+    await boxes.changeRole(boxId, owner, admin, 'admin');
+    await expect(boxes.transfer(boxId, person(), member)).rejects.toMatchObject(
+      { code: 'BOX_NOT_FOUND' },
+    );
+    await expect(
+      boxes.changeRole(boxId, admin, admin, 'member'),
+    ).rejects.toMatchObject({ code: 'BOX_ACCESS_DENIED' });
+    await expect(
+      boxes.changeRole(boxId, member, admin, 'member'),
+    ).rejects.toMatchObject({ code: 'BOX_ACCESS_DENIED' });
+    await expect(boxes.remove(boxId, owner, owner)).rejects.toMatchObject({
+      code: 'BOX_OWNER_CANNOT_LEAVE',
+    });
+    await boxes.changeRole(boxId, owner, admin, 'member');
+    await boxes.changeRole(boxId, owner, admin, 'admin');
+    await boxes.transfer(boxId, owner, admin);
+    await boxes.remove(boxId, owner, owner);
+    expect(await boxes.read(boxId, owner)).toBeNull();
+    assertOneOwner(await boxes.inspect(boxId));
+  });
+
+  it('rejects guessed membership and serializes admin demotion against promotion', async () => {
+    const boxId = box();
+    const owner = person();
+    const admin = person();
+    const member = person();
+    await boxes.create(boxId, owner, 'Crew');
+    await boxes.addMember(boxId, owner, admin);
+    await boxes.addMember(boxId, owner, member);
+    await boxes.changeRole(boxId, owner, admin, 'admin');
+    await expect(
+      boxes.changeRole(boxId, person(), member, 'admin'),
+    ).rejects.toMatchObject({ code: 'BOX_NOT_FOUND' });
+    const results = await Promise.allSettled([
+      boxes.changeRole(boxId, owner, admin, 'member'),
+      boxes.changeRole(boxId, admin, member, 'admin'),
+    ]);
+    expect(results.some((result) => result.status === 'fulfilled')).toBe(true);
+    const state = await boxes.inspect(boxId);
+    assertOneOwner(state);
+    expect(state.memberships.find((row) => row.userId === admin)?.role).toBe(
+      'member',
+    );
+    expect(state.memberships.find((row) => row.userId === member)?.role).toBe(
+      results[1]?.status === 'fulfilled' ? 'admin' : 'member',
+    );
+  });
+
+  it('prevents joining archived Boxes and resets returning members to member', async () => {
+    const boxId = box();
+    const owner = person();
+    const admin = person();
+    await boxes.create(boxId, owner, 'Crew');
+    await boxes.addMember(boxId, owner, admin);
+    await boxes.changeRole(boxId, owner, admin, 'admin');
+    await boxes.remove(boxId, owner, admin);
+    await boxes.setStatus(boxId, owner, 'archived');
+    await expect(boxes.addMember(boxId, owner, admin)).rejects.toMatchObject({
+      code: 'BOX_ARCHIVED',
+    });
+    await boxes.setStatus(boxId, owner, 'active');
+    await boxes.addMember(boxId, owner, admin);
+    const state = await boxes.inspect(boxId);
+    expect(state.memberships.find((row) => row.userId === admin)?.role).toBe(
+      'member',
+    );
   });
 });
