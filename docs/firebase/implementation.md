@@ -41,8 +41,10 @@ production paths just because a local emulator test passes.
       unblock. Full block effects and invite listing still need design.
 - [x] Resolve invitation recipients by normalized username and recheck the
       trusted username mapping in the Firestore transaction. Client rules deny
-      direct reads and writes to the mapping. Username reservation/provisioning
-      remains open.
+      direct reads and writes to the mapping.
+- [x] Add trusted transactional username reservation and rename with normalized
+      uniqueness, collision tests, and suspended-account denial. Auth-bound
+      provisioning and hosted calls remain open.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,

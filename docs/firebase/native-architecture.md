@@ -82,8 +82,10 @@ reads and writes to invitation and block documents. The local trusted
 an invitation records the current epoch, so unblocking cannot revive an older
 pending invite. `inviteByUsername` uses the existing username normalization and
 rechecks the trusted `nativeUsernames/{normalized}` mapping in the invitation
-transaction; the client cannot read or forge that mapping. It is **not callable
-from the app**: verified Auth context, username reservation/provisioning, rate
+transaction; the client cannot read or forge that mapping. A local trusted
+`NativeUsernames` transaction now reserves names, moves reservations on rename,
+and rejects concurrent collisions. It is **not callable from the app**:
+verified Auth context, account provisioning, rate
 limits, invite listing/revocation, complete block
 lifecycle, and hosted function deployment are still required. Every block
 operation must write the same pair document, so a block and an
