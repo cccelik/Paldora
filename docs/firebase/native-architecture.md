@@ -64,8 +64,10 @@ the Box owner/version and both member roles together. Emulator tests reject
 partial writes, suspended successors, stale transfers, and simultaneous
 successors. Direct-client role changes, member removal, and leaving now follow
 the current role policy, with a transfer/removal race test and immediate read
-revocation for inactive memberships. Invitations, archive, deletion, the full
-existing race matrix, and hosted contention/cost measurements still need proof
+revocation for inactive memberships. Owner-only rename and archive/reopen are
+also guarded by Box version; archived Boxes reject member changes and transfers.
+Invitations, deletion, the full existing race matrix, and hosted contention/cost
+measurements still need proof
 before replacing the current Box implementation. The web application still
 calls the current API.
 

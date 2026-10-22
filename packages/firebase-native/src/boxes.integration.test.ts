@@ -25,6 +25,7 @@ import {
   listMyBoxIds,
   removeBoxMember,
   transferBoxOwnership,
+  updateBoxSettings,
 } from './boxes.js';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST)
@@ -65,6 +66,54 @@ async function account(uid: string, status: 'active' | 'suspended' = 'active') {
 }
 
 describe('Firebase-native Box access', () => {
+  it('lets the owner rename, archive, and reopen while closing member changes during archive', async () => {
+    const alice = person();
+    const bob = person();
+    const boxId = box();
+    await account(alice);
+    await account(bob);
+    const aliceDb = clientDb(env.authenticatedContext(alice));
+    const bobDb = clientDb(env.authenticatedContext(bob));
+    await createBox(aliceDb, alice, 'Original', boxId);
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(clientDb(context), 'nativeBoxes', boxId, 'members', bob),
+        {
+          uid: bob,
+          role: 'member',
+          status: 'active',
+        },
+      );
+    });
+    await assertFails(updateBoxSettings(bobDb, boxId, { name: 'Stolen' }));
+    await assertFails(
+      updateDoc(doc(aliceDb, 'nativeBoxes', boxId), {
+        ownerUid: bob,
+        name: 'Forged',
+        version: 2,
+      }),
+    );
+    await assertSucceeds(
+      updateBoxSettings(aliceDb, boxId, {
+        name: 'Renamed',
+        status: 'archived',
+      }),
+    );
+    expect(await getBox(bobDb, boxId)).toMatchObject({
+      name: 'Renamed',
+      status: 'archived',
+      version: 2,
+    });
+    await assertFails(changeBoxMemberRole(aliceDb, boxId, bob, 'admin'));
+    await assertFails(leaveBox(bobDb, boxId, bob));
+    await expect(
+      transferBoxOwnership(aliceDb, boxId, alice, bob),
+    ).rejects.toThrow();
+    await assertSucceeds(
+      updateBoxSettings(aliceDb, boxId, { status: 'active' }),
+    );
+    await assertSucceeds(changeBoxMemberRole(aliceDb, boxId, bob, 'admin'));
+  });
   it('matches role and removal policy and revokes reads after leaving', async () => {
     const alice = person();
     const bob = person();

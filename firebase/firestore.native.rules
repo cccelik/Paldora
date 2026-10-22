@@ -64,6 +64,19 @@ service cloud.firestore {
         && getAfter(memberPath(boxId, nextOwner)).data.status == 'active';
     }
 
+    function validOwnerSettings(boxId) {
+      return activeAccount()
+        && resource.data.ownerUid == request.auth.uid
+        && get(memberPath(boxId, request.auth.uid)).data.role == 'owner'
+        && get(memberPath(boxId, request.auth.uid)).data.status == 'active'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'status', 'version'])
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.status in ['active', 'archived'];
+    }
+
     function validTransferMemberUpdate(boxId, memberUid) {
       let beforeBox = get(boxPath(boxId)).data;
       let afterBox = getAfter(boxPath(boxId)).data;
@@ -148,7 +161,7 @@ service cloud.firestore {
         && getAfter(memberPath(boxId, request.auth.uid)).data.role == 'owner'
         && getAfter(memberPath(boxId, request.auth.uid)).data.status == 'active'
         && getAfter(boxRefPath(request.auth.uid, boxId)).data.boxId == boxId;
-      allow update: if validTransfer(boxId);
+      allow update: if validTransfer(boxId) || validOwnerSettings(boxId);
       // Deletion and content cleanup remain closed.
       allow delete: if false;
 

@@ -29,7 +29,9 @@ production paths just because a local emulator test passes.
       partial-write, suspended-account, and competing-transfer emulator tests.
 - [x] Add direct-client role changes, member removal and leave with current
       owner/admin policy, immediate read revocation and transfer/removal race
-      tests. Invitations, archive and deletion remain closed.
+      tests. Invitations and deletion remain closed.
+- [x] Add owner-only Box rename and archive/reopen with versioned writes; reject
+      forged ownership changes and member changes while archived.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,

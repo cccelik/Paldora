@@ -13,8 +13,8 @@ export interface NativeBox {
   id: string;
   name: string;
   ownerUid: string;
-  status: 'active';
-  version: 1;
+  status: 'active' | 'archived';
+  version: number;
 }
 
 /**
@@ -103,6 +103,30 @@ export async function transferBoxOwnership(
     });
     transaction.update(ownerRef, { role: 'admin' });
     transaction.update(nextRef, { role: 'owner' });
+  });
+}
+
+/** Owner-only rename and archive/reopen, guarded by the Box version. */
+export async function updateBoxSettings(
+  db: Firestore,
+  boxId: string,
+  changes: { name?: string; status?: 'active' | 'archived' },
+): Promise<void> {
+  if (changes.name === undefined && changes.status === undefined)
+    throw new Error('No Box changes supplied.');
+  const name = changes.name?.trim();
+  if (name !== undefined && (!name || name.length > 80))
+    throw new Error('Box name must contain 1–80 characters.');
+  const boxRef = doc(db, 'nativeBoxes', boxId);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(boxRef);
+    const box = snapshot.data() as NativeBox | undefined;
+    if (!box) throw new Error('Box unavailable.');
+    transaction.update(boxRef, {
+      ...(name === undefined ? {} : { name }),
+      ...(changes.status === undefined ? {} : { status: changes.status }),
+      version: box.version + 1,
+    });
   });
 }
 
