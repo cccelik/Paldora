@@ -57,6 +57,15 @@ the Box, and denies unauthenticated, nonmember, suspended, partial, and
 forged writes in emulator tests. Box listing starts from private ID hints and
 re-authorizes each Box read. No other collection is open.
 
+The local trusted `NativeAccounts` prototype checks Firebase Auth before
+creating an active account: the Auth user must exist, be enabled, and have a
+verified email. Provisioning is idempotent only for an already-active account;
+it cannot turn a suspended account active again. Suspension writes account
+status first, which the Firestore rules consult on every read, then revokes Auth
+refresh tokens. The Auth and Firestore emulators exercise this flow. Web
+sessions, account linking for any existing SQL users, error recovery, and
+hosted callable/operator entry points are still open.
+
 The native rules are **experimental and not deployed**. The hosted development
 project still uses the deny-all `firebase/firestore.rules`. An additional
 transaction now transfers ownership to an existing active member: it changes

@@ -45,6 +45,10 @@ production paths just because a local emulator test passes.
 - [x] Add trusted transactional username reservation and rename with normalized
       uniqueness, collision tests, and suspended-account denial. Auth-bound
       provisioning and hosted calls remain open.
+- [x] Prototype trusted account provisioning against the Auth emulator:
+      verified, enabled Auth users only; no silent suspension reversal; status
+      write before refresh-token revocation. Web sessions and live account
+      migration remain open.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,
