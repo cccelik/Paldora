@@ -149,6 +149,11 @@ bucket, Auth sign-in provider, staging/production project, or public signup has
 been enabled. The project is for controlled development and Phase 0 hosted
 query checks only. App Hosting and Cloud Storage require a linked billing
 account; billing owner, budgets and alerts remain Phase 1 prerequisites.
+The owner explicitly chose to keep `paldora-dev` on the free Spark plan for now
+(2026-10-22). Do not link billing or upgrade to Blaze as part of migration work
+without a later owner instruction. Local emulators and the Firestore free quota
+remain available; hosted App Hosting, Cloud Storage for Firebase and related
+paid-plan checks wait until that decision changes.
 
 `packages/firebase-prototype` is deliberately isolated. Its `BoxOwnershipPrototype`
 uses `prototypeBoxes/{id}` plus deterministic
