@@ -71,6 +71,18 @@ measurements still need proof
 before replacing the current Box implementation. The web application still
 calls the current API.
 
+`packages/firebase-prototype/src/native-box-invitations.ts` now exercises the
+trusted invitation boundary against the same `nativeBoxes` and `nativeAccounts`
+shape. It accepts a resolved UID, checks the inviter's role, both account
+states, target membership, Box state, and a deterministic block-pair document
+inside a Firestore transaction. Acceptance rechecks the block and expiry, then
+writes membership and the private Box hint atomically. Client rules deny direct
+reads and writes to invitation and block documents. It is **not callable from
+the app**: verified Auth context, username resolution, rate limits, invite
+listing/revocation, block writes, and hosted function deployment are still
+required. Every block operation must write the same pair document, so a block
+and an invitation/acceptance conflict and retry rather than passing each other.
+
 ## Migration gate
 
 Move one vertical slice at a time: identity/account state, social graph and

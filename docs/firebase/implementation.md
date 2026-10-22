@@ -32,6 +32,10 @@ production paths just because a local emulator test passes.
       tests. Invitations and deletion remain closed.
 - [x] Add owner-only Box rename and archive/reopen with versioned writes; reject
       forged ownership changes and member changes while archived.
+- [x] Prototype trusted invitation send/accept against native Box collections
+      with block-pair transaction reads and direct-client deny rules. Callable
+      Auth binding, username resolution, rate limits and block lifecycle remain
+      open.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,

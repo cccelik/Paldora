@@ -411,4 +411,20 @@ describe('Firebase-native Box access', () => {
     );
     await assertFails(createBox(aliceDb, alice, 'Crew', box()));
   });
+
+  it('keeps invitation and block documents behind trusted code', async () => {
+    const alice = person();
+    const aliceDb = clientDb(env.authenticatedContext(alice));
+    await account(alice);
+    await assertFails(getDoc(doc(aliceDb, 'nativeBoxInvitations', box())));
+    await assertFails(
+      setDoc(doc(aliceDb, 'nativeBoxInvitations', box()), {
+        status: 'pending',
+      }),
+    );
+    await assertFails(getDoc(doc(aliceDb, 'nativeBlockPairs', box())));
+    await assertFails(
+      setDoc(doc(aliceDb, 'nativeBlockPairs', box()), { blockedBy: [alice] }),
+    );
+  });
 });
