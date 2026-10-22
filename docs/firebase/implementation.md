@@ -2,7 +2,8 @@
 
 Status: **in progress, Phase 0**. Started 2026-10-22. This tracker is the
 implementation order for [the complete rewrite plan](../plans/firebase-rewrite.md)
-and [the discovery record](discovery.md). The existing backend remains the
+and [the Firebase-native architecture decision](native-architecture.md).
+The existing backend remains the
 source of truth until a phase's exit gate passes. Public signup stays disabled.
 
 Each phase ends with a reviewable commit, test evidence, and an explicit
@@ -20,6 +21,10 @@ production paths just because a local emulator test passes.
 - [x] Extend Box transaction prototype with owner/admin role policy, transfer
       demotion, leave/remove states, archive admission, returning-member reset,
       and concurrent role-change checks (10 emulator tests across P1/P2).
+- [x] Build an isolated direct-client Box creation/read slice with Firebase
+      client SDK, atomic owner membership and private Box-ID hint, active-account
+      rules, and emulator privacy tests. Native rules stay local; hosted rules
+      remain deny-all until full parity is proven.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,
@@ -39,6 +44,12 @@ production paths just because a local emulator test passes.
 **Exit gate:** all four query prototypes have bounded behavior and their
 authorization outcomes match current integration tests. No production data
 migration or API switch before this gate.
+
+**Architecture adjustment:** prefer direct Firebase SDK access when the rules
+and queries prove the same authorization semantics. Use Firebase Functions for
+the operations that require trusted code. The old HTTP API is a migration
+source, not a mandatory target service. The Phase 1–7 API references below
+remain a behavior checklist and will be rewritten per vertical slice.
 
 ## Phase 1 — Firebase foundation (pending Phase 0)
 

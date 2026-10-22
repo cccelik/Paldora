@@ -1,0 +1,67 @@
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  writeBatch,
+  type Firestore,
+} from 'firebase/firestore';
+
+export interface NativeBox {
+  id: string;
+  name: string;
+  ownerUid: string;
+  status: 'active';
+  version: 1;
+}
+
+/**
+ * Direct-client Box creation experiment. The UID is a document-path input,
+ * never an authorization claim: Firestore Rules compare it to request.auth.uid.
+ * Production callers must take it from the current Firebase Auth user.
+ */
+export async function createBox(
+  db: Firestore,
+  uid: string,
+  name: string,
+  boxId = globalThis.crypto.randomUUID(),
+): Promise<string> {
+  const trimmedName = name.trim();
+  if (!trimmedName || trimmedName.length > 80)
+    throw new Error('Box name must contain 1–80 characters.');
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'nativeBoxes', boxId), {
+    id: boxId,
+    name: trimmedName,
+    ownerUid: uid,
+    status: 'active',
+    version: 1,
+  } satisfies NativeBox);
+  batch.set(doc(db, 'nativeBoxes', boxId, 'members', uid), {
+    uid,
+    role: 'owner',
+    status: 'active',
+  });
+  batch.set(doc(db, 'nativeAccounts', uid, 'boxRefs', boxId), { boxId });
+  await batch.commit();
+  return boxId;
+}
+
+export async function getBox(
+  db: Firestore,
+  boxId: string,
+): Promise<NativeBox | null> {
+  const snapshot = await getDoc(doc(db, 'nativeBoxes', boxId));
+  return snapshot.exists() ? (snapshot.data() as NativeBox) : null;
+}
+
+/** A private index of IDs; every subsequent Box read is re-authorized. */
+export async function listMyBoxIds(
+  db: Firestore,
+  uid: string,
+): Promise<string[]> {
+  const snapshot = await getDocs(
+    collection(db, 'nativeAccounts', uid, 'boxRefs'),
+  );
+  return snapshot.docs.map((item) => item.id);
+}

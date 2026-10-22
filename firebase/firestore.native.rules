@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function accountPath(uid) {
+      return /databases/$(database)/documents/nativeAccounts/$(uid);
+    }
+
+    function boxPath(boxId) {
+      return /databases/$(database)/documents/nativeBoxes/$(boxId);
+    }
+
+    function memberPath(boxId, uid) {
+      return /databases/$(database)/documents/nativeBoxes/$(boxId)/members/$(uid);
+    }
+
+    function boxRefPath(uid, boxId) {
+      return /databases/$(database)/documents/nativeAccounts/$(uid)/boxRefs/$(boxId);
+    }
+
+    function activeAccount() {
+      return signedIn()
+        && exists(accountPath(request.auth.uid))
+        && get(accountPath(request.auth.uid)).data.status == 'active';
+    }
+
+    function activeMember(boxId) {
+      return activeAccount()
+        && exists(memberPath(boxId, request.auth.uid))
+        && get(memberPath(boxId, request.auth.uid)).data.status == 'active';
+    }
+
+    function validNewBox(boxId) {
+      return request.resource.data.keys().hasAll(['id', 'name', 'ownerUid', 'status', 'version'])
+        && request.resource.data.keys().hasOnly(['id', 'name', 'ownerUid', 'status', 'version'])
+        && request.resource.data.id == boxId
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.status == 'active'
+        && request.resource.data.version == 1;
+    }
+
+    match /nativeAccounts/{uid} {
+      // Account state is provisioned by a trusted operator, never by a client.
+      allow read, write: if false;
+
+      match /boxRefs/{boxId} {
+        // Hints contain only Box IDs; fetching each Box still checks membership.
+        allow get, list: if activeAccount() && request.auth.uid == uid;
+        allow create: if activeAccount()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasAll(['boxId'])
+          && request.resource.data.keys().hasOnly(['boxId'])
+          && request.resource.data.boxId == boxId
+          && !exists(boxPath(boxId))
+          && getAfter(boxPath(boxId)).data.ownerUid == uid
+          && getAfter(memberPath(boxId, uid)).data.role == 'owner'
+          && getAfter(memberPath(boxId, uid)).data.status == 'active';
+        allow update, delete: if false;
+      }
+    }
+
+    match /nativeBoxes/{boxId} {
+      allow get: if activeMember(boxId);
+      // Rules are not filters; clients list their own boxRefs, then fetch Boxes.
+      allow list: if false;
+      allow create: if activeAccount()
+        && validNewBox(boxId)
+        && getAfter(memberPath(boxId, request.auth.uid)).data.uid == request.auth.uid
+        && getAfter(memberPath(boxId, request.auth.uid)).data.role == 'owner'
+        && getAfter(memberPath(boxId, request.auth.uid)).data.status == 'active'
+        && getAfter(boxRefPath(request.auth.uid, boxId)).data.boxId == boxId;
+      // Role changes, transfers, deletion and content cleanup need separate
+      // atomic invariants. They stay closed until those tests exist.
+      allow update, delete: if false;
+
+      match /members/{memberUid} {
+        allow get: if activeAccount() && request.auth.uid == memberUid;
+        allow list: if false;
+        allow create: if activeAccount()
+          && request.auth.uid == memberUid
+          && request.resource.data.keys().hasAll(['uid', 'role', 'status'])
+          && request.resource.data.keys().hasOnly(['uid', 'role', 'status'])
+          && request.resource.data.uid == memberUid
+          && request.resource.data.role == 'owner'
+          && request.resource.data.status == 'active'
+          && !exists(boxPath(boxId))
+          && getAfter(boxPath(boxId)).data.ownerUid == memberUid
+          && getAfter(boxRefPath(memberUid, boxId)).data.boxId == boxId;
+        allow update, delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -43,6 +43,23 @@ jobs:
       - name: Scan browser bundle for secrets
         run: pnpm scan:client-bundle
 
+  firebase-rules:
+    name: Firebase emulator privacy rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.22.0, run_install: false }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm firebase:rules:check
+      - run: pnpm firebase:prototype:test
+      - run: pnpm firebase:native:test
+
   integration:
     name: Migrations and integration tests (real services)
     runs-on: ubuntu-latest

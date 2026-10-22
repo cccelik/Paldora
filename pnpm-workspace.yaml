@@ -5,6 +5,11 @@ packages:
   - apps/*
   - packages/*
 
+# Keep Firebase Admin's optional peers on the same reviewed release as the SDK.
+overrides:
+  '@firebase/app': 0.16.3
+  '@firebase/app-compat': 0.5.19
+
 allowBuilds:
   # Optional web config injection is not needed for the server-side prototype.
   '@firebase/util': false

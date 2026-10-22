@@ -1,0 +1,21 @@
+{
+  "name": "@paldora/firebase-native",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Isolated direct-client Firebase migration slice; not wired into the live web app.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --exclude '**/*.integration.test.ts' --passWithNoTests",
+    "test:rules": "vitest run integration.test"
+  },
+  "dependencies": {
+    "firebase": "13.0.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "vitest": "4.1.11"
+  }
+}

@@ -1,5 +1,13 @@
 # Complete Firebase rewrite plan
 
+> **Architecture update (2026-10-22):** The owner requested a Firebase-native,
+> direct-client approach where security rules can prove privacy equivalence,
+> and removal of the separate HTTP API if the full feature set permits it.
+> [The active architecture decision](../firebase/native-architecture.md)
+> supersedes this plan's API-first target diagram and service replacement map.
+> The original phase and parity gates remain the migration checklist. The
+> development project stays on Spark until the owner changes that instruction.
+
 Status: implementation started at Phase 0 on 2026-10-22; the Firestore
 go/no-go decision and production deployment remain open. See
 [the discovery record](../firebase/discovery.md). Public signup remains
