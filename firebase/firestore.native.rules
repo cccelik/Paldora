@@ -85,6 +85,39 @@ service cloud.firestore {
         && getAfter(memberPath(boxId, afterBox.ownerUid)).data.role == 'owner';
     }
 
+    function validOrdinaryMemberUpdate(boxId, memberUid) {
+      let box = get(boxPath(boxId)).data;
+      let actor = get(memberPath(boxId, request.auth.uid)).data;
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return activeAccount()
+        && box.status == 'active'
+        && getAfter(boxPath(boxId)).data.ownerUid == box.ownerUid
+        && getAfter(boxPath(boxId)).data.version == box.version
+        && actor.status == 'active'
+        && resource.data.status == 'active'
+        && resource.data.role != 'owner'
+        && request.resource.data.keys().hasOnly(['uid', 'role', 'status'])
+        && request.resource.data.uid == memberUid
+        && changed.hasOnly(['role', 'status'])
+        && ((changed.hasOnly(['role'])
+              && request.resource.data.status == 'active'
+              && ((actor.role == 'owner'
+                    && request.auth.uid != memberUid
+                    && request.resource.data.role in ['admin', 'member']
+                    && request.resource.data.role != resource.data.role)
+                  || (actor.role == 'admin'
+                    && request.auth.uid != memberUid
+                    && resource.data.role == 'member'
+                    && request.resource.data.role == 'admin')))
+            || (changed.hasOnly(['role', 'status'])
+              && request.resource.data.role == 'member'
+              && ((request.auth.uid == memberUid
+                    && request.resource.data.status == 'left')
+                  || (request.auth.uid != memberUid
+                    && actor.role in ['owner', 'admin']
+                    && request.resource.data.status == 'removed'))));
+    }
+
     match /nativeAccounts/{uid} {
       // Account state is provisioned by a trusted operator, never by a client.
       allow read, write: if false;
@@ -135,7 +168,8 @@ service cloud.firestore {
           && !exists(boxPath(boxId))
           && getAfter(boxPath(boxId)).data.ownerUid == memberUid
           && getAfter(boxRefPath(memberUid, boxId)).data.boxId == boxId;
-        allow update: if validTransferMemberUpdate(boxId, memberUid);
+        allow update: if validTransferMemberUpdate(boxId, memberUid)
+          || validOrdinaryMemberUpdate(boxId, memberUid);
         allow delete: if false;
       }
     }

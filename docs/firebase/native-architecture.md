@@ -62,9 +62,12 @@ project still uses the deny-all `firebase/firestore.rules`. An additional
 transaction now transfers ownership to an existing active member: it changes
 the Box owner/version and both member roles together. Emulator tests reject
 partial writes, suspended successors, stale transfers, and simultaneous
-successors. Invitations, general role changes, leave/removal, archive, deletion,
-and the full existing race matrix still need proof before replacing the current
-Box implementation. The web application still calls the current API.
+successors. Direct-client role changes, member removal, and leaving now follow
+the current role policy, with a transfer/removal race test and immediate read
+revocation for inactive memberships. Invitations, archive, deletion, the full
+existing race matrix, and hosted contention/cost measurements still need proof
+before replacing the current Box implementation. The web application still
+calls the current API.
 
 ## Migration gate
 

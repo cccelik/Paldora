@@ -27,6 +27,9 @@ production paths just because a local emulator test passes.
       remain deny-all until full parity is proven.
 - [x] Add an atomic direct-client ownership transfer with active-successor,
       partial-write, suspended-account, and competing-transfer emulator tests.
+- [x] Add direct-client role changes, member removal and leave with current
+      owner/admin policy, immediate read revocation and transfer/removal race
+      tests. Invitations, archive and deletion remain closed.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,

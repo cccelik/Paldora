@@ -18,9 +18,12 @@ import {
 } from 'firebase/firestore';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  changeBoxMemberRole,
   createBox,
   getBox,
+  leaveBox,
   listMyBoxIds,
+  removeBoxMember,
   transferBoxOwnership,
 } from './boxes.js';
 
@@ -62,6 +65,40 @@ async function account(uid: string, status: 'active' | 'suspended' = 'active') {
 }
 
 describe('Firebase-native Box access', () => {
+  it('matches role and removal policy and revokes reads after leaving', async () => {
+    const alice = person();
+    const bob = person();
+    const carol = person();
+    const boxId = box();
+    for (const uid of [alice, bob, carol]) await account(uid);
+    const aliceDb = clientDb(env.authenticatedContext(alice));
+    const bobDb = clientDb(env.authenticatedContext(bob));
+    const carolDb = clientDb(env.authenticatedContext(carol));
+    await createBox(aliceDb, alice, 'Crew', boxId);
+    await env.withSecurityRulesDisabled(async (context) => {
+      const adminDb = clientDb(context);
+      for (const uid of [bob, carol]) {
+        await setDoc(doc(adminDb, 'nativeBoxes', boxId, 'members', uid), {
+          uid,
+          role: 'member',
+          status: 'active',
+        });
+      }
+    });
+    await assertFails(changeBoxMemberRole(bobDb, boxId, carol, 'admin'));
+    await assertFails(removeBoxMember(bobDb, boxId, carol));
+    await assertFails(leaveBox(aliceDb, boxId, alice));
+    await assertSucceeds(changeBoxMemberRole(aliceDb, boxId, bob, 'admin'));
+    await assertSucceeds(changeBoxMemberRole(bobDb, boxId, carol, 'admin'));
+    await assertFails(changeBoxMemberRole(bobDb, boxId, carol, 'member'));
+    await assertSucceeds(changeBoxMemberRole(aliceDb, boxId, carol, 'member'));
+    await assertSucceeds(removeBoxMember(bobDb, boxId, carol));
+    await assertFails(getBox(carolDb, boxId));
+    await assertFails(changeBoxMemberRole(carolDb, boxId, bob, 'member'));
+    await assertFails(removeBoxMember(bobDb, boxId, alice));
+    await assertSucceeds(leaveBox(bobDb, boxId, bob));
+    await assertFails(getBox(bobDb, boxId));
+  });
   it('transfers to an active member atomically and rejects partial or stale transfers', async () => {
     const alice = person();
     const bob = person();
@@ -162,6 +199,49 @@ describe('Firebase-native Box access', () => {
       );
     });
     await assertFails(transferBoxOwnership(aliceDb, boxId, alice, bob));
+  });
+
+  it('serializes removal against transfer to the same member', async () => {
+    const alice = person();
+    const bob = person();
+    const boxId = box();
+    await account(alice);
+    await account(bob);
+    const aliceDb = clientDb(env.authenticatedContext(alice));
+    await createBox(aliceDb, alice, 'Race', boxId);
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(clientDb(context), 'nativeBoxes', boxId, 'members', bob),
+        {
+          uid: bob,
+          role: 'member',
+          status: 'active',
+        },
+      );
+    });
+    const outcomes = await Promise.allSettled([
+      transferBoxOwnership(aliceDb, boxId, alice, bob),
+      removeBoxMember(aliceDb, boxId, bob),
+    ]);
+    expect(
+      outcomes.filter((outcome) => outcome.status === 'fulfilled'),
+    ).toHaveLength(1);
+    const finalBox = await getBox(aliceDb, boxId);
+    const finalMember = await getDoc(
+      doc(aliceDb, 'nativeBoxes', boxId, 'members', bob),
+    );
+    if (finalBox?.ownerUid === bob) {
+      expect(finalMember.data()).toMatchObject({
+        role: 'owner',
+        status: 'active',
+      });
+    } else {
+      expect(finalBox?.ownerUid).toBe(alice);
+      expect(finalMember.data()).toMatchObject({
+        role: 'member',
+        status: 'removed',
+      });
+    }
   });
   it('creates an owned Box atomically and lists only its private ID hint', async () => {
     const alice = person();

@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   runTransaction,
+  updateDoc,
   writeBatch,
   type Firestore,
 } from 'firebase/firestore';
@@ -102,5 +103,38 @@ export async function transferBoxOwnership(
     });
     transaction.update(ownerRef, { role: 'admin' });
     transaction.update(nextRef, { role: 'owner' });
+  });
+}
+
+export async function changeBoxMemberRole(
+  db: Firestore,
+  boxId: string,
+  memberUid: string,
+  role: 'admin' | 'member',
+): Promise<void> {
+  await updateDoc(doc(db, 'nativeBoxes', boxId, 'members', memberUid), {
+    role,
+  });
+}
+
+export async function removeBoxMember(
+  db: Firestore,
+  boxId: string,
+  memberUid: string,
+): Promise<void> {
+  await updateDoc(doc(db, 'nativeBoxes', boxId, 'members', memberUid), {
+    role: 'member',
+    status: 'removed',
+  });
+}
+
+export async function leaveBox(
+  db: Firestore,
+  boxId: string,
+  uid: string,
+): Promise<void> {
+  await updateDoc(doc(db, 'nativeBoxes', boxId, 'members', uid), {
+    role: 'member',
+    status: 'left',
   });
 }
