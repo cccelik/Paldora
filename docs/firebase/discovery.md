@@ -58,6 +58,13 @@ one active owner. A disabled/removed account must lose reads immediately.
 Compare the result with existing `boxes.integration.test.ts` behavior. Do not
 rely on a query such as “members with role owner” for uniqueness.
 
+Initial emulator prototype: `packages/firebase-prototype/src/box-ownership.ts`
+uses a transactional Box `ownerId` and deterministic membership documents.
+Four integration tests pass for create/read denial, transfer, two competing
+transfers, and transfer racing removal. Invitation, leave/delete, suspension,
+the full role matrix, and hosted contention/cost remain open. This is a partial
+P1 result, not a production adapter.
+
 ### P2. Home feed
 
 The SQL implementation in `PostQueryService` joins active memberships to
@@ -79,6 +86,17 @@ The API can return a short page with a continuation cursor when a bounded scan
 is exhausted, but must not expose hidden IDs or infer their existence from
 errors. Test stable ordering and no duplicate Life Update under concurrent
 insert/hide/remove operations. No plaintext copied into a feed index.
+
+Initial emulator prototype: `packages/firebase-prototype/src/home-feed.ts`
+chunks Box IDs into groups of 30, merges sorted candidate streams, and uses a
+canonical `itemId` for Life Update deduplication across pages. Seven prototype
+tests across P1/P2 pass, including 31-Box paging and a blocked-heavy chunk.
+The per-chunk safe boundary returns a short page rather than skip an unfetched
+candidate. It **refuses** a 61-Box, 50-item page with a 100-candidate budget;
+a production design needs a continuation strategy for high membership counts.
+The current blocked-author set is supplied by the test, not loaded and checked
+from Firestore. Actual billable reads, hosted indexes, and all concurrent
+visibility changes remain unmeasured. This is partial P2 evidence only.
 
 ### P3. Memories and Room previews
 
@@ -120,7 +138,7 @@ access, record a no-go and revisit Cloud SQL on Google Cloud.
 Functions emulators. The Firestore and Storage rules deny all client reads and
 writes. This deliberately matches the current server-owned API boundary;
 server Admin SDK access uses IAM and is not governed by these rules. The index
-manifest is empty until a prototype demonstrates a required index. There is
+manifest now contains only the two prototype collection indexes. There is
 no `.firebaserc`, service-account key, deploy command, or production resource
 in this slice. The Firebase CLI is pinned to 15.34.0, and the smoke script
 refuses any project other than `demo-paldora`. Run `pnpm firebase:rules:check`
@@ -131,11 +149,12 @@ Never point tests at a real project by default.
 
 ## Next implementation slice
 
-Pin the Admin SDK version, start the emulator in CI, and add a small
-`packages/firebase` adapter with integration tests for P1 membership/owner
-transfer. Reuse the current Box concurrency fixtures. Then implement and
-measure P2–P4. Only after the go/no-go review should the team switch identity
-or content traffic. Keep public signup disabled throughout.
+Finish P1 role/invitation/leave/delete parity and benchmark contention. Then
+implement and measure P2–P4. The Admin SDK is pinned in the isolated prototype;
+Phase 1 still needs a reviewed production adapter and emulator CI. Only after
+the go/no-go review should the team switch identity or content traffic. Keep
+public signup disabled throughout. Track each gate in
+[implementation.md](implementation.md).
 
 ## References checked 2026-10-22
 

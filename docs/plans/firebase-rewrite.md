@@ -3,7 +3,8 @@
 Status: implementation started at Phase 0 on 2026-10-22; the Firestore
 go/no-go decision and production deployment remain open. See
 [the discovery record](../firebase/discovery.md). Public signup remains
-disabled. This plan replaces the current
+disabled. Phase-by-phase progress is in
+[the execution tracker](../firebase/implementation.md). This plan replaces the current
 Supabase Auth + PostgreSQL + Redis + S3-compatible storage + NestJS/BullMQ
 deployment with a Firebase/Google Cloud project. It preserves Paldora's product
 semantics, privacy promises, and web experience. It is a rewrite, not a deployment

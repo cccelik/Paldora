@@ -6,6 +6,8 @@ packages:
   - packages/*
 
 allowBuilds:
+  # Optional web config injection is not needed for the server-side prototype.
+  '@firebase/util': false
   '@nestjs/core': true
   esbuild: true
   msgpackr-extract: true
