@@ -80,8 +80,11 @@ writes membership and the private Box hint atomically. Client rules deny direct
 reads and writes to invitation and block documents. The local trusted
 `NativeBlockPairs` prototype advances a pair epoch whenever someone blocks;
 an invitation records the current epoch, so unblocking cannot revive an older
-pending invite. It is **not callable from the app**: verified Auth context,
-username resolution, rate limits, invite listing/revocation, complete block
+pending invite. `inviteByUsername` uses the existing username normalization and
+rechecks the trusted `nativeUsernames/{normalized}` mapping in the invitation
+transaction; the client cannot read or forge that mapping. It is **not callable
+from the app**: verified Auth context, username reservation/provisioning, rate
+limits, invite listing/revocation, complete block
 lifecycle, and hosted function deployment are still required. Every block
 operation must write the same pair document, so a block and an
 invitation/acceptance conflict and retry rather than passing each other.

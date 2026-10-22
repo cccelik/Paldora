@@ -426,5 +426,9 @@ describe('Firebase-native Box access', () => {
     await assertFails(
       setDoc(doc(aliceDb, 'nativeBlockPairs', box()), { blockedBy: [alice] }),
     );
+    await assertFails(getDoc(doc(aliceDb, 'nativeUsernames', 'zoe')));
+    await assertFails(
+      setDoc(doc(aliceDb, 'nativeUsernames', 'zoe'), { uid: alice }),
+    );
   });
 });

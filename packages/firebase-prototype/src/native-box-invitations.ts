@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { normalizeUsername, usernameSchema } from '@paldora/validation';
 import type { DocumentSnapshot, Firestore } from 'firebase-admin/firestore';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1_000;
@@ -45,19 +46,58 @@ function blockEpoch(snapshot: DocumentSnapshot): number {
     : 0;
 }
 
+function requireUsernameMapping(mapping: DocumentSnapshot, uid: string): void {
+  if (!mapping.exists || mapping.get('uid') !== uid)
+    throw new NativeInvitationError('UNAVAILABLE');
+}
+
+function pendingInEpoch(
+  invitation: DocumentSnapshot,
+  now: number,
+  epoch: number,
+): boolean {
+  return (
+    invitation.exists &&
+    invitation.get('status') === 'pending' &&
+    invitation.get('expiresAt') > now &&
+    invitation.get('blockEpoch') === epoch
+  );
+}
+
 /**
  * Trusted transaction prototype. A future callable wrapper must derive the
  * caller UID from verified Firebase Auth, never a request body. Username
- * resolution, rate limits, listing, revocation and block writes remain closed.
+ * rate limits, listing and revocation remain closed.
  */
 export class NativeBoxInvitations {
   public constructor(private readonly db: Firestore) {}
+
+  /** Resolve a public username; the transaction rechecks this mapping. */
+  public async inviteByUsername(
+    boxId: string,
+    inviterUid: string,
+    username: string,
+    now = Date.now(),
+  ): Promise<string> {
+    const parsed = usernameSchema.safeParse(username);
+    if (!parsed.success) throw new NativeInvitationError('UNAVAILABLE');
+    const normalized = normalizeUsername(parsed.data);
+    const mapping = await this.db
+      .collection('nativeUsernames')
+      .doc(normalized)
+      .get();
+    const inviteeUid = mapping.exists ? mapping.get('uid') : undefined;
+    if (typeof inviteeUid !== 'string' || !inviteeUid)
+      throw new NativeInvitationError('UNAVAILABLE');
+    return this.invite(boxId, inviterUid, inviteeUid, now, normalized);
+  }
 
   public async invite(
     boxId: string,
     inviterUid: string,
     inviteeUid: string,
     now = Date.now(),
+    normalizedUsername?: string,
   ): Promise<string> {
     if (inviterUid === inviteeUid) throw new NativeInvitationError('FORBIDDEN');
     const invitationId = nativeInvitationId(boxId, inviteeUid);
@@ -73,6 +113,12 @@ export class NativeBoxInvitations {
       .collection('nativeBlockPairs')
       .doc(nativeBlockPairId(inviterUid, inviteeUid));
     await this.db.runTransaction(async (tx) => {
+      const mapping = normalizedUsername
+        ? await tx.get(
+            this.db.collection('nativeUsernames').doc(normalizedUsername),
+          )
+        : null;
+      if (mapping) requireUsernameMapping(mapping, inviteeUid);
       const [box, inviter, invitee, actor, target, block, existing] =
         await Promise.all([
           tx.get(boxRef),
@@ -95,12 +141,7 @@ export class NativeBoxInvitations {
       if (blocked(block)) throw new NativeInvitationError('UNAVAILABLE');
       if (target.exists && target.get('status') === 'active')
         throw new NativeInvitationError('ALREADY_MEMBER');
-      if (
-        existing.exists &&
-        existing.get('status') === 'pending' &&
-        existing.get('expiresAt') > now &&
-        existing.get('blockEpoch') === blockEpoch(block)
-      )
+      if (pendingInEpoch(existing, now, blockEpoch(block)))
         throw new NativeInvitationError('ALREADY_PENDING');
       tx.set(invitationRef, {
         boxId,

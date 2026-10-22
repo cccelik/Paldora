@@ -52,6 +52,18 @@ async function seed() {
 }
 
 describe('trusted native Box invitations', () => {
+  it('normalizes usernames and rechecks the reserved mapping in the transaction', async () => {
+    const { boxId, owner, guest, outsider } = await seed();
+    await db.collection('nativeUsernames').doc('zoe').set({ uid: guest });
+    const id = await invitations.inviteByUsername(boxId, owner, ' Zoë ', 1_000);
+    expect(id).toBe(nativeInvitationId(boxId, guest));
+    await expect(
+      invitations.inviteByUsername(boxId, owner, 'missing', 1_001),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await expect(
+      invitations.invite(boxId, owner, outsider, 1_001, 'zoe'),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+  });
   it('accepts once and creates membership plus the private Box hint', async () => {
     const { boxId, owner, guest } = await seed();
     const invitationId = await invitations.invite(boxId, owner, guest, 1_000);
