@@ -42,6 +42,10 @@ migration or API switch before this gate.
 
 ## Phase 1 — Firebase foundation (pending Phase 0)
 
+- [x] Create `paldora-dev` under the project owner's Google account; provision
+      the default Standard Firestore database in `europe-west4` and deploy the
+      repository's deny-all Firestore rules. The repository has a `dev` alias
+      and no default project alias.
 - [ ] Select one supported EU region and create separate dev, staging, and
       production projects with named billing owner, budgets, alerts, and IAM.
 - [ ] Add pinned Admin SDK/server adapter package, Firestore collection and
@@ -136,6 +140,15 @@ appeal email exist.
 and public signup is activated only by a separate owner decision.
 
 ## Current implementation notes
+
+The development Firebase project is `paldora-dev` (display name **Paldora
+Development**). Its default Firestore database is in `europe-west4`, a location
+supported by Firestore, Functions v2, and App Hosting. Client reads and writes
+are denied by the deployed `firebase/firestore.rules`. No app backend, Storage
+bucket, Auth sign-in provider, staging/production project, or public signup has
+been enabled. The project is for controlled development and Phase 0 hosted
+query checks only. App Hosting and Cloud Storage require a linked billing
+account; billing owner, budgets and alerts remain Phase 1 prerequisites.
 
 `packages/firebase-prototype` is deliberately isolated. Its `BoxOwnershipPrototype`
 uses `prototypeBoxes/{id}` plus deterministic
