@@ -95,10 +95,12 @@ transaction; the client cannot read or forge that mapping. A local trusted
 `NativeUsernames` transaction now reserves names, moves reservations on rename,
 and rejects concurrent collisions. It is **not callable from the app**:
 verified Auth context, account provisioning, rate
-limits, invite listing/revocation, complete block
+limits, invite listing, complete block
 lifecycle, and hosted function deployment are still required. Every block
 operation must write the same pair document, so a block and an
 invitation/acceptance conflict and retry rather than passing each other.
+Trusted decline and manager revocation transactions now close an invitation;
+an accept/revoke race commits one outcome, never both.
 
 ## Migration gate
 

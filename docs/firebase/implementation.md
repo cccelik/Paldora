@@ -49,6 +49,9 @@ production paths just because a local emulator test passes.
       verified, enabled Auth users only; no silent suspension reversal; status
       write before refresh-token revocation. Web sessions and live account
       migration remain open.
+- [x] Add trusted invitation decline and manager revocation with an
+      accept/revoke race test. Invitation listing and callable Auth binding
+      remain open.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,

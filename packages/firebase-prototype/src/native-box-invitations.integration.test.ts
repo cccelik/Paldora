@@ -217,4 +217,65 @@ describe('trusted native Box invitations', () => {
       invitations.invite(boxId, owner, guest, 1_002),
     ).rejects.toMatchObject({ code: 'ALREADY_MEMBER' });
   });
+
+  it('allows invitees to decline and managers to revoke pending invitations', async () => {
+    const first = await seed();
+    const declineId = await invitations.invite(
+      first.boxId,
+      first.owner,
+      first.guest,
+      1_000,
+    );
+    await expect(
+      invitations.decline(declineId, first.owner, 1_001),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await invitations.decline(declineId, first.guest, 1_001);
+    await expect(
+      invitations.accept(declineId, first.guest, 1_002),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+
+    const second = await seed();
+    const revokeId = await invitations.invite(
+      second.boxId,
+      second.owner,
+      second.guest,
+      1_000,
+    );
+    await db
+      .collection('nativeBoxes')
+      .doc(second.boxId)
+      .collection('members')
+      .doc(second.outsider)
+      .set({ uid: second.outsider, role: 'member', status: 'active' });
+    await expect(
+      invitations.revoke(revokeId, second.boxId, second.outsider, 1_001),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await invitations.revoke(revokeId, second.boxId, second.owner, 1_001);
+    await expect(
+      invitations.accept(revokeId, second.guest, 1_002),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+  });
+
+  it('commits only one of accept and revoke when they race', async () => {
+    const { boxId, owner, guest } = await seed();
+    const id = await invitations.invite(boxId, owner, guest, 1_000);
+    const outcomes = await Promise.allSettled([
+      invitations.accept(id, guest, 1_001),
+      invitations.revoke(id, boxId, owner, 1_001),
+    ]);
+    expect(
+      outcomes.filter((outcome) => outcome.status === 'fulfilled'),
+    ).toHaveLength(1);
+    const invitation = await db
+      .collection('nativeBoxInvitations')
+      .doc(id)
+      .get();
+    const membership = await db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .collection('members')
+      .doc(guest)
+      .get();
+    expect(membership.exists).toBe(invitation.get('status') === 'accepted');
+  });
 });

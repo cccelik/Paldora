@@ -201,4 +201,64 @@ export class NativeBoxInvitations {
       return boxId;
     });
   }
+
+  public async decline(
+    invitationId: string,
+    inviteeUid: string,
+    now = Date.now(),
+  ): Promise<void> {
+    const invitationRef = this.db
+      .collection('nativeBoxInvitations')
+      .doc(invitationId);
+    const accountRef = this.db.collection('nativeAccounts').doc(inviteeUid);
+    await this.db.runTransaction(async (tx) => {
+      const [invitation, account] = await Promise.all([
+        tx.get(invitationRef),
+        tx.get(accountRef),
+      ]);
+      if (
+        !active(account) ||
+        !invitation.exists ||
+        invitation.get('inviteeUid') !== inviteeUid ||
+        invitation.get('status') !== 'pending'
+      )
+        throw new NativeInvitationError('UNAVAILABLE');
+      tx.update(invitationRef, { status: 'declined', respondedAt: now });
+    });
+  }
+
+  public async revoke(
+    invitationId: string,
+    boxId: string,
+    actorUid: string,
+    now = Date.now(),
+  ): Promise<void> {
+    const invitationRef = this.db
+      .collection('nativeBoxInvitations')
+      .doc(invitationId);
+    const accountRef = this.db.collection('nativeAccounts').doc(actorUid);
+    const memberRef = this.db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .collection('members')
+      .doc(actorUid);
+    await this.db.runTransaction(async (tx) => {
+      const [invitation, account, member] = await Promise.all([
+        tx.get(invitationRef),
+        tx.get(accountRef),
+        tx.get(memberRef),
+      ]);
+      if (
+        !active(account) ||
+        !active(member) ||
+        !invitation.exists ||
+        invitation.get('boxId') !== boxId ||
+        invitation.get('status') !== 'pending'
+      )
+        throw new NativeInvitationError('UNAVAILABLE');
+      if (member.get('role') !== 'owner' && member.get('role') !== 'admin')
+        throw new NativeInvitationError('FORBIDDEN');
+      tx.update(invitationRef, { status: 'revoked', respondedAt: now });
+    });
+  }
 }
