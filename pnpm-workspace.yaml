@@ -9,5 +9,7 @@ allowBuilds:
   '@nestjs/core': true
   esbuild: true
   msgpackr-extract: true
+  # Firebase CLI's protobufjs postinstall is optional for its generated runtime.
+  protobufjs: false
   # sharp loads prebuilt @img/* binaries; its source-build script never needs to run.
   sharp: false

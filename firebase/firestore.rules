@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The versioned API owns all authorization. No browser or mobile SDK may
+    // read or write application data directly. Admin SDK access is controlled
+    // separately by server IAM and never by these rules.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

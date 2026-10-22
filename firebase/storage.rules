@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // All media and archives stay private. The API issues access only after
+    // checking current membership and account status.
+    match /{object=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -23,6 +23,9 @@
     "tokens:check": "pnpm --filter @paldora/tokens tokens:check",
     "db:generate": "pnpm --filter @paldora/database db:generate",
     "db:migrate": "pnpm --filter @paldora/database db:migrate",
+    "firebase:emulators": "firebase emulators:start --only auth,firestore,storage --project demo-paldora",
+    "firebase:emulators:exec": "firebase emulators:exec --only auth,firestore,storage --project demo-paldora",
+    "firebase:rules:check": "firebase emulators:exec --only auth,firestore,storage --project demo-paldora 'node scripts/check-firebase-rules.mjs'",
     "scan:client-bundle": "node scripts/scan-client-bundle.mjs apps/web/.next/static",
     "test:e2e:full": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && node scripts/with-test-database.mjs playwright test -c apps/web/e2e/playwright.fullstack.config.ts",
     "test:e2e:personalization": "turbo run build --filter=@paldora/api --filter=@paldora/worker --filter=@paldora/web^... && node scripts/with-test-database.mjs playwright test -c apps/web/e2e/playwright.personalization.config.ts"
@@ -35,6 +38,7 @@
     "@typescript-eslint/eslint-plugin": "8.67.0",
     "@typescript-eslint/parser": "8.67.0",
     "eslint": "10.9.0",
+    "firebase-tools": "15.34.0",
     "globals": "17.11.0",
     "prettier": "3.9.6",
     "turbo": "2.10.10",
