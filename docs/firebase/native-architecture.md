@@ -80,7 +80,7 @@ measurements still need proof
 before replacing the current Box implementation. The web application still
 calls the current API.
 
-`packages/firebase-prototype/src/native-box-invitations.ts` now exercises the
+`packages/firebase-trusted/src/native-box-invitations.ts` now exercises the
 trusted invitation boundary against the same `nativeBoxes` and `nativeAccounts`
 shape. It accepts a resolved UID, checks the inviter's role, both account
 states, target membership, Box state, and a deterministic block-pair document
@@ -93,10 +93,12 @@ pending invite. `inviteByUsername` uses the existing username normalization and
 rechecks the trusted `nativeUsernames/{normalized}` mapping in the invitation
 transaction; the client cannot read or forge that mapping. A local trusted
 `NativeUsernames` transaction now reserves names, moves reservations on rename,
-and rejects concurrent collisions. It is **not callable from the app**:
-verified Auth context, account provisioning, rate
-limits, invite listing, complete block
-lifecycle, and hosted function deployment are still required. Every block
+and rejects concurrent collisions. The local Functions emulator exposes
+Auth-bound invitation and username callables, and an integration test proves
+the create/invite/accept/member-read flow with two Firebase Auth users.
+The app is not yet wired to these callables; rate limits, invite listing,
+complete block lifecycle, and hosted function deployment are still required.
+Every block
 operation must write the same pair document, so a block and an
 invitation/acceptance conflict and retry rather than passing each other.
 Trusted decline and manager revocation transactions now close an invitation;

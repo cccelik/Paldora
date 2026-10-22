@@ -15,7 +15,6 @@
     "vitest": "4.1.11"
   },
   "dependencies": {
-    "@paldora/validation": "workspace:*",
     "firebase-admin": "14.5.0"
   }
 }

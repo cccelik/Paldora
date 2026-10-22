@@ -50,8 +50,14 @@ production paths just because a local emulator test passes.
       write before refresh-token revocation. Web sessions and live account
       migration remain open.
 - [x] Add trusted invitation decline and manager revocation with an
-      accept/revoke race test. Invitation listing and callable Auth binding
-      remain open.
+      accept/revoke race test. Invitation listing remains open.
+- [x] Extract trusted account, username, block and invitation transactions into
+      `packages/firebase-trusted`; expose invitation and username operations
+      through Auth-bound local callable Functions. An emulator flow now proves
+      two verified users can provision accounts, create a private Box, invite by
+      username, accept, and gain member read access. Unauthorized and anonymous
+      callable requests are rejected. Hosted deployment and web switching remain
+      pending.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,

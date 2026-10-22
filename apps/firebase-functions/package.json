@@ -1,0 +1,28 @@
+{
+  "name": "@paldora/firebase-functions",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first Firebase callable entry points; no hosted deployment configured.",
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": "24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --exclude '**/*.integration.test.ts' --passWithNoTests",
+    "test:integration": "vitest run integration.test"
+  },
+  "dependencies": {
+    "@paldora/firebase-trusted": "workspace:*",
+    "firebase-admin": "14.5.0",
+    "firebase-functions": "7.4.0"
+  },
+  "devDependencies": {
+    "@paldora/firebase-native": "workspace:*",
+    "firebase": "13.0.0",
+    "vitest": "4.1.11"
+  }
+}

@@ -119,6 +119,28 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.20.5)(yaml@2.9.1))
 
+  apps/firebase-functions:
+    dependencies:
+      '@paldora/firebase-trusted':
+        specifier: workspace:*
+        version: link:../../packages/firebase-trusted
+      firebase-admin:
+        specifier: 14.5.0
+        version: 14.5.0(@firebase/app-compat@0.5.19)(@firebase/app@0.16.3)(supports-color@7.2.0)
+      firebase-functions:
+        specifier: 7.4.0
+        version: 7.4.0(firebase-admin@14.5.0(@firebase/app-compat@0.5.19)(@firebase/app@0.16.3)(supports-color@7.2.0))(supports-color@7.2.0)
+    devDependencies:
+      '@paldora/firebase-native':
+        specifier: workspace:*
+        version: link:../../packages/firebase-native
+      firebase:
+        specifier: 13.0.0
+        version: 13.0.0
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+
   apps/web:
     dependencies:
       '@paldora/api-client':
@@ -282,6 +304,16 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/firebase-prototype:
+    dependencies:
+      firebase-admin:
+        specifier: 14.5.0
+        version: 14.5.0(@firebase/app-compat@0.5.19)(@firebase/app@0.16.3)(supports-color@7.2.0)
+    devDependencies:
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/firebase-trusted:
     dependencies:
       '@paldora/validation':
         specifier: workspace:*
@@ -2070,6 +2102,9 @@ packages:
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
+  '@types/cors@2.8.19':
+    resolution: {integrity: sha512-mFNylyeyqN93lfe/9CSxOGREz8cpzAhH+E93xJ4xWQf62V8sQ/24reV2nyzUWM6H6Xji+GGHpkbLe7pVoUEskg==}
+
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
@@ -3187,6 +3222,23 @@ packages:
   firebase-admin@14.5.0:
     resolution: {integrity: sha512-DElmgmaH9aPXu2dWXGQiDoan33UfTnbfAAKaue4fwEZxmpdaNrTk5DmuFn+vVDki2KZ6TiaC0IHRWcEzcDxB3Q==}
     engines: {node: '>=22'}
+
+  firebase-functions@7.4.0:
+    resolution: {integrity: sha512-jR+c16q1E07dPVqU/sdbIEVEQJYSxjY6BFI+QR5/AvrnII8C6UkJv6fR8LJ+GKmcGUBe7SjO/MnEWLAeOiHWMw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+    peerDependencies:
+      '@apollo/server': ^5.2.0
+      '@as-integrations/express4': ^1.1.2
+      firebase-admin: ^11.10.0 || ^12.0.0 || ^13.0.0 || ^14.0.0
+      graphql: ^16.12.0
+    peerDependenciesMeta:
+      '@apollo/server':
+        optional: true
+      '@as-integrations/express4':
+        optional: true
+      graphql:
+        optional: true
 
   firebase-tools@15.34.0:
     resolution: {integrity: sha512-Iv21U7tBtQVZloudPHVjeds/U2wqMEcNSLe318WrVo0gsOZjT/Nxp8jVWHCQUKu6HIdhFpZqkmhQCHD4HEDHuw==}
@@ -6692,6 +6744,10 @@ snapshots:
     dependencies:
       '@types/node': 24.19.2
 
+  '@types/cors@2.8.19':
+    dependencies:
+      '@types/node': 24.19.2
+
   '@types/deep-eql@4.0.2': {}
 
   '@types/esrecurse@4.3.1': {}
@@ -7969,6 +8025,17 @@ snapshots:
     transitivePeerDependencies:
       - '@firebase/app'
       - '@firebase/app-compat'
+      - supports-color
+
+  firebase-functions@7.4.0(firebase-admin@14.5.0(@firebase/app-compat@0.5.19)(@firebase/app@0.16.3)(supports-color@7.2.0))(supports-color@7.2.0):
+    dependencies:
+      '@types/cors': 2.8.19
+      '@types/express': 5.0.3
+      cors: 2.8.6
+      express: 5.3.0(supports-color@7.2.0)
+      firebase-admin: 14.5.0(@firebase/app-compat@0.5.19)(@firebase/app@0.16.3)(supports-color@7.2.0)
+      protobufjs: 7.6.6
+    transitivePeerDependencies:
       - supports-color
 
   firebase-tools@15.34.0(@types/node@24.19.2)(supports-color@7.2.0):

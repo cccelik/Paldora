@@ -4,6 +4,12 @@
   "private": true,
   "description": "Isolated direct-client Firebase migration slice; not wired into the live web app.",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src --max-warnings=0",

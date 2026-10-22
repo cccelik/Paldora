@@ -58,7 +58,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm firebase:rules:check
       - run: pnpm firebase:prototype:test
+      - run: pnpm firebase:trusted:test
       - run: pnpm firebase:native:test
+      - run: pnpm firebase:local:flow:test
 
   integration:
     name: Migrations and integration tests (real services)

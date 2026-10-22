@@ -1,0 +1,27 @@
+{
+  "name": "@paldora/firebase-trusted",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Trusted Firebase domain operations, tested locally before hosted deployment.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --exclude '**/*.integration.test.ts' --passWithNoTests",
+    "test:integration": "vitest run integration.test"
+  },
+  "dependencies": {
+    "@paldora/validation": "workspace:*",
+    "firebase-admin": "14.5.0"
+  },
+  "devDependencies": {
+    "vitest": "4.1.11"
+  }
+}

@@ -3,8 +3,14 @@
     "rules": "firebase/firestore.native.rules",
     "indexes": "firebase/firestore.indexes.json"
   },
+  "functions": {
+    "source": "apps/firebase-functions",
+    "codebase": "native-local"
+  },
   "emulators": {
+    "auth": { "host": "127.0.0.1", "port": 9099 },
     "firestore": { "host": "127.0.0.1", "port": 8080 },
+    "functions": { "host": "127.0.0.1", "port": 5001 },
     "ui": { "enabled": false }
   }
 }
