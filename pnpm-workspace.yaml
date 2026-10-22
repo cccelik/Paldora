@@ -13,5 +13,7 @@ allowBuilds:
   msgpackr-extract: true
   # Firebase CLI's protobufjs postinstall is optional for its generated runtime.
   protobufjs: false
+  # Firebase CLI runs the emulator without the optional native RE2 build.
+  re2: false
   # sharp loads prebuilt @img/* binaries; its source-build script never needs to run.
   sharp: false
