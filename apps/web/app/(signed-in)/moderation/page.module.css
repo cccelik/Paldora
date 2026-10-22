@@ -16,6 +16,14 @@
   gap: var(--pal-space-3);
 }
 
+.adminLink {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: var(--pal-size-touch-target);
+  color: var(--pal-text);
+}
+
 .tabs a {
   display: inline-flex;
   align-items: center;

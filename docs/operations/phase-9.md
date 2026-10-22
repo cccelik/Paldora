@@ -1,7 +1,9 @@
 # Phase 9 moderation and account lifecycle operations
 
 Public signup stays disabled. This runbook supports provisioned accounts and
-local or staging validation while production hosting decision D5 remains open.
+local validation. No staging or production hosting provider/project has been
+chosen for D5, and the external appeal/moderation email address has not been
+set. Both are open owner decisions before public signup.
 
 ## Staff and reports
 
@@ -19,6 +21,11 @@ upload. If object storage is unavailable, the takedown fails and can be
 retried. Verify ordinary post, comment, Room, media, and feed reads after a
 takedown; do not use a previously issued signed URL as proof of a successful
 takedown until object storage confirms deletion.
+The content author sees hidden posts and comments in Settings → Content
+notices. The notice exposes no reporter or case evidence. During the private
+beta, the invitation contact is the review path; replace it with the approved
+external moderation address before public signup. Do not present an unset
+address as a working appeal channel.
 
 The 15-minute maintenance reaper removes closed report evidence and case audit
 rows 90 days after `closed_at`, up to 100 cases per run. Check

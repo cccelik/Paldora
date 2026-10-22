@@ -28,6 +28,9 @@ export default async function ModerationQueuePage({
         title="Moderation queue"
         description="Review reports one case at a time. Opening a case is audited."
       />
+      <Link className={styles.adminLink} href="/moderation/accounts">
+        Administrator account lookup
+      </Link>
       <nav aria-label="Case status" className={styles.tabs}>
         <Link
           href="/moderation"

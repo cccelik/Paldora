@@ -5,6 +5,7 @@ import {
   moderationCaseSchema,
   moderationActionSchema,
   moderationAccountSchema,
+  moderationNoticesSchema,
   moderationQueueQuerySchema,
   reportReceiptPageSchema,
   reportReceiptSchema,
@@ -41,6 +42,19 @@ export const listMyReports = defineRoute({
   successStatus: 200,
   query: cursorPageQuerySchema,
   response: reportReceiptPageSchema,
+  errors: [],
+});
+
+export const listMyModerationNotices = defineRoute({
+  operationId: 'listMyModerationNotices',
+  method: 'GET',
+  path: '/me/moderation-notices',
+  summary:
+    'Owner-only notices for active posts and comments hidden by moderation; no reporter or case evidence.',
+  tag: 'Moderation',
+  access: 'authenticated',
+  successStatus: 200,
+  response: moderationNoticesSchema,
   errors: [],
 });
 

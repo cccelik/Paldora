@@ -54,3 +54,27 @@ test('account settings can request a private archive', async ({ page }) => {
     page.getByText('Your archive is being prepared.', { exact: true }),
   ).toBeVisible();
 });
+
+test('an account owner schedules and cancels deletion with their password', async ({
+  page,
+}) => {
+  const account = provisionAccount({ complete: true });
+  await signedIn(page, account);
+  await page.goto('/settings/account');
+  const deletion = page.getByRole('region', { name: 'Delete your account' });
+  await deletion.getByLabel('Confirm your password').fill(account.password);
+  await deletion
+    .getByRole('button', { name: 'Request account deletion' })
+    .click();
+  await expect(
+    deletion.getByText(/scheduled for permanent deletion/),
+  ).toBeVisible();
+  await deletion.getByLabel('Confirm your password').fill(account.password);
+  await deletion.getByRole('button', { name: 'Cancel deletion' }).click();
+  await expect(
+    deletion.getByText('Your deletion request was cancelled.'),
+  ).toBeVisible();
+  await expect(
+    deletion.getByRole('button', { name: 'Request account deletion' }),
+  ).toBeVisible();
+});

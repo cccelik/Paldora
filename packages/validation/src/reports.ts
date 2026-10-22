@@ -78,3 +78,15 @@ export const moderationAccountSchema = z
     status: z.enum(['active', 'suspended', 'deleted']),
   })
   .meta({ id: 'ModerationAccount' });
+
+export const moderationNoticeSchema = z
+  .object({
+    targetKind: z.enum(['post', 'comment']),
+    targetId: uuidSchema,
+    originalCreatedAt: isoTimestampSchema,
+  })
+  .meta({ id: 'ModerationNotice' });
+
+export const moderationNoticesSchema = z
+  .object({ items: z.array(moderationNoticeSchema).max(50) })
+  .meta({ id: 'ModerationNotices' });

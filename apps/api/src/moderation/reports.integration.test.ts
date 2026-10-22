@@ -80,6 +80,19 @@ describe('private reports and case access', () => {
       404,
       'POST_NOT_FOUND',
     );
+    const ownerNotices = await json<{
+      items: { targetKind: string; targetId: string }[];
+    }>(await as(owner).get('/me/moderation-notices'));
+    expect(ownerNotices.items).toContainEqual(
+      expect.objectContaining({ targetKind: 'post', targetId: post.id }),
+    );
+    expect(
+      (
+        await json<{ items: { targetId: string }[] }>(
+          await as(member).get('/me/moderation-notices'),
+        )
+      ).items.some((item) => item.targetId === post.id),
+    ).toBe(false);
     const feed = feedPageSchema.parse(
       await json(await as(member).get(`/boxes/${box.id}/posts`)),
     );
@@ -104,6 +117,13 @@ describe('private reports and case access', () => {
       201,
     );
     expect((await as(member).get(`/posts/${post.id}`)).status).toBe(200);
+    expect(
+      (
+        await json<{ items: { targetId: string }[] }>(
+          await as(owner).get('/me/moderation-notices'),
+        )
+      ).items.some((item) => item.targetId === post.id),
+    ).toBe(false);
   });
 
   it('hides a reported comment and its replies without exposing the author', async () => {

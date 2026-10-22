@@ -75,7 +75,17 @@ export function AccountDeletionControls({ dueAt }: { dueAt: string | null }) {
           maxLength={256}
           required
         />
-        <ActionFeedback state={pending ? cancelState : requestState} />
+        <ActionFeedback
+          state={
+            pending
+              ? cancelState.status === 'idle'
+                ? requestState
+                : cancelState
+              : cancelState.status === 'success'
+                ? cancelState
+                : requestState
+          }
+        />
         <SubmitButton pendingLabel="Please wait…" variant="secondary">
           {pending ? 'Cancel deletion' : 'Request account deletion'}
         </SubmitButton>

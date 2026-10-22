@@ -1,0 +1,43 @@
+.page,
+.form,
+.details {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.form,
+.details {
+  padding: var(--pal-space-5);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-surface);
+}
+
+.form input {
+  min-height: var(--pal-size-touch-target);
+  padding: var(--pal-space-2);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(in srgb, var(--pal-text) 25%, transparent);
+  border-radius: var(--pal-radius-sm);
+  background: var(--pal-canvas);
+  color: var(--pal-text);
+}
+
+.form button {
+  justify-self: start;
+  min-height: var(--pal-size-touch-target);
+  padding-inline: var(--pal-space-4);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-text);
+  color: var(--pal-canvas);
+  cursor: pointer;
+}
+
+.details > div {
+  display: grid;
+  gap: var(--pal-space-1);
+  overflow-wrap: anywhere;
+}
+
+.details dt {
+  color: var(--pal-text-muted);
+}

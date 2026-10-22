@@ -5,6 +5,9 @@ Status: in progress. Phase 8 is delivered; public registration remains disabled.
 The implemented local operating procedures are in
 [the Phase 9 runbook](../operations/phase-9.md). Hosted abuse and lifecycle
 smoke checks remain open until hosting decision D5 is resolved.
+The owner has no staging or production hosting project yet and has not set an
+external appeal/moderation email address. Record both as open signup gates;
+continue local validation with public registration disabled.
 
 ## Outcome and boundaries
 

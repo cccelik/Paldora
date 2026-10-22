@@ -21,7 +21,7 @@ import type {
   ModerationActionInput,
 } from '@paldora/validation';
 import { randomUUID } from 'node:crypto';
-import { and, eq, inArray, isNotNull, not } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, not } from 'drizzle-orm';
 import type { ObjectStorage } from '@paldora/storage';
 import { BoxPolicyService } from '../boxes/box-policy.service.js';
 import { boxNotFound } from '../boxes/box-errors.js';
@@ -300,6 +300,51 @@ export class ReportService {
       ({ report, cursorAt }) => ({ at: cursorAt, id: report.id }),
       ({ report }) => receipt(report),
     );
+  }
+
+  public async notices(userId: string) {
+    const [ownPosts, ownComments] = await Promise.all([
+      this.db
+        .select({ id: posts.id, createdAt: posts.createdAt })
+        .from(posts)
+        .where(
+          and(
+            eq(posts.authorUserId, userId),
+            eq(posts.status, 'active'),
+            eq(posts.moderationHidden, true),
+          ),
+        )
+        .orderBy(desc(posts.createdAt), desc(posts.id))
+        .limit(50),
+      this.db
+        .select({ id: comments.id, createdAt: comments.createdAt })
+        .from(comments)
+        .where(
+          and(
+            eq(comments.authorUserId, userId),
+            eq(comments.status, 'active'),
+            eq(comments.moderationHidden, true),
+          ),
+        )
+        .orderBy(desc(comments.createdAt), desc(comments.id))
+        .limit(50),
+    ]);
+    const items = [
+      ...ownPosts.map((row) => ({
+        targetKind: 'post' as const,
+        targetId: row.id,
+        originalCreatedAt: row.createdAt.toISOString(),
+      })),
+      ...ownComments.map((row) => ({
+        targetKind: 'comment' as const,
+        targetId: row.id,
+        originalCreatedAt: row.createdAt.toISOString(),
+      })),
+    ];
+    items.sort((left, right) =>
+      right.originalCreatedAt.localeCompare(left.originalCreatedAt),
+    );
+    return { items: items.slice(0, 50) };
   }
 
   public async queue(

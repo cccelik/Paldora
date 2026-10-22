@@ -1,0 +1,29 @@
+.section {
+  display: grid;
+  gap: var(--pal-space-5);
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-surface);
+}
+
+.title {
+  font-family: var(--pal-font-editorial);
+  font-size: var(--pal-font-size-heading-small);
+}
+
+.list {
+  display: grid;
+  gap: var(--pal-space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  gap: var(--pal-space-2);
+  padding: var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid
+    color-mix(in srgb, var(--pal-text) 20%, transparent);
+  border-radius: var(--pal-radius-md);
+  overflow-wrap: anywhere;
+}

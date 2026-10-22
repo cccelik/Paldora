@@ -6,6 +6,7 @@ import {
 import {
   createReport,
   listMyReports,
+  listMyModerationNotices,
   listModerationCases,
   getModerationCase,
   actOnModerationCase,
@@ -145,6 +146,7 @@ export const apiRoutes = {
   cancelAccountDeletion,
   createReport,
   listMyReports,
+  listMyModerationNotices,
   listModerationCases,
   getModerationCase,
   actOnModerationCase,

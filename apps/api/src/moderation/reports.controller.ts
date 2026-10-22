@@ -52,6 +52,12 @@ export class ReportsController {
     return this.reports.mine(me.userId, query);
   }
 
+  @Get('me/moderation-notices')
+  @Header('Cache-Control', 'private, no-store')
+  public notices(@CurrentPrincipal() me: Principal) {
+    return this.reports.notices(me.userId);
+  }
+
   @Get('moderation/cases')
   @Header('Cache-Control', 'private, no-store')
   public queue(
