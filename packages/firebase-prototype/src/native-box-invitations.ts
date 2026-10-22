@@ -39,6 +39,12 @@ function blocked(snapshot: DocumentSnapshot): boolean {
   );
 }
 
+function blockEpoch(snapshot: DocumentSnapshot): number {
+  return snapshot.exists
+    ? ((snapshot.get('epoch') as number | undefined) ?? 0)
+    : 0;
+}
+
 /**
  * Trusted transaction prototype. A future callable wrapper must derive the
  * caller UID from verified Firebase Auth, never a request body. Username
@@ -92,7 +98,8 @@ export class NativeBoxInvitations {
       if (
         existing.exists &&
         existing.get('status') === 'pending' &&
-        existing.get('expiresAt') > now
+        existing.get('expiresAt') > now &&
+        existing.get('blockEpoch') === blockEpoch(block)
       )
         throw new NativeInvitationError('ALREADY_PENDING');
       tx.set(invitationRef, {
@@ -103,6 +110,7 @@ export class NativeBoxInvitations {
         createdAt: now,
         expiresAt: now + SEVEN_DAYS_MS,
         respondedAt: null,
+        blockEpoch: blockEpoch(block),
       });
     });
     return invitationId;
@@ -139,6 +147,8 @@ export class NativeBoxInvitations {
         tx.get(blockRef),
       ]);
       if (!active(box) || !active(invitee) || blocked(block))
+        throw new NativeInvitationError('UNAVAILABLE');
+      if (invitation.get('blockEpoch') !== blockEpoch(block))
         throw new NativeInvitationError('UNAVAILABLE');
       if (invitation.get('expiresAt') <= now)
         throw new NativeInvitationError('EXPIRED');

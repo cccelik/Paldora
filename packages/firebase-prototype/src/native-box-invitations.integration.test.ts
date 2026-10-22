@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { afterAll, describe, expect, it } from 'vitest';
+import { NativeBlockPairs } from './native-block-pairs.js';
 import {
   NativeBoxInvitations,
   nativeBlockPairId,
@@ -20,6 +21,7 @@ const app = initializeApp(
 );
 const db = getFirestore(app);
 const invitations = new NativeBoxInvitations(db);
+const blocks = new NativeBlockPairs(db);
 afterAll(() => deleteApp(app));
 
 async function seed() {
@@ -167,6 +169,26 @@ describe('trusted native Box invitations', () => {
     await expect(
       invitations.invite(suspended.boxId, suspended.owner, suspended.guest),
     ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+  });
+
+  it('never revives a pending invitation after a block is lifted', async () => {
+    const { boxId, owner, guest } = await seed();
+    const invitationId = await invitations.invite(boxId, owner, guest, 1_000);
+    await blocks.setBlocked(guest, owner, true);
+    await blocks.setBlocked(guest, owner, false);
+    const pair = await db
+      .collection('nativeBlockPairs')
+      .doc(nativeBlockPairId(owner, guest))
+      .get();
+    expect(pair.data()).toEqual({ blockedBy: [], epoch: 1 });
+    await expect(
+      invitations.accept(invitationId, guest, 1_001),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    const replacement = await invitations.invite(boxId, owner, guest, 1_002);
+    expect(replacement).toBe(invitationId);
+    await expect(invitations.accept(replacement, guest, 1_003)).resolves.toBe(
+      boxId,
+    );
   });
 
   it('serializes concurrent acceptance and refuses an already active member', async () => {

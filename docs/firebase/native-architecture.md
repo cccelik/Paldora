@@ -77,11 +77,14 @@ shape. It accepts a resolved UID, checks the inviter's role, both account
 states, target membership, Box state, and a deterministic block-pair document
 inside a Firestore transaction. Acceptance rechecks the block and expiry, then
 writes membership and the private Box hint atomically. Client rules deny direct
-reads and writes to invitation and block documents. It is **not callable from
-the app**: verified Auth context, username resolution, rate limits, invite
-listing/revocation, block writes, and hosted function deployment are still
-required. Every block operation must write the same pair document, so a block
-and an invitation/acceptance conflict and retry rather than passing each other.
+reads and writes to invitation and block documents. The local trusted
+`NativeBlockPairs` prototype advances a pair epoch whenever someone blocks;
+an invitation records the current epoch, so unblocking cannot revive an older
+pending invite. It is **not callable from the app**: verified Auth context,
+username resolution, rate limits, invite listing/revocation, complete block
+lifecycle, and hosted function deployment are still required. Every block
+operation must write the same pair document, so a block and an
+invitation/acceptance conflict and retry rather than passing each other.
 
 ## Migration gate
 
