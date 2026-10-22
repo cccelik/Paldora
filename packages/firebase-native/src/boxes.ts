@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  runTransaction,
   writeBatch,
   type Firestore,
 } from 'firebase/firestore';
@@ -64,4 +65,42 @@ export async function listMyBoxIds(
     collection(db, 'nativeAccounts', uid, 'boxRefs'),
   );
   return snapshot.docs.map((item) => item.id);
+}
+
+/** Atomically demote the old owner and promote an existing active member. */
+export async function transferBoxOwnership(
+  db: Firestore,
+  boxId: string,
+  ownerUid: string,
+  nextOwnerUid: string,
+): Promise<void> {
+  if (ownerUid === nextOwnerUid) throw new Error('Choose another member.');
+  const boxRef = doc(db, 'nativeBoxes', boxId);
+  const ownerRef = doc(db, 'nativeBoxes', boxId, 'members', ownerUid);
+  const nextRef = doc(db, 'nativeBoxes', boxId, 'members', nextOwnerUid);
+  await runTransaction(db, async (transaction) => {
+    const [boxSnapshot, ownerSnapshot, nextSnapshot] = await Promise.all([
+      transaction.get(boxRef),
+      transaction.get(ownerRef),
+      transaction.get(nextRef),
+    ]);
+    const box = boxSnapshot.data() as NativeBox | undefined;
+    if (
+      !box ||
+      box.status !== 'active' ||
+      box.ownerUid !== ownerUid ||
+      ownerSnapshot.data()?.role !== 'owner' ||
+      ownerSnapshot.data()?.status !== 'active' ||
+      nextSnapshot.data()?.status !== 'active' ||
+      nextSnapshot.data()?.role === 'owner'
+    ) {
+      throw new Error('Box or active successor unavailable.');
+    }
+    transaction.update(boxRef, {
+      ownerUid: nextOwnerUid,
+      version: box.version + 1,
+    });
+    transaction.update(ownerRef, { role: 'admin' });
+    transaction.update(nextRef, { role: 'owner' });
+  });
 }

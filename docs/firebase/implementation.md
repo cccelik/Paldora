@@ -25,6 +25,8 @@ production paths just because a local emulator test passes.
       client SDK, atomic owner membership and private Box-ID hint, active-account
       rules, and emulator privacy tests. Native rules stay local; hosted rules
       remain deny-all until full parity is proven.
+- [x] Add an atomic direct-client ownership transfer with active-successor,
+      partial-write, suspended-account, and competing-transfer emulator tests.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,

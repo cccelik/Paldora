@@ -45,6 +45,46 @@ service cloud.firestore {
         && request.resource.data.version == 1;
     }
 
+    function validTransfer(boxId) {
+      let nextOwner = request.resource.data.ownerUid;
+      return activeAccount()
+        && resource.data.status == 'active'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid', 'version'])
+        && request.resource.data.version == resource.data.version + 1
+        && resource.data.ownerUid == request.auth.uid
+        && nextOwner is string
+        && nextOwner != request.auth.uid
+        && get(accountPath(nextOwner)).data.status == 'active'
+        && get(memberPath(boxId, request.auth.uid)).data.role == 'owner'
+        && get(memberPath(boxId, request.auth.uid)).data.status == 'active'
+        && get(memberPath(boxId, nextOwner)).data.status == 'active'
+        && getAfter(memberPath(boxId, request.auth.uid)).data.role == 'admin'
+        && getAfter(memberPath(boxId, request.auth.uid)).data.status == 'active'
+        && getAfter(memberPath(boxId, nextOwner)).data.role == 'owner'
+        && getAfter(memberPath(boxId, nextOwner)).data.status == 'active';
+    }
+
+    function validTransferMemberUpdate(boxId, memberUid) {
+      let beforeBox = get(boxPath(boxId)).data;
+      let afterBox = getAfter(boxPath(boxId)).data;
+      return activeAccount()
+        && beforeBox.status == 'active'
+        && beforeBox.ownerUid == request.auth.uid
+        && afterBox.ownerUid != beforeBox.ownerUid
+        && afterBox.version == beforeBox.version + 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'active'
+        && ((memberUid == request.auth.uid
+              && resource.data.role == 'owner'
+              && request.resource.data.role == 'admin')
+            || (memberUid == afterBox.ownerUid
+              && resource.data.role != 'owner'
+              && request.resource.data.role == 'owner'))
+        && getAfter(memberPath(boxId, beforeBox.ownerUid)).data.role == 'admin'
+        && getAfter(memberPath(boxId, afterBox.ownerUid)).data.role == 'owner';
+    }
+
     match /nativeAccounts/{uid} {
       // Account state is provisioned by a trusted operator, never by a client.
       allow read, write: if false;
@@ -75,12 +115,15 @@ service cloud.firestore {
         && getAfter(memberPath(boxId, request.auth.uid)).data.role == 'owner'
         && getAfter(memberPath(boxId, request.auth.uid)).data.status == 'active'
         && getAfter(boxRefPath(request.auth.uid, boxId)).data.boxId == boxId;
-      // Role changes, transfers, deletion and content cleanup need separate
-      // atomic invariants. They stay closed until those tests exist.
-      allow update, delete: if false;
+      allow update: if validTransfer(boxId);
+      // Deletion and content cleanup remain closed.
+      allow delete: if false;
 
       match /members/{memberUid} {
-        allow get: if activeAccount() && request.auth.uid == memberUid;
+        allow get: if activeAccount()
+          && (request.auth.uid == memberUid
+            || (get(boxPath(boxId)).data.ownerUid == request.auth.uid
+              && activeMember(boxId)));
         allow list: if false;
         allow create: if activeAccount()
           && request.auth.uid == memberUid
@@ -92,7 +135,8 @@ service cloud.firestore {
           && !exists(boxPath(boxId))
           && getAfter(boxPath(boxId)).data.ownerUid == memberUid
           && getAfter(boxRefPath(memberUid, boxId)).data.boxId == boxId;
-        allow update, delete: if false;
+        allow update: if validTransferMemberUpdate(boxId, memberUid);
+        allow delete: if false;
       }
     }
 

@@ -58,10 +58,13 @@ forged writes in emulator tests. Box listing starts from private ID hints and
 re-authorizes each Box read. No other collection is open.
 
 The native rules are **experimental and not deployed**. The hosted development
-project still uses the deny-all `firebase/firestore.rules`. The next Box slice
-must prove invitations, roles, transfer, leave/removal, archive, deletion, and
-simultaneous races before replacing the current Box implementation. The web
-application still calls the current API.
+project still uses the deny-all `firebase/firestore.rules`. An additional
+transaction now transfers ownership to an existing active member: it changes
+the Box owner/version and both member roles together. Emulator tests reject
+partial writes, suspended successors, stale transfers, and simultaneous
+successors. Invitations, general role changes, leave/removal, archive, deletion,
+and the full existing race matrix still need proof before replacing the current
+Box implementation. The web application still calls the current API.
 
 ## Migration gate
 

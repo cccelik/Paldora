@@ -13,10 +13,16 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
   type Firestore,
 } from 'firebase/firestore';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createBox, getBox, listMyBoxIds } from './boxes.js';
+import {
+  createBox,
+  getBox,
+  listMyBoxIds,
+  transferBoxOwnership,
+} from './boxes.js';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST)
   throw new Error('This test requires the disposable Firestore emulator');
@@ -56,6 +62,107 @@ async function account(uid: string, status: 'active' | 'suspended' = 'active') {
 }
 
 describe('Firebase-native Box access', () => {
+  it('transfers to an active member atomically and rejects partial or stale transfers', async () => {
+    const alice = person();
+    const bob = person();
+    const carol = person();
+    const boxId = box();
+    for (const uid of [alice, bob, carol]) await account(uid);
+    const aliceDb = clientDb(env.authenticatedContext(alice));
+    const bobDb = clientDb(env.authenticatedContext(bob));
+    const boxRef = doc(aliceDb, 'nativeBoxes', boxId);
+    await createBox(aliceDb, alice, 'Crew', boxId);
+    await env.withSecurityRulesDisabled(async (context) => {
+      const adminDb = clientDb(context);
+      for (const uid of [bob, carol]) {
+        await setDoc(doc(adminDb, 'nativeBoxes', boxId, 'members', uid), {
+          uid,
+          role: 'member',
+          status: 'active',
+        });
+      }
+    });
+    await assertFails(updateDoc(boxRef, { ownerUid: bob, version: 2 }));
+    await assertFails(
+      updateDoc(doc(aliceDb, 'nativeBoxes', boxId, 'members', bob), {
+        role: 'owner',
+      }),
+    );
+    await assertSucceeds(transferBoxOwnership(aliceDb, boxId, alice, bob));
+    expect(await getBox(aliceDb, boxId)).toMatchObject({
+      ownerUid: bob,
+      version: 2,
+    });
+    expect(
+      (
+        await getDoc(doc(aliceDb, 'nativeBoxes', boxId, 'members', alice))
+      ).data()?.role,
+    ).toBe('admin');
+    expect(
+      (await getDoc(doc(bobDb, 'nativeBoxes', boxId, 'members', bob))).data()
+        ?.role,
+    ).toBe('owner');
+    await expect(
+      transferBoxOwnership(aliceDb, boxId, alice, carol),
+    ).rejects.toThrow();
+    await assertFails(
+      updateDoc(doc(bobDb, 'nativeBoxes', boxId), {
+        ownerUid: carol,
+        version: 3,
+      }),
+    );
+  });
+
+  it('allows only one successor when two owner transfers race', async () => {
+    const alice = person();
+    const bob = person();
+    const carol = person();
+    const boxId = box();
+    for (const uid of [alice, bob, carol]) await account(uid);
+    const aliceDb = clientDb(env.authenticatedContext(alice));
+    await createBox(aliceDb, alice, 'Race', boxId);
+    await env.withSecurityRulesDisabled(async (context) => {
+      const adminDb = clientDb(context);
+      for (const uid of [bob, carol]) {
+        await setDoc(doc(adminDb, 'nativeBoxes', boxId, 'members', uid), {
+          uid,
+          role: 'member',
+          status: 'active',
+        });
+      }
+    });
+    const outcomes = await Promise.allSettled([
+      transferBoxOwnership(aliceDb, boxId, alice, bob),
+      transferBoxOwnership(aliceDb, boxId, alice, carol),
+    ]);
+    expect(
+      outcomes.filter((outcome) => outcome.status === 'fulfilled'),
+    ).toHaveLength(1);
+    const finalBox = await getBox(aliceDb, boxId);
+    expect(finalBox?.version).toBe(2);
+    expect([bob, carol]).toContain(finalBox?.ownerUid);
+  });
+
+  it('will not transfer ownership to a suspended member', async () => {
+    const alice = person();
+    const bob = person();
+    const boxId = box();
+    await account(alice);
+    await account(bob, 'suspended');
+    const aliceDb = clientDb(env.authenticatedContext(alice));
+    await createBox(aliceDb, alice, 'Crew', boxId);
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(clientDb(context), 'nativeBoxes', boxId, 'members', bob),
+        {
+          uid: bob,
+          role: 'member',
+          status: 'active',
+        },
+      );
+    });
+    await assertFails(transferBoxOwnership(aliceDb, boxId, alice, bob));
+  });
   it('creates an owned Box atomically and lists only its private ID hint', async () => {
     const alice = person();
     const bob = person();
