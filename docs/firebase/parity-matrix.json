@@ -1,0 +1,264 @@
+{
+  "status": "Firebase web cutover complete locally; hosted release gates remain",
+  "domains": {
+    "accountLifecycle": {
+      "routes": [
+        "requestAccountExport",
+        "getAccountExport",
+        "downloadAccountExport",
+        "requestAccountDeletion",
+        "getAccountDeletion",
+        "cancelAccountDeletion"
+      ],
+      "web": ["settings/account"],
+      "referenceTests": [
+        "apps/api/src/account-lifecycle",
+        "apps/worker/src/account-export",
+        "apps/worker/src/account-deletion"
+      ],
+      "replacement": "trusted export/deletion services, private Storage, resumable Functions jobs",
+      "acceptanceTest": "Auth reauthentication, seven-day cancellation, JSON export, owned-Box transfer and resumable erasure browser/emulator tests"
+    },
+    "moderation": {
+      "routes": [
+        "createReport",
+        "listMyReports",
+        "listMyModerationNotices",
+        "listModerationCases",
+        "getModerationCase",
+        "actOnModerationCase",
+        "getModerationAccount"
+      ],
+      "web": ["moderation", "settings/reports", "settings/content-notices"],
+      "referenceTests": [
+        "apps/api/src/moderation",
+        "apps/worker/src/maintenance/moderation-retention.ts"
+      ],
+      "replacement": "trusted reports, staff actions, notices and retention",
+      "acceptanceTest": "Report privacy, staff grants, hide/restore, suspension, media retirement and 90-day evidence retention tests"
+    },
+    "identity": {
+      "routes": [
+        "getLiveness",
+        "getReadiness",
+        "getCurrentUser",
+        "updateProfile",
+        "getUsernameAvailability",
+        "updatePreferences",
+        "deleteAvatar",
+        "setReactionPresets"
+      ],
+      "web": ["sign-in", "onboarding", "settings"],
+      "referenceTests": ["apps/api/src/identity", "apps/web/e2e"],
+      "replacement": "Firebase Auth session, nativeAccounts, profile and preferences",
+      "acceptanceTest": "Sign-in/out, onboarding, reset, stale/revoked cookie, suspension, CSRF and client-bundle browser tests"
+    },
+    "media": {
+      "routes": ["createMediaUpload", "completeMediaUpload", "getMediaAsset"],
+      "web": [
+        "post photos",
+        "Life Update photos",
+        "avatar",
+        "Room banner",
+        "camera reaction"
+      ],
+      "referenceTests": ["apps/api/src/media", "apps/worker/src/media"],
+      "replacement": "private Storage and authenticated web handlers with Functions processing",
+      "acceptanceTest": "Invalid bytes, metadata stripping, private reads, late retry, takedown and orphan-cleanup emulator tests"
+    },
+    "social": {
+      "routes": [
+        "listFriends",
+        "listFriendRequests",
+        "createFriendRequest",
+        "acceptFriendRequest",
+        "declineFriendRequest",
+        "cancelFriendRequest",
+        "removeFriend",
+        "listBlocks",
+        "createBlock",
+        "removeBlock"
+      ],
+      "web": ["friends", "Rooms", "Box invitation chooser"],
+      "referenceTests": ["apps/api/src/social"],
+      "replacement": "nativeFriendPairs and nativeBlockPairs trusted services",
+      "acceptanceTest": "Request/accept/cancel, block/unblock, immediate visibility and conflict-race emulator/browser tests"
+    },
+    "boxes": {
+      "routes": [
+        "listBoxes",
+        "createBox",
+        "getBox",
+        "updateBox",
+        "deleteBox",
+        "listBoxMembers",
+        "updateBoxMember",
+        "leaveBox",
+        "removeBoxMember",
+        "transferBoxOwnership",
+        "createBoxInvitation",
+        "listBoxInvitations",
+        "revokeBoxInvitation",
+        "listMyBoxInvitations",
+        "acceptBoxInvitation",
+        "declineBoxInvitation"
+      ],
+      "web": ["boxes", "boxes/[boxId]", "home"],
+      "referenceTests": ["apps/api/src/boxes"],
+      "replacement": "trusted nativeBoxes lifecycle, membership and invitation services",
+      "acceptanceTest": "Membership, ownership transfer, invitations, archive, deletion fault-retry, nonmember 404 and no-orphan tests"
+    },
+    "content": {
+      "routes": [
+        "createPost",
+        "listBoxPosts",
+        "getHomeFeed",
+        "getPost",
+        "updatePost",
+        "deletePost",
+        "createComment",
+        "listComments",
+        "listReplies",
+        "getComment",
+        "updateComment",
+        "deleteComment",
+        "setPostReaction",
+        "setCommentReaction",
+        "listPostReactions"
+      ],
+      "web": ["home", "boxes/[boxId]", "posts/[postId]"],
+      "referenceTests": ["apps/api/src/posts", "apps/api/src/interactions"],
+      "replacement": "trusted Box posts and interactions, canonical reads and feed references",
+      "acceptanceTest": "Post/comment/reaction validation, canonical visibility, pagination, archive and block-heavy feed tests"
+    },
+    "realtimeNotifications": {
+      "routes": [
+        "openEventStream",
+        "listNotifications",
+        "getUnreadCount",
+        "markNotificationRead",
+        "markAllNotificationsRead"
+      ],
+      "web": ["notifications", "signed-in layout"],
+      "referenceTests": [
+        "apps/api/src/notifications",
+        "apps/api/src/realtime",
+        "apps/worker/src/activity"
+      ],
+      "replacement": "durable activity projection and same-origin authenticated hints",
+      "acceptanceTest": "Deduped projection, unread state, deep-link privacy, SSE reconnect and polling fallback tests"
+    },
+    "lifeUpdates": {
+      "routes": [
+        "createLifeUpdate",
+        "getLifeUpdate",
+        "updateLifeUpdate",
+        "deleteLifeUpdate",
+        "listMyLifeUpdates"
+      ],
+      "web": ["life-updates"],
+      "referenceTests": ["apps/api/src/life-updates"],
+      "replacement": "single nativeLifeUpdates record and delivery contexts",
+      "acceptanceTest": "Only Me, multi-Box dedupe, isolated threads, audience immutability, last delivery and deletion tests"
+    },
+    "memories": {
+      "routes": [
+        "listMyMemories",
+        "getMyMemorySummary",
+        "listBoxMemories",
+        "getBoxMemorySummary"
+      ],
+      "web": [
+        "memories",
+        "boxes/[boxId]/memories",
+        "rooms/[username]/memories"
+      ],
+      "referenceTests": ["apps/api/src/memories"],
+      "replacement": "derived, authorization-rechecked native Memory queries",
+      "acceptanceTest": "UTC year/month summary, keyset pagination, current membership, block and moderation tests"
+    },
+    "rooms": {
+      "routes": [
+        "getMyRoomPersonalization",
+        "getRoomPersonalization",
+        "updateMyRoomPersonalization",
+        "getMyRoom",
+        "getRoom",
+        "listRoomContent",
+        "getRoomContentSummary",
+        "listRoomPhotos",
+        "updateMyRoom",
+        "updateMyRoomWidgets",
+        "updateMyRoomTopFriends"
+      ],
+      "web": ["rooms/[username]", "rooms/[username]/customize"],
+      "referenceTests": ["apps/api/src/rooms"],
+      "replacement": "versioned nativeRooms, current visibility and sanitized personalization",
+      "acceptanceTest": "Visibility tiers, version conflict, top friends, widgets, previews and unsafe personalization tests"
+    }
+  },
+  "directWebTransports": [
+    {
+      "name": "openEventStream",
+      "source": "apps/web/app/components/realtime/realtime-bridge.tsx",
+      "replacement": "same-origin authenticated SSE hint route with polling fallback",
+      "acceptanceTest": "session expiry, suspension, reconnect and missed-hint resync browser tests"
+    },
+    {
+      "name": "signed media PUT",
+      "source": "apps/web/app/lib/media/image-upload.ts",
+      "replacement": "same-origin authenticated private upload route",
+      "acceptanceTest": "invalid file, upload retry, no Storage URL leak and retirement browser tests"
+    }
+  ],
+  "workerJobs": [
+    {
+      "name": "account export build/expiry",
+      "source": "apps/worker/src/account-export/export-archive.ts",
+      "replacement": "nativeExports intent, private Storage archive and seven-day expiry task",
+      "acceptance": "archive schema, owner-only download, retry and expiry integration tests"
+    },
+    {
+      "name": "seven-day account erasure",
+      "source": "apps/worker/src/account-deletion/erase-account.ts",
+      "replacement": "generation-tagged nativeDeletionRequests task processor",
+      "acceptance": "cancel/deadline race and restart-at-every-step fault tests"
+    },
+    {
+      "name": "media processing/retirement/reaper",
+      "source": "apps/worker/src/media/process-media.ts, apps/worker/src/media/delete-media.ts, apps/worker/src/maintenance/unattached-media.ts",
+      "replacement": "nativeMediaAssets lifecycle and durable task intents",
+      "acceptance": "invalid bytes, metadata stripping, retry, takedown race and orphan cleanup tests"
+    },
+    {
+      "name": "activity projection/retention",
+      "source": "apps/worker/src/activity/projector.ts, apps/worker/src/maintenance/activity-retention.ts",
+      "replacement": "nativeActivity idempotent notification projection and retention task",
+      "acceptance": "dedupe, visibility and retention integration tests"
+    },
+    {
+      "name": "notification hints",
+      "source": "apps/worker/src/activity/realtime-publisher.ts",
+      "replacement": "nativeUserHints invalidation and authenticated SSE/poll route",
+      "acceptance": "disconnect, reconnect, suspension and polling fallback tests"
+    },
+    {
+      "name": "moderation retention",
+      "source": "apps/worker/src/maintenance/moderation-retention.ts",
+      "replacement": "90-day nativeReports evidence redaction task",
+      "acceptance": "deadline, repeat-run and audit preservation tests"
+    },
+    {
+      "name": "deliveryless Life Update repair",
+      "source": "apps/worker/src/maintenance/deliveryless-life-updates.ts",
+      "replacement": "nativeLifeUpdates final-delivery tombstone repair",
+      "acceptance": "partial Box deletion and restart repair tests"
+    },
+    {
+      "name": "durable outbox dispatch/reaper",
+      "source": "apps/worker/src/outbox/dispatcher.ts, apps/worker/src/maintenance/reaper.ts",
+      "replacement": "nativeJobs idempotent dispatch, retry and dead-letter repair",
+      "acceptance": "enqueue crash, lease expiry, retry and dead-letter tests"
+    }
+  ]
+}

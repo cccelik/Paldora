@@ -3,13 +3,15 @@ import { CreateBoxForm } from '@/components/boxes/box-forms';
 import { BoxCardList, MyInvitationList } from '@/components/boxes/box-lists';
 import { MoreLink } from '@/components/common/more-link';
 import { PageHeader, Section } from '@/components/ui';
-import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
+import { completedUser, cursorParam } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 export const metadata = { title: 'Boxes' };
 
 export default async function BoxesPage({ searchParams }: PageProps<'/boxes'>) {
   await completedUser();
   const cursor = cursorParam((await searchParams).boxes);
-  const api = await apiClient();
+  const api = await firebaseWebData();
   const [boxes, invitations] = await Promise.all([
     api.boxes({ limit: 25, cursor }),
     api.myBoxInvitations({ limit: 50 }),

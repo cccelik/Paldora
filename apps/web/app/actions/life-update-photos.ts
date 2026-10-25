@@ -10,7 +10,7 @@ import {
   uploadFileSchema,
   type PreparedUpload,
 } from '@/lib/media/upload';
-import { apiClient } from '@/lib/server/session';
+import { mediaActionClient } from '@/lib/media/media-service';
 const fileSchema = uploadFileSchema('life_update_image');
 
 /**
@@ -25,7 +25,7 @@ export async function prepareLifeUpdatePhoto(
   if (!parsed.success) {
     return invalidOutcome(PHOTO_FILE_MESSAGE);
   }
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return reservePhotoUpload(() =>
     api.createMediaUpload({ purpose: 'life_update_image', ...parsed.data }),
   );

@@ -1,16 +1,23 @@
 import pageStyles from '@/(signed-in)/home/page-layout.module.css';
 import styles from '@/(signed-in)/home/page.module.css';
 import { MoreLink } from '@/components/common/more-link';
-import { PostFeed } from '@/components/posts/post-card';
+
+import { FirebaseBoxFeed } from '@/components/posts/firebase-box-feed';
 import { Avatar, buttonClassName, Section } from '@/components/ui';
-import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
+import { completedUser, cursorParam } from '@/lib/server/session';
+
+import {
+  firebaseWebData,
+  type FirebaseFeedItem,
+} from '@/lib/server/firebase/data';
+
 import Link from 'next/link';
 export const metadata = { title: 'Home' };
 
 export default async function HomePage({ searchParams }: PageProps<'/home'>) {
-  const { user, profile, preferences } = await completedUser();
+  const { profile, preferences } = await completedUser();
   const cursor = cursorParam((await searchParams).feed);
-  const feed = await (await apiClient()).homeFeed({ limit: 20, cursor });
+  const feed = await (await firebaseWebData()).homeFeed({ limit: 20, cursor });
   return (
     <div className={pageStyles.stack}>
       <section className={styles.welcome} aria-labelledby="welcome-title">
@@ -43,13 +50,15 @@ export default async function HomePage({ searchParams }: PageProps<'/home'>) {
             Memories
           </Link>
         </div>
-        <PostFeed
-          items={feed.items}
-          presets={preferences.reactionPresets}
-          viewerId={user.id}
-          showBox
-          empty="Nothing here yet. Open a Box and share something, or accept an invitation."
-        />
+        {
+          <FirebaseBoxFeed
+            items={feed.items as FirebaseFeedItem[]}
+            active
+            presets={preferences.reactionPresets}
+            showBox
+            empty="Nothing here yet. Open a Box and share something, or accept an invitation."
+          />
+        }
         {feed.nextCursor ? (
           <MoreLink
             href={`/home?feed=${encodeURIComponent(feed.nextCursor)}`}

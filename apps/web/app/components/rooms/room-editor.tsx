@@ -32,12 +32,14 @@ export function RoomEditor({
   friends,
   moreFriends,
   personalization,
+  mediaEnabled = true,
 }: {
   room: RoomView;
   previews: RoomPreviews;
   friends: readonly UserSummary[];
   moreFriends: boolean;
   personalization: PersonalizationSource;
+  mediaEnabled?: boolean;
 }) {
   const [saved, setSaved] = useState(room);
   const [stale, setStale] = useState(false);
@@ -82,7 +84,9 @@ export function RoomEditor({
         />
         <RoomPersonalizationEditor source={personalization} context={context} />
         <RoomAboutForm room={room} context={context} />
-        <RoomBannerEditor banner={saved.banner} context={context} />
+        {mediaEnabled ? (
+          <RoomBannerEditor banner={saved.banner} context={context} />
+        ) : null}
         <RoomWidgetEditor room={room} layout={style.layout} context={context} />
         <RoomTopFriendsEditor
           room={room}

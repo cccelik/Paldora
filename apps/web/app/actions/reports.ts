@@ -6,7 +6,9 @@ import {
   type ActionResult,
 } from '@/lib/actions/action-result';
 import { textField } from '@/lib/actions/form-data';
-import { apiClient } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
 import { createReportSchema } from '@paldora/validation';
 import { revalidatePath } from 'next/cache';
 
@@ -23,7 +25,10 @@ export async function createReportAction(
   });
   if (!parsed.success) return invalidOutcome('Check the report and try again.');
   try {
-    await (await apiClient()).createReport(parsed.data);
+    {
+      await requireFirebaseActionOrigin();
+      await (await firebaseWebData()).createReport(parsed.data);
+    }
     revalidatePath('/settings/reports');
     return {
       status: 'success',

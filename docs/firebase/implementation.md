@@ -1,17 +1,58 @@
 # Firebase rewrite execution tracker
 
-Status: **in progress, Phase 0**. Started 2026-10-22. This tracker is the
-implementation order for [the complete rewrite plan](../plans/firebase-rewrite.md)
-and [the Firebase-native architecture decision](native-architecture.md).
-The existing backend remains the
-source of truth until a phase's exit gate passes. Public signup stays disabled.
+Status: **Firebase-only local web cutover implemented; hosted release remains gated**. Started
+2026-10-22. The current work order is the user's complete local migration plan:
+server-only Next.js access through `@paldora/firebase-trusted`, Auth session
+cookies, Firestore, private Storage and local Functions. The older hosted rewrite
+plan and native direct-client prototype remain useful history, but their hosted
+phase gates and direct-client web architecture are superseded for local work.
+The removed HTTP API is retained only as historical behavior in `legacy/` and the
+parity documents. Public signup stays disabled and `paldora-dev` stays on Spark.
 
-Each phase ends with a reviewable commit, test evidence, and an explicit
-go/no-go note. A phase is **done** only when every listed acceptance condition
-passes in the relevant environment. Experimental code must not be wired into
-production paths just because a local emulator test passes.
+## Current local workstream
 
-## Phase 0 — discovery and hard-query proof (in progress)
+| Phase                                     | Status           | Evidence and next gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Parity contract                        | Complete         | `parity-matrix.json` covers all 90 canonical API contract routes, including liveness/readiness (89 HTTP-decorator routes plus one SSE route). The earlier 92 estimate was inaccurate. The original route crosswalk was verified against 89 typed-client methods, the direct SSE transport, and eight worker workstreams before the old client was retired. `pnpm firebase:parity:check` now rejects legacy runtime imports and old workspace services. The route registry owns validation schemas; the matrix records domain web surfaces, reference suites, replacements, and acceptance criteria. Both direct web transports are tracked. Generated `route-crosswalk.md` and `route-boundaries.json` record exact web call sites, contract access, validation schemas, route summaries, errors and media boundaries for all 90 routes. Each route now also links to its API controller handler, principal injection and called service in `route-boundaries.json` and `route-crosswalk.md`; the checker fails if a protected handler loses its principal or a handler loses its service boundary. Domain acceptance tests are assigned for every route. Replacement behavior remains subject to its later phase gate.                                                                                                                                                                                                                                                                                                                |
+| 2. Foundation and identity                | Complete         | Admin-only web adapter and tested seven-day Auth session-cookie service exist. Trusted provisioning, profile/onboarding, username and preferences have emulator coverage. Reauthenticated password changes and email-link recovery reset rotate the session epoch; emulator tests cover old-cookie rejection. Firebase-mode web sign-in, onboarding and logout pass desktop/mobile browser tests; unadmitted and suspended sign-in is denied. Explicit origin checks exist on Firebase web actions. Desktop/mobile password-reset, stale-cookie and cross-origin Server Action checks pass, and the Admin-marker bundle scan passes. Firebase-mode account profile, appearance, reaction settings and reauthenticated password change work locally. The 12 desktop/mobile browser checks pass. Avatar upload and account lifecycle controls belong to Phases 5 and 7, respectively.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 3. Relationships and Boxes                | Complete         | Trusted friendship requests with direction-specific decline/cancel/removal, username-resolved block listing/mutation, recipient and sender invitation views, members and Box lifecycle services exist locally. Invitation acceptance and listings recheck the inviter's active account and current owner/admin membership. Box deletion closes reads, records a durable job, detaches Life Update deliveries, removes only linked feed/notification pointers, closes reports, and cleans invitations, hints and descendants in retryable steps. The desktop/mobile browser path passes invitation acceptance, friendship, block/unblock, archive/restore, pre-join 404, ownership transfer and empty-Box deletion. The deletion worker and scheduled repair both retire private Box objects from Storage before removing metadata; real Storage, failure/retry, block/unblock, and deletion browser checks pass. A local repair command handles jobs beyond one request. Transfer-versus-deletion and removal race tests, failed-cleanup repair, media retirement and no-orphan-reference checks pass in emulators. Large-scale cleanup throughput remains a Phase 5/load gate.                                                                                                                                                                                                                                                                                                                                                        |
+| 4. Content, feeds, Memories and Rooms     | Complete locally | Trusted text posts, threaded comments and emoji reactions, canonical text Life Updates, ID-only Home references, UTC Memories, and versioned Rooms/personalization are wired to Firebase web mode. Comment roots and active replies page separately, deleted roots retain tombstones, and linked comments open a pinned thread. Room reads recheck account, membership, blocks and content state. Memories pages use one bounded source window per request (up to 50 Box candidates, 320 Home references, and 20 own updates), preserve same-timestamp cursor order, and can advance through empty hidden-heavy batches. Year/month source queries start and stop at UTC boundaries; sparse Room histories query author-indexed feed hints and verify the canonical author. The Firebase calendar deliberately uses navigable year/month links without exact count badges, which would require an unbounded live visibility scan; the old API view retains its count badges. Trusted Auth/Firestore integration passes 62 tests, including hidden-heavy Box and Home windows, 35-Box Home pagination and live Room revocation. The 14 desktop/mobile Firebase browser checks pass, including delivered Life Update conversations, Room and personal Memories, month-page accessibility and 390px overflow, and Box deletion. All five local Functions flow checks pass, including feed projection and repair. Media-backed content and photo previews belong to Phase 5; hosted performance/cost validation remains separate on Spark. |
+| 5. Media and durable work                 | Complete locally | Trusted Auth/Firestore/Storage suite passed 70/70 before the final targeted changes; the media suite then passed 13/13, covering invalid bytes, worker claims, retry, orphan sweep, dead-letter replay, expiry, takedown, and delete/process races. Functions flow passed 5/5 with task dispatch and Pub/Sub repair functions initialized. Desktop/mobile browser suite passed 18/18, including private post photos, Life Update photos, avatar, Room banner, camera capture and old-route retirement. Hosted deny-all rules passed. Hosted IAM, queue timing, cost/load and object retirement remain separate on Spark.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 6. Notifications, realtime and moderation | Complete locally | Canonical comment/reaction transactions write ID-only activity intents; Functions and web project deduped recipient notifications, and every list/count/open rechecks live Box, post, comment/reaction, actor, block and account state. Same-origin SSE rechecks the session and account every five seconds, expires after 45 seconds, reconnects with a polling refresh fallback, and carries opaque hints only. Trusted user/Box/post/comment reports, private receipts, staff queue/case audit, exact-ID administrator lookup, hide/restore/suspend/unsuspend, owner notices, 90-day evidence redaction and Box cleanup are wired to Firebase web mode. Post takedown closes reads before draining durable media retirement and only reports success after objects are gone; restoration requires new media processing. Full trusted suite passed 77/77 before final targeted additions; final focused media/moderation/notifications/Box-cleanup suite passed, Functions flow 5/5, full desktop/mobile browser suite 20/20, expanded Phase 6 desktop/mobile journeys 2/2, hosted deny-all rules, lint, typecheck, build, parity checker and client-bundle scan passed. Hosted timing and IAM remain a later release gate.                                                                                                                                                                                                                                                                                                          |
+| 7. Export and account deletion            | Complete locally | `NativeAccountLifecycle` writes private `paldora-json-v1` archives, expires them after seven days, and streams same-origin downloads after fresh session checks. Password reauthentication, Box ownership guard, exact seven-day cancellation, account freeze, Auth revocation, generation-tagged resumable erasure, media retirement and orphan cleanup are wired into web and scheduled Functions. Fault-injection, media, expiry, and desktop/390px browser tests pass. Hosted timing, cost, IAM and load remain a release gate.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 8. Web cutover and cleanup                | Complete locally | All active web routes and actions use the server-only Firebase data layer. Supabase callback, HTTP API client, old service applications and their database, Redis and S3 packages were removed from the active workspace. Same-origin SSE, media and export handlers remain. The Firebase desktop/390px browser suite passed 22/22 after cutover. CI now runs the emulator suites and a static legacy-runtime import check. Hosted validation and public signup remain separate gates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+The local gate is a clean checkout running Auth, Firestore, Storage, Functions and Pub/Sub
+emulators plus the web app, completing every user and moderator flow without
+external services. Hosted IAM, task timing, costs, backup/restore, abuse, media
+retirement and release remain separate; no billing or deployment is authorized.
+
+**Local verification (2026-10-25):** format, lint, typecheck, unit tests,
+design tokens, Firebase-only parity, build, and browser-bundle secret scan
+passed. Demo-emulator rules, prototype, native rules, Functions, and trusted
+integration suites passed; the trusted suite has 85 tests, including a
+125-record paged export. The production-build desktop/390px browser suite
+passed in the working tree and again from an isolated source copy without its
+build caches or private `.env`. The copy installed the pinned lockfile, built,
+passed the Firebase-only check, and passed the client-bundle scan. A Git-based
+clean checkout can be repeated after these still-uncommitted changes are saved
+to version control; no deployment or signup gate was changed.
+
+For the current local backend, run `CI=true pnpm firebase:local:dev` in one
+terminal. It builds Functions and starts all four emulators against
+`demo-paldora`; Storage client rules are deny-all. For the current Firebase web slice, run `CI=true pnpm firebase:web:local:test`; it builds and tests the app against the four demo emulators. A pending Box deletion can be advanced with `GCLOUD_PROJECT=demo-paldora FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 CI=true pnpm firebase:box-repair:local` while emulators run. Export and deletion repair are documented in [account-lifecycle.md](account-lifecycle.md). The active workspace is Firebase-only; `legacy/` remains frozen.
+
+Each phase needs reviewable changes, test evidence and an explicit gate result.
+A phase is **done** only when every listed acceptance condition passes locally.
+Experimental code must not be wired into production paths just because an
+emulator test passes. Commits and pushes require separate user authorization.
+
+## Historical hosted/direct-client tracker (superseded for local order)
+
+The checklist below records earlier prototypes and hosted prerequisites. Use the
+current local workstream above to decide the next implementation and gate.
+
+### Phase 0 — discovery and hard-query proof (in progress)
 
 - [x] Inventory current schema and API routes; record preservation rules.
 - [x] Pin Firebase CLI, configure disposable local emulators and deny-all
@@ -43,12 +84,13 @@ production paths just because a local emulator test passes.
       trusted username mapping in the Firestore transaction. Client rules deny
       direct reads and writes to the mapping.
 - [x] Add trusted transactional username reservation and rename with normalized
-      uniqueness, collision tests, and suspended-account denial. Auth-bound
-      provisioning and hosted calls remain open.
+      uniqueness, collision tests, and suspended-account denial. Hosted calls
+      remain open.
 - [x] Prototype trusted account provisioning against the Auth emulator:
-      verified, enabled Auth users only; no silent suspension reversal; status
-      write before refresh-token revocation. Web sessions and live account
-      migration remain open.
+      verified, enabled, operator-admitted Auth users only; no silent suspension reversal; status
+      write before refresh-token revocation. An Auth-bound local callable now
+      provisions only already-created, Admin-admitted verified users; unverified or unadmitted users cannot
+      create Boxes. Web sessions and live account migration remain open.
 - [x] Add trusted invitation decline and manager revocation with an
       accept/revoke race test. Invitation listing remains open.
 - [x] Extract trusted account, username, block and invitation transactions into
@@ -58,6 +100,41 @@ production paths just because a local emulator test passes.
       username, accept, and gain member read access. Unauthorized and anonymous
       callable requests are rejected. Hosted deployment and web switching remain
       pending.
+- [x] Add a bounded, cursor-based recipient invitation listing callable with
+      current account, Box, expiry, and block-epoch checks. The Firestore query
+      uses a declared composite index and returns no items to other accounts.
+      Sender-side listing and web integration remain open.
+- [x] Prototype trusted text-only Box posts with Auth-bound create/get/list/edit/
+      soft-delete callables, current member/account checks, block-aware reads,
+      and bounded candidate pagination. Direct client post documents remain
+      denied. This does not yet cover media, comments, reactions, Life Updates,
+      feed merging, moderation, abuse limits, or web integration.
+- [x] Bind local block/unblock calls to Firebase Auth and exercise immediate
+      block-aware post hiding. Full friendship teardown, notification invalidation,
+      and all content-type block semantics remain open.
+- [x] Add trusted local text comments (one reply level, author edit/soft delete,
+      block-aware listing) and one-emoji-per-user reactions on posts or comments.
+      All reads recheck the parent post and member access. Camera reactions,
+      interaction summaries, notifications and web UI remain open.
+- [x] Add trusted friend-request send, incoming/sent/accepted listing,
+      acceptance, cancellation/decline and removal. Blocking closes the pair's
+      pending or accepted friendship in the same transaction; unblocking does
+      not restore it. Auth-bound local callables and a private-document denial
+      test cover the flow. Room visibility and web integration remain open.
+- [x] Add a bounded trusted Box member list for active members. It rechecks
+      current Box/member/account and block state for each candidate, excludes
+      blocked or inactive members, and rejects nonmember callers. Direct
+      collection listing remains denied by rules.
+- [x] Add per-account, per-action Firestore fixed-window limits to every local
+      callable and test concurrent calls at the boundary. This closes the
+      current local callable abuse hole; hosted cost/contention, endpoint limit
+      parity, expiry cleanup and edge/IP controls remain open.
+- [x] Prototype text-post reporting and staff-only review/hide callables.
+      Reports remain inaccessible to clients; staff grants are trusted-only;
+      hiding updates the post and writes an audit entry in one transaction.
+      A bounded trusted maintenance method redacts reporter identity and reason
+      90 days after closure. Media retirement, scheduling, appeal/contact and full
+      report-target parity remain open.
 - [x] Prototype a bounded 31-Box Home feed query with chunking, Life Update
       dedupe, cursor safety and an explicit high-membership budget failure.
 - [ ] Complete P1 parity: invitations, roles, leave/delete, suspended accounts,
@@ -142,20 +219,42 @@ and browser flows pass with Firebase as the one canonical backend.
 
 **Exit gate:** full content/privacy E2E suite and query budgets pass.
 
-## Phase 5 — media, jobs, realtime and abuse (pending Phase 4)
+## Phase 5 — private media and durable work (complete locally)
 
-- [ ] Replace S3 with private Cloud Storage grants and Sharp processing tasks;
-      preserve metadata removal, raw retirement and immediate takedown semantics.
-- [ ] Replace Redis/BullMQ/outboxes with durable Firestore intent, Cloud Tasks
-      and scheduled repair jobs; prove retries, idempotency and dead-letter alerts.
-- [ ] Replace realtime hints without private payloads; enforce current
-      membership, block and suspension on delivery.
-- [ ] Implement user-scoped fail-closed rate limits and load-test contention.
+- [x] Add `nativeMediaAssets` records with a lifecycle epoch, private Storage
+      paths, upload expiry, attachment IDs and three Sharp WebP derivatives.
+      The same-origin upload route checks session, origin, exact type/length and
+      decoded bytes. The same-origin read route rechecks source visibility and
+      returns `private, no-store`; it never issues a Firebase download URL.
+- [x] Wire post, Life Update, avatar, Room banner and camera-reaction images to
+      trusted attachment transactions and Firebase-mode web forms. Deletion,
+      replacement, Box deletion and moderation hide close reads before retiring
+      objects. Raw uploads are removed after successful processing.
+- [x] Store process/delete and post-cleanup intents in Firestore. A task
+      Function dispatches new media jobs, and a scheduled Function repairs
+      pending/stale jobs and expires unattached assets. Workers use leases,
+      epochs and unique attempt paths. After five failed attempts a media job
+      enters `dead`; `pnpm firebase:media-repair:local -- --retry JOB_ID` is the
+      operator replay path in a disposable emulator.
+- [x] Rerun the local Auth/Firestore/Storage integration suite (70 tests),
+      Functions flow with task and Pub/Sub emulators (5 tests), desktop/mobile
+      browser suite (18 tests), and hosted deny-all rules check. The browser
+      suite exercises task dispatch, private post-photo routes, deletion,
+      Life Update photos, avatar and Room banner uploads.
+- [x] Fault-inject a failed derivative write before Firestore publication and
+      deletion racing a running processor. The focused media emulator suite
+      passes 13/13 tests, including orphan sweeping, the losing processor's
+      durable job state, moderator takedown, pending repair, expiry and
+      dead-letter replay. The browser suite uses a fake camera device to test
+      capture, upload, private read and retirement after emoji replacement.
+- [ ] Verify task dispatch, retry timing, IAM, object retirement, cost and
+      throughput in hosted staging after a billing/deployment decision. Spark
+      and hosted deny-all rules remain unchanged.
 
-**Exit gate:** fault-injection, signed-URL retirement, stream and abuse suites
-pass in staging and do not expose private objects.
+The local runbook is `docs/firebase/media-local.md`. Notification realtime
+and user-scoped abuse controls belong to Phase 6 of the complete migration.
 
-## Phase 6 — moderation, export and deletion (pending Phase 5)
+## Phase 6 — moderation, export and deletion (next local phase)
 
 - [ ] Move reports, audited staff grants/case actions, hidden-content notices,
       and moderation retention without exposing reporters or case evidence.

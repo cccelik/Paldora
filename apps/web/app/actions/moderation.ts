@@ -6,7 +6,9 @@ import {
   type ActionResult,
 } from '@/lib/actions/action-result';
 import { textField } from '@/lib/actions/form-data';
-import { apiClient } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
 import { moderationActionSchema } from '@paldora/validation';
 import { revalidatePath } from 'next/cache';
 
@@ -25,7 +27,10 @@ export async function moderateCaseAction(
       'Choose an action and give a reason of at least 20 characters.',
     );
   try {
-    await (await apiClient()).actOnModerationCase(caseId, parsed.data);
+    {
+      await requireFirebaseActionOrigin();
+      await (await firebaseWebData()).actOnModerationCase(caseId, parsed.data);
+    }
     revalidatePath('/moderation');
     revalidatePath(`/moderation/cases/${caseId}`);
     return {

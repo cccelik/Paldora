@@ -58,13 +58,16 @@ forged writes in emulator tests. Box listing starts from private ID hints and
 re-authorizes each Box read. No other collection is open.
 
 The local trusted `NativeAccounts` prototype checks Firebase Auth before
-creating an active account: the Auth user must exist, be enabled, and have a
-verified email. Provisioning is idempotent only for an already-active account;
+creating an active account: the Auth user must exist, be enabled, have a
+verified email, and carry the Admin-set `paldoraAdmitted` claim. Provisioning is
+idempotent only for an already-active account;
 it cannot turn a suspended account active again. Suspension writes account
 status first, which the Firestore rules consult on every read, then revokes Auth
 refresh tokens. The Auth and Firestore emulators exercise this flow. Web
 sessions, account linking for any existing SQL users, error recovery, and
-hosted callable/operator entry points are still open.
+hosted callable/operator entry points are still open. A local callable now
+allows an already-created, Admin-admitted verified Auth user to provision their own account;
+it does not enable public Firebase Auth registration.
 
 The native rules are **experimental and not deployed**. The hosted development
 project still uses the deny-all `firebase/firestore.rules`. An additional
@@ -96,13 +99,52 @@ transaction; the client cannot read or forge that mapping. A local trusted
 and rejects concurrent collisions. The local Functions emulator exposes
 Auth-bound invitation and username callables, and an integration test proves
 the create/invite/accept/member-read flow with two Firebase Auth users.
-The app is not yet wired to these callables; rate limits, invite listing,
-complete block lifecycle, and hosted function deployment are still required.
+The app is not yet wired to these callables. A recipient-side listing callable
+pages through pending invitations and rechecks account state, Box state,
+expiry, and block epoch before returning Box details. Local callable limits
+are in place; sender-side invitation listing, complete block effects, and
+hosted function deployment are still required.
+The local Box member-list callable uses bounded candidate pages and rechecks
+the viewer and each member before returning an active person's username and
+role. It filters blocked pairs and suspended accounts. Client collection
+listing remains denied.
 Every block
 operation must write the same pair document, so a block and an
 invitation/acceptance conflict and retry rather than passing each other.
 Trusted decline and manager revocation transactions now close an invitation;
 an accept/revoke race commits one outcome, never both.
+
+The local `NativeFriendships` service resolves recipients through the trusted
+username index and rechecks both active accounts and the block pair in each
+transaction. Auth-bound callables send, accept and close requests and return
+bounded incoming, sent or accepted pages. A block closes an existing request or
+friendship atomically with the block-pair update; unblocking does not restore
+it. Firestore rules keep relationship documents private. Room visibility,
+notifications, account deletion and browser behavior still need parity work.
+
+The local-only content slice stores text-only posts beneath a Box. Callable
+Functions derive the actor from Firebase Auth; trusted transactions check live
+account and membership state for writes and reads, and exclude blocked authors
+from post reads. A bounded candidate page returns a cursor even when every
+candidate is hidden. Clients cannot read or write post documents directly.
+Local trusted comment and emoji-reaction callables now cover one reply level,
+author edits/deletes, one reaction per person and target, and block-aware
+candidate listing. This is a privacy prototype, not content parity: media,
+camera reactions, interaction summaries, notifications, feeds, full moderation,
+and web wiring remain open.
+Every local callable now consumes a Firestore-backed per-user action bucket
+before executing. The limiter fails closed on Firestore errors and its
+concurrency boundary is emulator-tested. Window limits and operating costs
+need hosted review before any signup gate changes.
+Local text-post reporting uses a trusted transaction to check the reporter's
+current access. A staff grant is required to list reports or hide a post;
+the hide transaction closes the report and appends an audit record. Direct
+client rules still deny reports, grants, and audit data. This does not prove
+media takedown, full evidence retention, appeals, or hosted staff operations.
+Closed text-post reports are eligible for bounded redaction after 90 days;
+the trusted maintenance transaction removes reporter identity and reason but
+keeps the minimal action pointer and audit record. Scheduling and evidence
+object cleanup remain open.
 
 ## Migration gate
 

@@ -15,11 +15,19 @@
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --exclude '**/*.integration.test.ts' --passWithNoTests",
-    "test:integration": "vitest run integration.test"
+    "test:integration": "vitest run integration.test --maxWorkers=1 --testTimeout=20000",
+    "seed:local": "node scripts/seed-local.mjs",
+    "seed:e2e": "node scripts/seed-e2e.mjs",
+    "repair:box:local": "node scripts/repair-box-deletions.mjs",
+    "repair:media:local": "node scripts/repair-media.mjs",
+    "repair:account:local": "node scripts/repair-account-lifecycle.mjs"
   },
   "dependencies": {
+    "@paldora/domain": "workspace:*",
+    "@paldora/personalization": "workspace:*",
     "@paldora/validation": "workspace:*",
-    "firebase-admin": "14.5.0"
+    "firebase-admin": "14.5.0",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "vitest": "4.1.11"

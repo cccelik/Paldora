@@ -16,8 +16,11 @@ export async function sendFriendRequestAction(
   return runForm(
     formData,
     usernameForm,
-    (api, { username }) => api.sendFriendRequest(username),
-    { success: 'Friend request sent.', paths },
+    (data, { username }) => data.sendFriendRequest(username),
+    {
+      success: 'Friend request sent.',
+      paths,
+    },
   );
 }
 
@@ -28,8 +31,11 @@ export async function acceptFriendRequestAction(
   return runForm(
     formData,
     friendshipForm,
-    (api, { friendshipId }) => api.acceptFriendRequest(friendshipId),
-    { success: 'You’re now friends.', paths },
+    (data, { friendshipId }) => data.acceptFriendRequest(friendshipId),
+    {
+      success: 'You’re now friends.',
+      paths,
+    },
   );
 }
 
@@ -40,8 +46,11 @@ export async function declineFriendRequestAction(
   return runForm(
     formData,
     friendshipForm,
-    (api, { friendshipId }) => api.declineFriendRequest(friendshipId),
-    { success: 'Request declined.', paths },
+    (data, { friendshipId }) => data.declineFriendRequest(friendshipId),
+    {
+      success: 'Request declined.',
+      paths,
+    },
   );
 }
 
@@ -52,8 +61,11 @@ export async function cancelFriendRequestAction(
   return runForm(
     formData,
     friendshipForm,
-    (api, { friendshipId }) => api.cancelFriendRequest(friendshipId),
-    { success: 'Request withdrawn.', paths },
+    (data, { friendshipId }) => data.cancelFriendRequest(friendshipId),
+    {
+      success: 'Request withdrawn.',
+      paths,
+    },
   );
 }
 
@@ -64,7 +76,7 @@ export async function removeFriendAction(
   return runForm(
     formData,
     userForm,
-    (api, { userId }) => api.removeFriend(userId),
+    (data, { userId }) => data.removeFriend(userId),
     {
       success: 'Friend removed.',
       paths,
@@ -79,7 +91,7 @@ export async function blockPersonAction(
   return runForm(
     formData,
     usernameForm,
-    (api, { username }) => api.block(username),
+    (data, { username }) => data.block(username),
     {
       success: 'Blocked.',
       paths: [...paths, '/boxes'],
@@ -92,8 +104,13 @@ export async function unblockPersonAction(
   _previous: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  return runForm(formData, userForm, (api, { userId }) => api.unblock(userId), {
-    success: 'Unblocked.',
-    paths,
-  });
+  return runForm(
+    formData,
+    userForm,
+    (data, { userId }) => data.unblock(userId),
+    {
+      success: 'Unblocked.',
+      paths,
+    },
+  );
 }

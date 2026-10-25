@@ -3,8 +3,6 @@ import { describe, expect, it } from 'vitest';
 const base = {
   nonce: 'abc123',
   webUrl: 'https://paldora.example',
-  apiUrl: 'https://api.paldora.example/api/v1',
-  supabaseUrl: 'https://project.supabase.co',
 };
 
 const directive = (policy: string, name: string) =>
@@ -41,25 +39,18 @@ describe('content security policy', () => {
     expect(directive(production, 'form-action')).toEqual(["'self'"]);
   });
 
-  it('connects only to the API and auth origins (not wildcards)', () => {
-    expect(directive(production, 'connect-src')).toEqual([
-      "'self'",
-      'https://api.paldora.example',
-      'https://project.supabase.co',
-    ]);
+  it('connects only to the same origin', () => {
+    expect(directive(production, 'connect-src')).toEqual(["'self'"]);
     expect(production).not.toMatch(/\*|https:(?!\/\/)/);
     expect(production).toContain('upgrade-insecure-requests');
   });
 
-  it('adds the private media origin only when configured', () => {
-    const withMedia = buildContentSecurityPolicy({
-      ...base,
-      development: false,
-      mediaOrigin: 'https://media.paldora.example/bucket',
-    });
-    expect(directive(withMedia, 'img-src')).toContain(
-      'https://media.paldora.example',
-    );
+  it('serves private media only through the same origin', () => {
+    expect(directive(production, 'img-src')).toEqual([
+      "'self'",
+      'data:',
+      'blob:',
+    ]);
   });
 
   it('relaxes only what development tooling needs', () => {

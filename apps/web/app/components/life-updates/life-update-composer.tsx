@@ -39,10 +39,12 @@ export function LifeUpdateComposer({
   boxes,
   preselectedBoxId,
   truncated = false,
+  allowPhotos = true,
 }: {
   boxes: readonly AudienceBox[];
   preselectedBoxId?: string | undefined;
   truncated?: boolean;
+  allowPhotos?: boolean;
 }) {
   const [state, action] = useActionState(createLifeUpdateAction, idleResult);
   const [drafts, setDrafts] = useState<SectionDrafts>({});
@@ -77,8 +79,8 @@ export function LifeUpdateComposer({
   const chosen = boxes.filter((box) => selected.has(box.id));
   const problem = draftProblem({
     drafts,
-    photoCount: photos.readyIds.length,
-    photosBusy: photos.busy,
+    photoCount: allowPhotos ? photos.readyIds.length : 0,
+    photosBusy: allowPhotos && photos.busy,
     audience: { type, boxCount: chosen.length },
   });
   const submitShortcut = useSubmitShortcut(form, problem === null);
@@ -101,7 +103,7 @@ export function LifeUpdateComposer({
         drafts={drafts}
         onChange={onSection}
       />
-      <LifeUpdatePhotoField photos={photos} />
+      {allowPhotos ? <LifeUpdatePhotoField photos={photos} /> : null}
       <AudienceFields
         boxes={boxes}
         type={type}

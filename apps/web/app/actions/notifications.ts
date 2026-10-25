@@ -5,10 +5,11 @@ import {
   type ActionOutcome,
   type ActionResult,
 } from '@/lib/actions/action-result';
-import { runForm } from '@/lib/actions/action-runner';
 import { textField } from '@/lib/actions/form-data';
 import { notificationHref } from '@/lib/notifications/notification-text';
-import { apiClient } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
 import { uuidSchema, type UnreadCount } from '@paldora/validation';
 import { type Route } from 'next';
 import { revalidatePath } from 'next/cache';
@@ -39,40 +40,56 @@ export async function openNotificationAction(formData: FormData) {
   const { notificationId, postId, commentId, lifeUpdateId, boxId } =
     parsed.data;
   let visible = true;
+  let destination = {
+    postId,
+    commentId: commentId || null,
+    lifeUpdateId: lifeUpdateId || null,
+    boxId,
+  };
   try {
-    await (await apiClient()).markNotificationRead(notificationId);
+    {
+      await requireFirebaseActionOrigin();
+      const item = await (
+        await firebaseWebData()
+      ).markNotificationRead(notificationId);
+      destination = {
+        postId: item.postId,
+        commentId: item.commentId,
+        lifeUpdateId: item.lifeUpdateId,
+        boxId: item.box.id,
+      };
+    }
   } catch {
     visible = false;
   }
   // `redirect` throws, so it stays outside the try block.
   revalidatePath('/notifications');
   if (!visible) redirect('/notifications');
-  redirect(
-    notificationHref({
-      postId,
-      commentId: commentId || null,
-      lifeUpdateId: lifeUpdateId || null,
-      boxId,
-    }) as Route,
-  );
+  redirect(notificationHref(destination) as Route);
 }
 
 export async function markAllNotificationsReadAction(
   _previous: ActionResult,
-  formData: FormData,
+  _formData: FormData,
 ): Promise<ActionResult> {
-  return runForm(
-    formData,
-    z.object({}),
-    (api) => api.markAllNotificationsRead(),
-    { success: 'All caught up.', paths: ['/notifications'] },
-  );
+  void _previous;
+  void _formData;
+  {
+    try {
+      await requireFirebaseActionOrigin();
+      await (await firebaseWebData()).markAllNotificationsRead();
+      revalidatePath('/notifications');
+      return { status: 'success', message: 'All caught up.', data: undefined };
+    } catch (error) {
+      return actionError(error);
+    }
+  }
 }
 
 /** The bell's refetch after a realtime hint. */
 export async function unreadCountAction(): Promise<ActionOutcome<UnreadCount>> {
   try {
-    const count = await (await apiClient()).unreadNotificationCount();
+    const count = await (await firebaseWebData()).unreadNotificationCount();
     return { status: 'success', message: 'Counted.', data: count };
   } catch (error) {
     return actionError(error);

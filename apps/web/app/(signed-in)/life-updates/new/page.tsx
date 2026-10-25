@@ -5,8 +5,12 @@ import {
 } from '@/components/life-updates/life-update-composer';
 import { BackLink, PageHeader } from '@/components/ui';
 import { optionalUuid } from '@/lib/server/route-params';
-import { apiClient, completedUser } from '@/lib/server/session';
-import { type PaldoraApiClient } from '@paldora/api-client';
+import { completedUser } from '@/lib/server/session';
+
+import {
+  firebaseWebData,
+  type FirebaseWebData,
+} from '@/lib/server/firebase/data';
 import { type BoxView } from '@paldora/validation';
 export const metadata = { title: 'New Life Update' };
 
@@ -15,7 +19,7 @@ const MAX_PAGES = 4;
 
 /** The viewer's Boxes, at most four pages of 50, one page after another. */
 async function boxesFor(
-  api: PaldoraApiClient,
+  api: Pick<FirebaseWebData, 'boxes'>,
   cursor?: string,
   pagesLeft = MAX_PAGES,
 ): Promise<{ boxes: BoxView[]; truncated: boolean }> {
@@ -35,7 +39,7 @@ export default async function NewLifeUpdatePage({
 }: PageProps<'/life-updates/new'>) {
   await completedUser();
   const box = optionalUuid((await searchParams).box);
-  const { boxes, truncated } = await boxesFor(await apiClient());
+  const { boxes, truncated } = await boxesFor(await firebaseWebData());
   const audience = boxes
     .map((item) => ({
       id: item.id,
@@ -54,6 +58,7 @@ export default async function NewLifeUpdatePage({
         boxes={audience}
         preselectedBoxId={box}
         truncated={truncated}
+        allowPhotos
       />
     </div>
   );

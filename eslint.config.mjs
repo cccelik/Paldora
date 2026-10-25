@@ -63,29 +63,20 @@ export default [
     },
   },
   {
-    // Shared integration fixtures write rows straight to PostgreSQL; only
-    // tests and test support may use them.
+    // Test support is not available to production source files.
     files: [
       'apps/*/src/**/*.{ts,tsx}',
       'apps/web/**/*.{ts,tsx}',
       'packages/*/src/**/*.{ts,tsx}',
     ],
-    ignores: [
-      '**/*.test.*',
-      '**/test-support/**',
-      'packages/database/src/testing/**',
-    ],
+    ignores: ['**/*.test.*', '**/test-support/**'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: [
-                '@paldora/database/testing',
-                '@paldora/database/testing/*',
-                '**/testing/**',
-              ],
+              group: ['**/testing/**'],
               message: 'Test fixtures are for tests and test support only.',
             },
           ],

@@ -1,5 +1,5 @@
-import { apiClient } from '@/lib/server/session';
-import { ApiClientError } from '@paldora/api-client';
+import { firebaseWebData } from '@/lib/server/firebase/data';
+import { ApiClientError } from '@/lib/server/web-data-error';
 export const dynamic = 'force-dynamic';
 export async function GET(
   _request: Request,
@@ -13,7 +13,9 @@ export async function GET(
   };
   try {
     const { username } = await context.params;
-    const result = await (await apiClient()).roomPersonalization(username);
+    const result = await (
+      await firebaseWebData()
+    ).roomPersonalization(username);
     return new Response(result.css, { headers });
   } catch (error) {
     return new Response('', {

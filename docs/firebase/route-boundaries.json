@@ -1,0 +1,2313 @@
+{
+  "requestAccountExport": {
+    "method": "POST",
+    "path": "/me/export",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/account-exports.ts",
+    "summary": "Request a private JSON archive of your own account data. One pending request at a time; 3 requests per day.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "accountExportSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/account-lifecycle/account-exports.controller.ts:15#request",
+      "principal": true,
+      "serviceCalls": ["exports.request"]
+    },
+    "domain": "accountLifecycle",
+    "clientMethod": "requestAccountExport",
+    "webCallSites": [
+      "apps/web/app/actions/account-lifecycle.ts:50",
+      "apps/web/app/actions/account-lifecycle.ts:51"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getAccountExport": {
+    "method": "GET",
+    "path": "/me/export",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/account-exports.ts",
+    "summary": "Status of your most recent archive request, or null if none exists.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "accountExportLatestSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/account-lifecycle/account-exports.controller.ts:22#latest",
+      "principal": true,
+      "serviceCalls": ["exports.latest"]
+    },
+    "domain": "accountLifecycle",
+    "clientMethod": "accountExport",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/settings/account/download/route.ts:26",
+      "apps/web/app/(signed-in)/settings/account/download/route.ts:54",
+      "apps/web/app/(signed-in)/settings/account/page.tsx:24",
+      "apps/web/app/(signed-in)/settings/account/page.tsx:84"
+    ],
+    "mediaBoundary": "none"
+  },
+  "downloadAccountExport": {
+    "method": "GET",
+    "path": "/me/export/{exportId}/download",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/account-exports.ts",
+    "summary": "Get a 60-second signed read for your ready, unexpired private JSON archive.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "accountExportDownloadSchema"
+    },
+    "errors": ["EXPORT_NOT_FOUND", "EXPORT_NOT_READY"],
+    "referenceHandler": {
+      "handler": "apps/api/src/account-lifecycle/account-exports.controller.ts:28#download",
+      "principal": true,
+      "serviceCalls": ["exports.download"]
+    },
+    "domain": "accountLifecycle",
+    "clientMethod": "downloadAccountExport",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/settings/account/download/route.ts:32",
+      "apps/web/app/(signed-in)/settings/account/download/route.ts:61"
+    ],
+    "mediaBoundary": "private export bytes"
+  },
+  "requestAccountDeletion": {
+    "method": "POST",
+    "path": "/me/deletion",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/account-deletion.ts",
+    "summary": "Reauthenticate and request account erasure after at least seven days. Transfer all owned Boxes first. New media and Box ownership are blocked while pending.",
+    "schemas": {
+      "body": "accountDeletionPasswordSchema",
+      "query": null,
+      "response": "accountDeletionSchema"
+    },
+    "errors": ["ACCOUNT_REAUTH_FAILED", "BOX_OWNERSHIP_TRANSFER_REQUIRED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/account-lifecycle/account-deletion.controller.ts:27#request",
+      "principal": true,
+      "serviceCalls": ["deletion.request"]
+    },
+    "domain": "accountLifecycle",
+    "clientMethod": "requestAccountDeletion",
+    "webCallSites": [
+      "apps/web/app/actions/account-lifecycle.ts:73",
+      "apps/web/app/actions/account-lifecycle.ts:74"
+    ],
+    "mediaBoundary": "retire all owned bytes"
+  },
+  "getAccountDeletion": {
+    "method": "GET",
+    "path": "/me/deletion",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/account-deletion.ts",
+    "summary": "Status of your active deletion request, or null.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "accountDeletionLatestSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/account-lifecycle/account-deletion.controller.ts:42#current",
+      "principal": true,
+      "serviceCalls": ["deletion.current"]
+    },
+    "domain": "accountLifecycle",
+    "clientMethod": "accountDeletion",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/settings/account/page.tsx:25",
+      "apps/web/app/(signed-in)/settings/account/page.tsx:85"
+    ],
+    "mediaBoundary": "none"
+  },
+  "cancelAccountDeletion": {
+    "method": "DELETE",
+    "path": "/me/deletion",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/account-deletion.ts",
+    "summary": "Reauthenticate and cancel a pending deletion before erasure commits.",
+    "schemas": {
+      "body": "accountDeletionPasswordSchema",
+      "query": null,
+      "response": "accountDeletionSchema"
+    },
+    "errors": ["ACCOUNT_REAUTH_FAILED", "ACCOUNT_DELETION_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/account-lifecycle/account-deletion.controller.ts:48#cancel",
+      "principal": true,
+      "serviceCalls": ["deletion.cancel"]
+    },
+    "domain": "accountLifecycle",
+    "clientMethod": "cancelAccountDeletion",
+    "webCallSites": [
+      "apps/web/app/actions/account-lifecycle.ts:95",
+      "apps/web/app/actions/account-lifecycle.ts:96"
+    ],
+    "mediaBoundary": "none"
+  },
+  "createReport": {
+    "method": "POST",
+    "path": "/reports",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reports.ts",
+    "summary": "Private allegation about a currently accessible active target. Duplicate submissions return the existing receipt. A missing or inaccessible target uses its ordinary absence response. Rate limited to 20 per hour.",
+    "schemas": {
+      "body": "createReportSchema",
+      "query": null,
+      "response": "reportReceiptSchema"
+    },
+    "errors": [
+      "USER_NOT_FOUND",
+      "BOX_NOT_FOUND",
+      "POST_NOT_FOUND",
+      "COMMENT_NOT_FOUND"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/moderation/reports.controller.ts:36#create",
+      "principal": true,
+      "serviceCalls": ["reports.create"]
+    },
+    "domain": "moderation",
+    "clientMethod": "createReport",
+    "webCallSites": [
+      "apps/web/app/actions/reports.ts:31",
+      "apps/web/app/actions/reports.ts:32",
+      "apps/web/app/lib/server/firebase/data.ts:301"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listMyReports": {
+    "method": "GET",
+    "path": "/me/reports",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reports.ts",
+    "summary": "Private receipts owned by the reporter; no other reporter or case evidence.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "reportReceiptPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/moderation/reports.controller.ts:46#mine",
+      "principal": true,
+      "serviceCalls": ["reports.mine"]
+    },
+    "domain": "moderation",
+    "clientMethod": "myReports",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/settings/reports/page.tsx:15",
+      "apps/web/app/(signed-in)/settings/reports/page.tsx:16",
+      "apps/web/app/lib/server/firebase/data.ts:309"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listMyModerationNotices": {
+    "method": "GET",
+    "path": "/me/moderation-notices",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reports.ts",
+    "summary": "Owner-only notices for active posts and comments hidden by moderation; no reporter or case evidence.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "moderationNoticesSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/moderation/reports.controller.ts:55#notices",
+      "principal": true,
+      "serviceCalls": ["reports.notices"]
+    },
+    "domain": "moderation",
+    "clientMethod": "myModerationNotices",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/settings/content-notices/page.tsx:11",
+      "apps/web/app/(signed-in)/settings/content-notices/page.tsx:12"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listModerationCases": {
+    "method": "GET",
+    "path": "/moderation/cases",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reports.ts",
+    "summary": "Minimal newest-first open or closed case queue; explicit staff grant required.",
+    "schemas": {
+      "body": null,
+      "query": "moderationQueueQuerySchema",
+      "response": "moderationCasePageSchema"
+    },
+    "errors": ["MODERATION_FORBIDDEN"],
+    "referenceHandler": {
+      "handler": "apps/api/src/moderation/reports.controller.ts:61#queue",
+      "principal": true,
+      "serviceCalls": ["reports.queue"]
+    },
+    "domain": "moderation",
+    "clientMethod": "moderationCases",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/moderation/page.tsx:25",
+      "apps/web/app/(signed-in)/moderation/page.tsx:26"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getModerationCase": {
+    "method": "GET",
+    "path": "/moderation/cases/{caseId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reports.ts",
+    "summary": "Staff-only case evidence read, recorded in the append-only audit.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "moderationCaseSchema"
+    },
+    "errors": ["MODERATION_FORBIDDEN", "REPORT_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/moderation/reports.controller.ts:71#one",
+      "principal": true,
+      "serviceCalls": ["reports.case"]
+    },
+    "domain": "moderation",
+    "clientMethod": "moderationCase",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/moderation/cases/[caseId]/page.tsx:18",
+      "apps/web/app/(signed-in)/moderation/cases/[caseId]/page.tsx:19"
+    ],
+    "mediaBoundary": "none"
+  },
+  "actOnModerationCase": {
+    "method": "POST",
+    "path": "/moderation/cases/{caseId}/actions",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reports.ts",
+    "summary": "Staff action with mandatory reason and idempotency key. Close a case, suspend/unsuspend a reported user, or hide/restore a reported post or comment. Takedown retires media objects before success. Rate limited to 60 per hour.",
+    "schemas": {
+      "body": "moderationActionSchema",
+      "query": null,
+      "response": "moderationCaseSchema"
+    },
+    "errors": [
+      "MODERATION_FORBIDDEN",
+      "REPORT_NOT_FOUND",
+      "REPORT_ACTION_UNAVAILABLE"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/moderation/reports.controller.ts:80#act",
+      "principal": true,
+      "serviceCalls": ["reports.act"]
+    },
+    "domain": "moderation",
+    "clientMethod": "actOnModerationCase",
+    "webCallSites": [
+      "apps/web/app/actions/moderation.ts:33",
+      "apps/web/app/actions/moderation.ts:34"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getModerationAccount": {
+    "method": "GET",
+    "path": "/moderation/accounts/{accountId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reports.ts",
+    "summary": "Administrator-only exact-ID account lookup. Every lookup, including a miss, is audited and rate limited to 30 per hour.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "moderationAccountSchema"
+    },
+    "errors": ["MODERATION_FORBIDDEN", "USER_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/moderation/reports.controller.ts:91#account",
+      "principal": true,
+      "serviceCalls": ["reports.account"]
+    },
+    "domain": "moderation",
+    "clientMethod": "moderationAccount",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/moderation/accounts/page.tsx:25",
+      "apps/web/app/(signed-in)/moderation/accounts/page.tsx:26"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getMyRoomPersonalization": {
+    "method": "GET",
+    "path": "/me/room/personalization",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/personalization.ts",
+    "summary": "Owner-only editable CSS and static widget sources, with independent feature availability. Private/no-store.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "personalizationSourceSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/room-personalization.controller.ts:26#mine",
+      "principal": true,
+      "serviceCalls": ["personalization.source"]
+    },
+    "domain": "rooms",
+    "clientMethod": "myRoomPersonalization",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/rooms/[username]/customize/page.tsx:40"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getRoomPersonalization": {
+    "method": "GET",
+    "path": "/rooms/{username}/personalization",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/personalization.ts",
+    "summary": "Currently authorized Room typography and sandbox documents; never editable sources. Reauthorizes and recompiles on every request. Disabled or obsolete policies fall back to empty. Private/no-store; reads follow the same unlimited policy as other Room GETs.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "renderedPersonalizationSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/room-personalization.controller.ts:31#rendered",
+      "principal": true,
+      "serviceCalls": ["personalization.rendered"]
+    },
+    "domain": "rooms",
+    "clientMethod": "roomPersonalization",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/rooms/[username]/page.tsx:31",
+      "apps/web/app/(signed-in)/rooms/[username]/personalization.css/route.ts:19",
+      "apps/web/app/(signed-in)/rooms/[username]/personalization.css/route.ts:20"
+    ],
+    "mediaBoundary": "read rendered personalization assets"
+  },
+  "updateMyRoomPersonalization": {
+    "method": "PUT",
+    "path": "/me/room/personalization",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/personalization.ts",
+    "summary": "Replace CSS and up to three ordered static widgets; empty source/list deletes. Shares Room optimistic version and 120/hour write budget. Disabled surfaces cannot be changed. Only the closed reviewed grammar is accepted.",
+    "schemas": {
+      "body": "updatePersonalizationSchema",
+      "query": null,
+      "response": "roomSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND", "ROOM_UPDATE_STALE"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/room-personalization.controller.ts:39#replace",
+      "principal": true,
+      "serviceCalls": ["personalization.replace"]
+    },
+    "domain": "rooms",
+    "clientMethod": "updateMyRoomPersonalization",
+    "webCallSites": [
+      "apps/web/app/actions/personalization.ts:40",
+      "apps/web/app/actions/personalization.ts:42"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getLiveness": {
+    "method": "GET",
+    "path": "/health",
+    "access": "public",
+    "source": "packages/validation/src/routes/platform.ts",
+    "summary": "Liveness probe. Performs no network I/O.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "livenessSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/platform/http/health.controller.ts:14#liveness",
+      "principal": false,
+      "serviceCalls": []
+    },
+    "domain": "identity",
+    "clientMethod": "liveness",
+    "webCallSites": [],
+    "mediaBoundary": "none"
+  },
+  "getReadiness": {
+    "method": "GET",
+    "path": "/health/ready",
+    "access": "public",
+    "source": "packages/validation/src/routes/platform.ts",
+    "summary": "Readiness probe. Checks PostgreSQL and Redis.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "readinessSchema"
+    },
+    "errors": ["SERVICE_UNAVAILABLE"],
+    "referenceHandler": {
+      "handler": "apps/api/src/platform/http/health.controller.ts:24#readiness",
+      "principal": false,
+      "serviceCalls": ["infrastructure.isReady"]
+    },
+    "domain": "identity",
+    "clientMethod": "readiness",
+    "webCallSites": [],
+    "mediaBoundary": "none"
+  },
+  "getCurrentUser": {
+    "method": "GET",
+    "path": "/me",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/identity.ts",
+    "summary": "The signed-in account, profile, and preferences.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "currentUserSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/identity/identity.controller.ts:41#get",
+      "principal": true,
+      "serviceCalls": ["currentUser.load"]
+    },
+    "domain": "identity",
+    "clientMethod": "currentUser",
+    "webCallSites": [
+      "apps/web/app/actions/auth.ts:91",
+      "apps/web/app/lib/server/session.ts:80"
+    ],
+    "mediaBoundary": "none"
+  },
+  "updateProfile": {
+    "method": "PATCH",
+    "path": "/me/profile",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/identity.ts",
+    "summary": "Partially update the profile. Onboarding may only move forward, and only past steps whose data exists.",
+    "schemas": {
+      "body": "updateProfileSchema",
+      "query": null,
+      "response": "currentUserSchema"
+    },
+    "errors": [
+      "USERNAME_UNAVAILABLE",
+      "ONBOARDING_INCOMPLETE",
+      "INVALID_ONBOARDING_TRANSITION"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/identity/identity.controller.ts:46#updateProfile",
+      "principal": true,
+      "serviceCalls": ["profiles.update", "currentUser.load"]
+    },
+    "domain": "identity",
+    "clientMethod": "updateProfile",
+    "webCallSites": [
+      "apps/web/app/actions/profile.ts:49",
+      "apps/web/app/actions/profile.ts:102"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getUsernameAvailability": {
+    "method": "GET",
+    "path": "/me/username-availability",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/identity.ts",
+    "summary": "Advisory availability check. The database decides on save; a later save can still fail with USERNAME_UNAVAILABLE.",
+    "schemas": {
+      "body": null,
+      "query": "usernameAvailabilityQuerySchema",
+      "response": "usernameAvailabilitySchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/identity/identity.controller.ts:57#usernameAvailability",
+      "principal": true,
+      "serviceCalls": ["profiles.usernameAvailability"]
+    },
+    "domain": "identity",
+    "clientMethod": "usernameAvailability",
+    "webCallSites": [],
+    "mediaBoundary": "none"
+  },
+  "updatePreferences": {
+    "method": "PUT",
+    "path": "/me/preferences",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/identity.ts",
+    "summary": "Replace the app preferences (idempotent).",
+    "schemas": {
+      "body": "updatePreferencesSchema",
+      "query": null,
+      "response": "preferencesSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/identity/identity.controller.ts:71#updatePreferences",
+      "principal": true,
+      "serviceCalls": ["preferences.replace"]
+    },
+    "domain": "identity",
+    "clientMethod": "updatePreferences",
+    "webCallSites": ["apps/web/app/actions/profile.ts:150"],
+    "mediaBoundary": "none"
+  },
+  "deleteAvatar": {
+    "method": "DELETE",
+    "path": "/me/avatar",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/identity.ts",
+    "summary": "Remove the profile photo and schedule its stored files for deletion (idempotent).",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "currentUserSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/identity/identity.controller.ts:90#deleteAvatar",
+      "principal": true,
+      "serviceCalls": ["avatars.remove", "currentUser.load"]
+    },
+    "domain": "identity",
+    "clientMethod": "deleteAvatar",
+    "webCallSites": ["apps/web/app/actions/avatar.ts:72"],
+    "mediaBoundary": "retire avatar bytes"
+  },
+  "createMediaUpload": {
+    "method": "POST",
+    "path": "/media/uploads",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/media.ts",
+    "summary": "Reserve an upload and return a signed PUT bound to the exact type and size. Expires after 300 seconds.",
+    "schemas": {
+      "body": "createMediaUploadSchema",
+      "query": null,
+      "response": "mediaUploadSchema"
+    },
+    "errors": ["STORAGE_UNAVAILABLE"],
+    "referenceHandler": {
+      "handler": "apps/api/src/media/media.controller.ts:31#create",
+      "principal": true,
+      "serviceCalls": ["uploads.create"]
+    },
+    "domain": "media",
+    "clientMethod": "createMediaUpload",
+    "webCallSites": [
+      "apps/web/app/actions/avatar.ts:40",
+      "apps/web/app/actions/life-update-photos.ts:30",
+      "apps/web/app/actions/post-photos.ts:29",
+      "apps/web/app/actions/reaction-media.ts:55",
+      "apps/web/app/actions/rooms.ts:105"
+    ],
+    "mediaBoundary": "upload grant metadata; direct signed PUT carries bytes"
+  },
+  "completeMediaUpload": {
+    "method": "POST",
+    "path": "/media/uploads/{mediaAssetId}/complete",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/media.ts",
+    "summary": "Verify the stored object against the reservation and queue processing. Single use.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "mediaAssetSchema"
+    },
+    "errors": [
+      "MEDIA_NOT_FOUND",
+      "MEDIA_UPLOAD_ALREADY_HANDLED",
+      "MEDIA_UPLOAD_EXPIRED",
+      "MEDIA_UPLOAD_MISMATCH",
+      "STORAGE_UNAVAILABLE"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/media/media.controller.ts:40#complete",
+      "principal": true,
+      "serviceCalls": ["uploads.complete"]
+    },
+    "domain": "media",
+    "clientMethod": "completeMediaUpload",
+    "webCallSites": [
+      "apps/web/app/actions/avatar.ts:52",
+      "apps/web/app/actions/post-photos.ts:38",
+      "apps/web/app/actions/reaction-media.ts:67"
+    ],
+    "mediaBoundary": "uploaded-object metadata"
+  },
+  "getMediaAsset": {
+    "method": "GET",
+    "path": "/media/{mediaAssetId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/media.ts",
+    "summary": "Processing status of one of your own uploads.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "mediaAssetSchema"
+    },
+    "errors": ["MEDIA_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/media/media.controller.ts:57#get",
+      "principal": true,
+      "serviceCalls": ["uploads.get"]
+    },
+    "domain": "media",
+    "clientMethod": "mediaAsset",
+    "webCallSites": [
+      "apps/web/app/actions/avatar.ts:61",
+      "apps/web/app/actions/post-photos.ts:48",
+      "apps/web/app/actions/reaction-media.ts:74"
+    ],
+    "mediaBoundary": "asset state and private read metadata"
+  },
+  "listFriends": {
+    "method": "GET",
+    "path": "/friends",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Your accepted friends, newest first.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "friendshipPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:40#friends",
+      "principal": true,
+      "serviceCalls": ["friendships.friends"]
+    },
+    "domain": "social",
+    "clientMethod": "friends",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/friends/page.tsx:25",
+      "apps/web/app/lib/rooms/room-previews.ts:79"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listFriendRequests": {
+    "method": "GET",
+    "path": "/friend-requests",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Pending requests, incoming and outgoing (see `direction`).",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "friendshipPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:48#requests",
+      "principal": true,
+      "serviceCalls": ["friendships.requests"]
+    },
+    "domain": "social",
+    "clientMethod": "friendRequests",
+    "webCallSites": ["apps/web/app/(signed-in)/friends/page.tsx:26"],
+    "mediaBoundary": "none"
+  },
+  "createFriendRequest": {
+    "method": "POST",
+    "path": "/friend-requests",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Ask someone to be friends. If they blocked you the answer is USER_NOT_FOUND, never a hint that a block exists.",
+    "schemas": {
+      "body": "createFriendRequestSchema",
+      "query": null,
+      "response": "friendshipSchema"
+    },
+    "errors": [
+      "USER_NOT_FOUND",
+      "USER_BLOCKED",
+      "CANNOT_FRIEND_SELF",
+      "ALREADY_FRIENDS",
+      "FRIEND_REQUEST_ALREADY_PENDING"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:56#request",
+      "principal": true,
+      "serviceCalls": ["friendships.request"]
+    },
+    "domain": "social",
+    "clientMethod": "sendFriendRequest",
+    "webCallSites": [
+      "apps/web/app/actions/social.ts:19",
+      "apps/web/app/actions/social.ts:23"
+    ],
+    "mediaBoundary": "none"
+  },
+  "acceptFriendRequest": {
+    "method": "POST",
+    "path": "/friend-requests/{friendshipId}/accept",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Accept a request someone sent you.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "friendshipSchema"
+    },
+    "errors": ["FRIEND_REQUEST_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:66#accept",
+      "principal": true,
+      "serviceCalls": ["friendships.accept"]
+    },
+    "domain": "social",
+    "clientMethod": "acceptFriendRequest",
+    "webCallSites": [
+      "apps/web/app/actions/social.ts:35",
+      "apps/web/app/actions/social.ts:40"
+    ],
+    "mediaBoundary": "none"
+  },
+  "declineFriendRequest": {
+    "method": "POST",
+    "path": "/friend-requests/{friendshipId}/decline",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Decline a request someone sent you.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["FRIEND_REQUEST_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:76#decline",
+      "principal": true,
+      "serviceCalls": ["friendships.decline"]
+    },
+    "domain": "social",
+    "clientMethod": "declineFriendRequest",
+    "webCallSites": [
+      "apps/web/app/actions/social.ts:52",
+      "apps/web/app/actions/social.ts:57"
+    ],
+    "mediaBoundary": "none"
+  },
+  "cancelFriendRequest": {
+    "method": "DELETE",
+    "path": "/friend-requests/{friendshipId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Withdraw a request you sent.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["FRIEND_REQUEST_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:86#cancel",
+      "principal": true,
+      "serviceCalls": ["friendships.cancel"]
+    },
+    "domain": "social",
+    "clientMethod": "cancelFriendRequest",
+    "webCallSites": [
+      "apps/web/app/actions/social.ts:69",
+      "apps/web/app/actions/social.ts:74"
+    ],
+    "mediaBoundary": "none"
+  },
+  "removeFriend": {
+    "method": "DELETE",
+    "path": "/friends/{userId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "End a friendship. Boxes you share are unaffected.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["FRIENDSHIP_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:98#remove",
+      "principal": true,
+      "serviceCalls": ["friendships.remove"]
+    },
+    "domain": "social",
+    "clientMethod": "removeFriend",
+    "webCallSites": [
+      "apps/web/app/actions/social.ts:86",
+      "apps/web/app/actions/social.ts:90"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listBlocks": {
+    "method": "GET",
+    "path": "/blocks",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "People you have blocked. Who blocked you is never exposed.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "blockedUserPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:115#list",
+      "principal": true,
+      "serviceCalls": ["blocks.list"]
+    },
+    "domain": "social",
+    "clientMethod": "blocks",
+    "webCallSites": ["apps/web/app/(signed-in)/friends/page.tsx:27"],
+    "mediaBoundary": "none"
+  },
+  "createBlock": {
+    "method": "POST",
+    "path": "/blocks",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Block someone (idempotent). Ends any friendship, withdraws pending requests and Box invitations between you, and hides each of you from the other. Shared Boxes stay intact.",
+    "schemas": {
+      "body": "createBlockSchema",
+      "query": null,
+      "response": "blockedUserSchema"
+    },
+    "errors": ["USER_NOT_FOUND", "CANNOT_BLOCK_SELF"],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:123#create",
+      "principal": true,
+      "serviceCalls": ["blocks.create"]
+    },
+    "domain": "social",
+    "clientMethod": "block",
+    "webCallSites": [
+      "apps/web/app/actions/social.ts:102",
+      "apps/web/app/actions/social.ts:106"
+    ],
+    "mediaBoundary": "none"
+  },
+  "removeBlock": {
+    "method": "DELETE",
+    "path": "/blocks/{userId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/people.ts",
+    "summary": "Remove your block (idempotent). A block they placed on you stays in force.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/social/social.controller.ts:133#remove",
+      "principal": true,
+      "serviceCalls": ["blocks.remove"]
+    },
+    "domain": "social",
+    "clientMethod": "unblock",
+    "webCallSites": [
+      "apps/web/app/actions/social.ts:116",
+      "apps/web/app/actions/social.ts:119"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listBoxes": {
+    "method": "GET",
+    "path": "/boxes",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Boxes you belong to, newest membership first.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "boxPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:53#list",
+      "principal": true,
+      "serviceCalls": ["queries.list"]
+    },
+    "domain": "boxes",
+    "clientMethod": "boxes",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/boxes/page.tsx:18",
+      "apps/web/app/(signed-in)/life-updates/new/page.tsx:24"
+    ],
+    "mediaBoundary": "none"
+  },
+  "createBox": {
+    "method": "POST",
+    "path": "/boxes",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Create a private Box. You become its owner.",
+    "schemas": {
+      "body": "createBoxSchema",
+      "query": null,
+      "response": "boxSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:61#create",
+      "principal": true,
+      "serviceCalls": ["lifecycle.create"]
+    },
+    "domain": "boxes",
+    "clientMethod": "createBox",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:19",
+      "apps/web/app/actions/boxes.ts:23"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getBox": {
+    "method": "GET",
+    "path": "/boxes/{boxId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "One of your Boxes. Missing, someone else’s, and former memberships all answer BOX_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "boxSchema"
+    },
+    "errors": ["BOX_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:70#get",
+      "principal": true,
+      "serviceCalls": ["queries.get"]
+    },
+    "domain": "boxes",
+    "clientMethod": "box",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/boxes/[boxId]/memories/page.tsx:44",
+      "apps/web/app/(signed-in)/boxes/[boxId]/page.tsx:118",
+      "apps/web/app/lib/server/firebase/data.ts:390",
+      "apps/web/app/lib/server/firebase/data.ts:692",
+      "apps/web/app/lib/server/firebase/data.ts:1257",
+      "apps/web/app/lib/server/firebase/data.ts:1874"
+    ],
+    "mediaBoundary": "none"
+  },
+  "updateBox": {
+    "method": "PATCH",
+    "path": "/boxes/{boxId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Rename, archive, or restore a Box (owner only).",
+    "schemas": {
+      "body": "updateBoxSchema",
+      "query": null,
+      "response": "boxSchema"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_ACCESS_DENIED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:78#update",
+      "principal": true,
+      "serviceCalls": ["lifecycle.update"]
+    },
+    "domain": "boxes",
+    "clientMethod": "updateBox",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:37",
+      "apps/web/app/actions/boxes.ts:41",
+      "apps/web/app/actions/boxes.ts:53",
+      "apps/web/app/actions/boxes.ts:57"
+    ],
+    "mediaBoundary": "none"
+  },
+  "deleteBox": {
+    "method": "DELETE",
+    "path": "/boxes/{boxId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Permanently delete a Box (owner only). `confirmName` must equal the Box name exactly.",
+    "schemas": {
+      "body": null,
+      "query": "deleteBoxQuerySchema",
+      "response": "noContent"
+    },
+    "errors": [
+      "BOX_NOT_FOUND",
+      "BOX_ACCESS_DENIED",
+      "BOX_DELETE_CONFIRMATION_MISMATCH"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:88#remove",
+      "principal": true,
+      "serviceCalls": ["lifecycle.remove"]
+    },
+    "domain": "boxes",
+    "clientMethod": "deleteBox",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:77",
+      "apps/web/app/actions/boxes.ts:82"
+    ],
+    "mediaBoundary": "retire all Box media before completion"
+  },
+  "listBoxMembers": {
+    "method": "GET",
+    "path": "/boxes/{boxId}/members",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Active members, oldest first.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "boxMemberPageSchema"
+    },
+    "errors": ["BOX_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:100#listMembers",
+      "principal": true,
+      "serviceCalls": ["queries.members"]
+    },
+    "domain": "boxes",
+    "clientMethod": "boxMembers",
+    "webCallSites": ["apps/web/app/(signed-in)/boxes/[boxId]/page.tsx:133"],
+    "mediaBoundary": "none"
+  },
+  "updateBoxMember": {
+    "method": "PATCH",
+    "path": "/boxes/{boxId}/members/{userId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Change a member’s role. Owners promote and demote; admins only promote members; the owner role moves only by transfer.",
+    "schemas": {
+      "body": "updateBoxMemberSchema",
+      "query": null,
+      "response": "boxMemberRoleSchema"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_ACCESS_DENIED", "BOX_MEMBER_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:122#changeRole",
+      "principal": true,
+      "serviceCalls": ["members.changeRole"]
+    },
+    "domain": "boxes",
+    "clientMethod": "setBoxMemberRole",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:169",
+      "apps/web/app/actions/boxes.ts:174"
+    ],
+    "mediaBoundary": "none"
+  },
+  "leaveBox": {
+    "method": "DELETE",
+    "path": "/boxes/{boxId}/members/me",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Leave a Box. The owner must transfer ownership first.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_OWNER_CANNOT_LEAVE"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:110#leave",
+      "principal": true,
+      "serviceCalls": ["members.leave"]
+    },
+    "domain": "boxes",
+    "clientMethod": "leaveBox",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:220",
+      "apps/web/app/actions/boxes.ts:224"
+    ],
+    "mediaBoundary": "none"
+  },
+  "removeBoxMember": {
+    "method": "DELETE",
+    "path": "/boxes/{boxId}/members/{userId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Remove a member (owners and admins; never the owner).",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_ACCESS_DENIED", "BOX_MEMBER_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:136#removeMember",
+      "principal": true,
+      "serviceCalls": ["members.remove"]
+    },
+    "domain": "boxes",
+    "clientMethod": "removeBoxMember",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:186",
+      "apps/web/app/actions/boxes.ts:191"
+    ],
+    "mediaBoundary": "none"
+  },
+  "transferBoxOwnership": {
+    "method": "PUT",
+    "path": "/boxes/{boxId}/owner",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Make another active member the owner; you become an admin. Atomic.",
+    "schemas": {
+      "body": "transferBoxOwnershipSchema",
+      "query": null,
+      "response": "boxSchema"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_ACCESS_DENIED", "BOX_MEMBER_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:147#transfer",
+      "principal": true,
+      "serviceCalls": ["members.transferOwnership"]
+    },
+    "domain": "boxes",
+    "clientMethod": "transferBoxOwnership",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:203",
+      "apps/web/app/actions/boxes.ts:208"
+    ],
+    "mediaBoundary": "none"
+  },
+  "createBoxInvitation": {
+    "method": "POST",
+    "path": "/boxes/{boxId}/invitations",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Invite anyone by username (friendship is not required). Expires after 7 days.",
+    "schemas": {
+      "body": "createBoxInvitationSchema",
+      "query": null,
+      "response": "boxInvitationSchema"
+    },
+    "errors": [
+      "BOX_NOT_FOUND",
+      "BOX_ACCESS_DENIED",
+      "BOX_ARCHIVED",
+      "USER_NOT_FOUND",
+      "USER_BLOCKED",
+      "CANNOT_INVITE_SELF",
+      "ALREADY_BOX_MEMBER",
+      "INVITATION_ALREADY_PENDING"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:162#invite",
+      "principal": true,
+      "serviceCalls": ["invitations.invite"]
+    },
+    "domain": "boxes",
+    "clientMethod": "inviteToBox",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:96",
+      "apps/web/app/actions/boxes.ts:101"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listBoxInvitations": {
+    "method": "GET",
+    "path": "/boxes/{boxId}/invitations",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Pending invitations for a Box (owners and admins).",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "boxInvitationPageSchema"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_ACCESS_DENIED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:173#listInvitations",
+      "principal": true,
+      "serviceCalls": ["invitations.listForBox"]
+    },
+    "domain": "boxes",
+    "clientMethod": "boxInvitations",
+    "webCallSites": ["apps/web/app/(signed-in)/boxes/[boxId]/page.tsx:135"],
+    "mediaBoundary": "none"
+  },
+  "revokeBoxInvitation": {
+    "method": "DELETE",
+    "path": "/boxes/{boxId}/invitations/{invitationId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Withdraw a pending invitation (owners and admins).",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_ACCESS_DENIED", "INVITATION_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:182#revokeInvitation",
+      "principal": true,
+      "serviceCalls": ["invitations.revoke"]
+    },
+    "domain": "boxes",
+    "clientMethod": "revokeBoxInvitation",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:114",
+      "apps/web/app/actions/boxes.ts:119"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listMyBoxInvitations": {
+    "method": "GET",
+    "path": "/me/box-invitations",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Invitations waiting for your answer.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "boxInvitationPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:202#mine",
+      "principal": true,
+      "serviceCalls": ["invitations.listMine"]
+    },
+    "domain": "boxes",
+    "clientMethod": "myBoxInvitations",
+    "webCallSites": ["apps/web/app/(signed-in)/boxes/page.tsx:19"],
+    "mediaBoundary": "none"
+  },
+  "acceptBoxInvitation": {
+    "method": "POST",
+    "path": "/box-invitations/{invitationId}/accept",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Join the Box.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "boxSchema"
+    },
+    "errors": ["INVITATION_NOT_FOUND", "INVITATION_EXPIRED", "BOX_ARCHIVED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:210#accept",
+      "principal": true,
+      "serviceCalls": ["invitations.accept"]
+    },
+    "domain": "boxes",
+    "clientMethod": "acceptBoxInvitation",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:131",
+      "apps/web/app/actions/boxes.ts:136"
+    ],
+    "mediaBoundary": "none"
+  },
+  "declineBoxInvitation": {
+    "method": "POST",
+    "path": "/box-invitations/{invitationId}/decline",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/boxes.ts",
+    "summary": "Decline an invitation.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["INVITATION_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/boxes/boxes.controller.ts:220#decline",
+      "principal": true,
+      "serviceCalls": ["invitations.decline"]
+    },
+    "domain": "boxes",
+    "clientMethod": "declineBoxInvitation",
+    "webCallSites": [
+      "apps/web/app/actions/boxes.ts:148",
+      "apps/web/app/actions/boxes.ts:153"
+    ],
+    "mediaBoundary": "none"
+  },
+  "createPost": {
+    "method": "POST",
+    "path": "/boxes/{boxId}/posts",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/posts.ts",
+    "summary": "Post to a Box you belong to. Archived Boxes are read-only.",
+    "schemas": {
+      "body": "createPostSchema",
+      "query": null,
+      "response": "postSchema"
+    },
+    "errors": ["BOX_NOT_FOUND", "BOX_ARCHIVED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/posts/posts.controller.ts:37#create",
+      "principal": true,
+      "serviceCalls": ["posts.create"]
+    },
+    "domain": "content",
+    "clientMethod": "createPost",
+    "webCallSites": [
+      "apps/web/app/actions/posts.ts:48",
+      "apps/web/app/actions/posts.ts:53"
+    ],
+    "mediaBoundary": "attach media references"
+  },
+  "listBoxPosts": {
+    "method": "GET",
+    "path": "/boxes/{boxId}/posts",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/posts.ts",
+    "summary": "A Box’s posts and Life Updates, newest first. A Life Update carries only this Box’s context. Content by people in a block relationship with you appears as hidden items.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "feedPageSchema"
+    },
+    "errors": ["BOX_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/posts/posts.controller.ts:48#boxFeed",
+      "principal": true,
+      "serviceCalls": ["queries.boxFeed"]
+    },
+    "domain": "content",
+    "clientMethod": "boxPosts",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/boxes/[boxId]/page.tsx:127",
+      "apps/web/app/(signed-in)/boxes/[boxId]/page.tsx:139"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "getHomeFeed": {
+    "method": "GET",
+    "path": "/me/feed",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/posts.ts",
+    "summary": "Posts and Life Updates from all your Boxes, newest first (chronological, never ranked). A Life Update delivered to several of your Boxes appears once, with one context per Box you are in, alphabetically. Only Me Life Updates are not part of Home. Content by people in a block relationship with you appears as one hidden item each.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "feedPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/posts/posts.controller.ts:57#homeFeed",
+      "principal": true,
+      "serviceCalls": ["queries.homeFeed"]
+    },
+    "domain": "content",
+    "clientMethod": "homeFeed",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/home/page.tsx:22",
+      "apps/web/app/(signed-in)/home/page.tsx:23"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "getPost": {
+    "method": "GET",
+    "path": "/posts/{postId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/posts.ts",
+    "summary": "One post. Missing, deleted, outside your Boxes, and blocked authors all answer POST_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "postSchema"
+    },
+    "errors": ["POST_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/posts/posts.controller.ts:65#get",
+      "principal": true,
+      "serviceCalls": ["queries.get"]
+    },
+    "domain": "content",
+    "clientMethod": "post",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/posts/[postId]/page.tsx:35",
+      "apps/web/app/(signed-in)/posts/[postId]/page.tsx:63",
+      "apps/web/app/actions/interactions.ts:94",
+      "apps/web/app/actions/reaction-media.ts:98"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "updatePost": {
+    "method": "PATCH",
+    "path": "/posts/{postId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/posts.ts",
+    "summary": "Edit your own post. A Life Update’s backing post answers POST_MANAGED_BY_LIFE_UPDATE to its author: edit the Life Update instead.",
+    "schemas": {
+      "body": "updatePostSchema",
+      "query": null,
+      "response": "postSchema"
+    },
+    "errors": [
+      "POST_NOT_FOUND",
+      "POST_ACCESS_DENIED",
+      "POST_MANAGED_BY_LIFE_UPDATE",
+      "BOX_ARCHIVED"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/posts/posts.controller.ts:77#update",
+      "principal": true,
+      "serviceCalls": ["posts.update"]
+    },
+    "domain": "content",
+    "clientMethod": "updatePost",
+    "webCallSites": [
+      "apps/web/app/actions/posts.ts:69",
+      "apps/web/app/actions/posts.ts:74"
+    ],
+    "mediaBoundary": "change media references"
+  },
+  "deletePost": {
+    "method": "DELETE",
+    "path": "/posts/{postId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/posts.ts",
+    "summary": "Delete your own post (idempotent). The text is erased. A Life Update’s backing post answers POST_MANAGED_BY_LIFE_UPDATE to its author: delete the Life Update instead.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": [
+      "POST_NOT_FOUND",
+      "POST_ACCESS_DENIED",
+      "POST_MANAGED_BY_LIFE_UPDATE",
+      "BOX_ARCHIVED"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/posts/posts.controller.ts:88#remove",
+      "principal": true,
+      "serviceCalls": ["posts.remove"]
+    },
+    "domain": "content",
+    "clientMethod": "deletePost",
+    "webCallSites": [
+      "apps/web/app/actions/posts.ts:86",
+      "apps/web/app/actions/posts.ts:90"
+    ],
+    "mediaBoundary": "retire media references"
+  },
+  "createComment": {
+    "method": "POST",
+    "path": "/posts/{postId}/comments",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/comments.ts",
+    "summary": "Comment on a post, or reply with `parentCommentId`. A reply to a reply joins the root’s thread (one reply level). Archived Boxes are read-only.",
+    "schemas": {
+      "body": "createCommentSchema",
+      "query": null,
+      "response": "commentSchema"
+    },
+    "errors": ["POST_NOT_FOUND", "COMMENT_NOT_FOUND", "BOX_ARCHIVED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/comments/comments.controller.ts:36#create",
+      "principal": true,
+      "serviceCalls": ["comments.create"]
+    },
+    "domain": "content",
+    "clientMethod": "createComment",
+    "webCallSites": [
+      "apps/web/app/actions/firebase-comments.ts:34",
+      "apps/web/app/actions/firebase-comments.ts:42",
+      "apps/web/app/actions/interactions.ts:128",
+      "apps/web/app/lib/server/firebase/data.ts:1505"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listComments": {
+    "method": "GET",
+    "path": "/posts/{postId}/comments",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/comments.ts",
+    "summary": "A post’s threads, newest root first, each with its oldest replies. Comments by people in a block relationship with you appear as hidden items; a deleted root stays only while it has replies.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "commentThreadPageSchema"
+    },
+    "errors": ["POST_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/comments/comments.controller.ts:47#list",
+      "principal": true,
+      "serviceCalls": ["queries.roots"]
+    },
+    "domain": "content",
+    "clientMethod": "comments",
+    "webCallSites": ["apps/web/app/lib/interactions/pinned-thread.ts:72"],
+    "mediaBoundary": "none"
+  },
+  "listReplies": {
+    "method": "GET",
+    "path": "/comments/{commentId}/replies",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/comments.ts",
+    "summary": "The replies in one thread, oldest first.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "commentPageSchema"
+    },
+    "errors": ["COMMENT_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/comments/comments.controller.ts:56#replies",
+      "principal": true,
+      "serviceCalls": ["queries.replies"]
+    },
+    "domain": "content",
+    "clientMethod": "commentReplies",
+    "webCallSites": [
+      "apps/web/app/actions/interactions.ts:110",
+      "apps/web/app/lib/interactions/pinned-thread.ts:36"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getComment": {
+    "method": "GET",
+    "path": "/comments/{commentId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/comments.ts",
+    "summary": "One comment and the root of its thread, for deep links. Missing, deleted, outside your Boxes, and blocked all answer COMMENT_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "commentDetailSchema"
+    },
+    "errors": ["COMMENT_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/comments/comments.controller.ts:65#get",
+      "principal": true,
+      "serviceCalls": ["queries.detail"]
+    },
+    "domain": "content",
+    "clientMethod": "comment",
+    "webCallSites": [
+      "apps/web/app/lib/interactions/pinned-thread.ts:30",
+      "apps/web/app/lib/interactions/pinned-thread.ts:35"
+    ],
+    "mediaBoundary": "none"
+  },
+  "updateComment": {
+    "method": "PATCH",
+    "path": "/comments/{commentId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/comments.ts",
+    "summary": "Edit your own comment.",
+    "schemas": {
+      "body": "updateCommentSchema",
+      "query": null,
+      "response": "commentSchema"
+    },
+    "errors": ["COMMENT_NOT_FOUND", "COMMENT_ACCESS_DENIED", "BOX_ARCHIVED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/comments/comments.controller.ts:73#update",
+      "principal": true,
+      "serviceCalls": ["comments.update"]
+    },
+    "domain": "content",
+    "clientMethod": "updateComment",
+    "webCallSites": [
+      "apps/web/app/actions/firebase-comments.ts:76",
+      "apps/web/app/actions/interactions.ts:143"
+    ],
+    "mediaBoundary": "none"
+  },
+  "deleteComment": {
+    "method": "DELETE",
+    "path": "/comments/{commentId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/comments.ts",
+    "summary": "Delete your own comment (idempotent). The text is erased; replies stay.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["COMMENT_NOT_FOUND", "COMMENT_ACCESS_DENIED", "BOX_ARCHIVED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/comments/comments.controller.ts:84#remove",
+      "principal": true,
+      "serviceCalls": ["comments.remove"]
+    },
+    "domain": "content",
+    "clientMethod": "deleteComment",
+    "webCallSites": [
+      "apps/web/app/actions/firebase-comments.ts:54",
+      "apps/web/app/actions/firebase-comments.ts:59",
+      "apps/web/app/actions/interactions.ts:155",
+      "apps/web/app/lib/server/firebase/data.ts:1555"
+    ],
+    "mediaBoundary": "none"
+  },
+  "openEventStream": {
+    "method": "GET",
+    "path": "/me/events",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/realtime.ts",
+    "summary": "One server-sent-event stream per client. Events are IDs only; refetch through normal routes. The stream ends when the access token expires and is capped per person, so clients reconnect with a fresh token and backoff.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "realtimeEventSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/realtime/realtime.controller.ts:22#events",
+      "principal": true,
+      "serviceCalls": ["streams.openFor"]
+    },
+    "domain": "realtimeNotifications",
+    "clientMethod": null,
+    "webCallSites": ["apps/web/app/components/realtime/realtime-bridge.tsx"],
+    "mediaBoundary": "none"
+  },
+  "setPostReaction": {
+    "method": "PUT",
+    "path": "/posts/{postId}/reaction",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reactions.ts",
+    "summary": "Set your one reaction on a post (idempotent): an emoji, a camera image (`kind: real` with a ready `reaction_image` upload from this post’s Box), or `null` to remove it. A camera image and an emoji replace each other; a replaced camera image is deleted.",
+    "schemas": {
+      "body": "setPostReactionSchema",
+      "query": null,
+      "response": "postInteractionSummarySchema"
+    },
+    "errors": [
+      "POST_NOT_FOUND",
+      "BOX_ARCHIVED",
+      "MEDIA_NOT_FOUND",
+      "MEDIA_NOT_READY"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/reactions/reactions.controller.ts:45#setOnPost",
+      "principal": true,
+      "serviceCalls": ["posts.set"]
+    },
+    "domain": "content",
+    "clientMethod": "setPostReaction",
+    "webCallSites": [
+      "apps/web/app/actions/firebase-reactions.ts:36",
+      "apps/web/app/actions/interactions.ts:68",
+      "apps/web/app/actions/reaction-media.ts:99",
+      "apps/web/app/actions/reaction-media.ts:102"
+    ],
+    "mediaBoundary": "camera-reaction media reference"
+  },
+  "setCommentReaction": {
+    "method": "PUT",
+    "path": "/comments/{commentId}/reaction",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reactions.ts",
+    "summary": "Set your one emoji reaction on a comment (idempotent), or `null` to remove it. Comments take no camera reactions.",
+    "schemas": {
+      "body": "setCommentReactionSchema",
+      "query": null,
+      "response": "commentInteractionSummarySchema"
+    },
+    "errors": ["COMMENT_NOT_FOUND", "POST_NOT_FOUND", "BOX_ARCHIVED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/reactions/reactions.controller.ts:56#setOnComment",
+      "principal": true,
+      "serviceCalls": ["comments.set"]
+    },
+    "domain": "content",
+    "clientMethod": "setCommentReaction",
+    "webCallSites": [
+      "apps/web/app/actions/firebase-reactions.ts:65",
+      "apps/web/app/actions/interactions.ts:82"
+    ],
+    "mediaBoundary": "camera-reaction media reference"
+  },
+  "listPostReactions": {
+    "method": "GET",
+    "path": "/posts/{postId}/reactions",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reactions.ts",
+    "summary": "Who reacted to a post, newest first, optionally one `kind` only. People in a block relationship with you are omitted. Camera reactions carry short-lived signed image URLs.",
+    "schemas": {
+      "body": null,
+      "query": "postReactionsQuerySchema",
+      "response": "postReactionPageSchema"
+    },
+    "errors": ["POST_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/interactions/reactions/reactions.controller.ts:67#list",
+      "principal": true,
+      "serviceCalls": ["queries.list"]
+    },
+    "domain": "content",
+    "clientMethod": "postReactions",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/posts/[postId]/reactions/page.tsx:32",
+      "apps/web/app/(signed-in)/posts/[postId]/reactions/page.tsx:36"
+    ],
+    "mediaBoundary": "none"
+  },
+  "setReactionPresets": {
+    "method": "PUT",
+    "path": "/me/reaction-presets",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/reactions.ts",
+    "summary": "Replace your five reaction shortcuts (idempotent). Shortcuts only: any single emoji is always allowed as a reaction.",
+    "schemas": {
+      "body": "reactionPresetsSchema",
+      "query": null,
+      "response": "preferencesSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/identity/identity.controller.ts:80#setReactionPresets",
+      "principal": true,
+      "serviceCalls": ["preferences.replacePresets"]
+    },
+    "domain": "identity",
+    "clientMethod": "setReactionPresets",
+    "webCallSites": [
+      "apps/web/app/actions/presets.ts:26",
+      "apps/web/app/actions/presets.ts:29",
+      "apps/web/app/lib/server/firebase/data.ts:922"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listNotifications": {
+    "method": "GET",
+    "path": "/me/notifications",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/notifications.ts",
+    "summary": "Your notifications, newest first, with the unread count. Visibility is rechecked on every read: a notification disappears once its post, comment, or reaction is gone, you leave the Box, or a block exists with the actor. Everything shown is joined from live rows.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "notificationPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/notifications/notifications.controller.ts:39#list",
+      "principal": true,
+      "serviceCalls": ["queries.list"]
+    },
+    "domain": "realtimeNotifications",
+    "clientMethod": "notifications",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/notifications/page.tsx:18",
+      "apps/web/app/(signed-in)/notifications/page.tsx:19"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getUnreadCount": {
+    "method": "GET",
+    "path": "/me/notifications/unread-count",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/notifications.ts",
+    "summary": "How many visible notifications are unread, counted up to 100 (`capped` is true when there may be more).",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "unreadCountSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/notifications/notifications.controller.ts:47#unreadCount",
+      "principal": true,
+      "serviceCalls": ["queries.unreadCount"]
+    },
+    "domain": "realtimeNotifications",
+    "clientMethod": "unreadNotificationCount",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/layout.tsx:20",
+      "apps/web/app/(signed-in)/layout.tsx:31",
+      "apps/web/app/actions/notifications.ts:89",
+      "apps/web/app/actions/notifications.ts:90"
+    ],
+    "mediaBoundary": "none"
+  },
+  "markNotificationRead": {
+    "method": "POST",
+    "path": "/me/notifications/{notificationId}/read",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/notifications.ts",
+    "summary": "Mark one notification read (idempotent). Other people’s, hidden, and missing notifications all answer NOTIFICATION_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["NOTIFICATION_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/notifications/notifications.controller.ts:59#markRead",
+      "principal": true,
+      "serviceCalls": ["notifications.markRead"]
+    },
+    "domain": "realtimeNotifications",
+    "clientMethod": "markNotificationRead",
+    "webCallSites": [
+      "apps/web/app/actions/notifications.ts:50",
+      "apps/web/app/actions/notifications.ts:53"
+    ],
+    "mediaBoundary": "none"
+  },
+  "markAllNotificationsRead": {
+    "method": "POST",
+    "path": "/me/notifications/read-all",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/notifications.ts",
+    "summary": "Mark every notification you can currently see as read.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/notifications/notifications.controller.ts:52#markAllRead",
+      "principal": true,
+      "serviceCalls": ["notifications.markAllRead"]
+    },
+    "domain": "realtimeNotifications",
+    "clientMethod": "markAllNotificationsRead",
+    "webCallSites": [
+      "apps/web/app/actions/notifications.ts:72",
+      "apps/web/app/actions/notifications.ts:80"
+    ],
+    "mediaBoundary": "none"
+  },
+  "createLifeUpdate": {
+    "method": "POST",
+    "path": "/life-updates",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/life-updates.ts",
+    "summary": "Publish a Life Update: sections and photos stored once, delivered to 1–20 Boxes you belong to (each Box gets its own conversation) or kept Only Me. The audience can never be changed. Any Box you are not in fails the whole request with BOX_NOT_FOUND, and any archived Box with BOX_ARCHIVED; nothing is partly published.",
+    "schemas": {
+      "body": "createLifeUpdateSchema",
+      "query": null,
+      "response": "lifeUpdateSchema"
+    },
+    "errors": [
+      "BOX_NOT_FOUND",
+      "BOX_ARCHIVED",
+      "MEDIA_NOT_FOUND",
+      "MEDIA_NOT_READY"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/life-updates/life-updates.controller.ts:47#create",
+      "principal": true,
+      "serviceCalls": ["publisher.create"]
+    },
+    "domain": "lifeUpdates",
+    "clientMethod": "createLifeUpdate",
+    "webCallSites": [
+      "apps/web/app/actions/life-updates.ts:112",
+      "apps/web/app/actions/life-updates.ts:117"
+    ],
+    "mediaBoundary": "attach media references"
+  },
+  "getLifeUpdate": {
+    "method": "GET",
+    "path": "/life-updates/{lifeUpdateId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/life-updates.ts",
+    "summary": "One Life Update, with a context for each delivery Box you belong to. Missing, deleted, outside your Boxes, and blocked authors all answer LIFE_UPDATE_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "lifeUpdateSchema"
+    },
+    "errors": ["LIFE_UPDATE_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/life-updates/life-updates.controller.ts:65#get",
+      "principal": true,
+      "serviceCalls": ["queries.get"]
+    },
+    "domain": "lifeUpdates",
+    "clientMethod": "lifeUpdate",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/life-updates/[lifeUpdateId]/edit/page.tsx:21",
+      "apps/web/app/(signed-in)/life-updates/[lifeUpdateId]/edit/page.tsx:80",
+      "apps/web/app/(signed-in)/life-updates/[lifeUpdateId]/page.tsx:34",
+      "apps/web/app/(signed-in)/life-updates/[lifeUpdateId]/page.tsx:96"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "updateLifeUpdate": {
+    "method": "PATCH",
+    "path": "/life-updates/{lifeUpdateId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/life-updates.ts",
+    "summary": "Edit your Life Update: `sections` and `mediaAssetIds` each replace that part whole when present (photos in display order; removed ones are deleted). The change shows in every Box. The audience can never change (there is no field for it). It must keep at least one section or photo. Allowed while it is Only Me or one of its Boxes you are in is open; otherwise BOX_ARCHIVED.",
+    "schemas": {
+      "body": "updateLifeUpdateSchema",
+      "query": null,
+      "response": "lifeUpdateSchema"
+    },
+    "errors": [
+      "LIFE_UPDATE_NOT_FOUND",
+      "LIFE_UPDATE_ACCESS_DENIED",
+      "BOX_ARCHIVED",
+      "MEDIA_NOT_FOUND",
+      "MEDIA_NOT_READY"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/life-updates/life-updates.controller.ts:73#update",
+      "principal": true,
+      "serviceCalls": ["editor.update"]
+    },
+    "domain": "lifeUpdates",
+    "clientMethod": "updateLifeUpdate",
+    "webCallSites": ["apps/web/app/actions/life-updates.ts:133"],
+    "mediaBoundary": "change media references"
+  },
+  "deleteLifeUpdate": {
+    "method": "DELETE",
+    "path": "/life-updates/{lifeUpdateId}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/life-updates.ts",
+    "summary": "Delete your Life Update from every Box (idempotent). Its text and photos, and every comment, reaction, and notification on each delivery, are erased.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "noContent"
+    },
+    "errors": ["LIFE_UPDATE_NOT_FOUND", "LIFE_UPDATE_ACCESS_DENIED"],
+    "referenceHandler": {
+      "handler": "apps/api/src/life-updates/life-updates.controller.ts:84#remove",
+      "principal": true,
+      "serviceCalls": ["deleter.remove"]
+    },
+    "domain": "lifeUpdates",
+    "clientMethod": "deleteLifeUpdate",
+    "webCallSites": [
+      "apps/web/app/actions/life-updates.ts:158",
+      "apps/web/app/actions/life-updates.ts:163"
+    ],
+    "mediaBoundary": "retire media references"
+  },
+  "listMyLifeUpdates": {
+    "method": "GET",
+    "path": "/me/life-updates",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/life-updates.ts",
+    "summary": "Your own Life Updates, newest first, including Only Me. One you can no longer see in any Box (you left them all) is left out, so a page may be short.",
+    "schemas": {
+      "body": null,
+      "query": "cursorPageQuerySchema",
+      "response": "lifeUpdatePageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/life-updates/life-updates.controller.ts:57#listMine",
+      "principal": true,
+      "serviceCalls": ["queries.listMine"]
+    },
+    "domain": "lifeUpdates",
+    "clientMethod": "myLifeUpdates",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/life-updates/page.tsx:20",
+      "apps/web/app/(signed-in)/life-updates/page.tsx:24"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "listMyMemories": {
+    "method": "GET",
+    "path": "/me/memories",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/memories.ts",
+    "summary": "Your Memories for one UTC year (or one month of it), newest first: every post and Life Update you can still access, derived live and never copied. A Life Update appears once, with a context per Box you are in; Only Me ones are yours alone. Content by people in a block relationship with you, deleted content, and content in Boxes you left are omitted.",
+    "schemas": {
+      "body": null,
+      "query": "memoryQuerySchema",
+      "response": "memoryPageSchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/memories/memories.controller.ts:27#mine",
+      "principal": true,
+      "serviceCalls": ["pages.mine"]
+    },
+    "domain": "memories",
+    "clientMethod": "myMemories",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/memories/[year]/[month]/page.tsx:45",
+      "apps/web/app/(signed-in)/memories/[year]/page.tsx:39"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "getMyMemorySummary": {
+    "method": "GET",
+    "path": "/me/memories/summary",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/memories.ts",
+    "summary": "How many Memories you have per UTC year, and per month of `year` (default: your newest year). Counted over exactly what the Memories list would show. Bounded by the calendar, so not paginated.",
+    "schemas": {
+      "body": null,
+      "query": "memorySummaryQuerySchema",
+      "response": "memorySummarySchema"
+    },
+    "errors": [],
+    "referenceHandler": {
+      "handler": "apps/api/src/memories/memories.controller.ts:35#mySummary",
+      "principal": true,
+      "serviceCalls": ["summaries.mine"]
+    },
+    "domain": "memories",
+    "clientMethod": "myMemorySummary",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/memories/[year]/[month]/page.tsx:43",
+      "apps/web/app/(signed-in)/memories/[year]/page.tsx:37",
+      "apps/web/app/(signed-in)/memories/page.tsx:16"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listBoxMemories": {
+    "method": "GET",
+    "path": "/boxes/{boxId}/memories",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/memories.ts",
+    "summary": "A Box’s Memories for one UTC year (or month), newest first: its posts and Life Updates you can still access, each Life Update with only this Box’s context. A Box you are not in answers BOX_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": "memoryQuerySchema",
+      "response": "memoryPageSchema"
+    },
+    "errors": ["BOX_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/memories/memories.controller.ts:43#ofBox",
+      "principal": true,
+      "serviceCalls": ["pages.ofBox"]
+    },
+    "domain": "memories",
+    "clientMethod": "boxMemories",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/boxes/[boxId]/memories/page.tsx:54"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "getBoxMemorySummary": {
+    "method": "GET",
+    "path": "/boxes/{boxId}/memories/summary",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/memories.ts",
+    "summary": "How many of a Box’s Memories you can access per UTC year, and per month of `year` (default: the newest year). A Box you are not in answers BOX_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": "memorySummaryQuerySchema",
+      "response": "memorySummarySchema"
+    },
+    "errors": ["BOX_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/memories/memories.controller.ts:52#boxSummary",
+      "principal": true,
+      "serviceCalls": ["summaries.ofBox"]
+    },
+    "domain": "memories",
+    "clientMethod": "boxMemorySummary",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/boxes/[boxId]/memories/page.tsx:47"
+    ],
+    "mediaBoundary": "none"
+  },
+  "getMyRoom": {
+    "method": "GET",
+    "path": "/me/room",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "Your own Room with every owner-only field: `visibility`, `updatedAt` (the version every Room write must name as `expectedUpdatedAt`), the banner’s media id, the Top Friends size and audience, and disabled widgets. A Room you never saved is the default configuration with `updatedAt: null`; reading never creates it. ROOM_NOT_FOUND until you have a username.",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "roomSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:67#mine",
+      "principal": true,
+      "serviceCalls": ["views.forOwner"]
+    },
+    "domain": "rooms",
+    "clientMethod": "myRoom",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/rooms/[username]/customize/page.tsx:36"
+    ],
+    "mediaBoundary": "read avatar/banner references"
+  },
+  "getRoom": {
+    "method": "GET",
+    "path": "/rooms/{username}",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "The Room of the person with this username (case-insensitive), as you may see it: `hidden` is the owner only, `friends` adds accepted friends, `members` adds people who share a Box with the owner. A block in either direction hides it. Missing, not visible, blocked, an unavailable owner, a former username, and a malformed name all answer the same ROOM_NOT_FOUND. Visitors get no owner-only fields (they are null) and no disabled widgets; Top Friends follow their own audience (`items: null` when not yours to see).",
+    "schemas": {
+      "body": null,
+      "query": null,
+      "response": "roomSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:73#get",
+      "principal": true,
+      "serviceCalls": ["views.forViewer"]
+    },
+    "domain": "rooms",
+    "clientMethod": "room",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/rooms/[username]/memories/page.tsx:46",
+      "apps/web/app/(signed-in)/rooms/[username]/page.tsx:28",
+      "apps/web/app/lib/server/firebase/data.ts:854"
+    ],
+    "mediaBoundary": "read avatar/banner references"
+  },
+  "listRoomContent": {
+    "method": "GET",
+    "path": "/rooms/{username}/content",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "The Room owner’s posts and Life Updates that you can reach today, newest first, as Memories items: only what is in Boxes you are in right now (a Life Update shows only your Boxes’ contexts), never Only Me (not even in your own Room), and nothing about what you cannot see. Without `year` it spans every year; `month` needs `year`. Any Room you may not see answers ROOM_NOT_FOUND, exactly like `GET /rooms/{username}`.",
+    "schemas": {
+      "body": null,
+      "query": "roomContentQuerySchema",
+      "response": "memoryPageSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:86#listContent",
+      "principal": true,
+      "serviceCalls": ["content.content"]
+    },
+    "domain": "rooms",
+    "clientMethod": "roomContent",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/rooms/[username]/memories/page.tsx:56",
+      "apps/web/app/lib/rooms/room-previews.ts:38",
+      "apps/web/app/lib/rooms/room-previews.ts:40"
+    ],
+    "mediaBoundary": "read media references"
+  },
+  "getRoomContentSummary": {
+    "method": "GET",
+    "path": "/rooms/{username}/content/summary",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "How many of the Room owner’s posts and Life Updates you can reach per UTC year, and per month of `year` (default: the newest): counted over exactly what `listRoomContent` lists, so it reveals nothing more. Any Room you may not see answers ROOM_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": "roomContentSummaryQuerySchema",
+      "response": "memorySummarySchema"
+    },
+    "errors": ["ROOM_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:95#contentSummary",
+      "principal": true,
+      "serviceCalls": ["content.summary"]
+    },
+    "domain": "rooms",
+    "clientMethod": "roomContentSummary",
+    "webCallSites": [
+      "apps/web/app/(signed-in)/rooms/[username]/memories/page.tsx:49",
+      "apps/web/app/lib/rooms/room-previews.ts:47"
+    ],
+    "mediaBoundary": "none"
+  },
+  "listRoomPhotos": {
+    "method": "GET",
+    "path": "/rooms/{username}/photos",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "Photos from the Room owner’s posts and Life Updates that you can reach today, newest first, with signed URLs and a link target for each. `limit` counts the items that carry photos (up to 12, each with up to 4 photos), and the cursor is the item’s. Same reach rules as `listRoomContent`. Any Room you may not see answers ROOM_NOT_FOUND.",
+    "schemas": {
+      "body": null,
+      "query": "roomPhotoQuerySchema",
+      "response": "roomPhotoPageSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:104#listPhotos",
+      "principal": true,
+      "serviceCalls": ["content.photos"]
+    },
+    "domain": "rooms",
+    "clientMethod": "roomPhotos",
+    "webCallSites": ["apps/web/app/lib/rooms/room-previews.ts:43"],
+    "mediaBoundary": "read media references"
+  },
+  "updateMyRoom": {
+    "method": "PATCH",
+    "path": "/me/room",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "Change any of your Room’s settings; fields left out stay as they are, a null `accent`/`font`/`decorationPack` follows the theme again, `music: null` removes the music card, and `bannerMediaId` attaches a ready `room_banner` upload of yours (null removes it; the previous banner is deleted). `expectedUpdatedAt` must be the `updatedAt` you loaded (null for a never-saved Room), else ROOM_UPDATE_STALE. A request that changes nothing returns your Room unchanged. Shares a 120-per-hour limit with the other Room writes.",
+    "schemas": {
+      "body": "updateRoomSchema",
+      "query": null,
+      "response": "roomSchema"
+    },
+    "errors": [
+      "ROOM_NOT_FOUND",
+      "ROOM_UPDATE_STALE",
+      "MEDIA_NOT_FOUND",
+      "MEDIA_NOT_READY"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:113#update",
+      "principal": true,
+      "serviceCalls": ["settings.update"]
+    },
+    "domain": "rooms",
+    "clientMethod": "updateMyRoom",
+    "webCallSites": [
+      "apps/web/app/actions/rooms.ts:58",
+      "apps/web/app/actions/rooms.ts:59",
+      "apps/web/app/actions/rooms.ts:123",
+      "apps/web/app/actions/rooms.ts:125"
+    ],
+    "mediaBoundary": "change banner reference"
+  },
+  "updateMyRoomWidgets": {
+    "method": "PUT",
+    "path": "/me/room/widgets",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "Replace your Room’s widget arrangement: all seven widgets, each once, with positions 0–6 each once. Same `expectedUpdatedAt` rule and shared limit as the other Room writes; an identical arrangement returns your Room unchanged.",
+    "schemas": {
+      "body": "updateRoomWidgetsSchema",
+      "query": null,
+      "response": "roomSchema"
+    },
+    "errors": ["ROOM_NOT_FOUND", "ROOM_UPDATE_STALE"],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:122#updateWidgets",
+      "principal": true,
+      "serviceCalls": ["widgets.replace"]
+    },
+    "domain": "rooms",
+    "clientMethod": "updateMyRoomWidgets",
+    "webCallSites": [
+      "apps/web/app/actions/rooms.ts:70",
+      "apps/web/app/actions/rooms.ts:71"
+    ],
+    "mediaBoundary": "none"
+  },
+  "updateMyRoomTopFriends": {
+    "method": "PUT",
+    "path": "/me/room/top-friends",
+    "access": "authenticated",
+    "source": "packages/validation/src/routes/rooms.ts",
+    "summary": "Replace your Top Friends: the people in display order (no more than `size`), the size (4, 8, or 12), and who sees them (`visible`: everyone who can see your Room, `friends`: your friends, `hidden`: you). Everyone listed must be an accepted friend with no block either way, else TOP_FRIEND_NOT_ELIGIBLE (one answer for every reason). Unfriending or blocking removes a person automatically. Same `expectedUpdatedAt` rule and shared limit as the other Room writes.",
+    "schemas": {
+      "body": "updateRoomTopFriendsSchema",
+      "query": null,
+      "response": "roomSchema"
+    },
+    "errors": [
+      "ROOM_NOT_FOUND",
+      "ROOM_UPDATE_STALE",
+      "TOP_FRIEND_NOT_ELIGIBLE"
+    ],
+    "referenceHandler": {
+      "handler": "apps/api/src/rooms/rooms.controller.ts:131#updateTopFriends",
+      "principal": true,
+      "serviceCalls": ["topFriends.replace"]
+    },
+    "domain": "rooms",
+    "clientMethod": "updateMyRoomTopFriends",
+    "webCallSites": [
+      "apps/web/app/actions/rooms.ts:82",
+      "apps/web/app/actions/rooms.ts:83"
+    ],
+    "mediaBoundary": "none"
+  }
+}

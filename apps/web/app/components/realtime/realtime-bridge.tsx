@@ -10,15 +10,8 @@ import {
   shouldResync,
   type RealtimeHint,
 } from '@/lib/realtime/realtime';
-import { createBrowserClient } from '@supabase/ssr';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-interface RealtimeBridgeProps {
-  apiUrl: string;
-  supabaseUrl: string;
-  supabaseAnonKey: string;
-}
-
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, ms);
@@ -36,11 +29,7 @@ const sleep = (ms: number, signal: AbortSignal) =>
  * The stream ends at token expiry and on any error; reconnecting gets a fresh
  * token and a `resync`, so a missed hint is repaired rather than trusted.
  */
-export function RealtimeBridge({
-  apiUrl,
-  supabaseUrl,
-  supabaseAnonKey,
-}: RealtimeBridgeProps) {
+export function RealtimeBridge() {
   const router = useRouter();
   const pathname = usePathname();
   const [connected, setConnected] = useState(false);
@@ -52,7 +41,6 @@ export function RealtimeBridge({
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
     let refreshTimer: ReturnType<typeof setTimeout> | undefined;
     let connectedBefore = false;
     let attempt = 0;
@@ -66,14 +54,8 @@ export function RealtimeBridge({
     };
 
     async function listenOnce(): Promise<void> {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error('signed out');
-      const response = await fetch(`${apiUrl}/me/events`, {
-        headers: {
-          authorization: `Bearer ${token}`,
-          accept: 'text/event-stream',
-        },
+      const response = await fetch('/events', {
+        headers: { accept: 'text/event-stream' },
         cache: 'no-store',
         signal,
       });
@@ -110,8 +92,9 @@ export function RealtimeBridge({
         if (!signal.aborted) setConnected(false);
         // Reconnect with jittered backoff, whether it ended or failed.
         // eslint-disable-next-line no-await-in-loop
-        await sleep(backoffDelay(attempt), signal);
+        await sleep(Math.min(backoffDelay(attempt), 30_000), signal);
         attempt += 1;
+        if (!signal.aborted && shouldResync(pathRef.current)) refresh();
       }
     }
 
@@ -120,7 +103,7 @@ export function RealtimeBridge({
       controller.abort();
       clearTimeout(refreshTimer);
     };
-  }, [apiUrl, supabaseUrl, supabaseAnonKey, router]);
+  }, [router]);
 
   // A hidden marker: lets tests (and later, status UI) know the stream is live.
   return <span hidden data-realtime={connected ? 'connected' : 'connecting'} />;

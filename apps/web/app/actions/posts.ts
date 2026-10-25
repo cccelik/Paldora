@@ -44,8 +44,8 @@ export async function createPostAction(
   return runForm(
     formData,
     createForm,
-    (api, { boxId, content, mediaAssetIds }) =>
-      api.createPost(boxId, { content, mediaAssetIds }),
+    (data, { boxId, content, mediaAssetIds }) =>
+      data.createPost(boxId, { content, mediaAssetIds }),
     {
       success: 'Posted.',
       paths: feedPaths,
@@ -64,8 +64,11 @@ export async function updatePostAction(
   return runForm(
     formData,
     z.object({ postId: uuidSchema, content: postContentSchema }),
-    (api, { postId, content }) => api.updatePost(postId, { content }),
-    { success: 'Saved.', paths: feedPaths },
+    (data, { postId, content }) => data.updatePost(postId, { content }),
+    {
+      success: 'Saved.',
+      paths: feedPaths,
+    },
   );
 }
 
@@ -76,8 +79,11 @@ export async function deletePostAction(
   return runForm(
     formData,
     z.object({ postId: uuidSchema }),
-    (api, { postId }) => api.deletePost(postId),
-    { success: 'Post deleted.', paths: feedPaths },
+    (data, { postId }) => data.deletePost(postId),
+    {
+      success: 'Post deleted.',
+      paths: feedPaths,
+    },
   );
 }
 

@@ -16,8 +16,11 @@ export async function createBoxAction(
   const result = await runFormWithData(
     formData,
     z.object({ name: boxNameSchema }),
-    (api, { name }) => api.createBox({ name }),
-    { success: 'Box created.', paths: ['/boxes'] },
+    (data, { name }) => data.createBox({ name }),
+    {
+      success: 'Box created.',
+      paths: ['/boxes'],
+    },
   );
   if (result.status !== 'success') return result;
   redirect(`/boxes/${result.data.id}`);
@@ -30,8 +33,11 @@ export async function renameBoxAction(
   return runForm(
     formData,
     z.object({ boxId: uuidSchema, name: boxNameSchema }),
-    (api, { boxId, name }) => api.updateBox(boxId, { name }),
-    { success: 'Box renamed.', paths: ['/boxes', '/boxes/[boxId]'] },
+    (data, { boxId, name }) => data.updateBox(boxId, { name }),
+    {
+      success: 'Box renamed.',
+      paths: ['/boxes', '/boxes/[boxId]'],
+    },
   );
 }
 
@@ -42,8 +48,11 @@ export async function setBoxStatusAction(
   return runForm(
     formData,
     z.object({ boxId: uuidSchema, status: z.enum(['active', 'archived']) }),
-    (api, { boxId, status }) => api.updateBox(boxId, { status }),
-    { success: 'Saved.', paths: ['/boxes', '/boxes/[boxId]'] },
+    (data, { boxId, status }) => data.updateBox(boxId, { status }),
+    {
+      success: 'Saved.',
+      paths: ['/boxes', '/boxes/[boxId]'],
+    },
   );
 }
 
@@ -62,8 +71,11 @@ export async function deleteBoxAction(
       confirmName: z.string(),
       acknowledge: z.literal('yes', { error: 'Tick the box to confirm.' }),
     }),
-    (api, { boxId, confirmName }) => api.deleteBox(boxId, confirmName),
-    { success: 'Box deleted.', paths: ['/boxes'] },
+    (data, { boxId, confirmName }) => data.deleteBox(boxId, confirmName),
+    {
+      success: 'Box deleted.',
+      paths: ['/boxes'],
+    },
   );
   if (result.status !== 'success') return result;
   redirect('/boxes');
@@ -76,8 +88,11 @@ export async function inviteToBoxAction(
   return runForm(
     formData,
     z.object({ boxId: uuidSchema, username: usernameSchema }),
-    (api, { boxId, username }) => api.inviteToBox(boxId, username),
-    { success: 'Invitation sent.', paths: ['/boxes/[boxId]'] },
+    (data, { boxId, username }) => data.inviteToBox(boxId, username),
+    {
+      success: 'Invitation sent.',
+      paths: ['/boxes/[boxId]'],
+    },
   );
 }
 
@@ -88,9 +103,12 @@ export async function revokeInvitationAction(
   return runForm(
     formData,
     z.object({ boxId: uuidSchema, invitationId: uuidSchema }),
-    (api, { boxId, invitationId }) =>
-      api.revokeBoxInvitation(boxId, invitationId),
-    { success: 'Invitation withdrawn.', paths: ['/boxes/[boxId]'] },
+    (data, { boxId, invitationId }) =>
+      data.revokeBoxInvitation(boxId, invitationId),
+    {
+      success: 'Invitation withdrawn.',
+      paths: ['/boxes/[boxId]'],
+    },
   );
 }
 
@@ -101,8 +119,11 @@ export async function acceptInvitationAction(
   return runForm(
     formData,
     invitationForm,
-    (api, { invitationId }) => api.acceptBoxInvitation(invitationId),
-    { success: 'You joined the Box.', paths: ['/boxes'] },
+    (data, { invitationId }) => data.acceptBoxInvitation(invitationId),
+    {
+      success: 'You joined the Box.',
+      paths: ['/boxes'],
+    },
   );
 }
 
@@ -113,8 +134,11 @@ export async function declineInvitationAction(
   return runForm(
     formData,
     invitationForm,
-    (api, { invitationId }) => api.declineBoxInvitation(invitationId),
-    { success: 'Invitation declined.', paths: ['/boxes'] },
+    (data, { invitationId }) => data.declineBoxInvitation(invitationId),
+    {
+      success: 'Invitation declined.',
+      paths: ['/boxes'],
+    },
   );
 }
 
@@ -129,8 +153,12 @@ export async function setMemberRoleAction(
       userId: uuidSchema,
       role: z.enum(['admin', 'member']),
     }),
-    (api, { boxId, userId, role }) => api.setBoxMemberRole(boxId, userId, role),
-    { success: 'Role updated.', paths: ['/boxes/[boxId]'] },
+    (data, { boxId, userId, role }) =>
+      data.setBoxMemberRole(boxId, userId, role),
+    {
+      success: 'Role updated.',
+      paths: ['/boxes/[boxId]'],
+    },
   );
 }
 
@@ -141,8 +169,11 @@ export async function removeMemberAction(
   return runForm(
     formData,
     memberForm,
-    (api, { boxId, userId }) => api.removeBoxMember(boxId, userId),
-    { success: 'Member removed.', paths: ['/boxes', '/boxes/[boxId]'] },
+    (data, { boxId, userId }) => data.removeBoxMember(boxId, userId),
+    {
+      success: 'Member removed.',
+      paths: ['/boxes', '/boxes/[boxId]'],
+    },
   );
 }
 
@@ -153,8 +184,11 @@ export async function transferOwnershipAction(
   return runForm(
     formData,
     memberForm,
-    (api, { boxId, userId }) => api.transferBoxOwnership(boxId, userId),
-    { success: 'Ownership transferred.', paths: ['/boxes', '/boxes/[boxId]'] },
+    (data, { boxId, userId }) => data.transferBoxOwnership(boxId, userId),
+    {
+      success: 'Ownership transferred.',
+      paths: ['/boxes', '/boxes/[boxId]'],
+    },
   );
 }
 
@@ -165,8 +199,11 @@ export async function leaveBoxAction(
   const result = await runForm(
     formData,
     boxForm,
-    (api, { boxId }) => api.leaveBox(boxId),
-    { success: 'You left the Box.', paths: ['/boxes'] },
+    (data, { boxId }) => data.leaveBox(boxId),
+    {
+      success: 'You left the Box.',
+      paths: ['/boxes'],
+    },
   );
   if (result.status !== 'success') return result;
   redirect('/boxes');

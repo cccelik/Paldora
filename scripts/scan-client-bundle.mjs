@@ -14,7 +14,7 @@ if (!root) {
 const forbidden = [
   [
     'server-only variable name',
-    /SUPABASE_SERVICE_ROLE_KEY|S3_SECRET_ACCESS_KEY|DATABASE_URL|REDIS_URL/,
+    /GOOGLE_APPLICATION_CREDENTIALS|FIREBASE_PRIVATE_KEY|FIREBASE_CLIENT_EMAIL|SUPABASE_SERVICE_ROLE_KEY|S3_SECRET_ACCESS_KEY|DATABASE_URL|REDIS_URL/,
   ],
   [
     'Supabase service-role JWT claim',
@@ -24,6 +24,10 @@ const forbidden = [
   ['Redis connection string', /rediss?:\/\/[^\s"'`]*@/],
   ['private key block', /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
   ['local development credential', /_dev_only/],
+  [
+    'Firebase Admin or trusted-server marker',
+    /firebase-admin|FIREBASE_WEB_API_KEY|FIREBASE_STORAGE_BUCKET|paldoraAdmitted|nativeAccounts/,
+  ],
 ];
 
 function* files(directory) {

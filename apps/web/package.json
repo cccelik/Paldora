@@ -13,13 +13,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@paldora/api-client": "workspace:*",
-    "@paldora/config": "workspace:*",
     "@paldora/domain": "workspace:*",
+    "@paldora/firebase-trusted": "workspace:*",
     "@paldora/tokens": "workspace:*",
     "@paldora/validation": "workspace:*",
-    "@supabase/ssr": "0.12.4",
-    "@supabase/supabase-js": "2.112.3",
+    "firebase-admin": "14.5.0",
     "next": "16.3.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",

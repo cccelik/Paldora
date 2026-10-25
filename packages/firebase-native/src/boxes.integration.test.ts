@@ -431,4 +431,23 @@ describe('Firebase-native Box access', () => {
       setDoc(doc(aliceDb, 'nativeUsernames', 'zoe'), { uid: alice }),
     );
   });
+
+  it('denies direct-client reads and restoration after trusted deletion starts', async () => {
+    const owner = person();
+    const boxId = box();
+    await account(owner);
+    const ownerDb = clientDb(env.authenticatedContext(owner));
+    await createBox(ownerDb, owner, 'Private', boxId);
+    await env.withSecurityRulesDisabled(async (context) => {
+      await updateDoc(doc(clientDb(context), 'nativeBoxes', boxId), {
+        status: 'deleting',
+        version: 2,
+      });
+    });
+    await assertFails(getDoc(doc(ownerDb, 'nativeBoxes', boxId)));
+    await assertFails(
+      getDoc(doc(ownerDb, 'nativeBoxes', boxId, 'members', owner)),
+    );
+    await assertFails(updateBoxSettings(ownerDb, boxId, { status: 'active' }));
+  });
 });

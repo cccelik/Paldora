@@ -2,12 +2,7 @@ export interface ContentSecurityPolicyOptions {
   nonce: string;
   development: boolean;
   webUrl: string;
-  apiUrl: string;
-  supabaseUrl: string;
-  mediaOrigin?: string | undefined;
 }
-
-const originOf = (url: string) => new URL(url).origin;
 
 export function createNonce(): string {
   return Buffer.from(crypto.randomUUID()).toString('base64');
@@ -24,13 +19,6 @@ export function createNonce(): string {
 export function buildContentSecurityPolicy(
   options: ContentSecurityPolicyOptions,
 ): string {
-  const media = options.mediaOrigin ? [originOf(options.mediaOrigin)] : [];
-  const connect = [
-    "'self'",
-    originOf(options.apiUrl),
-    originOf(options.supabaseUrl),
-    ...media,
-  ];
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
     'base-uri': ["'self'"],
@@ -49,10 +37,10 @@ export function buildContentSecurityPolicy(
     'style-src': options.development
       ? ["'self'", "'unsafe-inline'"]
       : ["'self'", `'nonce-${options.nonce}'`],
-    'img-src': ["'self'", 'data:', 'blob:', ...media],
-    'media-src': ["'self'", 'blob:', ...media],
+    'img-src': ["'self'", 'data:', 'blob:'],
+    'media-src': ["'self'", 'blob:'],
     'font-src': ["'self'"],
-    'connect-src': [...new Set(connect)],
+    'connect-src': ["'self'"],
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],
   };

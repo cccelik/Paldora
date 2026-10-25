@@ -8,6 +8,7 @@ import {
 } from '@/lib/life-updates/memories';
 import {
   MEMORY_TYPES,
+  MEMORY_MIN_YEAR,
   type MemorySummaryView,
   type MemoryType,
 } from '@paldora/validation';
@@ -136,3 +137,79 @@ export function MemoryTypeFilter({
 }
 
 const allMonths = Array.from({ length: 12 }, (_, index) => index + 1);
+
+/** Calendar navigation never needs to read or reveal private content counts. */
+export function FirebaseMemoryYearNav({
+  scope,
+  current,
+}: {
+  scope: MemoryScope;
+  current?: number | undefined;
+}) {
+  const latest = new Date().getUTCFullYear();
+  const end = Math.min(
+    latest,
+    Math.max(
+      MEMORY_MIN_YEAR + 9,
+      Math.floor((current ?? latest) / 10) * 10 + 9,
+    ),
+  );
+  const start = Math.max(MEMORY_MIN_YEAR, end - 9);
+  const years = Array.from(
+    { length: end - start + 1 },
+    (_, index) => end - index,
+  );
+  return (
+    <nav aria-label="Years" className={styles.nav}>
+      <ul className={styles.choices}>
+        {years.map((year) => (
+          <li key={year}>
+            <NavLink
+              href={memoryHref(scope, { year })}
+              current={year === current}
+            >
+              <span className={styles.label}>{year}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+      {start > MEMORY_MIN_YEAR ? (
+        <NavLink href={memoryHref(scope, { year: start - 1 })} current={false}>
+          Earlier years
+        </NavLink>
+      ) : null}
+      {end < latest ? (
+        <NavLink href={memoryHref(scope, { year: end + 1 })} current={false}>
+          Later years
+        </NavLink>
+      ) : null}
+    </nav>
+  );
+}
+
+export function FirebaseMemoryMonthNav({
+  scope,
+  year,
+  current,
+}: {
+  scope: MemoryScope;
+  year: number;
+  current?: number | undefined;
+}) {
+  return (
+    <nav aria-label={`Months of ${year}`} className={styles.nav}>
+      <ul className={`${styles.choices} ${styles.months}`}>
+        {allMonths.map((month) => (
+          <li key={month}>
+            <NavLink
+              href={memoryHref(scope, { year, month })}
+              current={month === current}
+            >
+              <span className={styles.label}>{monthName(month)}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}

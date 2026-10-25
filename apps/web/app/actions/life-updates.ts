@@ -109,8 +109,12 @@ export async function createLifeUpdateAction(
   const result = await runFormWithData(
     formData,
     createForm,
-    (api, body) => api.createLifeUpdate(body),
-    { success: 'Shared.', paths: lifeUpdatePaths, copy },
+    (data, body) => data.createLifeUpdate(body),
+    {
+      success: 'Shared.',
+      paths: lifeUpdatePaths,
+      copy,
+    },
   );
   if (result.status !== 'success') return result;
   redirect(lifeUpdateHref(result.data.id) as Route);
@@ -124,9 +128,13 @@ export async function updateLifeUpdateAction(
   const result = await runFormWithData(
     formData,
     updateForm,
-    (api, { lifeUpdateId, changes }) =>
-      api.updateLifeUpdate(lifeUpdateId, changes),
-    { success: 'Saved.', paths: lifeUpdatePaths, copy: editCopy },
+    (data, { lifeUpdateId, changes }) =>
+      data.editLifeUpdate(lifeUpdateId, changes),
+    {
+      success: 'Saved.',
+      paths: lifeUpdatePaths,
+      copy: editCopy,
+    },
   );
   if (result.status !== 'success') return result;
   const boxId = formData.get('returnBoxId');
@@ -144,8 +152,12 @@ export async function deleteLifeUpdateAction(
   return runForm(
     formData,
     z.object({ lifeUpdateId: uuidSchema }),
-    (api, { lifeUpdateId }) => api.deleteLifeUpdate(lifeUpdateId),
-    { success: 'Life Update deleted.', paths: lifeUpdatePaths, copy },
+    (data, { lifeUpdateId }) => data.deleteLifeUpdate(lifeUpdateId),
+    {
+      success: 'Life Update deleted.',
+      paths: lifeUpdatePaths,
+      copy,
+    },
   );
 }
 

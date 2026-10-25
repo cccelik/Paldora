@@ -8,7 +8,9 @@ import {
   FriendRequestList,
 } from '@/components/people/friend-lists';
 import { PageHeader, Section } from '@/components/ui';
-import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
+import { completedUser, cursorParam } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 export const metadata = { title: 'Friends' };
 
 export default async function FriendsPage({
@@ -16,7 +18,7 @@ export default async function FriendsPage({
 }: PageProps<'/friends'>) {
   await completedUser();
   const cursor = cursorParam((await searchParams).friends);
-  const api = await apiClient();
+  const api = await firebaseWebData();
   const [friends, requests, blocks] = await Promise.all([
     api.friends({ limit: 25, cursor }),
     api.friendRequests({ limit: 50 }),

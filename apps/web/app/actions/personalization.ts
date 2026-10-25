@@ -5,7 +5,9 @@ import {
   type ActionResult,
 } from '@/lib/actions/action-result';
 import { textField } from '@/lib/actions/form-data';
-import { apiClient } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
 import {
   updatePersonalizationSchema,
   type RoomView,
@@ -31,9 +33,10 @@ export async function savePersonalization(
       'Use at most three widgets and 8 KiB per source. Each widget needs a title.',
     );
   try {
-    const room = await (
-      await apiClient()
-    ).updateMyRoomPersonalization(input.data);
+    const room = await (async () => {
+      await requireFirebaseActionOrigin();
+      return (await firebaseWebData()).updateMyRoomPersonalization(input.data);
+    })();
     return { status: 'success', message: 'Personalization saved.', data: room };
   } catch (error) {
     return actionError(error, {

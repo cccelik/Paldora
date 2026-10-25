@@ -4,7 +4,9 @@ import { MoreLink } from '@/components/common/more-link';
 import { RowActionForm } from '@/components/forms/row-action-form';
 import { NotificationList } from '@/components/notifications/notification-row';
 import { EmptyState, PageHeader } from '@/components/ui';
-import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
+import { completedUser, cursorParam } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 export const metadata = { title: 'Notifications' };
 
 export default async function NotificationsPage({
@@ -12,7 +14,9 @@ export default async function NotificationsPage({
 }: PageProps<'/notifications'>) {
   await completedUser();
   const cursor = cursorParam((await searchParams).cursor);
-  const page = await (await apiClient()).notifications({ limit: 20, cursor });
+  const page = await (
+    await firebaseWebData()
+  ).notifications({ limit: 20, cursor });
   const unread = page.unreadCount.count;
   return (
     <div className={styles.stack}>

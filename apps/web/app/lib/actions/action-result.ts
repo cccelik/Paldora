@@ -1,4 +1,4 @@
-import { ApiClientError } from '@paldora/api-client';
+import { ApiClientError } from '@/lib/server/web-data-error';
 /**
  * What a Server Action returns to `useActionState`. Results travel in React
  * state, never in URL query strings, so messages do not leak into history,

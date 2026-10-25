@@ -66,10 +66,15 @@ export function ForgotPasswordForm() {
   );
 }
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({
+  oobCode,
+}: {
+  oobCode?: string | undefined;
+}) {
   const [state, action] = useActionState(resetPasswordAction, idleResult);
   return (
     <form action={action} className={styles.form}>
+      {oobCode ? <input type="hidden" name="oobCode" value={oobCode} /> : null}
       <TextField
         label="New password"
         id="password"
@@ -93,7 +98,7 @@ export function ResetPasswordForm() {
         Save password
       </SubmitButton>
       {state.status === 'success' ? (
-        <Link className={styles.link} href="/home">
+        <Link className={styles.link} href={oobCode ? '/sign-in' : '/home'}>
           Continue to Paldora
         </Link>
       ) : null}

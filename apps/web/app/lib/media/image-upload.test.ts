@@ -16,22 +16,22 @@ describe('avatarFileProblem', () => {
 });
 
 describe('putToSignedUrl', () => {
-  it('sends the signed headers without credentials', async () => {
+  it('uses same-origin credentials for the Firebase media route', async () => {
     const fetch = vi.fn(async () => new Response(null, { status: 200 }));
     await putToSignedUrl(
       new Blob(['x']),
       {
-        url: 'https://storage.test/u',
+        url: '/media/upload/123',
         headers: { 'content-type': 'image/png' },
       },
       fetch,
     );
     expect(fetch).toHaveBeenCalledWith(
-      'https://storage.test/u',
+      '/media/upload/123',
       expect.objectContaining({
         method: 'PUT',
         headers: { 'content-type': 'image/png' },
-        credentials: 'omit',
+        credentials: 'same-origin',
       }),
     );
   });

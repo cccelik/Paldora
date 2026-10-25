@@ -1,5 +1,5 @@
 import { actionError } from '@/lib/actions/action-result';
-import { ApiClientError } from '@paldora/api-client';
+import { ApiClientError } from '@/lib/server/web-data-error';
 import { describe, expect, it } from 'vitest';
 describe('actionError', () => {
   it('uses product copy for known codes', () => {

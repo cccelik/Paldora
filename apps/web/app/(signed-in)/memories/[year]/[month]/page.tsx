@@ -1,5 +1,5 @@
 import { MemoryScopePage } from '@/components/memories/memory-scope-page';
-import { MemoryPeriod } from '@/components/memories/memory-timeline';
+import { MemoryPeriod } from '@/components/memories/memory-period';
 import { BackLink } from '@/components/ui';
 import {
   memoriesDescription,
@@ -10,14 +10,11 @@ import {
   parseYear,
 } from '@/lib/life-updates/memories';
 import { MEMORY_ABSENT } from '@/lib/server/route-params';
-import {
-  apiClient,
-  completedUser,
-  cursorParam,
-  orNotFound,
-} from '@/lib/server/session';
+import { completedUser, cursorParam, orNotFound } from '@/lib/server/session';
 import { type Route } from 'next';
 import { notFound } from 'next/navigation';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 export const metadata = { title: 'Memories' };
 
 /** One UTC month of the viewer's Memories. */
@@ -32,9 +29,9 @@ export default async function MemoryMonthPage({
   const query = await searchParams;
   const type = parseMemoryType(query.type);
   if (year === null || month === null || type === null) notFound();
-  const api = await apiClient();
+  const api = await firebaseWebData();
   const [summary, page] = await Promise.all([
-    api.myMemorySummary(year),
+    Promise.resolve(undefined),
     orNotFound(
       api.myMemories({
         year,

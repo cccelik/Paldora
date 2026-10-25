@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  changePasswordAction,
   saveAccountAction,
   saveProfileStepAction,
   saveUsernameAction,
@@ -120,6 +121,42 @@ export function AccountForm({
       <div className={styles.actions}>
         <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
       </div>
+    </form>
+  );
+}
+
+export function ChangePasswordForm() {
+  const [state, action] = useActionState(changePasswordAction, idleResult);
+  return (
+    <form action={action} className={styles.form}>
+      <TextField
+        label="Current password"
+        id="currentPassword"
+        name="currentPassword"
+        type="password"
+        autoComplete="current-password"
+        required
+      />
+      <TextField
+        label="New password"
+        id="nextPassword"
+        name="nextPassword"
+        type="password"
+        autoComplete="new-password"
+        minLength={10}
+        required
+      />
+      <TextField
+        label="Confirm new password"
+        id="confirmation"
+        name="confirmation"
+        type="password"
+        autoComplete="new-password"
+        minLength={10}
+        required
+      />
+      <ActionFeedback state={state} />
+      <SubmitButton pendingLabel="Changing…">Change password</SubmitButton>
     </form>
   );
 }

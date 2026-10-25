@@ -2,8 +2,10 @@ import styles from '@/(signed-in)/moderation/cases/[caseId]/page.module.css';
 import { CaseActionForm } from '@/components/moderation/case-action-form';
 import { BackLink, PageHeader, Section } from '@/components/ui';
 import { uuidParam } from '@/lib/server/route-params';
-import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
+import { completedUser, orNotFound } from '@/lib/server/session';
 import { randomUUID } from 'node:crypto';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 
 export const metadata = { title: 'Moderation case' };
 
@@ -12,10 +14,10 @@ export default async function ModerationCasePage({
 }: PageProps<'/moderation/cases/[caseId]'>) {
   await completedUser();
   const caseId = uuidParam((await params).caseId);
-  const report = await orNotFound((await apiClient()).moderationCase(caseId), [
-    'MODERATION_FORBIDDEN',
-    'REPORT_NOT_FOUND',
-  ]);
+  const report = await orNotFound(
+    (await firebaseWebData()).moderationCase(caseId),
+    ['MODERATION_FORBIDDEN', 'REPORT_NOT_FOUND'],
+  );
   return (
     <div className={styles.page}>
       <BackLink href="/moderation">Moderation queue</BackLink>

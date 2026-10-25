@@ -1,9 +1,11 @@
 import styles from '@/(signed-in)/moderation/accounts/page.module.css';
 import { BackLink, PageHeader } from '@/components/ui';
-import { apiClient, completedUser } from '@/lib/server/session';
-import { ApiClientError } from '@paldora/api-client';
+import { completedUser } from '@/lib/server/session';
+import { ApiClientError } from '@/lib/server/web-data-error';
 import { uuidSchema } from '@paldora/validation';
 import { notFound } from 'next/navigation';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 
 export const metadata = { title: 'Account lookup' };
 
@@ -18,7 +20,7 @@ export default async function ModerationAccountLookupPage({
   let absent = false;
   if (parsed?.success) {
     try {
-      result = await (await apiClient()).moderationAccount(parsed.data);
+      result = await (await firebaseWebData()).moderationAccount(parsed.data);
     } catch (error) {
       if (error instanceof ApiClientError) {
         if (error.code === 'MODERATION_FORBIDDEN') notFound();

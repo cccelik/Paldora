@@ -7,8 +7,8 @@ import {
   SettingsSection,
 } from '@/components/boxes/box-sections';
 import { MoreLink } from '@/components/common/more-link';
-import { ReportControl } from '@/components/moderation/report-control';
-import { PostFeed } from '@/components/posts/post-card';
+
+import { FirebaseBoxFeed } from '@/components/posts/firebase-box-feed';
 import { PostComposer } from '@/components/posts/post-composer';
 import {
   BackLink,
@@ -18,12 +18,12 @@ import {
   Section,
 } from '@/components/ui';
 import { BOX_ABSENT, uuidParam } from '@/lib/server/route-params';
+import { completedUser, cursorParam, orNotFound } from '@/lib/server/session';
 import {
-  apiClient,
-  completedUser,
-  cursorParam,
-  orNotFound,
-} from '@/lib/server/session';
+  firebaseWebData,
+  type FirebaseFeedItem,
+} from '@/lib/server/firebase/data';
+import type { BoxView, CurrentUser } from '@paldora/validation';
 import { canManageMembers } from '@paldora/domain';
 import { type Route } from 'next';
 import Link from 'next/link';
@@ -32,6 +32,47 @@ export const metadata = { title: 'Box' };
 const roleLabel = { owner: 'Owner', admin: 'Admin', member: 'Member' } as const;
 const absent = BOX_ABSENT;
 
+function BoxPosts({
+  boxId,
+  status,
+  firebaseFeed,
+  me,
+}: {
+  boxId: string;
+  status: BoxView['status'];
+  firebaseFeed: { items: FirebaseFeedItem[]; nextCursor: string | null };
+  me: CurrentUser;
+}) {
+  return (
+    <Section id="posts" title="Posts">
+      {status === 'active' ? <PostComposer boxId={boxId} /> : null}
+      <div className={styles.actions}>
+        {status === 'active' ? (
+          <Link
+            className={buttonClassName('secondary')}
+            href={`/life-updates/new?box=${boxId}` as Route}
+          >
+            Share a Life Update
+          </Link>
+        ) : null}
+      </div>
+      {
+        <FirebaseBoxFeed
+          items={firebaseFeed.items}
+          active={status === 'active'}
+          presets={me.preferences.reactionPresets}
+        />
+      }
+      {firebaseFeed.nextCursor ? (
+        <MoreLink
+          href={`/boxes/${boxId}?posts=${encodeURIComponent(firebaseFeed.nextCursor)}`}
+          label="Show older posts"
+        />
+      ) : null}
+    </Section>
+  );
+}
+
 export default async function BoxPage({
   params,
   searchParams,
@@ -39,18 +80,24 @@ export default async function BoxPage({
   const me = await completedUser();
   const parsedId = uuidParam((await params).boxId);
   const boxId = parsedId;
-  const api = await apiClient();
+  const api = await firebaseWebData();
   const box = await orNotFound(api.box(boxId), absent);
   const manager = canManageMembers(box.currentUserRole);
   const owner = box.currentUserRole === 'owner';
   const cursor = cursorParam((await searchParams).members);
   const postsCursor = cursorParam((await searchParams).posts);
-  const [feed, members, invitations] = await Promise.all([
-    orNotFound(api.boxPosts(boxId, { limit: 20, cursor: postsCursor }), absent),
+  const [members, invitations, firebaseFeed] = await Promise.all([
     orNotFound(api.boxMembers(boxId, { limit: 25, cursor }), absent),
     manager
       ? orNotFound(api.boxInvitations(boxId, { limit: 50 }), absent)
       : Promise.resolve(null),
+    orNotFound(
+      api.boxPosts(boxId, {
+        limit: 20,
+        cursor: postsCursor,
+      }),
+      absent,
+    ),
   ]);
   return (
     <div className={styles.stack}>
@@ -74,38 +121,12 @@ export default async function BoxPage({
             : undefined
         }
       />
-      <ReportControl targetKind="box" targetId={boxId} />
-      <Section id="posts" title="Posts">
-        {box.status === 'active' ? <PostComposer boxId={boxId} /> : null}
-        <div className={styles.actions}>
-          {box.status === 'active' ? (
-            <Link
-              className={buttonClassName('secondary')}
-              href={`/life-updates/new?box=${boxId}` as Route}
-            >
-              Share a Life Update
-            </Link>
-          ) : null}
-          <Link
-            className={buttonClassName('secondary')}
-            href={`/boxes/${boxId}/memories`}
-          >
-            Memories
-          </Link>
-        </div>
-        <PostFeed
-          items={feed.items}
-          presets={me.preferences.reactionPresets}
-          viewerId={me.user.id}
-          empty="No posts yet. Be the first to share."
-        />
-        {feed.nextCursor ? (
-          <MoreLink
-            href={`/boxes/${boxId}?posts=${encodeURIComponent(feed.nextCursor)}`}
-            label="Show older posts"
-          />
-        ) : null}
-      </Section>
+      <BoxPosts
+        boxId={boxId}
+        status={box.status}
+        firebaseFeed={firebaseFeed}
+        me={me}
+      />
       <Section id="members" title="Members">
         <MemberList
           boxId={boxId}

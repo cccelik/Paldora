@@ -22,7 +22,11 @@ const accounts = new NativeAccounts(db, auth);
 afterAll(() => deleteApp(app));
 
 async function authUser(
-  options: { emailVerified?: boolean; disabled?: boolean } = {},
+  options: {
+    emailVerified?: boolean;
+    disabled?: boolean;
+    admitted?: boolean;
+  } = {},
 ) {
   const uid = randomUUID();
   await auth.createUser({
@@ -31,6 +35,8 @@ async function authUser(
     emailVerified: options.emailVerified ?? true,
     disabled: options.disabled ?? false,
   });
+  if (options.admitted !== false)
+    await auth.setCustomUserClaims(uid, { paldoraAdmitted: true });
   return uid;
 }
 
@@ -42,16 +48,18 @@ describe('trusted native account provisioning', () => {
     expect(
       (await db.collection('nativeAccounts').doc(uid).get()).data(),
     ).toEqual({
+      schemaVersion: 1,
       status: 'active',
       createdAt: 1_000,
     });
   });
 
-  it('denies missing, unverified, and disabled Auth users', async () => {
+  it('denies missing, unverified, disabled, and unadmitted Auth users', async () => {
     const missing = randomUUID();
     const unverified = await authUser({ emailVerified: false });
     const disabled = await authUser({ disabled: true });
-    for (const uid of [missing, unverified, disabled]) {
+    const unadmitted = await authUser({ admitted: false });
+    for (const uid of [missing, unverified, disabled, unadmitted]) {
       await expect(accounts.provision(uid)).rejects.toMatchObject({
         code: 'UNAVAILABLE',
       });

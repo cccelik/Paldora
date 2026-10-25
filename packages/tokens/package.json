@@ -17,8 +17,8 @@
     "lint": "eslint src scripts --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "tokens:generate": "tsx scripts/generate.ts",
-    "tokens:check": "tsx scripts/generate.ts --check"
+    "tokens:generate": "node --import tsx scripts/generate.ts",
+    "tokens:check": "node --import tsx scripts/generate.ts --check"
   },
   "devDependencies": {
     "tsx": "4.20.5",

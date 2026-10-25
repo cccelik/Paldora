@@ -6,7 +6,8 @@ import { RoomOwnerStrip } from '@/components/rooms/room-owner-strip';
 import { loadRoomPreviews } from '@/lib/rooms/room-previews';
 import { roomUsernameParam } from '@/lib/rooms/room-theme';
 import { ROOM_ABSENT } from '@/lib/server/route-params';
-import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
+import { completedUser, orNotFound } from '@/lib/server/session';
+import { firebaseWebData } from '@/lib/server/firebase/data';
 import { notFound } from 'next/navigation';
 export const metadata = { title: 'Room' };
 
@@ -21,7 +22,7 @@ export default async function RoomPage({
   await completedUser();
   const username = roomUsernameParam((await params).username);
   if (username === null) notFound();
-  const api = await apiClient();
+  const api = await firebaseWebData();
   const room = await orNotFound(api.room(username), ROOM_ABSENT);
   const [previews, personalization] = await Promise.all([
     loadRoomPreviews(api, room),

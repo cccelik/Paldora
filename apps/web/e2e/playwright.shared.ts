@@ -44,7 +44,7 @@ export function productionWebServer(
   env?: Record<string, string>,
 ) {
   return {
-    command: `pnpm --filter @paldora/web build && pnpm --filter @paldora/web start --hostname 127.0.0.1 --port ${port}`,
+    command: `cd apps/web && node_modules/.bin/next build && node_modules/.bin/next start --hostname 127.0.0.1 --port ${port}`,
     url: `http://127.0.0.1:${port}`,
     cwd: repoRoot,
     reuseExistingServer: false,

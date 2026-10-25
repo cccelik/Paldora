@@ -3,8 +3,11 @@ import {
   invalidOutcome,
   type ActionOutcome,
 } from '@/lib/actions/action-result';
-import { apiClient } from '@/lib/server/session';
-import { type PaldoraApiClient } from '@paldora/api-client';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
+import {
+  firebaseWebData,
+  type FirebaseWebData,
+} from '@/lib/server/firebase/data';
 import { revalidatePath } from 'next/cache';
 import 'server-only';
 import { type z } from 'zod';
@@ -18,7 +21,7 @@ export interface RunOptions {
 }
 
 type Work<Input, Output> = (
-  api: PaldoraApiClient,
+  data: FirebaseWebData,
   input: Input,
 ) => Promise<Output>;
 
@@ -34,7 +37,7 @@ function stringFields(formData: FormData): Record<string, string> {
 
 /**
  * Server Actions are public endpoints, so every one validates its inputs
- * here and then lets the API decide authorization. Returns the work's result
+ * here and then lets trusted Firebase services decide authorization. Returns the work's result
  * as `data`; use `runForm` when there is nothing to hand back.
  */
 export async function runFormWithData<Schema extends z.ZodType, Output>(
@@ -50,7 +53,8 @@ export async function runFormWithData<Schema extends z.ZodType, Output>(
     );
   }
   try {
-    const data = await work(await apiClient(), parsed.data);
+    await requireFirebaseActionOrigin();
+    const data = await work(await firebaseWebData(), parsed.data);
     for (const path of options.paths ?? []) {
       // A dynamic pattern invalidates every page that matches it.
       if (path.includes('[')) revalidatePath(path, 'page');
@@ -68,14 +72,19 @@ export async function runForm<Schema extends z.ZodType>(
   work: Work<z.output<Schema>, unknown>,
   options: RunOptions,
 ): Promise<ActionOutcome> {
-  const result = await runFormWithData(
+  const withoutData: RunOptions = {
+    success: options.success,
+    ...(options.paths ? { paths: options.paths } : {}),
+    ...(options.copy ? { copy: options.copy } : {}),
+  };
+  const result = await runFormWithData<Schema, undefined>(
     formData,
     schema,
     async (api, input) => {
       await work(api, input);
       return undefined;
     },
-    options,
+    withoutData,
   );
   return result;
 }

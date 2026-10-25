@@ -1,6 +1,8 @@
 import styles from '@/(signed-in)/settings/reports/page.module.css';
 import { MoreLink } from '@/components/common/more-link';
-import { completedUser, cursorParam, apiClient } from '@/lib/server/session';
+import { completedUser, cursorParam } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 
 export const metadata = { title: 'Your reports' };
 
@@ -9,7 +11,7 @@ export default async function ReportsPage({
 }: PageProps<'/settings/reports'>) {
   await completedUser();
   const cursor = cursorParam((await searchParams).cursor);
-  const page = await (await apiClient()).myReports({ limit: 20, cursor });
+  const page = await (await firebaseWebData()).myReports({ limit: 20, cursor });
   return (
     <section className={styles.section} aria-labelledby="reports-title">
       <h2 id="reports-title" className={styles.title}>

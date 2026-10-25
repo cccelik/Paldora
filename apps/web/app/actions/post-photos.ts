@@ -14,7 +14,7 @@ import {
   uploadFileSchema,
   type PreparedUpload,
 } from '@/lib/media/upload';
-import { apiClient } from '@/lib/server/session';
+import { mediaActionClient } from '@/lib/media/media-service';
 import { uuidSchema } from '@paldora/validation';
 const fileSchema = uploadFileSchema('post_image').extend({ boxId: uuidSchema });
 
@@ -24,7 +24,7 @@ export async function preparePostPhoto(
 ): Promise<ActionOutcome<PreparedUpload>> {
   const parsed = fileSchema.safeParse(input);
   if (!parsed.success) return invalidOutcome(PHOTO_FILE_MESSAGE);
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return reservePhotoUpload(() =>
     api.createMediaUpload({ purpose: 'post_image', ...parsed.data }),
   );
@@ -32,7 +32,7 @@ export async function preparePostPhoto(
 
 /** Completes any photo upload the person owns (posts and Life Updates). */
 export async function completePostPhoto(mediaAssetId: unknown) {
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return assetStatusOutcome(
     mediaAssetId,
     (id) => api.completeMediaUpload(id),
@@ -42,7 +42,7 @@ export async function completePostPhoto(mediaAssetId: unknown) {
 
 /** Reads any owned photo's processing status (posts and Life Updates). */
 export async function postPhotoStatus(mediaAssetId: unknown) {
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return assetStatusOutcome(
     mediaAssetId,
     (id) => api.mediaAsset(id),

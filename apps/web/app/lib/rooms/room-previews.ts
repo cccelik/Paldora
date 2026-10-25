@@ -1,9 +1,6 @@
-import {
-  ROOM_PHOTO_PREVIEW_COUNT,
-  type RoomPreviews,
-} from '@/lib/rooms/room-preview-types';
+import { type RoomPreviews } from '@/lib/rooms/room-preview-types';
 import { orNotFound } from '@/lib/server/session';
-import { type PaldoraApiClient } from '@paldora/api-client';
+import { type FirebaseWebData } from '@/lib/server/firebase/data';
 import { type RoomWidgetType } from '@paldora/domain';
 import { type RoomView, type UserSummary } from '@paldora/validation';
 import 'server-only';
@@ -16,7 +13,10 @@ const absent = ['ROOM_NOT_FOUND'];
  * widget may be switched on before the preview is saved).
  */
 export async function loadRoomPreviews(
-  api: PaldoraApiClient,
+  api: Pick<
+    FirebaseWebData,
+    'roomContent' | 'roomPhotos' | 'roomContentSummary'
+  >,
   room: RoomView,
   { every = false }: { every?: boolean } = {},
 ): Promise<RoomPreviews> {
@@ -28,15 +28,12 @@ export async function loadRoomPreviews(
   const username = room.owner.username;
   const when = <Value>(type: RoomWidgetType, load: () => Promise<Value>) =>
     enabled.has(type) ? orNotFound(load(), absent) : null;
-  const [posts, lifeUpdates, photos, memories] = await Promise.all([
+  const [posts, lifeUpdates, photos] = await Promise.all([
     when('posts', () => api.roomContent(username, { type: 'posts', limit: 3 })),
     when('life_updates', () =>
       api.roomContent(username, { type: 'life_updates', limit: 3 }),
     ),
-    when('photos', () =>
-      api.roomPhotos(username, { limit: ROOM_PHOTO_PREVIEW_COUNT }),
-    ),
-    when('memories', () => api.roomContentSummary(username)),
+    when('photos', () => api.roomPhotos(username)),
   ]);
   return {
     posts:
@@ -48,7 +45,8 @@ export async function loadRoomPreviews(
         item.kind === 'life_update' ? [item.lifeUpdate] : [],
       ) ?? null,
     photos: photos?.items ?? null,
-    memories,
+    memories: null,
+    memoryCalendar: enabled.has('memories'),
   };
 }
 
@@ -60,7 +58,7 @@ export const TOP_FRIEND_PICKER_PAGES = 4;
  * pages (200 people). `more` says the list was cut, so the page can say so.
  */
 export async function loadFriendChoices(
-  api: PaldoraApiClient,
+  api: Pick<FirebaseWebData, 'friends'>,
 ): Promise<{ friends: UserSummary[]; more: boolean }> {
   const friends: UserSummary[] = [];
   let cursor: string | undefined;

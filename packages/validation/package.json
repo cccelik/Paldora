@@ -12,11 +12,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint src scripts --max-warnings=0",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run",
-    "contract:generate": "tsx scripts/generate-openapi.ts",
-    "contract:check": "tsx scripts/generate-openapi.ts --check"
+    "test": "vitest run"
   },
   "dependencies": {
     "@paldora/domain": "workspace:*",

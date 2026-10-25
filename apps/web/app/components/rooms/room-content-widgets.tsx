@@ -93,13 +93,22 @@ export function LifeUpdates({
 export function Memories({
   username,
   summary,
+  calendar,
   isOwner,
 }: {
   username: string;
-  summary: MemorySummaryView;
+  summary: MemorySummaryView | null;
+  calendar?: boolean | undefined;
   isOwner: boolean;
 }) {
   const scope = { kind: 'room', username } as const;
+  if (calendar)
+    return (
+      <Link className={styles.year} href={memoryHref(scope, {}) as Route}>
+        Browse Memories by year
+      </Link>
+    );
+  if (!summary) return null;
   if (summary.years.length === 0) {
     return (
       <Empty>

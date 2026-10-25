@@ -1,57 +1,39 @@
-import { publicEnvironment } from '@/lib/server/environment';
 import { routeForOnboarding } from '@/lib/server/onboarding';
-import { createSupabaseServerClient } from '@/lib/server/supabase/server';
-import { ApiClientError, PaldoraApiClient } from '@paldora/api-client';
+import {
+  firebaseAdminServices,
+  firebaseSessionUid,
+} from '@/lib/server/firebase/session';
+import { NativeProfiles } from '@paldora/firebase-trusted';
 import { type CurrentUser } from '@paldora/validation';
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import 'server-only';
-/**
- * The web data-access layer. The session cookie only supplies the bearer
- * token; the API verifies it and decides authorization on every call.
- */
-export const accessToken = cache(async (): Promise<string | null> => {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? null;
-});
-
-export function apiClientFor(token: string | null): PaldoraApiClient {
-  return new PaldoraApiClient({
-    baseUrl: publicEnvironment().NEXT_PUBLIC_API_URL,
-    getAccessToken: async () => token,
-  });
-}
-
-export async function apiClient(): Promise<PaldoraApiClient> {
-  return apiClientFor(await accessToken());
-}
-
-const accountUnavailableCodes = new Set([
-  'ACCOUNT_NOT_PROVISIONED',
-  'ACCOUNT_BLOCKED',
-]);
-
-/** Redirects instead of rendering when the session cannot load an account. */
-function redirectForAccountError(error: unknown): never {
-  if (error instanceof ApiClientError) {
-    if (error.code === 'AUTHENTICATION_REQUIRED') redirect('/sign-in');
-    if (accountUnavailableCodes.has(error.code)) {
-      redirect('/account-unavailable');
-    }
-  }
-  throw error;
-}
+import { ApiClientError } from '@/lib/server/web-data-error';
 
 /** The signed-in user, once per render pass. */
 export const currentUser = cache(async (): Promise<CurrentUser> => {
-  const token = await accessToken();
-  if (!token) redirect('/sign-in');
-  try {
-    return await apiClientFor(token).currentUser();
-  } catch (error) {
-    return redirectForAccountError(error);
+  const uid = await firebaseSessionUid();
+  if (!uid) redirect('/sign-in');
+  const { db, auth } = firebaseAdminServices();
+  const current = await new NativeProfiles(db, auth)
+    .current(uid)
+    .catch(() => redirect('/account-unavailable'));
+  const profile = await db.collection('nativeProfiles').doc(uid).get();
+  const avatarId = profile.get('avatarMediaId') as string | undefined;
+  if (avatarId) {
+    const asset = await db.collection('nativeMediaAssets').doc(avatarId).get();
+    if (asset.get('status') === 'ready' && asset.get('ownerUid') === uid) {
+      const root = process.env.NEXT_PUBLIC_WEB_URL?.replace(/\/$/, '') ?? '';
+      current.profile.avatar = {
+        url: `${root}/media/${avatarId}/display`,
+        thumbnailUrl: `${root}/media/${avatarId}/thumbnail`,
+      };
+    }
   }
+  current.profile.avatarProcessing = Boolean(
+    profile.get('pendingAvatarMediaId'),
+  );
+  return current;
 });
 
 /** For app pages: users who have not finished setup go back to it. */

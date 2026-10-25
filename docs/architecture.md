@@ -1,5 +1,11 @@
 # Architecture
 
+> The former HTTP API and PostgreSQL architecture below is historical. The
+> active local web architecture is documented in
+> [Firebase implementation](firebase/implementation.md) and
+> [local development](development.md). Public signup and hosted release remain
+> gated.
+
 Paldora is a TypeScript modular monolith with separate native clients.
 
 ```text

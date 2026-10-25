@@ -40,7 +40,9 @@ export async function putToSignedUrl(
     method: 'PUT',
     headers: upload.headers,
     body: file,
-    credentials: 'omit',
+    // Same-origin Firebase uploads need the HttpOnly session cookie. Cross-origin
+    // legacy signed URLs still receive no credentials with this fetch mode.
+    credentials: 'same-origin',
   });
   if (!response.ok) throw new Error('Upload rejected by storage.');
 }

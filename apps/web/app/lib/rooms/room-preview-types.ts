@@ -10,6 +10,7 @@ export interface RoomPreviews {
   readonly lifeUpdates: readonly LifeUpdateView[] | null;
   readonly photos: readonly RoomPhotoView[] | null;
   readonly memories: MemorySummaryView | null;
+  readonly memoryCalendar?: boolean | undefined;
 }
 export const ROOM_PHOTO_PREVIEW_COUNT = 6;
 export interface WidgetProps {

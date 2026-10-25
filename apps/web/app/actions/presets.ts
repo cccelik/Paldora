@@ -23,7 +23,7 @@ export async function reactionPresetsAction(
   return runForm(
     formData,
     presetsForm,
-    (api, { presets }) => api.setReactionPresets(presets),
+    (data, { presets }) => data.setReactionPresets(presets),
     {
       success: 'Saved. Your reaction bar uses these now.',
       paths: [

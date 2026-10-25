@@ -1,5 +1,9 @@
 # API
 
+> Historical HTTP contract reference. The active web app calls
+> `@paldora/firebase-trusted` through server-only Firebase data methods;
+> it has no separate HTTP API service.
+
 REST under `/api/v1`. The machine-readable contract is
 [`contracts/openapi.json`](../contracts/openapi.json), generated from
 `packages/validation/src/routes.ts`. This page explains the conventions; the

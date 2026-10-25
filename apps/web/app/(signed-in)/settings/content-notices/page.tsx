@@ -1,11 +1,13 @@
 import styles from '@/(signed-in)/settings/content-notices/page.module.css';
-import { apiClient, completedUser } from '@/lib/server/session';
+import { completedUser } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 
 export const metadata = { title: 'Content notices' };
 
 export default async function ContentNoticesPage() {
   await completedUser();
-  const { items } = await (await apiClient()).myModerationNotices();
+  const { items } = await (await firebaseWebData()).myModerationNotices();
   return (
     <section className={styles.section} aria-labelledby="notices-title">
       <h2 id="notices-title" className={styles.title}>

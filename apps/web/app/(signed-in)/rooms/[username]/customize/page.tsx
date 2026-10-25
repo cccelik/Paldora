@@ -4,7 +4,8 @@ import { BackLink, PageHeader } from '@/components/ui';
 import { loadFriendChoices, loadRoomPreviews } from '@/lib/rooms/room-previews';
 import { roomHref, roomUsernameParam } from '@/lib/rooms/room-theme';
 import { ROOM_ABSENT } from '@/lib/server/route-params';
-import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
+import { completedUser, orNotFound } from '@/lib/server/session';
+import { firebaseWebData } from '@/lib/server/firebase/data';
 import { normalizeUsername } from '@paldora/validation';
 import { type Route } from 'next';
 import { notFound } from 'next/navigation';
@@ -29,7 +30,7 @@ export default async function CustomizeRoomPage({
   ) {
     notFound();
   }
-  const api = await apiClient();
+  const api = await firebaseWebData();
   const room = await orNotFound(api.myRoom(), ROOM_ABSENT);
   const [previews, choices, personalization] = await Promise.all([
     loadRoomPreviews(api, room, { every: true }),
@@ -51,6 +52,7 @@ export default async function CustomizeRoomPage({
         previews={previews}
         friends={choices.friends}
         moreFriends={choices.more}
+        mediaEnabled
       />
     </div>
   );

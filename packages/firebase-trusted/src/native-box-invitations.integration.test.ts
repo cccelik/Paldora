@@ -38,6 +38,9 @@ async function seed() {
     ownerUid: owner,
     status: 'active',
     version: 1,
+    memberCount: 1,
+    createdAt: 1_000,
+    updatedAt: 1_000,
   });
   batch.set(
     db.collection('nativeBoxes').doc(boxId).collection('members').doc(owner),
@@ -52,6 +55,53 @@ async function seed() {
 }
 
 describe('trusted native Box invitations', () => {
+  it('lists pending invitations only for current Box managers', async () => {
+    const { boxId, owner, guest, outsider } = await seed();
+    await db
+      .collection('nativeAccounts')
+      .doc(guest)
+      .update({ username: 'Guest' });
+    const id = await invitations.invite(boxId, owner, guest, 1_000);
+    expect(
+      (await invitations.listForBox(boxId, owner, undefined, 1_001)).items,
+    ).toMatchObject([
+      {
+        id,
+        boxId,
+        inviteeUid: guest,
+        inviteeUsername: 'Guest',
+        inviterUid: owner,
+        expiresAt: 1_000 + 7 * 24 * 60 * 60 * 1_000,
+      },
+    ]);
+    await expect(
+      invitations.listForBox(boxId, outsider, undefined, 1_001),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .collection('members')
+      .doc(outsider)
+      .set({ uid: outsider, role: 'admin', status: 'active' });
+    expect(
+      (await invitations.listForBox(boxId, outsider, undefined, 1_001)).items,
+    ).toHaveLength(1);
+    await db
+      .collection('nativeBlockPairs')
+      .doc(nativeBlockPairId(owner, guest))
+      .set({ blockedBy: [owner], epoch: 1 });
+    expect(
+      (await invitations.listForBox(boxId, owner, undefined, 1_001)).items,
+    ).toEqual([]);
+    await db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .update({ status: 'deleting' });
+    await expect(
+      invitations.listForBox(boxId, owner, undefined, 1_001),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+  });
+
   it('normalizes usernames and rechecks the reserved mapping in the transaction', async () => {
     const { boxId, owner, guest, outsider } = await seed();
     await db.collection('nativeUsernames').doc('zoe').set({ uid: guest });
@@ -78,6 +128,9 @@ describe('trusted native Box invitations', () => {
       boxId,
     );
     expect(
+      (await db.collection('nativeBoxes').doc(boxId).get()).get('memberCount'),
+    ).toBe(2);
+    expect(
       (
         await db
           .collection('nativeBoxes')
@@ -101,6 +154,46 @@ describe('trusted native Box invitations', () => {
       invitations.accept(invitationId, guest, 1_003),
     ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
   });
+
+  it.each(['removed', 'demoted', 'suspended'] as const)(
+    'rejects a pending invitation after its inviter is %s',
+    async (change) => {
+      const { boxId, owner, guest } = await seed();
+      const invitationId = await invitations.invite(boxId, owner, guest, 1_000);
+      if (change === 'suspended')
+        await db
+          .collection('nativeAccounts')
+          .doc(owner)
+          .update({ status: 'suspended' });
+      else
+        await db
+          .collection('nativeBoxes')
+          .doc(boxId)
+          .collection('members')
+          .doc(owner)
+          .update({
+            ...(change === 'removed'
+              ? { status: 'removed' }
+              : { role: 'member' }),
+          });
+      await expect(
+        invitations.accept(invitationId, guest, 1_001),
+      ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+      expect(
+        (await invitations.listPending(guest, undefined, 1_001)).items,
+      ).toEqual([]);
+      expect(
+        (
+          await db
+            .collection('nativeBoxes')
+            .doc(boxId)
+            .collection('members')
+            .doc(guest)
+            .get()
+        ).exists,
+      ).toBe(false);
+    },
+  );
 
   it('requires an active owner or admin and an open Box', async () => {
     const { boxId, owner, guest, outsider } = await seed();
@@ -192,7 +285,12 @@ describe('trusted native Box invitations', () => {
       .collection('nativeBlockPairs')
       .doc(nativeBlockPairId(owner, guest))
       .get();
-    expect(pair.data()).toEqual({ blockedBy: [], epoch: 1 });
+    expect(pair.data()).toMatchObject({
+      users: [owner, guest].sort(),
+      blockedBy: [],
+      blockedAtBy: {},
+      epoch: 1,
+    });
     await expect(
       invitations.accept(invitationId, guest, 1_001),
     ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
@@ -201,6 +299,28 @@ describe('trusted native Box invitations', () => {
     await expect(invitations.accept(replacement, guest, 1_003)).resolves.toBe(
       boxId,
     );
+  });
+
+  it('lists only currently visible pending invitations for the invitee', async () => {
+    const { boxId, owner, guest, outsider } = await seed();
+    const id = await invitations.invite(boxId, owner, guest, 1_000);
+    expect(
+      await invitations.listPending(guest, undefined, 1_001),
+    ).toMatchObject({
+      items: [{ id, boxId, inviterUid: owner }],
+      nextCursor: null,
+    });
+    expect(
+      (await invitations.listPending(outsider, undefined, 1_001)).items,
+    ).toEqual([]);
+    await blocks.setBlocked(guest, owner, true);
+    expect(
+      (await invitations.listPending(guest, undefined, 1_002)).items,
+    ).toEqual([]);
+    await blocks.setBlocked(guest, owner, false);
+    expect(
+      (await invitations.listPending(guest, undefined, 1_003)).items,
+    ).toEqual([]);
   });
 
   it('serializes concurrent acceptance and refuses an already active member', async () => {

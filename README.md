@@ -2,26 +2,25 @@
 
 > A box for your people.
 
-Paldora is a privacy-first social platform and living scrapbook for real
-friends and private communities. This repository is a greenfield rebuild,
-delivered one release-gated phase at a time.
+Paldora is a privacy-first social platform and living scrapbook for real friends
+and private communities. The active workspace is a locally migrated Firebase
+web application. Public signup and hosted release remain disabled.
 
-- **Status:** Phases 0–7 are delivered (foundation through Rooms). See [docs/rebuild-plan.md](docs/rebuild-plan.md).
-- **Rules for contributors and agents:** [CLAUDE.md](CLAUDE.md).
-- **Reference build:** [legacy/](legacy/) holds the frozen Phase 7 build.
-  Use it as reference only and never import from it.
+`legacy/` is the frozen reference build; do not import from or modify it.
 
-## Quick start
+## Local start
 
 ```bash
-corepack enable && pnpm install && cp .env.example .env
-docker compose -f infrastructure/docker-compose.yml up -d --wait
-pnpm db:migrate && pnpm dev
+corepack enable
+pnpm install --frozen-lockfile
+cp .env.example .env
+pnpm build
+pnpm firebase:local:dev
 ```
 
-The web app runs at `http://localhost:3000` and the API at
-`http://localhost:4000/api/v1/health`.
+In a second terminal, run `pnpm firebase:local:seed` and `pnpm dev`. The web
+app starts at `http://127.0.0.1:3000` against the `demo-paldora` emulators.
 
-Details: [docs/development.md](docs/development.md) ·
-[architecture](docs/architecture.md) · [security](docs/security.md) ·
-[API](docs/api.md) · [decisions](docs/adr/README.md).
+See [local development](docs/development.md),
+[Firebase collection ownership](docs/firebase/collections.md), and
+[Firebase migration status](docs/firebase/implementation.md).

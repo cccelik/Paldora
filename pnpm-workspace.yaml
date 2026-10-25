@@ -1,9 +1,15 @@
 # legacy/ is the frozen reference build and is intentionally not a workspace
-# member. Native apps (apps/ios, apps/android) are built by Xcode and Gradle and
-# have no package.json, so the apps/* glob does not pick them up.
+# member. Native apps (apps/ios, apps/android) are built by Xcode and Gradle.
 packages:
-  - apps/*
-  - packages/*
+  - apps/web
+  - apps/firebase-functions
+  - packages/domain
+  - packages/firebase-native
+  - packages/firebase-prototype
+  - packages/firebase-trusted
+  - packages/personalization
+  - packages/tokens
+  - packages/validation
 
 # Keep Firebase Admin's optional peers on the same reviewed release as the SDK.
 overrides:
@@ -13,9 +19,7 @@ overrides:
 allowBuilds:
   # Optional web config injection is not needed for the server-side prototype.
   '@firebase/util': false
-  '@nestjs/core': true
   esbuild: true
-  msgpackr-extract: true
   # Firebase CLI's protobufjs postinstall is optional for its generated runtime.
   protobufjs: false
   # Firebase CLI runs the emulator without the optional native RE2 build.

@@ -6,13 +6,10 @@ import {
 } from '@/components/interactions/reaction-list';
 import { BackLink, EmptyState, PageHeader } from '@/components/ui';
 import { POST_ABSENT, uuidParam } from '@/lib/server/route-params';
-import {
-  apiClient,
-  completedUser,
-  cursorParam,
-  orNotFound,
-} from '@/lib/server/session';
+import { completedUser, cursorParam, orNotFound } from '@/lib/server/session';
 import { REAL_REACTION_KIND } from '@paldora/domain';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 export const metadata = { title: 'Reactions' };
 
 /** Everyone who reacted to a post, newest first; `?kind=real` for camera. */
@@ -25,11 +22,14 @@ export default async function PostReactionsPage({
   const query = await searchParams;
   const cameraOnly = query.kind === REAL_REACTION_KIND;
   const page = await orNotFound(
-    (await apiClient()).postReactions(id, {
-      limit: 20,
-      cursor: cursorParam(query.cursor),
-      ...(cameraOnly ? { kind: REAL_REACTION_KIND } : {}),
-    }),
+    (await firebaseWebData()).postReactions(
+      id,
+      {
+        limit: 20,
+        cursor: cursorParam(query.cursor),
+      },
+      cameraOnly,
+    ),
     POST_ABSENT,
   );
   const here = `/posts/${id}/reactions?${cameraOnly ? `kind=${REAL_REACTION_KIND}&` : ''}`;

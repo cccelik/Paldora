@@ -9,7 +9,7 @@
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --exclude '**/*.integration.test.ts' --passWithNoTests",
-    "test:prototype": "vitest run integration.test"
+    "test:prototype": "vitest run integration.test --maxWorkers=1 --testTimeout=20000"
   },
   "devDependencies": {
     "vitest": "4.1.11"

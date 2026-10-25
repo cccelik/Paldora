@@ -1,8 +1,11 @@
 import styles from '@/(signed-in)/life-updates/page.module.css';
 import { MoreLink } from '@/components/common/more-link';
-import { LifeUpdateCard } from '@/components/life-updates/life-update-card';
+
+import { FirebaseLifeUpdateCard } from '@/components/life-updates/firebase-life-update-card';
 import { buttonClassName, EmptyState, PageHeader } from '@/components/ui';
-import { apiClient, completedUser, cursorParam } from '@/lib/server/session';
+import { completedUser, cursorParam } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 import Link from 'next/link';
 export const metadata = { title: 'Life Updates' };
 
@@ -12,7 +15,9 @@ export default async function LifeUpdatesPage({
 }: PageProps<'/life-updates'>) {
   const me = await completedUser();
   const cursor = cursorParam((await searchParams).cursor);
-  const page = await (await apiClient()).myLifeUpdates({ limit: 20, cursor });
+  const firebasePage = await (await firebaseWebData()).myLifeUpdates(cursor);
+  const count = firebasePage.items.length;
+  const nextCursor = firebasePage.nextCursor;
   return (
     <div className={styles.stack}>
       <PageHeader
@@ -32,27 +37,25 @@ export default async function LifeUpdatesPage({
           </div>
         }
       />
-      {page.items.length === 0 ? (
+      {count === 0 ? (
         <EmptyState>
           You haven’t shared a Life Update yet. Start one whenever there’s news.
         </EmptyState>
       ) : (
         <ul className={styles.cards} aria-label="Your Life Updates">
-          {page.items.map((lifeUpdate) => (
+          {firebasePage?.items.map((lifeUpdate) => (
             <li key={lifeUpdate.id}>
-              <LifeUpdateCard
-                lifeUpdate={lifeUpdate}
+              <FirebaseLifeUpdateCard
+                update={lifeUpdate}
                 presets={me.preferences.reactionPresets}
-                viewerId={me.user.id}
-                showBox
               />
             </li>
           ))}
         </ul>
       )}
-      {page.nextCursor ? (
+      {nextCursor ? (
         <MoreLink
-          href={`/life-updates?cursor=${encodeURIComponent(page.nextCursor)}`}
+          href={`/life-updates?cursor=${encodeURIComponent(nextCursor)}`}
           label="Show older Life Updates"
         />
       ) : null}

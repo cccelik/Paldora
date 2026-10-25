@@ -56,10 +56,11 @@ const widgetBodies: Readonly<
     <LifeUpdates lifeUpdates={previews.lifeUpdates ?? []} isOwner={isOwner} />
   ),
   memories: ({ room, previews, isOwner }) =>
-    previews.memories ? (
+    previews.memories || previews.memoryCalendar ? (
       <Memories
         username={room.owner.username}
         summary={previews.memories}
+        calendar={previews.memoryCalendar}
         isOwner={isOwner}
       />
     ) : null,

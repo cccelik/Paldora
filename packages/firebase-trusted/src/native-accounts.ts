@@ -24,16 +24,32 @@ export class NativeAccounts {
     const user = await this.auth.getUser(uid).catch(() => {
       throw new NativeAccountError('UNAVAILABLE');
     });
-    if (user.disabled || !user.emailVerified)
+    if (
+      user.disabled ||
+      !user.emailVerified ||
+      user.customClaims?.paldoraAdmitted !== true
+    )
       throw new NativeAccountError('UNAVAILABLE');
     const accountRef = this.db.collection('nativeAccounts').doc(uid);
+    const profileRef = this.db.collection('nativeProfiles').doc(uid);
     await this.db.runTransaction(async (tx) => {
       const existing = await tx.get(accountRef);
       if (existing.exists) {
         if (existing.get('status') === 'active') return;
         throw new NativeAccountError('ALREADY_RESTRICTED');
       }
-      tx.create(accountRef, { status: 'active', createdAt: now });
+      tx.create(accountRef, {
+        schemaVersion: 1,
+        status: 'active',
+        createdAt: now,
+      });
+      tx.create(profileRef, {
+        schemaVersion: 1,
+        displayName: null,
+        bio: null,
+        onboardingState: 'username',
+        updatedAt: now,
+      });
     });
   }
 

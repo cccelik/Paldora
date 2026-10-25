@@ -22,8 +22,8 @@ Read the root [CLAUDE.md](../../CLAUDE.md) first. These rules add to it.
 - `proxy.ts` sets the **only** Content-Security-Policy. Never add one in `next.config.ts`.
 - Production CSP allows no inline styles, so **never use `style={...}` attributes**. Express dynamic presentation through classes or `data-*` attributes.
 - Public configuration comes from `app/lib/server/environment.ts`, which validates it. There are no `localhost` fallbacks.
-- Server-only secrets never appear in this app.
-- Authorization is the API's job. Pages call the typed `@paldora/api-client` and render the result.
+- Server-only credentials never enter the client bundle or page props.
+- Authorization is enforced by `@paldora/firebase-trusted` through server-only web data methods. Pages never receive Admin SDK objects or credentials.
 
 **Server Actions** return `ActionResult` (`app/lib/actions/action-result.ts`) to `useActionState`. They never put messages in query strings.
 

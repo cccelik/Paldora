@@ -1,10 +1,12 @@
 import { MoreLink } from '@/components/common/more-link';
 import {
-  MemoryMonthNav,
+  FirebaseMemoryMonthNav,
+  FirebaseMemoryYearNav,
   MemoryTypeFilter,
-  MemoryYearNav,
 } from '@/components/memories/memory-navigation';
-import { MemoryTimeline } from '@/components/memories/memory-timeline';
+
+import { FirebaseMemoryTimeline } from '@/components/memories/firebase-memory-timeline';
+
 import {
   memoryHref,
   monthName,
@@ -21,7 +23,6 @@ import {
  */
 export function MemoryPeriod({
   scope,
-  summary,
   page,
   year,
   month,
@@ -30,7 +31,7 @@ export function MemoryPeriod({
   viewerId,
 }: {
   scope: MemoryScope;
-  summary: MemorySummaryView;
+  summary?: MemorySummaryView | undefined;
   page: { items: readonly MemoryItemView[]; nextCursor: string | null };
   year: number;
   month?: number | undefined;
@@ -44,25 +45,27 @@ export function MemoryPeriod({
     posts: 'No posts',
     life_updates: 'No Life Updates',
   }[type];
+  const empty = page.nextCursor
+    ? 'No visible memories in this batch. Load older memories to keep looking.'
+    : `${what} from ${period} that you can still see.`;
   return (
     <>
-      {summary.years.length > 0 ? (
-        <MemoryYearNav scope={scope} years={summary.years} current={year} />
-      ) : null}
-      <MemoryMonthNav
-        scope={scope}
-        year={year}
-        months={summary.months}
-        current={month}
-      />
+      {
+        <>
+          <FirebaseMemoryYearNav scope={scope} current={year} />
+          <FirebaseMemoryMonthNav scope={scope} year={year} current={month} />
+        </>
+      }
       <MemoryTypeFilter scope={scope} year={year} month={month} type={type} />
-      <MemoryTimeline
-        items={page.items}
-        presets={presets}
-        viewerId={viewerId}
-        boxId={scope.kind === 'box' ? scope.boxId : undefined}
-        empty={`${what} from ${period} that you can still see.`}
-      />
+      {
+        <FirebaseMemoryTimeline
+          items={page.items}
+          presets={presets}
+          viewerId={viewerId}
+          boxId={scope.kind === 'box' ? scope.boxId : undefined}
+          empty={empty}
+        />
+      }
       {page.nextCursor ? (
         <MoreLink
           href={memoryHref(scope, {

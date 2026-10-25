@@ -1,8 +1,9 @@
 import styles from '@/(signed-in)/life-updates/[lifeUpdateId]/page.module.css';
-import { CommentThread } from '@/components/interactions/comment-thread';
-import { LifeUpdateCard } from '@/components/life-updates/life-update-card';
-import { RefreshOnPosts } from '@/components/realtime/refresh-on-posts';
-import { conversationFor } from '@/lib/interactions/pinned-thread';
+
+import { FirebaseCommentThreads } from '@/components/interactions/firebase-comments';
+
+import { FirebaseLifeUpdateCard } from '@/components/life-updates/firebase-life-update-card';
+
 import { lifeUpdateHref } from '@/lib/life-updates/life-update-form';
 import {
   LIFE_UPDATE_ABSENT,
@@ -10,11 +11,77 @@ import {
   optionalUuid,
   uuidParam,
 } from '@/lib/server/route-params';
-import { apiClient, completedUser, orNotFound } from '@/lib/server/session';
+import { completedUser, cursorParam, orNotFound } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 import Link from 'next/link';
 export const metadata = { title: 'Life Update' };
 
 const absent = LIFE_UPDATE_ABSENT;
+
+async function firebaseLifeUpdatePage(
+  id: string,
+  query: Record<string, string | string[] | undefined>,
+  presets: readonly string[],
+) {
+  const data = await firebaseWebData();
+  const update = await orNotFound(data.lifeUpdate(id), absent);
+  const wanted = optionalUuid(query.box)?.toLowerCase();
+  const context =
+    update.contexts.find((item) => item.boxId === wanted) ?? update.contexts[0];
+  const focusId = optionalUuid(query.comment)?.toLowerCase();
+  const [comments, pinned] = context
+    ? await Promise.all([
+        orNotFound(
+          data.commentThreads(
+            context.boxId,
+            context.postId,
+            cursorParam(query.comments),
+          ),
+          POST_ABSENT,
+        ),
+        focusId
+          ? data.pinnedCommentThread(context.boxId, context.postId, focusId)
+          : null,
+      ])
+    : [null, null];
+  return (
+    <div className={styles.stack}>
+      <p>
+        <Link href={context ? `/boxes/${context.boxId}` : '/life-updates'}>
+          ← {context?.boxName ?? 'Your Life Updates'}
+        </Link>
+      </p>
+      <FirebaseLifeUpdateCard
+        update={update}
+        ownPage
+        selectedBoxId={context?.boxId}
+        presets={presets}
+      />
+      {context && comments ? (
+        <FirebaseCommentThreads
+          boxId={context.boxId}
+          postId={context.postId}
+          threads={comments.items}
+          nextCursor={comments.nextCursor}
+          pinned={pinned}
+          pinnedMissing={!!focusId && !pinned}
+          active={context.canInteract}
+          presets={presets}
+          count={context.interactions.commentCount}
+          olderHref={
+            comments.nextCursor
+              ? lifeUpdateHref(id, {
+                  boxId: context.boxId,
+                  commentsCursor: comments.nextCursor,
+                })
+              : undefined
+          }
+        />
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * A Life Update with one Box's conversation below it (`?box=`, else the
@@ -28,59 +95,5 @@ export default async function LifeUpdatePage({
   const me = await completedUser();
   const id = uuidParam((await params).lifeUpdateId);
   const query = await searchParams;
-  const api = await apiClient();
-  const lifeUpdate = await orNotFound(api.lifeUpdate(id), absent);
-  const wanted = optionalUuid(query.box)?.toLowerCase();
-  const context =
-    lifeUpdate.contexts.find(
-      (item) => wanted !== undefined && item.box.id === wanted,
-    ) ?? lifeUpdate.contexts[0];
-  // The conversation went away between the two reads (left, deleted): the
-  // same answer as any other absence.
-  const conversation = context
-    ? await conversationFor(api, context.postId, query, POST_ABSENT)
-    : null;
-  const presets = me.preferences.reactionPresets;
-  return (
-    <div className={styles.stack}>
-      <p>
-        {context ? (
-          <Link href={`/boxes/${context.box.id}`}>← {context.box.name}</Link>
-        ) : (
-          <Link href="/life-updates">← Your Life Updates</Link>
-        )}
-      </p>
-      <RefreshOnPosts
-        postIds={lifeUpdate.contexts.map((item) => item.postId)}
-      />
-      <LifeUpdateCard
-        lifeUpdate={lifeUpdate}
-        presets={presets}
-        viewerId={me.user.id}
-        selectedBoxId={context?.box.id}
-        permalink
-      />
-      {context && conversation ? (
-        <CommentThread
-          postId={context.postId}
-          threads={conversation.comments.items}
-          nextCursor={conversation.comments.nextCursor}
-          pinned={conversation.pinned}
-          pinnedMissing={conversation.pinnedMissing}
-          focusId={conversation.focusId}
-          presets={presets}
-          canInteract={context.interactions.canInteract}
-          commentCount={context.interactions.commentCount}
-          olderHref={
-            conversation.comments.nextCursor
-              ? lifeUpdateHref(lifeUpdate.id, {
-                  boxId: context.box.id,
-                  commentsCursor: conversation.comments.nextCursor,
-                })
-              : undefined
-          }
-        />
-      ) : null}
-    </div>
-  );
+  return firebaseLifeUpdatePage(id, query, me.preferences.reactionPresets);
 }

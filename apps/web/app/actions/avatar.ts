@@ -14,7 +14,7 @@ import {
   uploadFileSchema,
   type PreparedUpload,
 } from '@/lib/media/upload';
-import { apiClient } from '@/lib/server/session';
+import { mediaActionClient } from '@/lib/media/media-service';
 import { revalidatePath } from 'next/cache';
 const fileSchema = uploadFileSchema('avatar');
 
@@ -37,7 +37,7 @@ export async function prepareAvatarUpload(
   }
   return reservePhotoUpload(
     async () =>
-      (await apiClient()).createMediaUpload({
+      (await mediaActionClient()).createMediaUpload({
         purpose: 'avatar',
         ...parsed.data,
       }),
@@ -46,7 +46,7 @@ export async function prepareAvatarUpload(
 }
 
 export async function completeAvatarUpload(mediaAssetId: unknown) {
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return assetStatusOutcome(
     mediaAssetId,
     (id) => api.completeMediaUpload(id),
@@ -55,7 +55,7 @@ export async function completeAvatarUpload(mediaAssetId: unknown) {
 }
 
 export async function avatarUploadStatus(mediaAssetId: unknown) {
-  const api = await apiClient();
+  const api = await mediaActionClient();
   const result = await assetStatusOutcome(
     mediaAssetId,
     (id) => api.mediaAsset(id),
@@ -69,7 +69,7 @@ export async function avatarUploadStatus(mediaAssetId: unknown) {
 
 export async function removeAvatarAction(): Promise<ActionOutcome> {
   try {
-    await (await apiClient()).deleteAvatar();
+    await (await mediaActionClient()).deleteAvatar();
   } catch (error) {
     return actionError(error);
   }

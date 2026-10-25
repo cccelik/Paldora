@@ -1,13 +1,18 @@
 import { ResetPasswordForm } from '@/components/auth/auth-forms';
 import { AuthLayout } from '@/components/auth/auth-layout';
 import { buttonClassName } from '@/components/ui';
-import { accessToken } from '@/lib/server/session';
+
 import Link from 'next/link';
 export const metadata = { title: 'Choose a new password' };
 
 /** Reached from a recovery link (or settings) with a valid session. */
-export default async function ResetPasswordPage() {
-  const hasSession = Boolean(await accessToken());
+export default async function ResetPasswordPage({
+  searchParams,
+}: PageProps<'/reset-password'>) {
+  const code = (await searchParams).oobCode;
+  const oobCode =
+    typeof code === 'string' && code.length <= 2048 ? code : undefined;
+  const hasSession = Boolean(oobCode);
   return (
     <AuthLayout
       title="Choose a new password"
@@ -18,7 +23,7 @@ export default async function ResetPasswordPage() {
       }
     >
       {hasSession ? (
-        <ResetPasswordForm />
+        <ResetPasswordForm oobCode={oobCode} />
       ) : (
         <Link
           className={buttonClassName('primary', { block: true })}

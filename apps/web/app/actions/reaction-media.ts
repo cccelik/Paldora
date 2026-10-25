@@ -10,7 +10,11 @@ import {
   reservePhotoUpload,
 } from '@/lib/media/media-asset-action';
 import { type PreparedUpload } from '@/lib/media/upload';
-import { apiClient } from '@/lib/server/session';
+
+import { mediaActionClient } from '@/lib/media/media-service';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
 import { MEDIA_PURPOSE_POLICIES, REAL_REACTION_KIND } from '@paldora/domain';
 import { uuidSchema, type PostInteractionSummary } from '@paldora/validation';
 import { z } from 'zod';
@@ -48,7 +52,7 @@ export async function prepareReactionImage(
     return invalidOutcome('That photo is too large to send.');
   return reservePhotoUpload(
     async () =>
-      (await apiClient()).createMediaUpload({
+      (await mediaActionClient()).createMediaUpload({
         purpose: 'reaction_image',
         ...parsed.data,
       }),
@@ -57,7 +61,7 @@ export async function prepareReactionImage(
 }
 
 export async function completeReactionImage(mediaAssetId: unknown) {
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return assetStatusOutcome(
     mediaAssetId,
     (id) => api.completeMediaUpload(id),
@@ -66,7 +70,7 @@ export async function completeReactionImage(mediaAssetId: unknown) {
 }
 
 export async function reactionImageStatus(mediaAssetId: unknown) {
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return assetStatusOutcome(mediaAssetId, (id) => api.mediaAsset(id), copy);
 }
 
@@ -87,9 +91,18 @@ export async function setCameraReactionAction(
   if (!parsed.success) return invalidOutcome('That photo can’t be sent.');
   try {
     const { postId, mediaAssetId } = parsed.data;
-    const summary = await (
-      await apiClient()
-    ).setPostReaction(postId, { kind: REAL_REACTION_KIND, mediaAssetId });
+    const summary = await (async () => {
+      await requireFirebaseActionOrigin();
+      const data = await firebaseWebData();
+      const { box } = await data.post(postId);
+      await data.setPostReaction(
+        box.id,
+        postId,
+        REAL_REACTION_KIND,
+        mediaAssetId,
+      );
+      return data.postInteractionSummary(box.id, postId);
+    })();
     return { status: 'success', message: 'Sent.', data: summary };
   } catch (error) {
     return actionError(error, copy);

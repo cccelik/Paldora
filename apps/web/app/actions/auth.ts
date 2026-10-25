@@ -1,30 +1,24 @@
 'use server';
 
-import {
-  actionError,
-  invalidOutcome,
-  type ActionResult,
-} from '@/lib/actions/action-result';
+import { invalidOutcome, type ActionResult } from '@/lib/actions/action-result';
 import { textField } from '@/lib/actions/form-data';
 import {
   APPEARANCE_COOKIE,
   appearanceCookieOptions,
 } from '@/lib/server/appearance';
-import { publicEnvironment } from '@/lib/server/environment';
+import { firebaseLocalWebUrl } from '@/lib/server/firebase/mode';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
+import {
+  FIREBASE_SESSION_COOKIE,
+  firebaseAdminServices,
+} from '@/lib/server/firebase/session';
 import { routeForOnboarding } from '@/lib/server/onboarding';
-import { apiClientFor } from '@/lib/server/session';
-import { createSupabaseServerClient } from '@/lib/server/supabase/server';
-import { ApiClientError } from '@paldora/api-client';
+
+import { NativeProfiles } from '@paldora/firebase-trusted';
+import type { Route } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-const secureCookies = () =>
-  publicEnvironment().NEXT_PUBLIC_WEB_URL.startsWith('https://');
-
-/**
- * Signs in with Supabase, then asks the API whether this identity is a
- * provisioned Paldora account. Identities without one are signed out again.
- * The same message covers wrong passwords and unknown emails.
- */
+/** Signs in an admitted account and exchanges the ID token for a session cookie. */
 export async function signInAction(
   _previous: ActionResult,
   formData: FormData,
@@ -33,35 +27,40 @@ export async function signInAction(
   const password = textField(formData, 'password');
   if (!email || !password)
     return invalidOutcome('Enter your email and password.');
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error || !data.session) {
-    return invalidOutcome('That email and password don’t match an account.');
-  }
-  let destination;
-  try {
-    const user = await apiClientFor(data.session.access_token).currentUser();
-    (await cookies()).set(
-      APPEARANCE_COOKIE,
-      user.preferences.appearance,
-      appearanceCookieOptions(secureCookies()),
-    );
-    destination = routeForOnboarding(user.profile.onboardingState);
-  } catch (apiError) {
-    await supabase.auth.signOut();
-    if (
-      apiError instanceof ApiClientError &&
-      (apiError.code === 'ACCOUNT_NOT_PROVISIONED' ||
-        apiError.code === 'ACCOUNT_BLOCKED')
-    ) {
-      return invalidOutcome('This account isn’t set up for Paldora.');
+  {
+    await requireFirebaseActionOrigin();
+    let destination: Route;
+    try {
+      const { uid, cookie } = await firebaseAdminServices().sessions.signIn(
+        email,
+        password,
+      );
+      const user = await new NativeProfiles(
+        firebaseAdminServices().db,
+        firebaseAdminServices().auth,
+      ).current(uid);
+      const jar = await cookies();
+      jar.set(FIREBASE_SESSION_COOKIE, cookie, {
+        httpOnly: true,
+        secure: firebaseLocalWebUrl().startsWith('https://'),
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60,
+      });
+      jar.set(
+        APPEARANCE_COOKIE,
+        user.preferences.appearance,
+        appearanceCookieOptions(firebaseLocalWebUrl().startsWith('https://')),
+      );
+      destination =
+        user.profile.onboardingState === 'complete'
+          ? '/boxes'
+          : routeForOnboarding(user.profile.onboardingState);
+    } catch {
+      return invalidOutcome('That email and password don’t match an account.');
     }
-    return actionError(apiError);
+    redirect(destination);
   }
-  redirect(destination);
 }
 
 /** Always answers the same way, so it cannot reveal which emails exist. */
@@ -71,15 +70,15 @@ export async function forgotPasswordAction(
 ): Promise<ActionResult> {
   const email = textField(formData, 'email').trim();
   if (!email) return invalidOutcome('Enter the email for your account.');
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${publicEnvironment().NEXT_PUBLIC_WEB_URL}/auth/callback?next=/reset-password`,
-  });
-  return {
-    status: 'success',
-    message: 'If that account exists, a reset link is on its way.',
-    data: undefined,
-  };
+  {
+    await requireFirebaseActionOrigin();
+    await firebaseAdminServices().sessions.requestPasswordReset(email);
+    return {
+      status: 'success',
+      message: 'If that account exists, a reset link is on its way.',
+      data: undefined,
+    };
+  }
 }
 
 const MIN_PASSWORD_LENGTH = 10;
@@ -102,25 +101,31 @@ export async function resetPasswordAction(
     textField(formData, 'confirmation'),
   );
   if (problem) return invalidOutcome(problem);
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) {
-    return invalidOutcome('This reset link expired. Request a new one.');
+  {
+    await requireFirebaseActionOrigin();
+    try {
+      await firebaseAdminServices().sessions.resetPassword(
+        textField(formData, 'oobCode'),
+        password,
+      );
+      (await cookies()).delete(FIREBASE_SESSION_COOKIE);
+      return {
+        status: 'success',
+        message: 'Password updated.',
+        data: undefined,
+      };
+    } catch {
+      return invalidOutcome('This reset link expired. Request a new one.');
+    }
   }
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) {
-    return invalidOutcome(
-      /same|different/i.test(error.message)
-        ? 'Choose a password you haven’t used here before.'
-        : 'That password couldn’t be saved. Try a longer one.',
-    );
-  }
-  return { status: 'success', message: 'Password updated.', data: undefined };
 }
 
 export async function signOutAction(): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
-  (await cookies()).delete(APPEARANCE_COOKIE);
-  redirect('/sign-in');
+  {
+    await requireFirebaseActionOrigin();
+    const jar = await cookies();
+    jar.delete(FIREBASE_SESSION_COOKIE);
+    jar.delete(APPEARANCE_COOKIE);
+    redirect('/sign-in');
+  }
 }

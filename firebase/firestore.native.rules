@@ -29,6 +29,8 @@ service cloud.firestore {
 
     function activeMember(boxId) {
       return activeAccount()
+        && exists(boxPath(boxId))
+        && get(boxPath(boxId)).data.status in ['active', 'archived']
         && exists(memberPath(boxId, request.auth.uid))
         && get(memberPath(boxId, request.auth.uid)).data.status == 'active';
     }
@@ -66,6 +68,7 @@ service cloud.firestore {
 
     function validOwnerSettings(boxId) {
       return activeAccount()
+        && resource.data.status in ['active', 'archived']
         && resource.data.ownerUid == request.auth.uid
         && get(memberPath(boxId, request.auth.uid)).data.role == 'owner'
         && get(memberPath(boxId, request.auth.uid)).data.status == 'active'
@@ -167,6 +170,8 @@ service cloud.firestore {
 
       match /members/{memberUid} {
         allow get: if activeAccount()
+          && exists(boxPath(boxId))
+          && get(boxPath(boxId)).data.status in ['active', 'archived']
           && (request.auth.uid == memberUid
             || (get(boxPath(boxId)).data.ownerUid == request.auth.uid
               && activeMember(boxId)));

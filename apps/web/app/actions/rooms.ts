@@ -9,6 +9,7 @@ import {
 import { runFormWithData } from '@/lib/actions/action-runner';
 import { textField } from '@/lib/actions/form-data';
 import { photoCopy, reservePhotoUpload } from '@/lib/media/media-asset-action';
+import { mediaActionClient } from '@/lib/media/media-service';
 import {
   PHOTO_FILE_MESSAGE,
   uploadFileSchema,
@@ -21,7 +22,9 @@ import {
   roomWidgetsFormSchema,
   SECTION_SAVED,
 } from '@/lib/rooms/room-forms';
-import { apiClient } from '@/lib/server/session';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
+import { requireFirebaseActionOrigin } from '@/lib/server/firebase/origin';
 import { type RoomView } from '@paldora/validation';
 /**
  * Room customizer actions. Each sends the version the editor last saw
@@ -51,7 +54,7 @@ export async function updateRoomAction(
   return runFormWithData(
     formData,
     roomSettingsFormSchema,
-    (api, body) => api.updateMyRoom(body),
+    (data, body) => data.updateMyRoom(body),
     { success, copy: roomCopy },
   );
 }
@@ -63,7 +66,7 @@ export async function updateRoomWidgetsAction(
   return runFormWithData(
     formData,
     roomWidgetsFormSchema,
-    (api, body) => api.updateMyRoomWidgets(body),
+    (data, body) => data.updateMyRoomWidgets(body),
     { success: 'Widgets saved.', copy: roomCopy },
   );
 }
@@ -75,7 +78,7 @@ export async function updateRoomTopFriendsAction(
   return runFormWithData(
     formData,
     roomTopFriendsFormSchema,
-    (api, body) => api.updateMyRoomTopFriends(body),
+    (data, body) => data.updateMyRoomTopFriends(body),
     { success: 'Top Friends saved.', copy: roomCopy },
   );
 }
@@ -96,7 +99,7 @@ export async function prepareRoomBanner(
   if (!parsed.success) {
     return invalidOutcome(PHOTO_FILE_MESSAGE);
   }
-  const api = await apiClient();
+  const api = await mediaActionClient();
   return reservePhotoUpload(
     () => api.createMediaUpload({ purpose: 'room_banner', ...parsed.data }),
     bannerUploadCopy,
@@ -113,7 +116,10 @@ export async function saveRoomBanner(
   const parsed = roomBannerInputSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('invalid banner'));
   try {
-    const room = await (await apiClient()).updateMyRoom(parsed.data);
+    const room = await (async () => {
+      await requireFirebaseActionOrigin();
+      return (await firebaseWebData()).updateMyRoom(parsed.data);
+    })();
     return {
       status: 'success',
       message:

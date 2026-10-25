@@ -1,5 +1,5 @@
 import { MemoryScopePage } from '@/components/memories/memory-scope-page';
-import { MemoryPeriod } from '@/components/memories/memory-timeline';
+import { MemoryPeriod } from '@/components/memories/memory-period';
 import { BackLink, EmptyState } from '@/components/ui';
 import {
   memoryHref,
@@ -7,14 +7,11 @@ import {
   parsePeriod,
 } from '@/lib/life-updates/memories';
 import { BOX_ABSENT, uuidParam } from '@/lib/server/route-params';
-import {
-  apiClient,
-  completedUser,
-  cursorParam,
-  orNotFound,
-} from '@/lib/server/session';
+import { completedUser, cursorParam, orNotFound } from '@/lib/server/session';
 import { type Route } from 'next';
 import { notFound } from 'next/navigation';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 export const metadata = { title: 'Box Memories' };
 
 const absent = BOX_ABSENT;
@@ -35,12 +32,12 @@ export default async function BoxMemoriesPage({
   const query = await searchParams;
   const period = parsePeriod(query);
   if (period === null) notFound();
-  const api = await apiClient();
+  const api = await firebaseWebData();
   const [box, summary] = await Promise.all([
     orNotFound(api.box(boxId), absent),
-    orNotFound(api.boxMemorySummary(boxId, period.year), absent),
+    Promise.resolve(undefined),
   ]);
-  const year = period.year ?? summary.year;
+  const year = period.year ?? new Date().getUTCFullYear();
   const page =
     year === null
       ? null

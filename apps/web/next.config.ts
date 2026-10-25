@@ -1,9 +1,4 @@
 import { securityHeaders } from '@/lib/security/security-headers';
-import {
-  isDeployedEnvironment,
-  parseWebPublicEnvironment,
-  webPublicEnvironmentKeys,
-} from '@paldora/config';
 import { type NextConfig } from 'next';
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
@@ -16,13 +11,13 @@ const rootEnvironmentPath = fileURLToPath(
 if (existsSync(rootEnvironmentPath)) loadEnvFile(rootEnvironmentPath);
 
 // Fail the build, not the first request, when public configuration is wrong.
-const environment = parseWebPublicEnvironment(process.env);
+const webUrl = process.env.NEXT_PUBLIC_WEB_URL;
+if (!webUrl || !['http:', 'https:'].includes(new URL(webUrl).protocol))
+  throw new Error('NEXT_PUBLIC_WEB_URL must be an HTTP or HTTPS URL.');
 
 const nextConfig: NextConfig = {
   // Inline only the validated public keys; server secrets never get here.
-  env: Object.fromEntries(
-    webPublicEnvironmentKeys.map((key) => [key, environment[key] ?? '']),
-  ),
+  env: { NEXT_PUBLIC_WEB_URL: webUrl },
   poweredByHeader: false,
   reactStrictMode: true,
   typedRoutes: true,
@@ -33,7 +28,7 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: securityHeaders({
-          deployed: isDeployedEnvironment(environment.PALDORA_ENV),
+          deployed: process.env.PALDORA_ENV !== 'local',
         }),
       },
     ];

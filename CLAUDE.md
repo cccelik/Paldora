@@ -7,6 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is the root operating manual for Paldora. It summarizes and links to the
 detailed documents. It does not replace them.
 
+**Current active workspace (October 2026):** the local web migration uses
+Firebase Auth, Firestore, Storage, Functions, and `@paldora/firebase-trusted`.
+The API, worker, PostgreSQL, Redis, S3/MinIO, and Supabase packages described
+later in this file are historical design/reference notes, not current runtime
+instructions. Follow [docs/development.md](docs/development.md) for local
+commands and [docs/firebase/implementation.md](docs/firebase/implementation.md)
+for migration status. `legacy/` remains frozen.
+
 **Repository state.** The root is the **greenfield rebuild**. Phase 0
 (foundation) is delivered. The execution plan, milestones, status, and open
 decisions are in [docs/rebuild-plan.md](docs/rebuild-plan.md). The new build's own docs

@@ -1,13 +1,10 @@
 import styles from '@/(signed-in)/moderation/page.module.css';
 import { MoreLink } from '@/components/common/more-link';
 import { PageHeader } from '@/components/ui';
-import {
-  apiClient,
-  completedUser,
-  cursorParam,
-  orNotFound,
-} from '@/lib/server/session';
+import { completedUser, cursorParam, orNotFound } from '@/lib/server/session';
 import Link from 'next/link';
+
+import { firebaseWebData } from '@/lib/server/firebase/data';
 
 export const metadata = { title: 'Moderation queue' };
 
@@ -19,7 +16,7 @@ export default async function ModerationQueuePage({
   const cursor = cursorParam(search.cursor);
   const status = search.status === 'closed' ? 'closed' : 'open';
   const page = await orNotFound(
-    (await apiClient()).moderationCases({ limit: 25, cursor, status }),
+    (await firebaseWebData()).moderationCases({ limit: 25, cursor, status }),
     ['MODERATION_FORBIDDEN'],
   );
   return (
