@@ -19,7 +19,10 @@ imported Tailwind but barely used it. Native apps need identical values.
   - CSS custom properties (`--pal-*`). Light/dark switches by
     `data-appearance` or `prefers-color-scheme`.
   - A TypeScript map.
-  - Raw Swift and Kotlin constants.
+  - Typed Swift and Kotlin values: numeric dimensions (points / dp),
+    ARGB colors, and per-theme tables for the 14 Room themes. Units are in
+    `packages/tokens/README.md`. The outputs are not compiled by
+    `swiftc`/`kotlinc` in CI yet; that waits for the platform CI jobs.
   - CI fails on drift.
 - **Contrast checks.** `design/tokens/contrast-pairs.json` declares
   foreground/background pairs, and tests enforce WCAG 2.2 AA (4.5:1 text,

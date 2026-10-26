@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { contrastRatio } from './contrast.js';
-import { emitCss } from './emit.js';
+import { emitCss, emitKotlin, emitSwift } from './emit.js';
 import { resolveTokens } from './resolve.js';
+import { readRoomThemeTokens } from './room-themes.js';
 
 const readDesignFile = (name: string) =>
   JSON.parse(
@@ -74,5 +75,50 @@ describe('CSS output', () => {
     expect(css).toContain(
       '--pal-easing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);',
     );
+  });
+});
+
+describe('native output', () => {
+  const swift = emitSwift(tokens);
+  const kotlin = emitKotlin(tokens);
+
+  it('has no unit strings; dimensions and durations are numbers', () => {
+    for (const output of [swift, kotlin]) {
+      expect(output).not.toMatch(/\d(px|rem|em|ms)\b/);
+      expect(output).not.toMatch(/"#[0-9A-F]{6,8}"/i);
+    }
+    expect(swift).toContain('public static let space1: CGFloat = 4');
+    expect(swift).toContain('durationFast: TimeInterval = 0.12');
+    expect(kotlin).toContain('const val space1: Float = 4f');
+    expect(kotlin).toContain('const val durationFast: Int = 120');
+    expect(kotlin).toContain('const val fontSizeBody: Float = 16f');
+  });
+
+  it('emits colors as ARGB values', () => {
+    expect(swift).toContain(
+      'colorBrandGold: PaldoraColor = PaldoraColor(argb: 0xFFC79A3B)',
+    );
+    expect(kotlin).toContain('const val colorBrandGold: Long = 0xFFC79A3BL');
+  });
+
+  it('emits every Room preset, accent and font', () => {
+    const { presets, accents, fonts } = readRoomThemeTokens(tokens);
+    expect(presets).toHaveLength(14);
+    for (const { id, colors } of presets) {
+      expect(swift).toContain(`id: "${id}"`);
+      expect(kotlin).toContain(`id = "${id}"`);
+      const canvas = colors.canvas.slice(1).toUpperCase();
+      expect(swift).toContain(`canvas: PaldoraColor(argb: 0xFF${canvas})`);
+      expect(kotlin).toContain(`canvas = 0xFF${canvas}L`);
+    }
+    for (const { key } of [...accents, ...fonts]) {
+      expect(swift).toContain(`key: "${key}"`);
+      expect(kotlin).toContain(`("${key}"`);
+    }
+  });
+
+  it('keeps Room tokens out of the flat constants', () => {
+    expect(swift).not.toMatch(/static let room[A-Z]/);
+    expect(kotlin).not.toMatch(/val room[A-Z]/);
   });
 });

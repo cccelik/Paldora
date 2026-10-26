@@ -1,203 +1,312 @@
 // Generated from design/tokens/paldora.tokens.json by `pnpm tokens:generate`. Do not edit.
+// Units: dimensions are CGFloat points (rem x 16; em stays a ratio),
+// durations are TimeInterval seconds, colors are sRGB PaldoraColor values.
+import Foundation
+
+/// sRGB color as 0xAARRGGBB. Convert in the app, for example
+/// `Color(.sRGB, red: c.red, green: c.green, blue: c.blue, opacity: c.alpha)`.
+public struct PaldoraColor: Equatable, Sendable {
+    public let argb: UInt32
+
+    public init(argb: UInt32) {
+        self.argb = argb
+    }
+
+    public var alpha: Double { Double((argb >> 24) & 0xFF) / 255 }
+    public var red: Double { Double((argb >> 16) & 0xFF) / 255 }
+    public var green: Double { Double((argb >> 8) & 0xFF) / 255 }
+    public var blue: Double { Double(argb & 0xFF) / 255 }
+}
+
 public enum PaldoraTokens {
-    public static let colorBrandObsidian = "#11100E"
-    public static let colorBrandSoftBlack = "#191713"
-    public static let colorBrandGold = "#C79A3B"
-    public static let colorBrandDeepGold = "#9C7424"
-    public static let colorBrandChampagne = "#F4E7C3"
-    public static let colorBrandIvory = "#FAF7EF"
-    public static let colorBrandPaper = "#F4EFE5"
-    public static let colorBrandLavender = "#C8B7E8"
-    public static let colorTextDarkPrimary = "#F8F1E0"
-    public static let colorTextDarkMuted = "#B9AF9D"
-    public static let colorTextLightPrimary = "#171717"
-    public static let colorTextLightMuted = "#6E6250"
-    public static let colorStatusSuccess = "#668060"
-    public static let colorStatusWarning = "#A96F2D"
-    public static let colorStatusDanger = "#A54B46"
-    public static let colorAccessibleGoldText = "#88651F"
-    public static let colorAccessibleSuccessText = "#5B7255"
-    public static let colorAccessibleWarningText = "#936127"
-    public static let colorFocus = "#8D6CD1"
-    public static let themeLightCanvas = "#FAF7EF"
-    public static let themeLightSurface = "#F4EFE5"
-    public static let themeLightText = "#171717"
-    public static let themeLightTextMuted = "#6E6250"
-    public static let themeLightAccent = "#C79A3B"
-    public static let themeLightAccentText = "#88651F"
-    public static let themeLightHighlight = "#F4E7C3"
-    public static let themeLightEmotional = "#C8B7E8"
-    public static let themeLightSuccessText = "#5B7255"
-    public static let themeLightWarningText = "#936127"
-    public static let themeLightDangerText = "#A54B46"
-    public static let themeLightFocus = "#8D6CD1"
-    public static let themeLightOnAccent = "#11100E"
-    public static let themeDarkCanvas = "#11100E"
-    public static let themeDarkSurface = "#191713"
-    public static let themeDarkText = "#F8F1E0"
-    public static let themeDarkTextMuted = "#B9AF9D"
-    public static let themeDarkAccent = "#C79A3B"
-    public static let themeDarkAccentText = "#C79A3B"
-    public static let themeDarkHighlight = "#F4E7C3"
-    public static let themeDarkEmotional = "#C8B7E8"
-    public static let themeDarkSuccessText = "#9DB596"
-    public static let themeDarkWarningText = "#D9A066"
-    public static let themeDarkDangerText = "#E08A84"
-    public static let themeDarkFocus = "#C8B7E8"
-    public static let themeDarkOnAccent = "#11100E"
-    public static let space1 = "4px"
-    public static let space2 = "8px"
-    public static let space3 = "12px"
-    public static let space4 = "16px"
-    public static let space5 = "20px"
-    public static let space6 = "24px"
-    public static let space8 = "32px"
-    public static let space10 = "40px"
-    public static let space12 = "48px"
-    public static let space16 = "64px"
-    public static let space20 = "80px"
-    public static let radiusSm = "8px"
-    public static let radiusMd = "14px"
-    public static let radiusLg = "20px"
-    public static let radiusXl = "28px"
-    public static let radiusPill = "999px"
-    public static let sizeTouchTarget = "44px"
-    public static let sizeFocusRing = "3px"
-    public static let sizeReadingColumn = "620px"
-    public static let sizeContentMax = "1280px"
-    public static let breakpointSm = "390px"
-    public static let breakpointMd = "768px"
-    public static let breakpointLg = "1024px"
-    public static let breakpointXl = "1280px"
-    public static let breakpointXxl = "1440px"
-    public static let durationFast = "120ms"
-    public static let durationStandard = "200ms"
-    public static let durationSlow = "320ms"
-    public static let easingStandard = [0.2, 0.8, 0.2, 1]
-    public static let zIndexBase = 0
-    public static let zIndexSticky = 100
-    public static let zIndexDropdown = 300
-    public static let zIndexOverlay = 500
-    public static let zIndexModal = 600
-    public static let zIndexToast = 700
-    public static let zIndexSecurity = 800
-    public static let fontBrand = ["Cormorant Garamond", "Iowan Old Style", "Georgia", "serif"]
-    public static let fontEditorial = ["Newsreader", "Iowan Old Style", "Georgia", "serif"]
-    public static let fontUi = ["Inter", "ui-sans-serif", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"]
-    public static let borderWidthHairline = "1px"
-    public static let borderOpacitySoft = 0.12
-    public static let borderOpacityDefault = 0.2
-    public static let borderOpacityStrong = 0.5
-    public static let fontSizeCaption = "0.8125rem"
-    public static let fontSizeHeroSmall = "2.75rem"
-    public static let fontSizeHeroLarge = "4.5rem"
-    public static let fontSizeLead = "1.125rem"
-    public static let fontSizeSm = "0.875rem"
-    public static let fontSizeSubtitle = "1.25rem"
-    public static let fontSizeTitleSmall = "1.75rem"
-    public static let fontSizeDisplay = "2.25rem"
-    public static let fontSizeBody = "1rem"
-    public static let fontSizeBrandSmall = "1.3rem"
-    public static let fontSizeDisplayLarge = "2.5rem"
-    public static let fontSizeHeadingSmall = "1.375rem"
-    public static let fontSizeHeading = "1.5rem"
-    public static let fontSizeXs = "0.75rem"
-    public static let fontSizeTitle = "1.875rem"
-    public static let fontSizeBodyLarge = "1.0625rem"
-    public static let fontSizeRelativeLabel = "0.75em"
-    public static let fontSizeDisplaySmall = "2rem"
-    public static let fontSizeReadable = "0.9375rem"
-    public static let fontSizeHero = "3rem"
-    public static let fontSizeRelativeSmall = "0.7em"
-    public static let roomPresetObsidianGoldCanvas = "#14110D"
-    public static let roomPresetObsidianGoldSurface = "#211B14"
-    public static let roomPresetObsidianGoldText = "#F7EFD9"
-    public static let roomPresetObsidianGoldTextMuted = "#8D887A"
-    public static let roomPresetObsidianGoldBorder = "#726C5F"
-    public static let roomPresetCreamPaperCanvas = "#F8F0DF"
-    public static let roomPresetCreamPaperSurface = "#FFFAF0"
-    public static let roomPresetCreamPaperText = "#241D16"
-    public static let roomPresetCreamPaperTextMuted = "#6F685D"
-    public static let roomPresetCreamPaperBorder = "#8B857C"
-    public static let roomPresetLavenderDreamCanvas = "#EEE6FA"
-    public static let roomPresetLavenderDreamSurface = "#FAF7FF"
-    public static let roomPresetLavenderDreamText = "#2E2140"
-    public static let roomPresetLavenderDreamTextMuted = "#6B607C"
-    public static let roomPresetLavenderDreamBorder = "#867D92"
-    public static let roomPresetOceanGlowCanvas = "#DFF5F4"
-    public static let roomPresetOceanGlowSurface = "#F5FFFF"
-    public static let roomPresetOceanGlowText = "#102F39"
-    public static let roomPresetOceanGlowTextMuted = "#526E75"
-    public static let roomPresetOceanGlowBorder = "#74898F"
-    public static let roomPresetDaisyDayCanvas = "#FFF4C9"
-    public static let roomPresetDaisyDaySurface = "#FFFBED"
-    public static let roomPresetDaisyDayText = "#3A3115"
-    public static let roomPresetDaisyDayTextMuted = "#746B4A"
-    public static let roomPresetDaisyDayBorder = "#8F8872"
-    public static let roomPresetNeonNightCanvas = "#100D20"
-    public static let roomPresetNeonNightSurface = "#211839"
-    public static let roomPresetNeonNightText = "#F8F2FF"
-    public static let roomPresetNeonNightTextMuted = "#8C8897"
-    public static let roomPresetNeonNightBorder = "#716982"
-    public static let roomPresetY2kGlitterCanvas = "#F2E8FA"
-    public static let roomPresetY2kGlitterSurface = "#FFF7FF"
-    public static let roomPresetY2kGlitterText = "#352044"
-    public static let roomPresetY2kGlitterTextMuted = "#71607E"
-    public static let roomPresetY2kGlitterBorder = "#8C7C94"
-    public static let roomPresetDarkAcademiaCanvas = "#211B14"
-    public static let roomPresetDarkAcademiaSurface = "#30271C"
-    public static let roomPresetDarkAcademiaText = "#F1DFBD"
-    public static let roomPresetDarkAcademiaTextMuted = "#A0937B"
-    public static let roomPresetDarkAcademiaBorder = "#817460"
-    public static let roomPresetFrutigerAeroCanvas = "#DFF7FF"
-    public static let roomPresetFrutigerAeroSurface = "#F7FFFF"
-    public static let roomPresetFrutigerAeroText = "#12374A"
-    public static let roomPresetFrutigerAeroTextMuted = "#4D6F7E"
-    public static let roomPresetFrutigerAeroBorder = "#728B96"
-    public static let roomPresetTumblr2014Canvas = "#263247"
-    public static let roomPresetTumblr2014Surface = "#34445F"
-    public static let roomPresetTumblr2014Text = "#F5F7FB"
-    public static let roomPresetTumblr2014TextMuted = "#B1B6C0"
-    public static let roomPresetTumblr2014Border = "#8A94A4"
-    public static let roomPresetRetroWindowsCanvas = "#C0C0C0"
-    public static let roomPresetRetroWindowsSurface = "#ECECEC"
-    public static let roomPresetRetroWindowsText = "#101010"
-    public static let roomPresetRetroWindowsTextMuted = "#4A4A4A"
-    public static let roomPresetRetroWindowsBorder = "#656565"
-    public static let roomPresetCyberpunkCanvas = "#110B1B"
-    public static let roomPresetCyberpunkSurface = "#21122D"
-    public static let roomPresetCyberpunkText = "#F4FF52"
-    public static let roomPresetCyberpunkTextMuted = "#878A38"
-    public static let roomPresetCyberpunkBorder = "#706B3B"
-    public static let roomPresetMinimalEditorialCanvas = "#F7F5F0"
-    public static let roomPresetMinimalEditorialSurface = "#FFFFFF"
-    public static let roomPresetMinimalEditorialText = "#151515"
-    public static let roomPresetMinimalEditorialTextMuted = "#6D6C6A"
-    public static let roomPresetMinimalEditorialBorder = "#898989"
-    public static let roomPresetPolaroidScrapbookCanvas = "#EEE3CC"
-    public static let roomPresetPolaroidScrapbookSurface = "#FFFDF8"
-    public static let roomPresetPolaroidScrapbookText = "#292118"
-    public static let roomPresetPolaroidScrapbookTextMuted = "#696053"
-    public static let roomPresetPolaroidScrapbookBorder = "#827C75"
-    public static let roomAccentGoldOnLight = "#8C5F1A"
-    public static let roomAccentGoldOnDark = "#C4933F"
-    public static let roomAccentLavenderOnLight = "#7F51B5"
-    public static let roomAccentLavenderOnDark = "#A281CA"
-    public static let roomAccentOceanOnLight = "#127282"
-    public static let roomAccentOceanOnDark = "#7FA4D8"
-    public static let roomAccentDaisyOnLight = "#915D0F"
-    public static let roomAccentDaisyOnDark = "#DB8D16"
-    public static let roomAccentPinkOnLight = "#AF398A"
-    public static let roomAccentPinkOnDark = "#DC49FF"
-    public static let roomAccentEmeraldOnLight = "#267647"
-    public static let roomAccentEmeraldOnDark = "#34A362"
-    public static let roomAccentCyanOnLight = "#007287"
-    public static let roomAccentCyanOnDark = "#00E5FF"
-    public static let roomAccentCrimsonOnLight = "#A23C2D"
-    public static let roomAccentCrimsonOnDark = "#D57566"
-    public static let roomFontEditorial = ["Newsreader", "Iowan Old Style", "Georgia", "serif"]
-    public static let roomFontModern = ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"]
-    public static let roomFontRounded = ["ui-rounded", "SF Pro Rounded", "Arial Rounded MT Bold", "Nunito", "sans-serif"]
-    public static let roomFontMono = ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"]
-    public static let roomFontHandwritten = ["Bradley Hand", "Segoe Print", "Noteworthy", "cursive"]
+    public static let colorBrandObsidian: PaldoraColor = PaldoraColor(argb: 0xFF11100E)
+    public static let colorBrandSoftBlack: PaldoraColor = PaldoraColor(argb: 0xFF191713)
+    public static let colorBrandGold: PaldoraColor = PaldoraColor(argb: 0xFFC79A3B)
+    public static let colorBrandDeepGold: PaldoraColor = PaldoraColor(argb: 0xFF9C7424)
+    public static let colorBrandChampagne: PaldoraColor = PaldoraColor(argb: 0xFFF4E7C3)
+    public static let colorBrandIvory: PaldoraColor = PaldoraColor(argb: 0xFFFAF7EF)
+    public static let colorBrandPaper: PaldoraColor = PaldoraColor(argb: 0xFFF4EFE5)
+    public static let colorBrandLavender: PaldoraColor = PaldoraColor(argb: 0xFFC8B7E8)
+    public static let colorTextDarkPrimary: PaldoraColor = PaldoraColor(argb: 0xFFF8F1E0)
+    public static let colorTextDarkMuted: PaldoraColor = PaldoraColor(argb: 0xFFB9AF9D)
+    public static let colorTextLightPrimary: PaldoraColor = PaldoraColor(argb: 0xFF171717)
+    public static let colorTextLightMuted: PaldoraColor = PaldoraColor(argb: 0xFF6E6250)
+    public static let colorStatusSuccess: PaldoraColor = PaldoraColor(argb: 0xFF668060)
+    public static let colorStatusWarning: PaldoraColor = PaldoraColor(argb: 0xFFA96F2D)
+    public static let colorStatusDanger: PaldoraColor = PaldoraColor(argb: 0xFFA54B46)
+    public static let colorAccessibleGoldText: PaldoraColor = PaldoraColor(argb: 0xFF88651F)
+    public static let colorAccessibleSuccessText: PaldoraColor = PaldoraColor(argb: 0xFF5B7255)
+    public static let colorAccessibleWarningText: PaldoraColor = PaldoraColor(argb: 0xFF936127)
+    public static let colorFocus: PaldoraColor = PaldoraColor(argb: 0xFF8D6CD1)
+    public static let themeLightCanvas: PaldoraColor = PaldoraColor(argb: 0xFFFAF7EF)
+    public static let themeLightSurface: PaldoraColor = PaldoraColor(argb: 0xFFF4EFE5)
+    public static let themeLightText: PaldoraColor = PaldoraColor(argb: 0xFF171717)
+    public static let themeLightTextMuted: PaldoraColor = PaldoraColor(argb: 0xFF6E6250)
+    public static let themeLightAccent: PaldoraColor = PaldoraColor(argb: 0xFFC79A3B)
+    public static let themeLightAccentText: PaldoraColor = PaldoraColor(argb: 0xFF88651F)
+    public static let themeLightHighlight: PaldoraColor = PaldoraColor(argb: 0xFFF4E7C3)
+    public static let themeLightEmotional: PaldoraColor = PaldoraColor(argb: 0xFFC8B7E8)
+    public static let themeLightSuccessText: PaldoraColor = PaldoraColor(argb: 0xFF5B7255)
+    public static let themeLightWarningText: PaldoraColor = PaldoraColor(argb: 0xFF936127)
+    public static let themeLightDangerText: PaldoraColor = PaldoraColor(argb: 0xFFA54B46)
+    public static let themeLightFocus: PaldoraColor = PaldoraColor(argb: 0xFF8D6CD1)
+    public static let themeLightOnAccent: PaldoraColor = PaldoraColor(argb: 0xFF11100E)
+    public static let themeDarkCanvas: PaldoraColor = PaldoraColor(argb: 0xFF11100E)
+    public static let themeDarkSurface: PaldoraColor = PaldoraColor(argb: 0xFF191713)
+    public static let themeDarkText: PaldoraColor = PaldoraColor(argb: 0xFFF8F1E0)
+    public static let themeDarkTextMuted: PaldoraColor = PaldoraColor(argb: 0xFFB9AF9D)
+    public static let themeDarkAccent: PaldoraColor = PaldoraColor(argb: 0xFFC79A3B)
+    public static let themeDarkAccentText: PaldoraColor = PaldoraColor(argb: 0xFFC79A3B)
+    public static let themeDarkHighlight: PaldoraColor = PaldoraColor(argb: 0xFFF4E7C3)
+    public static let themeDarkEmotional: PaldoraColor = PaldoraColor(argb: 0xFFC8B7E8)
+    public static let themeDarkSuccessText: PaldoraColor = PaldoraColor(argb: 0xFF9DB596)
+    public static let themeDarkWarningText: PaldoraColor = PaldoraColor(argb: 0xFFD9A066)
+    public static let themeDarkDangerText: PaldoraColor = PaldoraColor(argb: 0xFFE08A84)
+    public static let themeDarkFocus: PaldoraColor = PaldoraColor(argb: 0xFFC8B7E8)
+    public static let themeDarkOnAccent: PaldoraColor = PaldoraColor(argb: 0xFF11100E)
+    public static let space1: CGFloat = 4
+    public static let space2: CGFloat = 8
+    public static let space3: CGFloat = 12
+    public static let space4: CGFloat = 16
+    public static let space5: CGFloat = 20
+    public static let space6: CGFloat = 24
+    public static let space8: CGFloat = 32
+    public static let space10: CGFloat = 40
+    public static let space12: CGFloat = 48
+    public static let space16: CGFloat = 64
+    public static let space20: CGFloat = 80
+    public static let radiusSm: CGFloat = 8
+    public static let radiusMd: CGFloat = 14
+    public static let radiusLg: CGFloat = 20
+    public static let radiusXl: CGFloat = 28
+    public static let radiusPill: CGFloat = 999
+    public static let sizeTouchTarget: CGFloat = 44
+    public static let sizeFocusRing: CGFloat = 3
+    public static let sizeReadingColumn: CGFloat = 620
+    public static let sizeContentMax: CGFloat = 1280
+    public static let breakpointSm: CGFloat = 390
+    public static let breakpointMd: CGFloat = 768
+    public static let breakpointLg: CGFloat = 1024
+    public static let breakpointXl: CGFloat = 1280
+    public static let breakpointXxl: CGFloat = 1440
+    public static let durationFast: TimeInterval = 0.12
+    public static let durationStandard: TimeInterval = 0.2
+    public static let durationSlow: TimeInterval = 0.32
+    public static let easingStandard: [Double] = [0.2, 0.8, 0.2, 1]
+    public static let zIndexBase: Int = 0
+    public static let zIndexSticky: Int = 100
+    public static let zIndexDropdown: Int = 300
+    public static let zIndexOverlay: Int = 500
+    public static let zIndexModal: Int = 600
+    public static let zIndexToast: Int = 700
+    public static let zIndexSecurity: Int = 800
+    public static let fontBrand: [String] = ["Cormorant Garamond", "Iowan Old Style", "Georgia", "serif"]
+    public static let fontEditorial: [String] = ["Newsreader", "Iowan Old Style", "Georgia", "serif"]
+    public static let fontUi: [String] = ["Inter", "ui-sans-serif", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"]
+    public static let borderWidthHairline: CGFloat = 1
+    public static let borderOpacitySoft: CGFloat = 0.12
+    public static let borderOpacityDefault: CGFloat = 0.2
+    public static let borderOpacityStrong: CGFloat = 0.5
+    public static let fontSizeCaption: CGFloat = 13
+    public static let fontSizeHeroSmall: CGFloat = 44
+    public static let fontSizeHeroLarge: CGFloat = 72
+    public static let fontSizeLead: CGFloat = 18
+    public static let fontSizeSm: CGFloat = 14
+    public static let fontSizeSubtitle: CGFloat = 20
+    public static let fontSizeTitleSmall: CGFloat = 28
+    public static let fontSizeDisplay: CGFloat = 36
+    public static let fontSizeBody: CGFloat = 16
+    public static let fontSizeBrandSmall: CGFloat = 20.8
+    public static let fontSizeDisplayLarge: CGFloat = 40
+    public static let fontSizeHeadingSmall: CGFloat = 22
+    public static let fontSizeHeading: CGFloat = 24
+    public static let fontSizeXs: CGFloat = 12
+    public static let fontSizeTitle: CGFloat = 30
+    public static let fontSizeBodyLarge: CGFloat = 17
+    public static let fontSizeRelativeLabel: CGFloat = 0.75
+    public static let fontSizeDisplaySmall: CGFloat = 32
+    public static let fontSizeReadable: CGFloat = 15
+    public static let fontSizeHero: CGFloat = 48
+    public static let fontSizeRelativeSmall: CGFloat = 0.7
+}
+
+public enum PaldoraRoomScheme: String, Sendable {
+    case light
+    case dark
+}
+
+public struct PaldoraRoomPreset: Equatable, Sendable {
+    public let id: String
+    public let scheme: PaldoraRoomScheme
+    public let canvas: PaldoraColor
+    public let surface: PaldoraColor
+    public let text: PaldoraColor
+    public let textMuted: PaldoraColor
+    public let border: PaldoraColor
+}
+
+public struct PaldoraRoomAccent: Equatable, Sendable {
+    public let key: String
+    public let onLight: PaldoraColor
+    public let onDark: PaldoraColor
+
+    public func color(for scheme: PaldoraRoomScheme) -> PaldoraColor {
+        scheme == .light ? onLight : onDark
+    }
+}
+
+public struct PaldoraRoomFont: Equatable, Sendable {
+    public let key: String
+    public let families: [String]
+}
+
+/// Room themes (ADR 017), keyed by the domain ids used by the API.
+public enum PaldoraRoomThemes {
+    public static let presets: [PaldoraRoomPreset] = [
+        PaldoraRoomPreset(
+            id: "obsidian_gold",
+            scheme: .dark,
+            canvas: PaldoraColor(argb: 0xFF14110D),
+            surface: PaldoraColor(argb: 0xFF211B14),
+            text: PaldoraColor(argb: 0xFFF7EFD9),
+            textMuted: PaldoraColor(argb: 0xFF8D887A),
+            border: PaldoraColor(argb: 0xFF726C5F)
+        ),
+        PaldoraRoomPreset(
+            id: "cream_paper",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFF8F0DF),
+            surface: PaldoraColor(argb: 0xFFFFFAF0),
+            text: PaldoraColor(argb: 0xFF241D16),
+            textMuted: PaldoraColor(argb: 0xFF6F685D),
+            border: PaldoraColor(argb: 0xFF8B857C)
+        ),
+        PaldoraRoomPreset(
+            id: "lavender_dream",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFEEE6FA),
+            surface: PaldoraColor(argb: 0xFFFAF7FF),
+            text: PaldoraColor(argb: 0xFF2E2140),
+            textMuted: PaldoraColor(argb: 0xFF6B607C),
+            border: PaldoraColor(argb: 0xFF867D92)
+        ),
+        PaldoraRoomPreset(
+            id: "ocean_glow",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFDFF5F4),
+            surface: PaldoraColor(argb: 0xFFF5FFFF),
+            text: PaldoraColor(argb: 0xFF102F39),
+            textMuted: PaldoraColor(argb: 0xFF526E75),
+            border: PaldoraColor(argb: 0xFF74898F)
+        ),
+        PaldoraRoomPreset(
+            id: "daisy_day",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFFFF4C9),
+            surface: PaldoraColor(argb: 0xFFFFFBED),
+            text: PaldoraColor(argb: 0xFF3A3115),
+            textMuted: PaldoraColor(argb: 0xFF746B4A),
+            border: PaldoraColor(argb: 0xFF8F8872)
+        ),
+        PaldoraRoomPreset(
+            id: "neon_night",
+            scheme: .dark,
+            canvas: PaldoraColor(argb: 0xFF100D20),
+            surface: PaldoraColor(argb: 0xFF211839),
+            text: PaldoraColor(argb: 0xFFF8F2FF),
+            textMuted: PaldoraColor(argb: 0xFF8C8897),
+            border: PaldoraColor(argb: 0xFF716982)
+        ),
+        PaldoraRoomPreset(
+            id: "y2k_glitter",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFF2E8FA),
+            surface: PaldoraColor(argb: 0xFFFFF7FF),
+            text: PaldoraColor(argb: 0xFF352044),
+            textMuted: PaldoraColor(argb: 0xFF71607E),
+            border: PaldoraColor(argb: 0xFF8C7C94)
+        ),
+        PaldoraRoomPreset(
+            id: "dark_academia",
+            scheme: .dark,
+            canvas: PaldoraColor(argb: 0xFF211B14),
+            surface: PaldoraColor(argb: 0xFF30271C),
+            text: PaldoraColor(argb: 0xFFF1DFBD),
+            textMuted: PaldoraColor(argb: 0xFFA0937B),
+            border: PaldoraColor(argb: 0xFF817460)
+        ),
+        PaldoraRoomPreset(
+            id: "frutiger_aero",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFDFF7FF),
+            surface: PaldoraColor(argb: 0xFFF7FFFF),
+            text: PaldoraColor(argb: 0xFF12374A),
+            textMuted: PaldoraColor(argb: 0xFF4D6F7E),
+            border: PaldoraColor(argb: 0xFF728B96)
+        ),
+        PaldoraRoomPreset(
+            id: "tumblr_2014",
+            scheme: .dark,
+            canvas: PaldoraColor(argb: 0xFF263247),
+            surface: PaldoraColor(argb: 0xFF34445F),
+            text: PaldoraColor(argb: 0xFFF5F7FB),
+            textMuted: PaldoraColor(argb: 0xFFB1B6C0),
+            border: PaldoraColor(argb: 0xFF8A94A4)
+        ),
+        PaldoraRoomPreset(
+            id: "retro_windows",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFC0C0C0),
+            surface: PaldoraColor(argb: 0xFFECECEC),
+            text: PaldoraColor(argb: 0xFF101010),
+            textMuted: PaldoraColor(argb: 0xFF4A4A4A),
+            border: PaldoraColor(argb: 0xFF656565)
+        ),
+        PaldoraRoomPreset(
+            id: "cyberpunk",
+            scheme: .dark,
+            canvas: PaldoraColor(argb: 0xFF110B1B),
+            surface: PaldoraColor(argb: 0xFF21122D),
+            text: PaldoraColor(argb: 0xFFF4FF52),
+            textMuted: PaldoraColor(argb: 0xFF878A38),
+            border: PaldoraColor(argb: 0xFF706B3B)
+        ),
+        PaldoraRoomPreset(
+            id: "minimal_editorial",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFF7F5F0),
+            surface: PaldoraColor(argb: 0xFFFFFFFF),
+            text: PaldoraColor(argb: 0xFF151515),
+            textMuted: PaldoraColor(argb: 0xFF6D6C6A),
+            border: PaldoraColor(argb: 0xFF898989)
+        ),
+        PaldoraRoomPreset(
+            id: "polaroid_scrapbook",
+            scheme: .light,
+            canvas: PaldoraColor(argb: 0xFFEEE3CC),
+            surface: PaldoraColor(argb: 0xFFFFFDF8),
+            text: PaldoraColor(argb: 0xFF292118),
+            textMuted: PaldoraColor(argb: 0xFF696053),
+            border: PaldoraColor(argb: 0xFF827C75)
+        ),
+    ]
+
+    public static let accents: [PaldoraRoomAccent] = [
+        PaldoraRoomAccent(key: "gold", onLight: PaldoraColor(argb: 0xFF8C5F1A), onDark: PaldoraColor(argb: 0xFFC4933F)),
+        PaldoraRoomAccent(key: "lavender", onLight: PaldoraColor(argb: 0xFF7F51B5), onDark: PaldoraColor(argb: 0xFFA281CA)),
+        PaldoraRoomAccent(key: "ocean", onLight: PaldoraColor(argb: 0xFF127282), onDark: PaldoraColor(argb: 0xFF7FA4D8)),
+        PaldoraRoomAccent(key: "daisy", onLight: PaldoraColor(argb: 0xFF915D0F), onDark: PaldoraColor(argb: 0xFFDB8D16)),
+        PaldoraRoomAccent(key: "pink", onLight: PaldoraColor(argb: 0xFFAF398A), onDark: PaldoraColor(argb: 0xFFDC49FF)),
+        PaldoraRoomAccent(key: "emerald", onLight: PaldoraColor(argb: 0xFF267647), onDark: PaldoraColor(argb: 0xFF34A362)),
+        PaldoraRoomAccent(key: "cyan", onLight: PaldoraColor(argb: 0xFF007287), onDark: PaldoraColor(argb: 0xFF00E5FF)),
+        PaldoraRoomAccent(key: "crimson", onLight: PaldoraColor(argb: 0xFFA23C2D), onDark: PaldoraColor(argb: 0xFFD57566)),
+    ]
+
+    public static let fonts: [PaldoraRoomFont] = [
+        PaldoraRoomFont(key: "editorial", families: ["Newsreader", "Iowan Old Style", "Georgia", "serif"]),
+        PaldoraRoomFont(key: "modern", families: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"]),
+        PaldoraRoomFont(key: "rounded", families: ["ui-rounded", "SF Pro Rounded", "Arial Rounded MT Bold", "Nunito", "sans-serif"]),
+        PaldoraRoomFont(key: "mono", families: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"]),
+        PaldoraRoomFont(key: "handwritten", families: ["Bradley Hand", "Segoe Print", "Noteworthy", "cursive"]),
+    ]
 }
