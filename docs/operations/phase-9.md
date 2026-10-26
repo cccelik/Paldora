@@ -13,10 +13,17 @@ Moderator access is a `nativeStaffGrants/{uid}` document with `status: active`,
 keyed to the account's Firebase Auth UID, and the account itself must also be
 `active`. Both are checked inside every moderation transaction
 (`packages/firebase-trusted/src/native-moderation.ts`). Clients cannot read or
-write grants. **There is no audited operator command for granting or revoking
-staff yet:** only the e2e seed (`packages/firebase-trusted/scripts/seed-e2e.mjs`)
-writes a grant, for disposable emulator data. Building that command is an open
-gate before hosted moderation.
+write grants. **The only audited operator command is local-emulator only:**
+`pnpm firebase:staff:local -- --grant <uid> --role moderator|administrator
+--operator <label>` or `-- --revoke <uid> --operator <label>`. It refuses
+unless `GCLOUD_PROJECT=demo-paldora` and `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`,
+and refuses if `GOOGLE_APPLICATION_CREDENTIALS` is set. Grants require an
+active account, revokes keep the grant with `status: revoked`, and each writes
+a `nativeModerationAudit` row (`staff.grant`/`staff.revoke`) with a non-email
+operator label. There is still no hosted grant path: building one is an open
+gate before hosted moderation. The e2e seed
+(`packages/firebase-trusted/scripts/seed-e2e.mjs`) still writes a grant
+directly, for disposable emulator data.
 
 A moderator opens `/moderation` to review reports. Opening a case and
 recording an action append audit rows. A report is an allegation, so the queue

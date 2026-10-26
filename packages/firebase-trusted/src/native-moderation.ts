@@ -43,6 +43,8 @@ function deterministicReportId(
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
+const OPERATOR_LABEL = /^[a-z0-9._-]{1,40}$/;
+
 export class NativeModerationError extends Error {
   public constructor(
     public readonly code: 'UNAVAILABLE' | 'FORBIDDEN' | 'INVALID',
@@ -470,6 +472,66 @@ export class NativeModeration {
       username: (target.get('username') as string | null | undefined) ?? null,
       status: target.get('status') as 'active' | 'suspended' | 'deleted',
     };
+  }
+
+  public async grantStaff(
+    operator: string,
+    targetUid: string,
+    role: 'moderator' | 'administrator',
+  ): Promise<void> {
+    if (
+      !OPERATOR_LABEL.test(operator) ||
+      !['moderator', 'administrator'].includes(role)
+    )
+      throw new NativeModerationError('INVALID');
+    await this.db.runTransaction(async (tx) => {
+      const grantRef = this.db.collection('nativeStaffGrants').doc(targetUid);
+      const [account, grant] = await Promise.all([
+        tx.get(this.db.collection('nativeAccounts').doc(targetUid)),
+        tx.get(grantRef),
+      ]);
+      if (!account.exists || account.get('status') !== 'active')
+        throw new NativeModerationError('UNAVAILABLE');
+      const now = Date.now();
+      tx.create(this.db.collection('nativeModerationAudit').doc(), {
+        action: 'staff.grant',
+        operator,
+        staffUid: null,
+        targetUid,
+        role,
+        previousStatus: (grant.get('status') as string | undefined) ?? null,
+        previousRole: (grant.get('role') as string | undefined) ?? null,
+        createdAt: now,
+      });
+      tx.set(grantRef, {
+        status: 'active',
+        role,
+        createdAt: (grant.get('createdAt') as number | undefined) ?? now,
+        updatedAt: now,
+      });
+    });
+  }
+
+  public async revokeStaff(operator: string, targetUid: string): Promise<void> {
+    if (!OPERATOR_LABEL.test(operator))
+      throw new NativeModerationError('INVALID');
+    await this.db.runTransaction(async (tx) => {
+      const grantRef = this.db.collection('nativeStaffGrants').doc(targetUid);
+      const grant = await tx.get(grantRef);
+      if (!grant.exists) throw new NativeModerationError('UNAVAILABLE');
+      const now = Date.now();
+      tx.create(this.db.collection('nativeModerationAudit').doc(), {
+        action: 'staff.revoke',
+        operator,
+        staffUid: null,
+        targetUid,
+        role: (grant.get('role') as string | undefined) ?? null,
+        previousStatus: (grant.get('status') as string | undefined) ?? null,
+        previousRole: (grant.get('role') as string | undefined) ?? null,
+        createdAt: now,
+      });
+      tx.update(grantRef, { status: 'revoked', updatedAt: now });
+    });
   }
 
   private async staff(

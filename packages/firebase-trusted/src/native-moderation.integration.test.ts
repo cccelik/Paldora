@@ -146,4 +146,81 @@ describe('trusted moderation', () => {
     expect(redacted.get('detail')).toBeUndefined();
     expect(redacted.get('reporterUid')).toBeUndefined();
   });
+  it('audits staff grant and revoke and rejects invalid targets without audit rows', async () => {
+    const target = await user();
+    const suspended = await user();
+    await db
+      .collection('nativeAccounts')
+      .doc(suspended)
+      .update({ status: 'suspended' });
+    const audit = async (uid: string) =>
+      (
+        await db
+          .collection('nativeModerationAudit')
+          .where('targetUid', '==', uid)
+          .get()
+      ).docs;
+    await expect(moderation.cases(target, 'open')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+    await moderation.grantStaff('ops.local', target, 'moderator');
+    await expect(moderation.cases(target, 'open')).resolves.toBeDefined();
+    const granted = await audit(target);
+    expect(granted).toHaveLength(1);
+    expect(Object.keys(granted[0]!.data()).sort()).toEqual(
+      [
+        'action',
+        'createdAt',
+        'operator',
+        'previousRole',
+        'previousStatus',
+        'role',
+        'staffUid',
+        'targetUid',
+      ].sort(),
+    );
+    expect(granted[0]!.data()).toMatchObject({
+      action: 'staff.grant',
+      operator: 'ops.local',
+      staffUid: null,
+      role: 'moderator',
+      previousStatus: null,
+      previousRole: null,
+    });
+    await moderation.revokeStaff('ops.local', target);
+    await expect(moderation.cases(target, 'open')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+    const revoked = (await audit(target)).find(
+      (row) => row.get('action') === 'staff.revoke',
+    );
+    expect(revoked?.data()).toMatchObject({
+      operator: 'ops.local',
+      staffUid: null,
+      previousStatus: 'active',
+      previousRole: 'moderator',
+    });
+    expect(
+      (await db.collection('nativeStaffGrants').doc(target).get()).get(
+        'status',
+      ),
+    ).toBe('revoked');
+    await expect(
+      moderation.grantStaff('ops.local', suspended, 'moderator'),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await expect(
+      moderation.grantStaff('ops.local', randomUUID(), 'moderator'),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await expect(
+      moderation.revokeStaff('ops.local', suspended),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await expect(
+      moderation.grantStaff('ops.local', target, 'owner' as 'moderator'),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    await expect(
+      moderation.grantStaff('a@b.com', target, 'moderator'),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(await audit(suspended)).toHaveLength(0);
+    expect(await audit(target)).toHaveLength(2);
+  });
 });

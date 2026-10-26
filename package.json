@@ -30,6 +30,7 @@
     "firebase:native:test": "firebase emulators:exec --only firestore --project demo-paldora --config firebase.native.json 'pnpm --filter @paldora/firebase-native test:rules'",
     "firebase:parity:check": "node scripts/check-firebase-cutover.mjs",
     "firebase:box-repair:local": "pnpm --filter @paldora/firebase-trusted build && pnpm --filter @paldora/firebase-trusted repair:box:local",
+    "firebase:staff:local": "pnpm --filter @paldora/firebase-trusted build && pnpm --filter @paldora/firebase-trusted staff:grant:local",
     "firebase:media-repair:local": "pnpm --filter @paldora/firebase-trusted build && pnpm --filter @paldora/firebase-trusted repair:media:local",
     "scan:client-bundle": "node scripts/scan-client-bundle.mjs apps/web/.next/static",
     "dev:emulators": "pnpm turbo run build --filter=@paldora/firebase-functions && firebase emulators:start --only auth,firestore,storage,functions,pubsub --project demo-paldora --config firebase.native.json"

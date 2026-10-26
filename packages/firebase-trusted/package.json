@@ -20,7 +20,8 @@
     "seed:e2e": "node scripts/seed-e2e.mjs",
     "repair:box:local": "node scripts/repair-box-deletions.mjs",
     "repair:media:local": "node scripts/repair-media.mjs",
-    "repair:account:local": "node scripts/repair-account-lifecycle.mjs"
+    "repair:account:local": "node scripts/repair-account-lifecycle.mjs",
+    "staff:grant:local": "node scripts/staff-grant.mjs"
   },
   "dependencies": {
     "@paldora/domain": "workspace:*",
