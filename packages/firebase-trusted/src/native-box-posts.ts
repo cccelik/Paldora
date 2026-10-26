@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   FieldPath,
+  type DocumentReference,
   type DocumentSnapshot,
   type Firestore,
   type Query,
@@ -73,6 +74,47 @@ function active(snapshot: DocumentSnapshot): boolean {
   return snapshot.exists && snapshot.get('status') === 'active';
 }
 
+type Reader = (ref: DocumentReference) => Promise<DocumentSnapshot>;
+
+/** One read per distinct document within a single transaction. */
+function memoReader(tx: FirebaseFirestore.Transaction): Reader {
+  const cache = new Map<string, Promise<DocumentSnapshot>>();
+  return (ref) => {
+    let hit = cache.get(ref.path);
+    if (!hit) {
+      hit = tx.get(ref);
+      cache.set(ref.path, hit);
+    }
+    return hit;
+  };
+}
+
+/** The single viewer-access predicate shared by access() and the batch path. */
+function accessAllows(
+  account: DocumentSnapshot,
+  box: DocumentSnapshot,
+  member: DocumentSnapshot,
+  write: boolean,
+): boolean {
+  return (
+    active(account) &&
+    box.exists &&
+    ['active', 'archived'].includes(box.get('status') as string) &&
+    active(member) &&
+    !(write && box.get('status') !== 'active')
+  );
+}
+
+function validDocId(id: string): boolean {
+  return (
+    id !== '' &&
+    !id.includes('/') &&
+    !/^__.*__$/.test(id) &&
+    id !== '.' &&
+    id !== '..'
+  );
+}
+
 function readablePost(snapshot: DocumentSnapshot): boolean {
   return (
     snapshot.exists &&
@@ -135,14 +177,30 @@ export class NativeBoxPosts {
       tx.get(boxRef),
       tx.get(boxRef.collection('members').doc(uid)),
     ]);
-    if (
-      !active(account) ||
-      !box.exists ||
-      !['active', 'archived'].includes(box.get('status') as string) ||
-      !active(member) ||
-      (write && box.get('status') !== 'active')
-    )
+    if (!accessAllows(account, box, member, write))
       throw new NativePostError('UNAVAILABLE');
+  }
+
+  /** Distinct Boxes the viewer may read, each Box and member read once. */
+  private async readableBoxes(
+    read: Reader,
+    boxIds: string[],
+    uid: string,
+  ): Promise<Set<string>> {
+    const readable = new Set<string>();
+    const account = await read(this.db.collection('nativeAccounts').doc(uid));
+    if (!active(account)) return readable;
+    await Promise.all(
+      [...new Set(boxIds)].map(async (boxId) => {
+        const boxRef = this.db.collection('nativeBoxes').doc(boxId);
+        const [box, member] = await Promise.all([
+          read(boxRef),
+          read(boxRef.collection('members').doc(uid)),
+        ]);
+        if (accessAllows(account, box, member, false)) readable.add(boxId);
+      }),
+    );
+    return readable;
   }
 
   private async visible(
@@ -151,12 +209,22 @@ export class NativeBoxPosts {
     uid: string,
     post: DocumentSnapshot,
   ) {
+    return this.visibleWith((ref) => tx.get(ref), boxId, uid, post);
+  }
+
+  /** Post-level predicate; the reader decides whether reads are memoized. */
+  private async visibleWith(
+    read: Reader,
+    boxId: string,
+    uid: string,
+    post: DocumentSnapshot,
+  ) {
     if (!readablePost(post) || post.get('boxId') !== boxId) return false;
     if (post.get('kind') === 'life_update') {
       const lifeUpdateId = post.get('lifeUpdateId') as string;
       const [update, delivery] = await Promise.all([
-        tx.get(this.db.collection('nativeLifeUpdates').doc(lifeUpdateId)),
-        tx.get(
+        read(this.db.collection('nativeLifeUpdates').doc(lifeUpdateId)),
+        read(
           this.db
             .collection('nativeLifeUpdateDeliveries')
             .doc(`${lifeUpdateId}_${boxId}`),
@@ -172,8 +240,8 @@ export class NativeBoxPosts {
     }
     const authorUid = post.get('authorUid') as string;
     const [author, pair] = await Promise.all([
-      tx.get(this.db.collection('nativeAccounts').doc(authorUid)),
-      tx.get(
+      read(this.db.collection('nativeAccounts').doc(authorUid)),
+      read(
         this.db
           .collection('nativeBlockPairs')
           .doc(nativeBlockPairId(uid, authorUid)),
@@ -273,6 +341,61 @@ export class NativeBoxPosts {
     });
   }
 
+  /**
+   * Batched get(): the same access and visibility predicates per item, but each
+   * distinct Box, member, account and block pair is read once. An unavailable,
+   * absent or malformed item is null; one bad item never fails the batch.
+   */
+  public async getMany(
+    refs: { boxId: string; postId: string }[],
+    viewerUid: string,
+  ): Promise<(NativePost | null)[]> {
+    if (refs.length === 0) return [];
+    return this.db.runTransaction(
+      async (tx) => {
+        const read = memoReader(tx);
+        const valid = refs.map(
+          (ref) => validDocId(ref.boxId) && validDocId(ref.postId),
+        );
+        const readable = await this.readableBoxes(
+          read,
+          refs.filter((_, i) => valid[i]).map((ref) => ref.boxId),
+          viewerUid,
+        );
+        const wanted = new Map<string, DocumentReference>();
+        refs.forEach((ref, i) => {
+          if (valid[i] && readable.has(ref.boxId)) {
+            const docRef = this.postRef(ref.boxId, ref.postId);
+            wanted.set(docRef.path, docRef);
+          }
+        });
+        const snapshots = wanted.size
+          ? await tx.getAll(...wanted.values())
+          : [];
+        const byPath = new Map(
+          snapshots.map((snapshot) => [snapshot.ref.path, snapshot]),
+        );
+        return Promise.all(
+          refs.map(async (ref, i) => {
+            const snapshot = valid[i]
+              ? byPath.get(this.postRef(ref.boxId, ref.postId).path)
+              : undefined;
+            if (!snapshot || !readable.has(ref.boxId)) return null;
+            return (await this.visibleWith(
+              read,
+              ref.boxId,
+              viewerUid,
+              snapshot,
+            ))
+              ? toPost(snapshot)
+              : null;
+          }),
+        );
+      },
+      { readOnly: true },
+    );
+  }
+
   /** A permalink pointer is never authority: get() rechecks the canonical Box. */
   public async resolve(
     postId: string,
@@ -315,9 +438,6 @@ export class NativeBoxPosts {
     limit = 20,
     time?: { beforeAt?: number | undefined; afterAt?: number | undefined },
   ): Promise<{ items: NativePost[]; nextCursor: string | null }> {
-    await this.db.runTransaction((tx) =>
-      this.access(tx, boxId, viewerUid, false),
-    );
     const pageSize = Math.max(1, Math.min(50, Math.trunc(limit)));
     let query: Query = this.db
       .collection('nativeBoxes')
@@ -327,32 +447,38 @@ export class NativeBoxPosts {
       query = query.where('createdAt', '<', time.beforeAt);
     if (time?.afterAt !== undefined)
       query = query.where('createdAt', '>=', time.afterAt);
-    let ordered = query
+    const ordered = query
       .orderBy('createdAt', 'desc')
       .orderBy(FieldPath.documentId(), 'desc')
       .limit(pageSize);
-    if (cursor) {
-      const cursorDoc = await this.postRef(boxId, cursor).get();
-      if (!cursorDoc.exists) throw new NativePostError('UNAVAILABLE');
-      ordered = ordered.startAfter(cursorDoc);
-    }
-    const page = await ordered.get();
-    const candidates = await Promise.all(
-      page.docs.map((candidate) =>
-        this.db.runTransaction(async (tx) => {
-          await this.access(tx, boxId, viewerUid, false);
-          const post = await tx.get(candidate.ref);
-          return (await this.visible(tx, boxId, viewerUid, post))
-            ? toPost(post)
-            : null;
-        }),
-      ),
+    // One snapshot: viewer/Box access, the page, and every visibility check.
+    return this.db.runTransaction(
+      async (tx) => {
+        const read = memoReader(tx);
+        const readable = await this.readableBoxes(read, [boxId], viewerUid);
+        if (!readable.has(boxId)) throw new NativePostError('UNAVAILABLE');
+        let pageQuery = ordered;
+        if (cursor) {
+          const cursorDoc = await tx.get(this.postRef(boxId, cursor));
+          if (!cursorDoc.exists) throw new NativePostError('UNAVAILABLE');
+          pageQuery = ordered.startAfter(cursorDoc);
+        }
+        const page = await tx.get(pageQuery);
+        const candidates = await Promise.all(
+          page.docs.map(async (candidate) =>
+            (await this.visibleWith(read, boxId, viewerUid, candidate))
+              ? toPost(candidate)
+              : null,
+          ),
+        );
+        return {
+          items: candidates.filter((item): item is NativePost => item !== null),
+          nextCursor:
+            page.size === pageSize ? page.docs[page.docs.length - 1]!.id : null,
+        };
+      },
+      { readOnly: true },
     );
-    return {
-      items: candidates.filter((item): item is NativePost => item !== null),
-      nextCursor:
-        page.size === pageSize ? page.docs[page.docs.length - 1]!.id : null,
-    };
   }
 
   public async edit(

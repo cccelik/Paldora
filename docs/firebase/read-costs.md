@@ -61,11 +61,11 @@ pricing before turning these into a cost estimate.
 
 | Path                 | Reads per page |         Items | Reads per item |
 | -------------------- | -------------: | ------------: | -------------: |
-| Home feed            |            161 |            20 |            8.1 |
-| Home feed, 6 authors |            161 |            20 |            8.1 |
-| Box feed             |            583 |            20 |           29.2 |
+| Home feed            |             62 |            20 |            3.1 |
+| Home feed, 6 authors |             68 |            20 |            3.4 |
+| Box feed             |            465 |            20 |           23.3 |
 | Unread count         |            271 |      100 rows |            2.7 |
-| Memories month       |            164 |            20 |            8.2 |
+| Memories month       |             75 |            20 |            3.8 |
 | Room view            |             39 | 8 Top Friends |            4.9 |
 | Post detail          |            613 |      20 roots |           30.7 |
 
@@ -75,14 +75,14 @@ pricing before turning these into a cost estimate.
 the value is the source-derived prediction. After the run, replace `PREDICTED`
 in the test with the measured values and recompute.
 
-| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                 |
-| -------------- | -----------------: | -----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home feed      |                161 |    202 | account 1 + 40 hint docs (`READ_SIZE` is 40 whatever the limit) + 20 × `posts.get` (6: account, Box, member, post, author, block pair)                      |
-| Box feed       |                583 |    729 | `list`: 3 + 20 + 20 × 6 = 143. Each `interactionSummary`: 6 + Box 1 + 3 comments + 4 reactions + 4 actors × 2 = 22, so 440.                                 |
-| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271 |
-| Memories month |                164 |    205 | S2 (2026-10-26): source windows sized to the page (20) instead of 50 (was 224). A page can be short or empty with a cursor. Measured: 164                   |
-| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.              |
-| Post detail    |                613 |    767 | `resolve` 7 + `get` 6 + 20 roots + 20 × 9 + per root: reply preview (9 + empty query 1) + count (9 + aggregation 1) = 20 × 20                               |
+| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                                    |
+| -------------- | -----------------: | -----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home feed      |                 62 |     78 | S3 (2026-10-26): `getMany` reads each distinct Box, member, author and block pair once and the post docs in one `getAll`; hint query sized to the page (was 161). Measured: 62 |
+| Box feed       |                465 |    582 | S3: `list` is one read-only snapshot, 25 reads (was 143); the remaining cost is `interactionSummary` per post (~22 each), targeted by S6. Measured: 465                        |
+| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271                    |
+| Memories month |                 75 |     94 | S2 sized the windows to the page, S3 batched the Home source authorization (was 224 then 164). Measured: 75                                                                    |
+| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.                                 |
+| Post detail    |                613 |    767 | `resolve` 7 + `get` 6 + 20 roots + 20 × 9 + per root: reply preview (9 + empty query 1) + count (9 + aggregation 1) = 20 × 20                                                  |
 
 **Distinct-author guard.** Doubling the authors from 3 to 6 on the same 45 posts
 may add at most `3 × 2 = 6` reads (an account and a block pair per new author).

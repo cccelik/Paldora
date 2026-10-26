@@ -298,6 +298,12 @@ export class NativeHomeFeed {
     let scanned = 0;
     let exhausted = false;
     while (items.length < limit && scanned < MAX_READ_CANDIDATES) {
+      // Size the hint read to what is still needed, plus ~25% for filtered hints.
+      const requested = Math.min(
+        READ_SIZE,
+        MAX_READ_CANDIDATES - scanned,
+        Math.max(1, Math.ceil((limit - items.length) * 1.25)),
+      );
       let query: Query = this.db
         .collection('nativeFeedRefs')
         .doc(uid)
@@ -310,21 +316,32 @@ export class NativeHomeFeed {
       let ordered = query
         .orderBy('createdAt', 'desc')
         .orderBy(FieldPath.documentId(), 'desc')
-        .limit(Math.min(READ_SIZE, MAX_READ_CANDIDATES - scanned));
+        .limit(requested);
       if (position) ordered = ordered.startAfter(position.at, position.id);
       const page = await ordered.get();
       if (page.empty) {
         exhausted = true;
         break;
       }
+      const postRefs = page.docs.flatMap((hint) => {
+        const data = hint.data() as FeedRef;
+        return data.kind === 'post' && data.boxId
+          ? [{ boxId: data.boxId, postId: data.contentId }]
+          : [];
+      });
+      const authorized = await this.posts.getMany(postRefs, uid);
+      const postByKey = new Map(
+        postRefs.map((ref, i) => [`${ref.boxId}/${ref.postId}`, authorized[i]]),
+      );
       for (const hint of page.docs) {
         scanned += 1;
         position = { at: hint.get('createdAt') as number, id: hint.id };
         const data = hint.data() as FeedRef;
         try {
           if (data.kind === 'post' && data.boxId) {
-            const post = await this.posts.get(data.boxId, data.contentId, uid);
+            const post = postByKey.get(`${data.boxId}/${data.contentId}`);
             if (
+              post &&
               post.id === data.contentId &&
               post.createdAt === data.createdAt &&
               (!authorUid || post.authorUid === authorUid)
@@ -358,10 +375,7 @@ export class NativeHomeFeed {
         if (items.length === limit) break;
       }
       if (items.length === limit) break;
-      if (
-        page.size <
-        Math.min(READ_SIZE, MAX_READ_CANDIDATES - (scanned - page.size))
-      ) {
+      if (page.size < requested) {
         exhausted = true;
         break;
       }
