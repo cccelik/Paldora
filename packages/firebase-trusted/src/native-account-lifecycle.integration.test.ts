@@ -491,4 +491,55 @@ describe('private archive and generation-tagged account erasure', () => {
       code: 'auth/user-not-found',
     });
   });
+
+  it('reaps orphan export bytes across more than one Storage page', async () => {
+    const uid = await person();
+    const bucket = storage.bucket(bucketName);
+    const files = Array.from({ length: 120 }, () =>
+      bucket.file(`private/exports/${uid}/${randomUUID()}.json`),
+    );
+    await Promise.all(
+      files.map((file) => file.save('{}', { contentType: 'application/json' })),
+    );
+    await lifecycle.reapOrphanExports();
+    const remaining = await Promise.all(files.map((file) => file.exists()));
+    expect(remaining.filter(([exists]) => exists)).toHaveLength(0);
+  });
+
+  it('erases every comment pointer of a post with more comments than one page', async () => {
+    const uid = await person();
+    const request = await lifecycle.requestDeletion(
+      uid,
+      'correct-password',
+      verify,
+      1_000,
+    );
+    const boxId = randomUUID(),
+      postId = randomUUID();
+    await db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .set({ status: 'active', ownerUid: randomUUID() });
+    await db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .collection('posts')
+      .doc(postId)
+      .set({ boxId, authorUid: uid, text: 'popular', status: 'active' });
+    const batch = db.batch();
+    const pointerIds = Array.from({ length: 120 }, () => randomUUID());
+    for (const id of pointerIds)
+      batch.set(db.collection('nativeCommentPointers').doc(id), {
+        boxId,
+        postId,
+        authorUid: randomUUID(),
+      });
+    await batch.commit();
+    await drain(uid, Date.parse(request.dueAt));
+    const left = await db
+      .collection('nativeCommentPointers')
+      .where('postId', '==', postId)
+      .get();
+    expect(left.size).toBe(0);
+  });
 });

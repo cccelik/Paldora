@@ -13,6 +13,13 @@ import {
 import { NativeMedia } from './native-media.js';
 import type { Storage } from 'firebase-admin/storage';
 
+type StorageFile = ReturnType<ReturnType<Storage['bucket']>['file']>;
+interface GetFilesOptions {
+  prefix: string;
+  maxResults: number;
+  autoPaginate: false;
+  pageToken?: string;
+}
 const DAY = 24 * 60 * 60 * 1000;
 const PAGE = 50;
 type Phase =
@@ -310,18 +317,30 @@ export class NativeAccountLifecycle {
   }
   /** Repair orphan bytes left by a worker crash after Storage write. */
   public async reapOrphanExports() {
-    const [files] = await this.bucket.getFiles({ prefix: 'private/exports/' });
-    for (const file of files) {
-      const match = /^private\/exports\/[^/]+\/([0-9a-f-]{36})\.json$/.exec(
-        file.name,
-      );
-      if (!match) continue;
-      const row = await this.db
-        .collection('nativeExports')
-        .doc(match[1]!)
-        .get();
-      if (!row.exists || row.get('status') === 'expired')
-        await file.delete({ ignoreNotFound: true });
+    // Page through Storage so memory stays bounded however many objects exist.
+    let query: GetFilesOptions | null = {
+      prefix: 'private/exports/',
+      maxResults: PAGE,
+      autoPaginate: false,
+    };
+    while (query) {
+      const [files, next] = (await this.bucket.getFiles(query)) as unknown as [
+        StorageFile[],
+        GetFilesOptions | null | undefined,
+      ];
+      for (const file of files) {
+        const match = /^private\/exports\/[^/]+\/([0-9a-f-]{36})\.json$/.exec(
+          file.name,
+        );
+        if (!match) continue;
+        const row = await this.db
+          .collection('nativeExports')
+          .doc(match[1]!)
+          .get();
+        if (!row.exists || row.get('status') === 'expired')
+          await file.delete({ ignoreNotFound: true });
+      }
+      query = next ?? null;
     }
   }
 
@@ -468,11 +487,16 @@ export class NativeAccountLifecycle {
     return rows.size;
   }
   private async removePost(row: DocumentSnapshot) {
-    const pointers = await this.db
-      .collection('nativeCommentPointers')
-      .where('postId', '==', row.id)
-      .get();
-    for (const pointer of pointers.docs) await pointer.ref.delete();
+    // A popular post can have many comments, so drain pointers a page at a time.
+    for (;;) {
+      const pointers = await this.db
+        .collection('nativeCommentPointers')
+        .where('postId', '==', row.id)
+        .limit(PAGE)
+        .get();
+      for (const pointer of pointers.docs) await pointer.ref.delete();
+      if (pointers.size < PAGE) break;
+    }
     await this.db.recursiveDelete(row.ref);
     await this.db.collection('nativePostPointers').doc(row.id).delete();
   }
