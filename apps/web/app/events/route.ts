@@ -18,23 +18,28 @@ export async function GET(request: Request): Promise<Response> {
     logEvent('WARNING', { event, route: 'events', requestId }, error);
     return null;
   };
+  const denied = () =>
+    new Response(null, {
+      status: 401,
+      headers: { 'Cache-Control': 'private, no-store' },
+    });
   const cookie = request.headers
     .get('cookie')
     ?.split(';')
     .map((part) => part.trim())
     .find((part) => part.startsWith(`${FIREBASE_SESSION_COOKIE}=`))
     ?.slice(FIREBASE_SESSION_COOKIE.length + 1);
-  if (!cookie) return new Response(null, { status: 401 });
+  if (!cookie) return denied();
   const services = firebaseAdminServices();
   const uid = await services.sessions
     .verify(cookie)
     .catch(failed('events.session_verify_failed'));
-  if (!uid) return new Response(null, { status: 401 });
+  if (!uid) return denied();
   const notifications = new NativeNotifications(services.db);
   const initial = await notifications
     .hintVersion(uid)
     .catch(failed('events.hint_failed'));
-  if (initial === null) return new Response(null, { status: 401 });
+  if (initial === null) return denied();
   const encoder = new TextEncoder();
   let closed = false;
   const stream = new ReadableStream<Uint8Array>({
