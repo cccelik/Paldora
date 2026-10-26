@@ -569,9 +569,9 @@ export class NativeMedia {
           )
             return;
           tx.update(fresh.ref, {
-            objectPaths: (fresh.get('objectPaths') as string[]).filter(
-              (path) => path !== asset.rawPath,
-            ),
+            objectPaths: (
+              (fresh.get('objectPaths') as string[] | undefined) ?? []
+            ).filter((path) => path !== asset.rawPath),
             updatedAt: now,
           });
           tx.update(jobRef, { status: 'complete', updatedAt: now });
@@ -802,7 +802,7 @@ export class NativeMedia {
       ).get();
       if (
         job.get('status') !== 'complete' ||
-        (deleted.get('objectPaths') as string[]).length
+        ((deleted.get('objectPaths') as string[] | undefined) ?? []).length
       )
         throw new NativeMediaError('STORAGE_UNAVAILABLE');
       const [orphans] = await this.bucket.getFiles({
