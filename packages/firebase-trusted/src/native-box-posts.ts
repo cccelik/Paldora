@@ -14,8 +14,12 @@ import { nativeBlockPairId } from './native-box-invitations.js';
 import {
   applyIndexWrite,
   emptyInteractionIndex,
+  NativeInteractionIndex,
+  parseInteractionIndex,
   planIndexWrite,
+  type InteractionIndex,
 } from './native-interaction-index.js';
+import { logEvent } from './log.js';
 
 /** Retries for transactions that write the shared post document. */
 const HOT_POST_ATTEMPTS = 30;
@@ -172,8 +176,46 @@ function toComment(snapshot: DocumentSnapshot): NativeComment {
   };
 }
 
+export interface NativeInteractionSummary {
+  commentCount: number;
+  reactions: { kind: string; count: number }[];
+  reactionCount: number;
+  realCount: number;
+  realPreview: {
+    user: {
+      id: string;
+      username: string;
+      displayName: string;
+      avatarUrl: null;
+    };
+    thumbnailUrl: string;
+  }[];
+  viewerReaction: { kind: string; mediaAssetId?: string } | null;
+  canInteract: boolean;
+}
+
+export interface NativeBoxPostsOptions {
+  /** Read summaries from `posts.interactionIndex`; scan when it is absent. */
+  trustInteractionIndex?: boolean;
+}
+
+/** Real previews shown per post. */
+const REAL_PREVIEW_MAX = 4;
+/** Distinct kinds shown per post. */
+const REACTION_KINDS_MAX = 8;
+const ALREADY_EXISTS = 6;
+
+type ActorVisibility = (uid: string) => Promise<boolean>;
+
 export class NativeBoxPosts {
-  public constructor(private readonly db: Firestore) {}
+  private readonly trustIndex: boolean;
+
+  public constructor(
+    private readonly db: Firestore,
+    options: NativeBoxPostsOptions = {},
+  ) {
+    this.trustIndex = options.trustInteractionIndex === true;
+  }
 
   private postRef(boxId: string, postId: string) {
     return this.db
@@ -376,46 +418,60 @@ export class NativeBoxPosts {
     if (refs.length === 0) return [];
     return this.db.runTransaction(
       async (tx) => {
-        const read = memoReader(tx);
-        const valid = refs.map(
-          (ref) => validDocId(ref.boxId) && validDocId(ref.postId),
-        );
-        const readable = await this.readableBoxes(
-          read,
-          refs.filter((_, i) => valid[i]).map((ref) => ref.boxId),
+        const snapshots = await this.visiblePostSnapshots(
+          tx,
+          memoReader(tx),
+          refs,
           viewerUid,
         );
-        const wanted = new Map<string, DocumentReference>();
-        refs.forEach((ref, i) => {
-          if (valid[i] && readable.has(ref.boxId)) {
-            const docRef = this.postRef(ref.boxId, ref.postId);
-            wanted.set(docRef.path, docRef);
-          }
-        });
-        const snapshots = wanted.size
-          ? await tx.getAll(...wanted.values())
-          : [];
-        const byPath = new Map(
-          snapshots.map((snapshot) => [snapshot.ref.path, snapshot]),
-        );
-        return Promise.all(
-          refs.map(async (ref, i) => {
-            const snapshot = valid[i]
-              ? byPath.get(this.postRef(ref.boxId, ref.postId).path)
-              : undefined;
-            if (!snapshot || !readable.has(ref.boxId)) return null;
-            return (await this.visibleWith(
-              read,
-              ref.boxId,
-              viewerUid,
-              snapshot,
-            ))
-              ? toPost(snapshot)
-              : null;
-          }),
+        return snapshots.map((snapshot) =>
+          snapshot ? toPost(snapshot) : null,
         );
       },
       { readOnly: true },
+    );
+  }
+
+  /**
+   * The batch viewer predicate behind getMany() and interactionSummaries():
+   * each distinct Box, member, account and block pair is read once, and an
+   * unavailable, absent or malformed item is null.
+   */
+  private async visiblePostSnapshots(
+    tx: Transaction,
+    read: Reader,
+    refs: { boxId: string; postId: string }[],
+    viewerUid: string,
+  ): Promise<(DocumentSnapshot | null)[]> {
+    const valid = refs.map(
+      (ref) => validDocId(ref.boxId) && validDocId(ref.postId),
+    );
+    const readable = await this.readableBoxes(
+      read,
+      refs.filter((_, i) => valid[i]).map((ref) => ref.boxId),
+      viewerUid,
+    );
+    const wanted = new Map<string, DocumentReference>();
+    refs.forEach((ref, i) => {
+      if (valid[i] && readable.has(ref.boxId)) {
+        const docRef = this.postRef(ref.boxId, ref.postId);
+        wanted.set(docRef.path, docRef);
+      }
+    });
+    const snapshots = wanted.size ? await tx.getAll(...wanted.values()) : [];
+    const byPath = new Map(
+      snapshots.map((snapshot) => [snapshot.ref.path, snapshot]),
+    );
+    return Promise.all(
+      refs.map(async (ref, i) => {
+        const snapshot = valid[i]
+          ? byPath.get(this.postRef(ref.boxId, ref.postId).path)
+          : undefined;
+        if (!snapshot || !readable.has(ref.boxId)) return null;
+        return (await this.visibleWith(read, ref.boxId, viewerUid, snapshot))
+          ? snapshot
+          : null;
+      }),
     );
   }
 
@@ -1374,26 +1430,19 @@ export class NativeBoxPosts {
     });
   }
 
-  /** Viewer-relative counts, including replies; no blocked or inactive actor leaks. */
-  // eslint-disable-next-line complexity -- Viewer-relative counts check each actor and camera asset.
-  public async interactionSummary(
-    boxId: string,
-    postId: string,
-    viewerUid: string,
-  ) {
-    await this.get(boxId, postId, viewerUid);
-    const postRef = this.postRef(boxId, postId);
-    const box = await this.db.collection('nativeBoxes').doc(boxId).get();
-    const actorVisibility = new Map<string, Promise<boolean>>();
-    const visibleActor = async (uid: string): Promise<boolean> => {
-      let result = actorVisibility.get(uid);
+  /** One memoised check per actor: active account and no block either way. */
+  private actorVisibility(read: Reader, viewerUid: string): ActorVisibility {
+    const cache = new Map<string, Promise<boolean>>();
+    return (uid) => {
+      let result = cache.get(uid);
       if (!result) {
         result = Promise.all([
-          this.db.collection('nativeAccounts').doc(uid).get(),
-          this.db
-            .collection('nativeBlockPairs')
-            .doc(nativeBlockPairId(viewerUid, uid))
-            .get(),
+          read(this.db.collection('nativeAccounts').doc(uid)),
+          read(
+            this.db
+              .collection('nativeBlockPairs')
+              .doc(nativeBlockPairId(viewerUid, uid)),
+          ),
         ]).then(
           ([account, pair]) =>
             active(account) &&
@@ -1402,10 +1451,279 @@ export class NativeBoxPosts {
               (pair.get('blockedBy') as string[] | undefined)?.length
             ),
         );
-        actorVisibility.set(uid, result);
+        cache.set(uid, result);
       }
       return result;
     };
+  }
+
+  /** Viewer-relative counts, including replies; no blocked or inactive actor leaks. */
+  public async interactionSummary(
+    boxId: string,
+    postId: string,
+    viewerUid: string,
+  ): Promise<NativeInteractionSummary> {
+    const [summary] = await this.interactionSummaries(
+      [{ boxId, postId }],
+      viewerUid,
+    );
+    if (!summary) throw new NativePostError('UNAVAILABLE');
+    return summary;
+  }
+
+  /**
+   * Batched summaries in one read-only transaction. A post with a trusted
+   * index is summarised without scanning; any other post (and every post when
+   * the option is off) is scanned. Unavailable posts are null.
+   */
+  public async interactionSummaries(
+    refs: { boxId: string; postId: string }[],
+    viewerUid: string,
+  ): Promise<(NativeInteractionSummary | null)[]> {
+    if (refs.length === 0) return [];
+    const outcome = await this.db.runTransaction(
+      async (tx) => {
+        const read = memoReader(tx);
+        const visibleActor = this.actorVisibility(read, viewerUid);
+        const snapshots = await this.visiblePostSnapshots(
+          tx,
+          read,
+          refs,
+          viewerUid,
+        );
+        const results: (NativeInteractionSummary | null)[] = snapshots.map(
+          () => null,
+        );
+        const indexed: {
+          at: number;
+          index: InteractionIndex;
+          ref: { boxId: string; postId: string };
+        }[] = [];
+        const untrusted: { boxId: string; postId: string }[] = [];
+        const scans: Promise<void>[] = [];
+        snapshots.forEach((snapshot, at) => {
+          if (!snapshot) return;
+          const ref = refs[at]!;
+          const parsed = this.trustIndex
+            ? parseInteractionIndex(snapshot.get('interactionIndex'))
+            : ({ state: 'absent' } as const);
+          if (parsed.state === 'trusted') {
+            indexed.push({ at, index: parsed.index, ref });
+            return;
+          }
+          // An overflowed index is final: a repair cannot make it trusted.
+          if (this.trustIndex && parsed.state !== 'overflow')
+            untrusted.push(ref);
+          scans.push(
+            this.scanSummary(tx, read, visibleActor, ref, viewerUid).then(
+              (summary) => {
+                results[at] = summary;
+              },
+            ),
+          );
+        });
+        await Promise.all([
+          ...scans,
+          this.indexedSummaries(
+            tx,
+            read,
+            visibleActor,
+            indexed,
+            viewerUid,
+          ).then((summaries) => {
+            indexed.forEach(({ at }, i) => {
+              results[at] = summaries[i]!;
+            });
+          }),
+        ]);
+        return { results, untrusted };
+      },
+      { readOnly: true },
+    );
+    await this.enqueueIndexRepairs(outcome.untrusted);
+    return outcome.results;
+  }
+
+  /** Best effort: a missing index is repaired by the durable job, never inline. */
+  private async enqueueIndexRepairs(
+    posts: { boxId: string; postId: string }[],
+  ): Promise<void> {
+    const unique = new Map(posts.map((post) => [post.postId, post]));
+    await Promise.all(
+      [...unique.values()].map(async ({ boxId, postId }) => {
+        const now = Date.now();
+        try {
+          await this.db
+            .collection('nativeJobs')
+            .doc(NativeInteractionIndex.jobId(postId))
+            .create({
+              type: 'interactionIndexRepair',
+              boxId,
+              postId,
+              status: 'pending',
+              attempts: 0,
+              createdAt: now,
+              updatedAt: now,
+            });
+        } catch (error) {
+          if ((error as { code?: unknown }).code === ALREADY_EXISTS) return;
+          logEvent(
+            'WARNING',
+            { event: 'interaction_index.enqueue_failed' },
+            error,
+          );
+        }
+      }),
+    );
+  }
+
+  /** Summaries for posts with a trusted index; no comment or reaction reads. */
+  private async indexedSummaries(
+    tx: Transaction,
+    read: Reader,
+    visibleActor: ActorVisibility,
+    posts: {
+      index: InteractionIndex;
+      ref: { boxId: string; postId: string };
+    }[],
+    viewerUid: string,
+  ): Promise<NativeInteractionSummary[]> {
+    if (posts.length === 0) return [];
+    const actors = new Set<string>();
+    for (const { index } of posts) {
+      for (const uid of Object.keys(index.comments)) actors.add(uid);
+      for (const uid of Object.keys(index.reactions)) actors.add(uid);
+    }
+    const visible = new Map<string, boolean>(
+      await Promise.all(
+        [...actors].map(
+          async (uid) => [uid, await visibleActor(uid)] as [string, boolean],
+        ),
+      ),
+    );
+    // Asset readiness is never cached in the index: check it at read time.
+    const mediaIds = new Set<string>();
+    for (const { index } of posts)
+      for (const [uid, entry] of Object.entries(index.reactions))
+        if (
+          visible.get(uid) &&
+          entry.kind === REAL_REACTION_KIND &&
+          entry.mediaAssetId
+        )
+          mediaIds.add(entry.mediaAssetId);
+    const assets = new Map<string, DocumentSnapshot>();
+    if (mediaIds.size > 0) {
+      const snaps = await tx.getAll(
+        ...[...mediaIds].map((id) =>
+          this.db.collection('nativeMediaAssets').doc(id),
+        ),
+      );
+      for (const snap of snaps) assets.set(snap.id, snap);
+    }
+    const computed = await Promise.all(
+      posts.map(async ({ index, ref }) => {
+        const box = await read(
+          this.db.collection('nativeBoxes').doc(ref.boxId),
+        );
+        return this.summarizeIndex(index, ref.postId, {
+          visible,
+          assets,
+          viewerUid,
+          canInteract: box.get('status') === 'active',
+        });
+      }),
+    );
+    const users = await this.previewUsers(
+      computed.flatMap((entry) => entry.previewRows),
+    );
+    return computed.map((entry) => ({
+      ...entry.summary,
+      realPreview: entry.previewRows.map(({ uid, mediaId }) => ({
+        user: users.get(uid)!,
+        thumbnailUrl: `/media/${mediaId}/thumbnail`,
+      })),
+    }));
+  }
+
+  /** Pure per-post computation, field-for-field the scan's result. */
+  private summarizeIndex(
+    index: InteractionIndex,
+    postId: string,
+    context: {
+      visible: Map<string, boolean>;
+      assets: Map<string, DocumentSnapshot>;
+      viewerUid: string;
+      canInteract: boolean;
+    },
+  ) {
+    const { visible, assets, viewerUid } = context;
+    let commentCount = 0;
+    for (const [uid, count] of Object.entries(index.comments))
+      if (visible.get(uid)) commentCount += count;
+    const counts = new Map<string, number>();
+    const validReal: { uid: string; mediaId: string }[] = [];
+    let reactionCount = 0;
+    let viewerReaction: NativeInteractionSummary['viewerReaction'] = null;
+    for (const [uid, entry] of Object.entries(index.reactions)) {
+      if (!visible.get(uid)) continue;
+      if (entry.kind === REAL_REACTION_KIND) {
+        const mediaId = entry.mediaAssetId;
+        const asset = mediaId ? assets.get(mediaId) : undefined;
+        if (
+          !mediaId ||
+          !asset ||
+          asset.get('status') !== 'ready' ||
+          asset.get('attachedReactionPostId') !== postId ||
+          asset.get('ownerUid') !== uid
+        )
+          continue;
+        validReal.push({ uid, mediaId });
+      } else counts.set(entry.kind, (counts.get(entry.kind) ?? 0) + 1);
+      reactionCount += 1;
+      if (uid === viewerUid)
+        viewerReaction = {
+          kind: entry.kind,
+          ...(entry.mediaAssetId ? { mediaAssetId: entry.mediaAssetId } : {}),
+        };
+    }
+    // The scan walks reactions in document-id (uid) order.
+    validReal.sort((a, b) => (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
+    return {
+      previewRows: validReal.slice(0, REAL_PREVIEW_MAX),
+      summary: {
+        commentCount,
+        reactions: [...counts.entries()]
+          .sort(([a, ac], [b, bc]) => bc - ac || a.localeCompare(b))
+          .slice(0, REACTION_KINDS_MAX)
+          .map(([kind, count]) => ({ kind, count })),
+        reactionCount,
+        realCount: validReal.length,
+        realPreview: [] as NativeInteractionSummary['realPreview'],
+        viewerReaction,
+        canInteract: context.canInteract,
+      },
+    };
+  }
+
+  /** One batched profile read for the distinct preview users. */
+  private async previewUsers(rows: { uid: string; mediaId: string }[]) {
+    const distinct = [...new Map(rows.map((row) => [row.uid, row])).values()];
+    const users = await this.realPreviewUsers(distinct);
+    return new Map(users.map((entry) => [entry.user.id, entry.user]));
+  }
+
+  /** The canonical scan: every comment and reaction, inside the transaction. */
+  // eslint-disable-next-line complexity -- Viewer-relative counts check each actor and camera asset.
+  private async scanSummary(
+    tx: Transaction,
+    read: Reader,
+    visibleActor: ActorVisibility,
+    ref: { boxId: string; postId: string },
+    viewerUid: string,
+  ): Promise<NativeInteractionSummary> {
+    const { boxId, postId } = ref;
+    const postRef = this.postRef(boxId, postId);
+    const box = await read(this.db.collection('nativeBoxes').doc(boxId));
     const scan = async (root: FirebaseFirestore.CollectionReference) => {
       const rows: FirebaseFirestore.QueryDocumentSnapshot[] = [];
       let cursor: string | null = null;
@@ -1413,7 +1731,7 @@ export class NativeBoxPosts {
         let query = root.orderBy(FieldPath.documentId()).limit(50);
         if (cursor) query = query.startAfter(cursor);
         // eslint-disable-next-line no-await-in-loop -- Ordered batches avoid an unbounded collection read.
-        const page = await query.get();
+        const page = await tx.get(query);
         rows.push(...page.docs);
         if (page.size < 50) break;
         cursor = page.docs.at(-1)!.id;
@@ -1464,7 +1782,7 @@ export class NativeBoxPosts {
     ];
     const assets = new Map<string, FirebaseFirestore.DocumentSnapshot>();
     if (mediaIds.length > 0) {
-      const snaps = await this.db.getAll(
+      const snaps = await tx.getAll(
         ...mediaIds.map((id) =>
           this.db.collection('nativeMediaAssets').doc(id),
         ),

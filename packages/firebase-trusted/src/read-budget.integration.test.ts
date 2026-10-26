@@ -3,6 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import {
+  FieldValue,
   Firestore,
   Query,
   Transaction,
@@ -41,7 +42,13 @@ const HEADROOM = 1.25;
 const budget = (predicted: number) => Math.ceil(predicted * HEADROOM);
 const PREDICTED = {
   homeFeed: 62,
-  boxFeed: 465,
+  // list (25) + one interactionSummaries call: account, Box and member (3) +
+  // 20 post documents + 4 distinct actors x (account + block pair) = 8 -> 31.
+  boxFeed: 56,
+  // Index deleted: the same call scans 3 comments + 4 reactions per post
+  // (7 x 20 = 140) on top of the 31 shared reads, plus the list (25). To be
+  // measured; re-baseline from the first real run.
+  boxFeedFallback: 196,
   unreadCount: 271,
   memoriesMonth: 75,
   roomView: 39,
@@ -50,6 +57,7 @@ const PREDICTED = {
 const BUDGETS = {
   homeFeed: budget(PREDICTED.homeFeed),
   boxFeed: budget(PREDICTED.boxFeed),
+  boxFeedFallback: budget(PREDICTED.boxFeedFallback),
   unreadCount: budget(PREDICTED.unreadCount),
   memoriesMonth: budget(PREDICTED.memoriesMonth),
   roomView: budget(PREDICTED.roomView),
@@ -67,6 +75,7 @@ const db = getFirestore(app);
 const accounts = new NativeAccounts(db, auth);
 const boxes = new NativeBoxes(db);
 const posts = new NativeBoxPosts(db);
+const indexedPosts = new NativeBoxPosts(db, { trustInteractionIndex: true });
 const updates = new NativeLifeUpdates(db);
 const home = new NativeHomeFeed(db);
 const memories = new NativeMemories(db);
@@ -448,14 +457,15 @@ describe('Firestore document reads per page', { timeout: 180_000 }, () => {
     expect(six.reads).toBeLessThan(three.reads * 2);
   });
 
-  it('Box feed page (limit 20) with reaction and comment counts', async () => {
+  it('Box feed page (limit 20) with reaction and comment counts, index-backed', async () => {
     const { viewer, boxId } = await boxFeedFixture();
-    const page = await measure(() => posts.list(boxId, viewer, undefined, 20));
+    const page = await measure(() =>
+      indexedPosts.list(boxId, viewer, undefined, 20),
+    );
     const summaries = await measure(() =>
-      Promise.all(
-        page.value.items.map((post) =>
-          posts.interactionSummary(boxId, post.id, viewer),
-        ),
+      indexedPosts.interactionSummaries(
+        page.value.items.map((post) => ({ boxId, postId: post.id })),
+        viewer,
       ),
     );
     expect(summaries.value[0]).toMatchObject({
@@ -464,9 +474,44 @@ describe('Firestore document reads per page', { timeout: 180_000 }, () => {
     });
     const reads = page.reads + summaries.reads;
     record('box feed page: list', page.reads, page.value.items.length);
+    record(
+      'box feed page: summaries',
+      summaries.reads,
+      page.value.items.length,
+    );
     record('box feed page: total', reads, page.value.items.length);
     expect(page.value.items).toHaveLength(20);
     expect(reads).toBeLessThanOrEqual(BUDGETS.boxFeed);
+  });
+
+  it('Box feed page falls back to the scan when the index is missing (cost stays visible)', async () => {
+    const { viewer, boxId } = await boxFeedFixture();
+    const page = await measure(() =>
+      indexedPosts.list(boxId, viewer, undefined, 20),
+    );
+    await Promise.all(
+      page.value.items.map((post) =>
+        db
+          .collection('nativeBoxes')
+          .doc(boxId)
+          .collection('posts')
+          .doc(post.id)
+          .update({ interactionIndex: FieldValue.delete() }),
+      ),
+    );
+    const summaries = await measure(() =>
+      indexedPosts.interactionSummaries(
+        page.value.items.map((post) => ({ boxId, postId: post.id })),
+        viewer,
+      ),
+    );
+    expect(summaries.value[0]).toMatchObject({
+      commentCount: 3,
+      reactionCount: 4,
+    });
+    const reads = page.reads + summaries.reads;
+    record('box feed page (index missing): total', reads, 20);
+    expect(reads).toBeLessThanOrEqual(BUDGETS.boxFeedFallback);
   });
 
   it('unread notification count with 100 visible rows', async () => {

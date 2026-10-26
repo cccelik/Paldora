@@ -7,7 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { NativeAccountLifecycle } from './native-account-lifecycle.js';
 import { NativeAccounts } from './native-accounts.js';
 import { NativeBlockPairs } from './native-block-pairs.js';
-import { NativeBoxPosts } from './native-box-posts.js';
+import { NativeBoxPosts, NativePostError } from './native-box-posts.js';
 import { NativeBoxes } from './native-boxes.js';
 import { NativeMedia } from './native-media.js';
 
@@ -30,6 +30,7 @@ const bucketName = 'demo-paldora.firebasestorage.app';
 const accounts = new NativeAccounts(db, auth);
 const boxes = new NativeBoxes(db);
 const posts = new NativeBoxPosts(db);
+const indexedPosts = new NativeBoxPosts(db, { trustInteractionIndex: true });
 const blocks = new NativeBlockPairs(db);
 const media = new NativeMedia(db, storage, bucketName);
 const lifecycle = new NativeAccountLifecycle(db, auth, storage, bucketName);
@@ -266,6 +267,21 @@ const ops: Op[] = [
     run: (c) => posts.interactionSummary(c.boxId, c.postId, c.uid),
   },
   {
+    // The batch API returns null for an unavailable post; a null maps to the
+    // same rejection so denials are compared exactly like the single reads.
+    name: 'interactionSummaries (index trusted, null is the denial)',
+    scope: 'post',
+    run: async (c) => {
+      const [summary] = await indexedPosts.interactionSummaries(
+        [{ boxId: c.boxId, postId: c.postId }],
+        c.uid,
+      );
+      if (summary === null || summary === undefined)
+        throw new NativePostError('UNAVAILABLE');
+      return summary;
+    },
+  },
+  {
     name: 'listReactions (post)',
     scope: 'post',
     run: (c) => posts.listReactions(c.boxId, c.postId, c.uid),
@@ -431,6 +447,45 @@ describe('post, comment and reaction denials are not an existence oracle', () =>
       });
     });
   }
+});
+
+describe('interactionSummaries never exposes the raw index or a mixed-batch oracle', () => {
+  it('forged, foreign and random ids are all null; a visible post is not', async () => {
+    const w = await memberWorld();
+    const outsider = await person();
+    const foreign = await world();
+    const [visible, random, foreignPost, forgedBox, outsiderView] =
+      await Promise.all([
+        ...[
+          { boxId: w.boxId, postId: w.postId },
+          { boxId: w.boxId, postId: randomUUID() },
+          { boxId: w.boxId, postId: foreign.postId },
+          { boxId: randomUUID(), postId: w.postId },
+        ].map(async (ref) => {
+          const [one] = await indexedPosts.interactionSummaries([ref], w.uid);
+          return one;
+        }),
+        indexedPosts.interactionSummaries(
+          [{ boxId: w.boxId, postId: w.postId }],
+          outsider,
+        ),
+      ]);
+    expect(visible).not.toBeNull();
+    expect(random).toBeNull();
+    expect(foreignPost).toBeNull();
+    expect(forgedBox).toBeNull();
+    expect(outsiderView).toEqual([null]);
+    expect(JSON.stringify(visible)).not.toContain('interactionIndex');
+    expect(Object.keys(visible!).sort()).toEqual([
+      'canInteract',
+      'commentCount',
+      'reactionCount',
+      'reactions',
+      'realCount',
+      'realPreview',
+      'viewerReaction',
+    ]);
+  });
 });
 
 /* ------------------------------------------------------------------ */

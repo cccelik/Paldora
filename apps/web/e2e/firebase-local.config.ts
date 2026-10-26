@@ -41,6 +41,7 @@ export default defineConfig({
     FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
     FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199',
     FIREBASE_FUNCTIONS_EMULATOR_HOST: '127.0.0.1:5001',
+    PALDORA_TRUST_INTERACTION_INDEX: '1',
   }),
   outputDir: `${repoRoot}test-results/firebase-local`,
 });

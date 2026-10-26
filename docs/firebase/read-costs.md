@@ -44,7 +44,7 @@ pnpm --filter @paldora/firebase-trusted test:integration read-budget
 | -------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Home feed            | 45 posts from 3 authors in 2 Boxes, all published to the viewer's feed    | `NativeHomeFeed.page(viewer, undefined, 20)`                                   |
 | Home feed, 6 authors | Same, 6 authors                                                           | Same. Compared with the 3-author run.                                          |
-| Box feed             | 20 posts, each with 4 reactions and 3 comments from 4 members             | `NativeBoxPosts.list(…, 20)` plus `interactionSummary` for each post           |
+| Box feed             | 20 posts, each with 4 reactions and 3 comments from 4 members             | `NativeBoxPosts.list(…, 20)` plus ONE `interactionSummaries` call (index on)   |
 | Unread notifications | 100 unread rows: 50 comment and 50 reaction, across 10 posts and 5 actors | `NativeNotifications.unreadCount`                                              |
 | Memories month       | 35 feed posts (30 in June 2025) plus 2 Only Me updates                    | `NativeMemories.page(viewer, personal, { year, month: 6, limit: 20 })`         |
 | Room view            | Friend viewer, 8 Top Friends, 7 stored widgets (6 enabled)                | `NativeRooms.get(viewer, username)`                                            |
@@ -59,15 +59,16 @@ did not change the home feed count (161 reads for 3 and for 6 authors), so the
 author lookup is not an N+1. Billing is per document read; check current Firebase
 pricing before turning these into a cost estimate.
 
-| Path                 | Reads per page |         Items | Reads per item |
-| -------------------- | -------------: | ------------: | -------------: |
-| Home feed            |             62 |            20 |            3.1 |
-| Home feed, 6 authors |             68 |            20 |            3.4 |
-| Box feed             |            465 |            20 |           23.3 |
-| Unread count         |            271 |      100 rows |            2.7 |
-| Memories month       |             75 |            20 |            3.8 |
-| Room view            |             39 | 8 Top Friends |            4.9 |
-| Post detail          |             40 |      20 roots |            2.0 |
+| Path                    | Reads per page |         Items | Reads per item |
+| ----------------------- | -------------: | ------------: | -------------: |
+| Home feed               |             62 |            20 |            3.1 |
+| Home feed, 6 authors    |             68 |            20 |            3.4 |
+| Box feed                |             56 |            20 |            2.8 |
+| Box feed, index missing |            196 |            20 |            9.8 |
+| Unread count            |            271 |      100 rows |            2.7 |
+| Memories month          |             75 |            20 |            3.8 |
+| Room view               |             39 | 8 Top Friends |            4.9 |
+| Post detail             |             40 |      20 roots |            2.0 |
 
 ## Budgets
 
@@ -75,14 +76,14 @@ pricing before turning these into a cost estimate.
 the value is the source-derived prediction. After the run, replace `PREDICTED`
 in the test with the measured values and recompute.
 
-| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                                                                                                                                             |
-| -------------- | -----------------: | -----: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home feed      |                 62 |     78 | S3 (2026-10-26): `getMany` reads each distinct Box, member, author and block pair once and the post docs in one `getAll`; hint query sized to the page (was 161). Measured: 62                                                                                                          |
-| Box feed       |                465 |    582 | S3: `list` is one read-only snapshot, 25 reads (was 143); the remaining cost is `interactionSummary` per post (~22 each), targeted by S6. Measured: 465                                                                                                                                 |
-| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271                                                                                                                             |
-| Memories month |                 75 |     94 | S2 sized the windows to the page, S3 batched the Home source authorization (was 224 then 164). Measured: 75                                                                                                                                                                             |
-| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.                                                                                                                                          |
-| Post detail    |                 40 |     50 | S4 (2026-10-26): `commentThreadsPage` loads roots, one batched reply query and viewer checks in a single read-only snapshot (the legacy per-root path measures 606). `replyCount` still counts blocked or suspended authors' replies, as `countCommentReplies` always did. Measured: 40 |
+| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                                                                                                                                                          |
+| -------------- | -----------------: | -----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home feed      |                 62 |     78 | S3 (2026-10-26): `getMany` reads each distinct Box, member, author and block pair once and the post docs in one `getAll`; hint query sized to the page (was 161). Measured: 62                                                                                                                       |
+| Box feed       |                 56 |     70 | S3: `list` is one read-only snapshot, 25 reads (was 143). S6 (2026-10-27): summaries come from `posts.interactionIndex` in one batched transaction (31 reads: 3 access + 20 posts + 4 actors x 2). Measured: 56 (was 465 with a per-post scan). With the index missing the batched scan measures 196 |
+| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271                                                                                                                                          |
+| Memories month |                 75 |     94 | S2 sized the windows to the page, S3 batched the Home source authorization (was 224 then 164). Measured: 75                                                                                                                                                                                          |
+| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.                                                                                                                                                       |
+| Post detail    |                 40 |     50 | S4 (2026-10-26): `commentThreadsPage` loads roots, one batched reply query and viewer checks in a single read-only snapshot (the legacy per-root path measures 606). `replyCount` still counts blocked or suspended authors' replies, as `countCommentReplies` always did. Measured: 40              |
 
 **Distinct-author guard.** Doubling the authors from 3 to 6 on the same 45 posts
 may add at most `3 × 2 = 6` reads (an account and a block pair per new author).
@@ -94,18 +95,27 @@ test also requires `reads(6) < 2 × reads(3)`.
 These are the reasons the numbers are high. They are recorded here and are not
 fixed by this test.
 
-Status after the 2026-10-26 reductions (S1 to S4):
+Status after the 2026-10-26/27 reductions (S1 to S4 and S6):
 
 - **Fixed:** the Home feed no longer over-reads hints or re-authorizes each item in
   its own transaction (S3, 161 to 62). The unread count reads each comment once
   (S1, 671 to 271). Memories windows follow the page size (S2, 224 to 75 with S3).
   Post detail loads a thread in one snapshot (S4, 606 to 40).
-- **Still open: `interactionSummary` scans every comment and reaction on the
-  post.** It costs O(comments + reactions + distinct actors) per post per feed
-  render (about 22 reads per post in the fixture), so busy posts get more
-  expensive over time. This is 440 of the Box feed's 465 reads. The planned fix
-  is a per-actor interaction index (S6), which needs a write-path change, a
-  backfill, a repair job and an ADR.
+- **Read path (S6, task C): `interactionSummaries` is index-backed.** One
+  read-only transaction authorizes the posts, checks each distinct actor once
+  (account plus block pair, both directions) and reads the camera assets of
+  visible real reactions in one `getAll`; no comment or reaction is scanned.
+  Cost per page is about 3 + posts + 2 x distinct actors + real assets. The
+  index is trusted only when `PALDORA_TRUST_INTERACTION_INDEX=1` (default off:
+  backfill first, then enable). A post with no trusted index (absent, unknown
+  version, corrupt) uses the scan, now memoised per transaction (about 7 reads
+  per post in the fixture instead of 22), and enqueues a best-effort
+  `interactionIndexRepair` job. Overflowed posts always scan and are not
+  re-enqueued. A well-formed but wrong v1 index is trusted by the read path;
+  `check()` and repair are the safety net. Measured on the emulator on
+  2026-10-27: Box feed 465 to 56 reads, 196 when the index is missing. A repair
+  job that already completed keeps its fixed id, so an index lost later is not
+  re-enqueued until that job document is removed (open).
 - **Open product question:** `replyCount` counts replies by blocked or suspended
   authors even though the preview shows them only as hidden placeholders.
 

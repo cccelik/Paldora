@@ -199,12 +199,26 @@ interface DisplaySummary {
   avatarUrl: string | null;
 }
 
+/** Page-level precomputed summaries keyed by post id. */
+type SummaryLookup = Map<string, PostInteractionSummary>;
+
+function precomputed(
+  lookup: SummaryLookup,
+  postId: string,
+): PostInteractionSummary {
+  const summary = lookup.get(postId);
+  if (!summary) throw new NativePostError('UNAVAILABLE');
+  return summary;
+}
+
 export class FirebaseWebData {
   private readonly services = firebaseAdminServices();
   private readonly friendsService = new NativeFriendships(this.services.db);
   private readonly blocksService = new NativeBlockPairs(this.services.db);
   private readonly boxesService = new NativeBoxes(this.services.db);
-  private readonly postsService = new NativeBoxPosts(this.services.db);
+  private readonly postsService = new NativeBoxPosts(this.services.db, {
+    trustInteractionIndex: process.env.PALDORA_TRUST_INTERACTION_INDEX === '1',
+  });
   private readonly homeFeedService = new NativeHomeFeed(this.services.db);
   private readonly lifeUpdatesService = new NativeLifeUpdates(this.services.db);
   private readonly membersService = new NativeBoxMembers(this.services.db);
@@ -680,11 +694,14 @@ export class FirebaseWebData {
     boxId: string,
     postId: string,
   ): Promise<PostInteractionSummary> {
-    const result = await this.postsService.interactionSummary(
-      boxId,
-      postId,
-      this.uid,
+    return this.toSummaryView(
+      await this.postsService.interactionSummary(boxId, postId, this.uid),
     );
+  }
+
+  private toSummaryView(
+    result: Awaited<ReturnType<NativeBoxPosts['interactionSummary']>>,
+  ): PostInteractionSummary {
     return {
       ...result,
       realPreview: result.realPreview.map((preview) => ({
@@ -694,7 +711,27 @@ export class FirebaseWebData {
     };
   }
 
-  private async memoryItem(item: NativeMemoryItem): Promise<MemoryItemView> {
+  /** One batched read per page; keyed by post id. Unavailable posts are absent. */
+  private async summariesFor(
+    refs: { boxId: string; postId: string }[],
+  ): Promise<SummaryLookup> {
+    const unique = [...new Map(refs.map((ref) => [ref.postId, ref])).values()];
+    const results = await this.postsService.interactionSummaries(
+      unique,
+      this.uid,
+    );
+    const lookup: SummaryLookup = new Map();
+    unique.forEach((ref, i) => {
+      const result = results[i];
+      if (result) lookup.set(ref.postId, this.toSummaryView(result));
+    });
+    return lookup;
+  }
+
+  private async memoryItem(
+    item: NativeMemoryItem,
+    summaries: SummaryLookup,
+  ): Promise<MemoryItemView> {
     if (item.kind === 'post') {
       const box = await this.box(item.post.boxId);
       const author = await this.personView(item.post.authorUid);
@@ -710,7 +747,7 @@ export class FirebaseWebData {
             ? iso(item.post.updatedAt)
             : null,
         canEdit: item.post.authorUid === this.uid && box.status === 'active',
-        interactions: await this.summary(item.post.boxId, item.post.id),
+        interactions: precomputed(summaries, item.post.id),
         kind: 'post',
         lifeUpdateId: null,
       };
@@ -742,7 +779,7 @@ export class FirebaseWebData {
         update.contexts.map(async (context) => ({
           postId: context.postId,
           box: { id: context.boxId, name: context.boxName },
-          interactions: await this.summary(context.boxId, context.postId),
+          interactions: precomputed(summaries, context.postId),
         })),
       ),
     };
@@ -791,10 +828,20 @@ export class FirebaseWebData {
     try {
       await this.homeFeedService.processPending();
       const page = await this.memoriesService.page(this.uid, scope, filter);
+      const summaries = await this.summariesFor(
+        page.items.flatMap((item) =>
+          item.kind === 'post'
+            ? [{ boxId: item.post.boxId, postId: item.post.id }]
+            : item.update.contexts.map((context) => ({
+                boxId: context.boxId,
+                postId: context.postId,
+              })),
+        ),
+      );
       const projected = await Promise.all(
         page.items.map(async (item) => {
           try {
-            return await this.memoryItem(item);
+            return await this.memoryItem(item, summaries);
           } catch (error) {
             // A Box may close between the canonical scan and DTO projection.
             if (
@@ -1011,9 +1058,15 @@ export class FirebaseWebData {
     return (await this.userSummary(uid)).avatarUrl;
   }
 
+  /** `summaries` is the page's precomputed lookup; omitted for a single post. */
   private async feedItem(
     post: Awaited<ReturnType<NativeBoxPosts['get']>>,
+    summaries?: SummaryLookup,
   ): Promise<FirebaseFeedItem | null> {
+    const interactions = () =>
+      summaries
+        ? Promise.resolve(precomputed(summaries, post.id))
+        : this.summary(post.boxId, post.id);
     if (post.kind === 'life_update') {
       if (!post.lifeUpdateId) return null;
       try {
@@ -1033,7 +1086,7 @@ export class FirebaseWebData {
           authorAvatarUrl: await this.authorAvatarUrl(update.authorUid),
           mediaAssetIds: update.mediaAssetIds,
           createdAt: iso(update.createdAt),
-          interactions: await this.summary(post.boxId, post.id),
+          interactions: await interactions(),
           sections: LIFE_UPDATE_SECTION_KEYS.flatMap((key) =>
             update.sections[key]
               ? [{ key, content: update.sections[key] }]
@@ -1060,7 +1113,7 @@ export class FirebaseWebData {
       createdAt: iso(post.createdAt),
       edited: post.updatedAt > post.createdAt,
       canEdit: post.authorUid === this.uid,
-      interactions: await this.summary(post.boxId, post.id),
+      interactions: await interactions(),
     };
   }
 
@@ -1212,8 +1265,11 @@ export class FirebaseWebData {
         page.cursor,
         page.limit,
       );
+      const summaries = await this.summariesFor(
+        result.items.map((post) => ({ boxId: post.boxId, postId: post.id })),
+      );
       const projected = await Promise.all(
-        result.items.map((post) => this.feedItem(post)),
+        result.items.map((post) => this.feedItem(post, summaries)),
       );
       return {
         items: projected.filter(
@@ -1279,8 +1335,11 @@ export class FirebaseWebData {
         page.cursor,
         page.limit ?? 20,
       );
+      const summaries = await this.summariesFor(
+        result.items.map((post) => ({ boxId: post.boxId, postId: post.id })),
+      );
       const projected = await Promise.all(
-        result.items.map((post) => this.feedItem(post)),
+        result.items.map((post) => this.feedItem(post, summaries)),
       );
       return {
         items: projected.filter(
