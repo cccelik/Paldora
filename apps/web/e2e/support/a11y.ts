@@ -7,11 +7,12 @@ export async function expectAccessible(page: Page) {
   expect(
     results.violations.map((v) => `${v.id}: ${v.help}`),
     // Where each violation is, so a failure names the element.
-    JSON.stringify(
+    JSON.stringify([
+      page.url(),
       results.violations.map((v) =>
-        v.nodes.map((n) => [n.target, n.failureSummary]),
+        v.nodes.map((n) => [n.target, n.html.slice(0, 240), n.failureSummary]),
       ),
-    ),
+    ]),
   ).toEqual([]);
 }
 
