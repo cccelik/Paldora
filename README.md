@@ -23,4 +23,6 @@ app starts at `http://127.0.0.1:3000` against the `demo-paldora` emulators.
 
 See [local development](docs/development.md),
 [Firebase collection ownership](docs/firebase/collections.md), and
-[Firebase migration status](docs/firebase/implementation.md).
+[Firebase migration status](docs/firebase/implementation.md),
+[deployment](docs/deployment.md), and the
+[staging checklist](docs/operations/staging-checklist.md).
