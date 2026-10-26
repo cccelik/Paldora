@@ -955,6 +955,32 @@ export class NativeBoxPosts {
     });
   }
 
+  /** Bounded preview profiles in one batched read. */
+  private async realPreviewUsers(rows: { uid: string; mediaId: string }[]) {
+    if (rows.length === 0) return [];
+    const snaps = await this.db.getAll(
+      ...rows.flatMap(({ uid }) => [
+        this.db.collection('nativeAccounts').doc(uid),
+        this.db.collection('nativeProfiles').doc(uid),
+      ]),
+    );
+    return rows.map(({ uid, mediaId }, i) => {
+      const username =
+        (snaps[i * 2]!.get('username') as string | undefined) ?? uid;
+      return {
+        user: {
+          id: uid,
+          username,
+          displayName:
+            (snaps[i * 2 + 1]!.get('displayName') as string | undefined) ??
+            username,
+          avatarUrl: null as null,
+        },
+        thumbnailUrl: `/media/${mediaId}/thumbnail`,
+      };
+    });
+  }
+
   /** Viewer-relative counts, including replies; no blocked or inactive actor leaks. */
   // eslint-disable-next-line complexity -- Viewer-relative counts check each actor and camera asset.
   public async interactionSummary(
@@ -1031,16 +1057,36 @@ export class NativeBoxPosts {
       };
       thumbnailUrl: string;
     }[] = [];
+    // Batch the canonical asset reads; each reaction keeps its own checks.
+    const mediaIds = [
+      ...new Set(
+        reactions.flatMap((row, index) =>
+          visibleReactions[index] && row.get('kind') === REAL_REACTION_KIND
+            ? [row.get('mediaAssetId')].filter(
+                (id): id is string => typeof id === 'string' && id !== '',
+              )
+            : [],
+        ),
+      ),
+    ];
+    const assets = new Map<string, FirebaseFirestore.DocumentSnapshot>();
+    if (mediaIds.length > 0) {
+      const snaps = await this.db.getAll(
+        ...mediaIds.map((id) =>
+          this.db.collection('nativeMediaAssets').doc(id),
+        ),
+      );
+      for (const snap of snaps) assets.set(snap.id, snap);
+    }
+    const previewRows: { uid: string; mediaId: string }[] = [];
     for (const [index, row] of reactions.entries()) {
       if (!visibleReactions[index]) continue;
       const kind = row.get('kind') as string;
       if (kind === REAL_REACTION_KIND) {
         const mediaId = row.get('mediaAssetId') as string | undefined;
-        const asset = mediaId
-          ? // eslint-disable-next-line no-await-in-loop -- Each reaction is checked against its canonical asset.
-            await this.db.collection('nativeMediaAssets').doc(mediaId).get()
-          : null;
+        const asset = mediaId ? assets.get(mediaId) : undefined;
         if (
+          !mediaId ||
           !asset ||
           asset.get('status') !== 'ready' ||
           asset.get('attachedReactionPostId') !== postId ||
@@ -1049,29 +1095,12 @@ export class NativeBoxPosts {
           visibleReactions[index] = false;
           continue;
         }
-        if (realPreviews.length < 4) {
-          // eslint-disable-next-line no-await-in-loop -- Only the bounded preview needs profile details.
-          const [account, profile] = await Promise.all([
-            this.db.collection('nativeAccounts').doc(row.id).get(),
-            this.db.collection('nativeProfiles').doc(row.id).get(),
-          ]);
-          const username =
-            (account.get('username') as string | undefined) ?? row.id;
-          realPreviews.push({
-            user: {
-              id: row.id,
-              username,
-              displayName:
-                (profile.get('displayName') as string | undefined) ?? username,
-              avatarUrl: null,
-            },
-            thumbnailUrl: `/media/${mediaId}/thumbnail`,
-          });
-        }
+        if (previewRows.length < 4) previewRows.push({ uid: row.id, mediaId });
         continue;
       }
       counts.set(kind, (counts.get(kind) ?? 0) + 1);
     }
+    realPreviews.push(...(await this.realPreviewUsers(previewRows)));
     const viewer = reactions.find((row) => row.id === viewerUid);
     return {
       commentCount: visibleComments.filter(Boolean).length,

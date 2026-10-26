@@ -3,6 +3,7 @@ import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { afterAll, describe, expect, it } from 'vitest';
+import { REAL_REACTION_KIND } from '@paldora/domain';
 import { NativeAccounts } from './native-accounts.js';
 import { NativeBlockPairs } from './native-block-pairs.js';
 import { NativeBoxPosts } from './native-box-posts.js';
@@ -303,5 +304,49 @@ describe('trusted Box post pages', () => {
     await expect(posts.list(box.id, owner)).rejects.toMatchObject({
       code: 'UNAVAILABLE',
     });
+  });
+
+  it('excludes real-reaction previews whose asset is foreign or still processing', async () => {
+    const owner = await admittedUser();
+    const good = await admittedUser();
+    const foreign = await admittedUser();
+    const pending = await admittedUser();
+    const box = await boxes.create(owner, 'Camera');
+    for (const uid of [good, foreign, pending])
+      await db
+        .collection('nativeBoxes')
+        .doc(box.id)
+        .collection('members')
+        .doc(uid)
+        .set({ uid, role: 'member', status: 'active', joinedAt: 1 });
+    const postId = await posts.create(box.id, owner, 'Smile');
+    const reactions = db
+      .collection('nativeBoxes')
+      .doc(box.id)
+      .collection('posts')
+      .doc(postId)
+      .collection('reactions');
+    const cases = [
+      { uid: good, ownerUid: good, status: 'ready' },
+      { uid: foreign, ownerUid: owner, status: 'ready' },
+      { uid: pending, ownerUid: pending, status: 'processing' },
+    ];
+    for (const { uid, ownerUid, status } of cases) {
+      const mediaId = randomUUID();
+      await db.collection('nativeMediaAssets').doc(mediaId).set({
+        ownerUid,
+        status,
+        attachedReactionPostId: postId,
+      });
+      await reactions.doc(uid).set({
+        kind: REAL_REACTION_KIND,
+        mediaAssetId: mediaId,
+        createdAt: 1,
+      });
+    }
+    const summary = await posts.interactionSummary(box.id, postId, owner);
+    expect(summary.realCount).toBe(1);
+    expect(summary.reactionCount).toBe(1);
+    expect(summary.realPreview.map((p) => p.user.id)).toEqual([good]);
   });
 });

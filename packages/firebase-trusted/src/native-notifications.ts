@@ -25,6 +25,12 @@ export interface NativeNotification {
   createdAt: number;
 }
 
+/** Per-call, display-independent read sharing. Every row is still fully checked. */
+interface VisibilityCache {
+  actors: Map<string, Promise<boolean>>;
+  posts: Map<string, Promise<Awaited<ReturnType<NativeBoxPosts['get']>>>>;
+}
+
 /** Private pointers only. Canonical access is rechecked on every read. */
 export class NativeNotifications {
   private readonly posts: NativeBoxPosts;
@@ -97,18 +103,29 @@ export class NativeNotifications {
     return page.size;
   }
 
-  // eslint-disable-next-line complexity -- Every pointer requires canonical post, actor, comment and reaction checks.
-  private async visible(
+  private cachedPost(
     uid: string,
-    id: string,
-    data: FirebaseFirestore.DocumentData,
-  ): Promise<NativeNotification | null> {
-    const boxId = data.boxId as string;
-    const postId = data.postId as string;
-    const actorUid = data.actorUid as string;
-    const commentId = (data.commentId as string | null) ?? null;
-    try {
-      const post = await this.posts.get(boxId, postId, uid);
+    boxId: string,
+    postId: string,
+    cache?: VisibilityCache,
+  ) {
+    if (!cache) return this.posts.get(boxId, postId, uid);
+    const key = `${boxId}/${postId}`;
+    let pending = cache.posts.get(key);
+    if (!pending) {
+      pending = this.posts.get(boxId, postId, uid);
+      cache.posts.set(key, pending);
+    }
+    return pending;
+  }
+
+  /** True when the actor is active and no block exists in either direction. */
+  private actorUsable(
+    uid: string,
+    actorUid: string,
+    cache?: VisibilityCache,
+  ): Promise<boolean> {
+    const load = async () => {
       const [account, pair] = await Promise.all([
         this.db.collection('nativeAccounts').doc(actorUid).get(),
         this.db
@@ -116,11 +133,33 @@ export class NativeNotifications {
           .doc(nativeBlockPairId(uid, actorUid))
           .get(),
       ]);
-      if (
-        account.get('status') !== 'active' ||
-        ((pair.get('blockedBy') as string[] | undefined)?.length ?? 0) > 0
-      )
-        return null;
+      return (
+        account.get('status') === 'active' &&
+        ((pair.get('blockedBy') as string[] | undefined)?.length ?? 0) === 0
+      );
+    };
+    if (!cache) return load();
+    let pending = cache.actors.get(actorUid);
+    if (!pending) {
+      pending = load();
+      cache.actors.set(actorUid, pending);
+    }
+    return pending;
+  }
+
+  private async visible(
+    uid: string,
+    id: string,
+    data: FirebaseFirestore.DocumentData,
+    cache?: VisibilityCache,
+  ): Promise<NativeNotification | null> {
+    const boxId = data.boxId as string;
+    const postId = data.postId as string;
+    const actorUid = data.actorUid as string;
+    const commentId = (data.commentId as string | null) ?? null;
+    try {
+      const post = await this.cachedPost(uid, boxId, postId, cache);
+      if (!(await this.actorUsable(uid, actorUid, cache))) return null;
       if (commentId) {
         const { comment } = await this.posts.commentDetail(
           boxId,
@@ -220,10 +259,15 @@ export class NativeNotifications {
       .limit(300)
       .get();
     let count = 0;
-    for (const row of page.docs) {
-      // eslint-disable-next-line no-await-in-loop -- bounded, visibility checked per pointer.
-      if (await this.visible(uid, row.id, row.data())) count += 1;
-      if (count >= 100) break;
+    const cache: VisibilityCache = { actors: new Map(), posts: new Map() };
+    for (let i = 0; i < page.docs.length && count < 100; i += 25) {
+      // eslint-disable-next-line no-await-in-loop -- bounded chunks; stop once the cap is reached.
+      const chunk = await Promise.all(
+        page.docs
+          .slice(i, i + 25)
+          .map((row) => this.visible(uid, row.id, row.data(), cache)),
+      );
+      count += chunk.filter((item) => item !== null).length;
     }
     return { count: Math.min(count, 100), capped: count >= 100 };
   }

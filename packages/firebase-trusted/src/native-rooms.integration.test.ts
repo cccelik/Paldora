@@ -117,6 +117,40 @@ describe('trusted Room policy and versioned writes', () => {
     });
   });
 
+  it('finds a shared Box beyond the first page of hints, and ignores one the owner left', async () => {
+    const owner = await person(`owner${randomUUID().slice(0, 8)}`);
+    const viewer = await person(`viewer${randomUUID().slice(0, 8)}`);
+    const ownerName = (
+      await db.collection('nativeAccounts').doc(owner).get()
+    ).get('username') as string;
+    await rooms.update(owner, {
+      visibility: 'members',
+      expectedUpdatedAt: null,
+    });
+    const refs = db
+      .collection('nativeAccounts')
+      .doc(viewer)
+      .collection('boxRefs');
+    // 50 stale hints sort before the real shared Box, so it is the 51st hint.
+    await Promise.all(
+      Array.from({ length: 50 }, (_, i) =>
+        refs.doc(`-decoy-${String(i).padStart(2, '0')}`).set({ boxId: 'x' }),
+      ),
+    );
+    const box = await boxes.create(owner, 'Late');
+    const boxRef = db.collection('nativeBoxes').doc(box.id);
+    await boxRef
+      .collection('members')
+      .doc(viewer)
+      .set({ uid: viewer, status: 'active', role: 'member' });
+    await refs.doc(box.id).set({ boxId: box.id });
+    expect((await rooms.get(viewer, ownerName)).relationship).toBe('member');
+    await boxRef.collection('members').doc(owner).update({ status: 'removed' });
+    await expect(rooms.get(viewer, ownerName)).rejects.toMatchObject({
+      code: 'UNAVAILABLE',
+    });
+  });
+
   it('uses one stale version across settings, widgets, Top Friends and safe personalization', async () => {
     const owner = await person(`owner${randomUUID().slice(0, 8)}`);
     const friend = await person(`friend${randomUUID().slice(0, 8)}`);

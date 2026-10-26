@@ -193,6 +193,12 @@ function viewFriend(item: NativeFriendship): FriendshipView {
 }
 
 /** Firebase-only Phase 2/3 web data access, always scoped to a verified cookie. */
+interface DisplaySummary {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
 export class FirebaseWebData {
   private readonly services = firebaseAdminServices();
   private readonly friendsService = new NativeFriendships(this.services.db);
@@ -748,14 +754,10 @@ export class FirebaseWebData {
   }
 
   private async personView(uid: string): Promise<UserSummary> {
-    const account = await this.services.db
-      .collection('nativeAccounts')
-      .doc(uid)
-      .get();
-    const username = (account.get('username') as string | undefined) ?? uid;
+    const summary = await this.userSummary(uid);
     return {
-      ...person(uid, username, await this.authorName(uid)),
-      avatarUrl: await this.authorAvatarUrl(uid),
+      ...person(uid, summary.username, summary.displayName),
+      avatarUrl: summary.avatarUrl,
     };
   }
 
@@ -967,32 +969,46 @@ export class FirebaseWebData {
     return { ...result, items: result.items.map(viewBox) };
   }
 
-  private async authorName(uid: string): Promise<string> {
-    const profile = await this.services.db
-      .collection('nativeProfiles')
-      .doc(uid)
-      .get();
-    return (
-      (profile.get('displayName') as string | undefined) ??
-      (profile.get('username') as string | undefined) ??
-      'Member'
+  // Display-only identity, memoized per instance (one instance per request).
+  // The promise is stored so parallel callers share one read.
+  private readonly userSummaries = new Map<string, Promise<DisplaySummary>>();
+
+  private userSummary(uid: string): Promise<DisplaySummary> {
+    let pending = this.userSummaries.get(uid);
+    if (!pending) {
+      pending = this.loadUserSummary(uid);
+      this.userSummaries.set(uid, pending);
+    }
+    return pending;
+  }
+
+  private async loadUserSummary(uid: string): Promise<DisplaySummary> {
+    const { db } = this.services;
+    const [account, profile] = await db.getAll(
+      db.collection('nativeAccounts').doc(uid),
+      db.collection('nativeProfiles').doc(uid),
     );
+    const username = (account?.get('username') as string | undefined) ?? uid;
+    const displayName =
+      (profile?.get('displayName') as string | undefined) ??
+      (profile?.get('username') as string | undefined) ??
+      'Member';
+    const id = profile?.get('avatarMediaId') as string | null | undefined;
+    let avatarUrl: string | null = null;
+    if (id) {
+      const asset = await db.collection('nativeMediaAssets').doc(id).get();
+      if (asset.get('status') === 'ready' && asset.get('ownerUid') === uid)
+        avatarUrl = `${firebaseLocalWebUrl()}/media/${id}/thumbnail`;
+    }
+    return { username, displayName, avatarUrl };
+  }
+
+  private async authorName(uid: string): Promise<string> {
+    return (await this.userSummary(uid)).displayName;
   }
 
   private async authorAvatarUrl(uid: string): Promise<string | null> {
-    const profile = await this.services.db
-      .collection('nativeProfiles')
-      .doc(uid)
-      .get();
-    const id = profile.get('avatarMediaId') as string | null | undefined;
-    if (!id) return null;
-    const asset = await this.services.db
-      .collection('nativeMediaAssets')
-      .doc(id)
-      .get();
-    return asset.get('status') === 'ready' && asset.get('ownerUid') === uid
-      ? `${firebaseLocalWebUrl()}/media/${id}/thumbnail`
-      : null;
+    return (await this.userSummary(uid)).avatarUrl;
   }
 
   private async feedItem(

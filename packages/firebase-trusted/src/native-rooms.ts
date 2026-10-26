@@ -106,13 +106,18 @@ export class NativeRooms {
       let query = hints.orderBy(FieldPath.documentId()).limit(50);
       if (cursor) query = query.startAfter(cursor);
       const page = await query.get();
-      for (const hint of page.docs) {
+      // One batched read per page of hints; the predicate is unchanged.
+      const refs = page.docs.flatMap((hint) => {
         const boxRef = this.db.collection('nativeBoxes').doc(hint.id);
-        const [box, viewer, owner] = await Promise.all([
-          boxRef.get(),
-          boxRef.collection('members').doc(viewerUid).get(),
-          boxRef.collection('members').doc(ownerUid).get(),
-        ]);
+        return [
+          boxRef,
+          boxRef.collection('members').doc(viewerUid),
+          boxRef.collection('members').doc(ownerUid),
+        ];
+      });
+      const snaps = refs.length > 0 ? await this.db.getAll(...refs) : [];
+      for (let i = 0; i < snaps.length; i += 3) {
+        const [box, viewer, owner] = [snaps[i]!, snaps[i + 1]!, snaps[i + 2]!];
         if (
           box.exists &&
           ['active', 'archived'].includes(box.get('status') as string) &&
