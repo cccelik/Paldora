@@ -304,9 +304,14 @@ describe('private archive and generation-tagged account erasure', () => {
       .doc(uid)
       .set({ uid, role: 'member', status: 'active' });
     await db.collection('nativeBoxes').doc(boxId).update({ memberCount: 2 });
+    const keyRef = db
+      .collection('nativeIdempotency')
+      .doc(`lifeupdate_${uid}_${randomUUID()}`);
+    await keyRef.set({ uid, expiresAt: Date.now() + 60_000 });
     const due = Date.parse(request.dueAt);
     const phases = await drain(uid, due);
     expect(phases).toContain('references');
+    expect((await keyRef.get()).exists).toBe(false);
     expect((await post.get()).exists).toBe(false);
     expect((await comment.get()).exists).toBe(false);
     expect(

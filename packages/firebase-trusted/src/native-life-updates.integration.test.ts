@@ -198,4 +198,77 @@ describe('canonical Life Updates', () => {
       code: 'UNAVAILABLE',
     });
   });
+  it('publishes once per author and idempotency key', async () => {
+    const author = await admittedUser();
+    const other = await admittedUser();
+    const box = await boxes.create(author, 'Keyed');
+    const otherBox = await boxes.create(other, 'Keyed other');
+    const key = randomUUID();
+    const input = {
+      audience: { type: 'boxes' as const, boxIds: [box.id] },
+      sections: { lifeLately: 'Once' },
+      idempotencyKey: key,
+    };
+    const ids = await Promise.all([
+      updates.create(author, input, 1_000),
+      updates.create(author, input, 1_001),
+      updates.create(author, input, 1_002),
+    ]);
+    expect(new Set(ids).size).toBe(1);
+    const mine = await updates.listMine(author);
+    expect(mine.items.map((item) => item.id)).toEqual([ids[0]]);
+    const deliveries = await db
+      .collection('nativeLifeUpdateDeliveries')
+      .where('lifeUpdateId', '==', ids[0])
+      .get();
+    expect(deliveries.size).toBe(1);
+    expect(
+      (
+        await db
+          .collection('nativeBoxes')
+          .doc(box.id)
+          .collection('posts')
+          .where('lifeUpdateId', '==', ids[0])
+          .get()
+      ).size,
+    ).toBe(1);
+
+    // Different keys are independent updates.
+    const second = await updates.create(author, {
+      ...input,
+      idempotencyKey: randomUUID(),
+    });
+    expect(second).not.toBe(ids[0]);
+    expect((await updates.listMine(author)).items).toHaveLength(2);
+
+    // The same key from another author never returns the first author's update.
+    const theirs = await updates.create(other, {
+      audience: { type: 'boxes', boxIds: [otherBox.id] },
+      sections: { lifeLately: 'Mine' },
+      idempotencyKey: key,
+    });
+    expect(theirs).not.toBe(ids[0]);
+    expect((await updates.listMine(other)).items.map((i) => i.id)).toEqual([
+      theirs,
+    ]);
+
+    // An expired key no longer matches.
+    const later = await updates.create(
+      author,
+      input,
+      1_000 + 25 * 60 * 60 * 1000,
+    );
+    expect(later).not.toBe(ids[0]);
+  });
+
+  it('rejects a malformed idempotency key', async () => {
+    const author = await admittedUser();
+    await expect(
+      updates.create(author, {
+        audience: { type: 'only_me' },
+        sections: { lifeLately: 'x' },
+        idempotencyKey: 'not-a-uuid',
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+  });
 });

@@ -433,6 +433,12 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "nativeIdempotency",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "posts",
       "fieldPath": "authorUid",
       "indexes": [

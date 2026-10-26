@@ -704,6 +704,10 @@ export class NativeAccountLifecycle {
           false,
         ],
         [this.db.collection('nativeJobs').where('uid', '==', uid), false],
+        [
+          this.db.collection('nativeIdempotency').where('uid', '==', uid),
+          false,
+        ],
         [this.db.collection('nativeJobs').where('ownerUid', '==', uid), false],
       ];
       for (const [query, recursive] of queries)

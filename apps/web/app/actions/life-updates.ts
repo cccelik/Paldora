@@ -76,6 +76,7 @@ const createForm = z.preprocess((value) => {
         : { type: 'boxes', boxIds: jsonList(fields.boxIds) },
     sections: sectionsFrom(fields),
     mediaAssetIds: jsonList(fields.mediaAssetIds),
+    ...(fields.idempotencyKey ? { idempotencyKey: fields.idempotencyKey } : {}),
   };
 }, createLifeUpdateSchema);
 

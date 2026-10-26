@@ -38,6 +38,8 @@ export interface NativeLifeUpdate {
   contexts: NativeLifeUpdateContext[];
 }
 
+const IDEMPOTENCY_RETENTION_MS = 24 * 60 * 60 * 1000;
+
 function active(snapshot: DocumentSnapshot): boolean {
   return snapshot.exists && snapshot.get('status') === 'active';
 }
@@ -75,14 +77,26 @@ export class NativeLifeUpdates {
   ): Promise<string> {
     const parsed = createLifeUpdateSchema.safeParse(input);
     if (!parsed.success) throw new NativeLifeUpdateError('INVALID');
-    const { audience, sections, mediaAssetIds } = parsed.data;
+    const { audience, sections, mediaAssetIds, idempotencyKey } = parsed.data;
     const boxIds = audience.type === 'boxes' ? audience.boxIds : [];
-    const id = randomUUID();
+    let id: string = randomUUID();
+    const keyRef = idempotencyKey
+      ? this.db
+          .collection('nativeIdempotency')
+          .doc(`lifeupdate_${authorUid}_${idempotencyKey}`)
+      : null;
     await this.db.runTransaction(async (tx) => {
-      const account = await tx.get(
-        this.db.collection('nativeAccounts').doc(authorUid),
-      );
+      id = randomUUID();
+      const [account, prior] = await Promise.all([
+        tx.get(this.db.collection('nativeAccounts').doc(authorUid)),
+        keyRef ? tx.get(keyRef) : null,
+      ]);
       if (!active(account)) throw new NativeLifeUpdateError('UNAVAILABLE');
+      // A retry within the retention window returns the original result.
+      if (prior?.exists && (prior.get('expiresAt') as number) > now) {
+        id = prior.get('lifeUpdateId') as string;
+        return;
+      }
       const audienceRows = await Promise.all(
         boxIds.map(async (boxId) => {
           const boxRef = this.db.collection('nativeBoxes').doc(boxId);
@@ -110,6 +124,16 @@ export class NativeLifeUpdates {
         )
       )
         throw new NativeLifeUpdateError('INVALID');
+      // Firestore requires every read before the first write, so the marker is
+      // written only after the audience and media reads above.
+      if (keyRef)
+        tx.set(keyRef, {
+          uid: authorUid,
+          kind: 'life_update_create',
+          lifeUpdateId: id,
+          createdAt: now,
+          expiresAt: now + IDEMPOTENCY_RETENTION_MS,
+        });
       for (const asset of assets)
         tx.update(asset.ref, {
           attachedLifeUpdateId: id,

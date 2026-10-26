@@ -62,6 +62,8 @@ export function LifeUpdateComposer({
     useCallback<PreparePhoto>((file) => prepareLifeUpdatePhoto(file), []),
   );
   const form = useRef<HTMLFormElement>(null);
+  // One key per mounted form: a double submit or retry publishes once.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const onSection = useCallback((key: LifeUpdateSectionKey, value: string) => {
     setDrafts((current) => ({ ...current, [key]: value }));
@@ -93,6 +95,7 @@ export function LifeUpdateComposer({
     >
       <HiddenFields
         values={{
+          idempotencyKey,
           boxIds: JSON.stringify(
             type === 'boxes' ? chosen.map((box) => box.id) : [],
           ),

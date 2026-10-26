@@ -106,6 +106,8 @@ export const createLifeUpdateSchema = z
     sections: lifeUpdateSectionsSchema.default({}),
     /** Ready `life_update_image` uploads, in display order. */
     mediaAssetIds: lifeUpdateMediaIdsSchema.default([]),
+    /** Optional retry key: the same key by the same author publishes once. */
+    idempotencyKey: uuidSchema.optional(),
   })
   .strict()
   .refine(hasSomething, needsSomething)
