@@ -2,6 +2,7 @@
 
 import { setFirebasePostReactionAction } from '@/actions/firebase-reactions';
 import { setCameraReactionAction } from '@/actions/reaction-media';
+import styles from '@/components/interactions/post-interactions.module.css';
 import { ReactionBar } from '@/components/interactions/reaction-bar';
 import { ReactionCamera } from '@/components/interactions/reaction-camera';
 import { RealStrip } from '@/components/interactions/real-reaction-strip';
@@ -29,7 +30,7 @@ export function FirebasePostReactions({
   const [summary, setSummary] = useState(initialSummary);
   const [error, setError] = useState<string | null>(null);
   return (
-    <div>
+    <div className={styles.interactions}>
       <ReactionBar
         summary={summary}
         presets={presets}
@@ -76,7 +77,10 @@ export function FirebasePostReactions({
         }
       />
       <RealStrip postId={postId} summary={summary} />
-      <Link href={(commentsHref ?? `/posts/${postId}#comments`) as Route}>
+      <Link
+        className={styles.comments}
+        href={(commentsHref ?? `/posts/${postId}#comments`) as Route}
+      >
         {summary.commentCount === 0
           ? 'Comment'
           : `${summary.commentCount} ${summary.commentCount === 1 ? 'comment' : 'comments'}`}
