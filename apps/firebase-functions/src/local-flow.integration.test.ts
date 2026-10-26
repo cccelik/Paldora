@@ -668,6 +668,25 @@ describe('local Firebase Box vertical flow', () => {
     await expect(
       getDoc(doc(owner.db, 'nativeLifeUpdates', id)),
     ).rejects.toThrow();
+    const listMine = httpsCallable<
+      { cursor?: string },
+      {
+        items: Array<{ id: string; contexts: Array<{ boxId: string }> }>;
+        nextCursor: string | null;
+      }
+    >(owner.functions, 'listMyLifeUpdates');
+    const mine = (await listMine({})).data;
+    expect(mine.items).toMatchObject([{ id, contexts: [{ boxId }] }]);
+    expect(mine.nextCursor).toBeNull();
+    expect((await listMine({ cursor: id })).data.items).toEqual([]);
+    expect(
+      (
+        await httpsCallable<object, { items: unknown[] }>(
+          outsider.functions,
+          'listMyLifeUpdates',
+        )({})
+      ).data.items,
+    ).toEqual([]);
     const edit = httpsCallable<{
       id: string;
       changes: { sections: { reading: string } };
@@ -681,15 +700,99 @@ describe('local Firebase Box vertical flow', () => {
     await expect(read({ id })).rejects.toMatchObject({
       code: 'functions/not-found',
     });
+    expect((await listMine({})).data.items).toEqual([]);
   }, 30_000);
+
+  it('lets invitees decline and Box owners revoke pending invitations', async () => {
+    const owner = await client(`inviter_${randomUUID().slice(0, 8)}`);
+    const declineName = `decline_${randomUUID().slice(0, 8)}`;
+    const decliner = await client(declineName);
+    const revokeName = `revoke_${randomUUID().slice(0, 8)}`;
+    const revokee = await client(revokeName);
+    const boxId = randomUUID();
+    await createBox(owner.db, owner.uid, 'Gate', boxId);
+    const invite = httpsCallable<
+      { boxId: string; username: string },
+      { invitationId: string }
+    >(owner.functions, 'inviteBox');
+    const declined = (await invite({ boxId, username: declineName })).data
+      .invitationId;
+    const revoked = (await invite({ boxId, username: revokeName })).data
+      .invitationId;
+    const pending = httpsCallable<object, { items: Array<{ id: string }> }>(
+      decliner.functions,
+      'listMyBoxInvitations',
+    );
+    expect((await pending({})).data.items).toMatchObject([{ id: declined }]);
+
+    const decline = httpsCallable<{ invitationId: string }>(
+      decliner.functions,
+      'declineBoxInvitation',
+    );
+    await expect(
+      httpsCallable<{ invitationId: string }>(
+        revokee.functions,
+        'declineBoxInvitation',
+      )({ invitationId: declined }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await decline({ invitationId: declined });
+    expect((await pending({})).data.items).toEqual([]);
+    await expect(decline({ invitationId: declined })).rejects.toMatchObject({
+      code: 'functions/not-found',
+    });
+    await expect(
+      httpsCallable<{ invitationId: string }>(
+        decliner.functions,
+        'acceptBoxInvitation',
+      )({ invitationId: declined }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await expect(getBox(decliner.db, boxId)).rejects.toThrow();
+
+    const revoke = httpsCallable<{ invitationId: string; boxId: string }>(
+      owner.functions,
+      'revokeBoxInvitation',
+    );
+    await expect(
+      httpsCallable<{ invitationId: string; boxId: string }>(
+        decliner.functions,
+        'revokeBoxInvitation',
+      )({ invitationId: revoked, boxId }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await revoke({ invitationId: revoked, boxId });
+    const sent = httpsCallable<
+      { boxId: string },
+      { items: Array<{ id: string }> }
+    >(owner.functions, 'listBoxInvitations');
+    expect(
+      (await sent({ boxId })).data.items.map((item) => item.id),
+    ).not.toContain(revoked);
+    expect(
+      (
+        await httpsCallable<object, { items: unknown[] }>(
+          revokee.functions,
+          'listMyBoxInvitations',
+        )({})
+      ).data.items,
+    ).toEqual([]);
+    await expect(
+      revoke({ invitationId: revoked, boxId }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await expect(
+      httpsCallable<{ invitationId: string }>(
+        revokee.functions,
+        'acceptBoxInvitation',
+      )({ invitationId: revoked }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await expect(getBox(revokee.db, boxId)).rejects.toThrow();
+  }, 45_000);
 });
 
 describe('native contract coverage of this flow', () => {
-  it('reports which callables the flow exercised', () => {
+  it('exercises every native callable', () => {
     const missing = [...registry.keys()].filter((name) => !exercised.has(name));
     process.stdout.write(
       `native-contract: ${exercised.size}/${registry.size} callables exercised; not exercised: ${missing.join(', ')}\n`,
     );
-    expect(exercised.size).toBeGreaterThan(0);
+    expect(missing).toEqual([]);
   });
 });
