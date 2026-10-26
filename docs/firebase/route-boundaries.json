@@ -439,7 +439,7 @@
     "path": "/health/ready",
     "access": "public",
     "source": "packages/validation/src/routes/platform.ts",
-    "summary": "Readiness probe. Checks PostgreSQL and Redis.",
+    "summary": "Historical readiness probe (retired API); not an active web route.",
     "schemas": {
       "body": null,
       "query": null,

@@ -1,5 +1,7 @@
 # Architecture decision records
 
+> **Note (Firebase migration).** ADRs that name NestJS, Drizzle/PostgreSQL, Redis/BullMQ, Supabase or S3 record decisions for the retired stack; they have not been individually superseded. Active Firebase decisions are tracked in [Firebase implementation](../firebase/implementation.md). Their product and security rules still apply unless that document says otherwise.
+
 Each ADR records one consequential decision: its context, the decision itself,
 the alternatives that were rejected, and what would make us revisit it.
 **Accepted** ADRs are settled. Reopen one only with new evidence, by writing a

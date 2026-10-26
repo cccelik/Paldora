@@ -3,7 +3,7 @@
 Status: **active design direction, conditional on privacy proof** (2026-10-22).
 This supersedes the server-owned API assumption in
 [the original Firebase rewrite plan](../plans/firebase-rewrite.md). The current
-NestJS API remains live while the replacement passes the gates below.
+The NestJS API has been removed from the active workspace; this document records the native-client direction on the Firebase backend.
 
 ## Decision
 

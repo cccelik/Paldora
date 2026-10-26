@@ -1,5 +1,7 @@
 # Paldora rebuild plan
 
+> **Historical.** This document describes the retired NestJS/PostgreSQL/Supabase/Redis stack, kept for behavior reference. The active architecture is Firebase; see [Firebase implementation](firebase/implementation.md).
+
 This is the plan for rebuilding Paldora from an empty root, one verified
 milestone at a time. [CLAUDE.md](../CLAUDE.md) holds the durable rules: product
 principles, security invariants, standards, and the Keep/Improve/Replace

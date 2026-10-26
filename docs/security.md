@@ -1,5 +1,7 @@
 # Security
 
+> **Historical.** This document describes the retired NestJS/PostgreSQL/Supabase/Redis stack, kept for behavior reference. The active architecture is Firebase; see [Firebase implementation](firebase/implementation.md).
+
 ## Phase 9 reporting foundation
 
 `POST /reports` accepts only a currently readable user, Box, post, or active

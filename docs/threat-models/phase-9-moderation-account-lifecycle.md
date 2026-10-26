@@ -7,8 +7,8 @@ this document. See [ADR 019](../adr/019-moderation-authority-and-audit.md).
 
 Private content, reporter identity, case evidence, account status, export
 archives, media object keys and audit history are sensitive. Ordinary members,
-staff browsers, the API, PostgreSQL, Redis, the worker, Supabase Auth and
-private object storage are separate trust boundaries. Staff authentication
+staff browsers, the web server, Firestore, Cloud Functions, Firebase Auth and
+private Storage are separate trust boundaries. Staff authentication
 proves identity; database role checks authorize each case and action. A signed
 download URL is a bearer capability and must be short-lived and never logged.
 

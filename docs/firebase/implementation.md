@@ -35,8 +35,8 @@ integration suites passed; the trusted suite has 85 tests, including a
 passed in the working tree and again from an isolated source copy without its
 build caches or private `.env`. The copy installed the pinned lockfile, built,
 passed the Firebase-only check, and passed the client-bundle scan. A Git-based
-clean checkout can be repeated after these still-uncommitted changes are saved
-to version control; no deployment or signup gate was changed.
+clean checkout can be repeated from the pushed migration commit `897ee68`; no
+deployment or signup gate was changed.
 
 For the current local backend, run `CI=true pnpm firebase:local:dev` in one
 terminal. It builds Functions and starts all four emulators against

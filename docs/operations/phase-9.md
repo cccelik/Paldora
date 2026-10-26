@@ -1,74 +1,95 @@
 # Phase 9 moderation and account lifecycle operations
 
 Public signup stays disabled. This runbook supports provisioned accounts and
-local validation. No staging or production hosting provider/project has been
-chosen for D5, and the external appeal/moderation email address has not been
-set. Both are open owner decisions before public signup.
+local validation on the Firebase emulators (`demo-paldora`). No staging or
+production hosting project has been chosen for D5, and the external
+appeal/moderation email address has not been set. Both are open owner
+decisions before public signup. Nothing here has been run against a hosted
+project.
 
 ## Staff and reports
 
-Grant or revoke staff access with the audited operator CLI described in
-`apps/api/src/moderation/staff-command.ts`. Moderator access is keyed to the
-internal user UUID. A moderator can open `/moderation` to review reports;
-opening a case and recording an action append audit rows. A report is an
-allegation, so the queue does not automatically hide its target. Staff should
-use a concrete reason of at least 20 characters for every action and avoid
-copying unrelated personal information into it.
+Moderator access is a `nativeStaffGrants/{uid}` document with `status: active`,
+keyed to the account's Firebase Auth UID, and the account itself must also be
+`active`. Both are checked inside every moderation transaction
+(`packages/firebase-trusted/src/native-moderation.ts`). Clients cannot read or
+write grants. **There is no audited operator command for granting or revoking
+staff yet:** only the e2e seed (`packages/firebase-trusted/scripts/seed-e2e.mjs`)
+writes a grant, for disposable emulator data. Building that command is an open
+gate before hosted moderation.
 
-On a content takedown, the API deletes storage objects before returning
-success. Restore makes text visible again, but retired media needs a new
-upload. If object storage is unavailable, the takedown fails and can be
-retried. Verify ordinary post, comment, Room, media, and feed reads after a
-takedown; do not use a previously issued signed URL as proof of a successful
-takedown until object storage confirms deletion.
+A moderator opens `/moderation` to review reports. Opening a case and
+recording an action append audit rows. A report is an allegation, so the queue
+does not automatically hide its target. Staff must give a concrete reason of at
+least 20 characters for every action and avoid copying unrelated personal
+information into it.
+
+On a content takedown, the trusted service retires the affected Storage objects
+before returning success. Restore makes text visible again, but retired media
+needs reprocessing or a new upload. If Storage is unavailable, the takedown
+fails and can be retried. Verify ordinary post, comment, Room, media, and feed
+reads after a takedown; do not treat a previously issued media URL as proof of
+a successful takedown. Media routes re-authorize on every read, so a retired
+asset must return not-found on the next request.
+
 The content author sees hidden posts and comments in Settings → Content
 notices. The notice exposes no reporter or case evidence. During the private
 beta, the invitation contact is the review path; replace it with the approved
 external moderation address before public signup. Do not present an unset
 address as a working appeal channel.
 
-The 15-minute maintenance reaper removes closed report evidence and case audit
-rows 90 days after `closed_at`, up to 100 cases per run. Check
-`purgedModerationCases` and `redactedModerationCases` in its log. If content is
-still hidden or an account still suspended, the report detail and reporter ID
-are erased while a minimal case pointer remains. Staff can find it in the
-Closed cases tab and reverse enforcement; the pointer is purged after the
-state becomes inactive. Open reports and standalone staff-grant/account-lookup
-audit remain. Do not manually delete audit rows; the database guard permits
-only due case rows.
+The `redactModerationEvidence` scheduled function (every 24 hours) removes
+closed report evidence and case audit rows 90 days after the case closed. If
+content is still hidden or an account still suspended, the report detail and
+reporter ID are erased while a minimal case pointer remains. Staff can find it
+in the Closed cases tab and reverse enforcement; the pointer is purged after
+the state becomes inactive. Open reports and standalone staff-grant and
+account-lookup audit remain. Do not manually delete audit rows.
 
 ## Export and deletion
 
-The API requires `NEXT_PUBLIC_SUPABASE_ANON_KEY` to reauthenticate a deletion
-request. The worker requires `SUPABASE_URL` and a privileged
-`SUPABASE_SECRET_KEY` (or the legacy `SUPABASE_SERVICE_ROLE_KEY`) to hard-delete
-the Auth identity. Give this key to the worker only. Without it, the worker
-does not process due deletions; production startup rejects that configuration.
+Account deletion and export are trusted-service workflows with durable state in
+Firestore and bytes in private Storage. See
+[account-lifecycle.md](../firebase/account-lifecycle.md) for the state machine
+and local repair commands.
 
-The owner can request a JSON archive in Account settings. The worker builds it
-asynchronously; the completed archive expires after seven days. The download
-route resolves a fresh owner-only signed URL when clicked. An account deletion
-request requires the current password and transfer of every owned Box. The
-recorded deadline is seven days after request; cancellation requires the
-password and is rejected at or after that deadline.
+The owner can request a `paldora-json-v1` archive in Account settings. The
+`repairAccountLifecycle` function (every minute) builds it from bounded
+Firestore pages and streams it to private Storage; the archive contains media
+metadata, not media bytes, and expires after seven days. The download route
+(`/settings/account/download`) re-checks the session on every request and
+streams with `private, no-store`. An account deletion request requires
+password reauthentication through Firebase Auth and prior transfer of every
+owned Box. The recorded deadline is seven days after the request; cancellation
+requires the password and is rejected at or after that deadline.
 
-At the deadline, the worker changes the account status to `deleted`, denying
-API access even while external deletion retries. It then deletes owned media
-and export objects, deletes the Auth user, and removes the database user.
-Observe `erasureStarted` and `erasureCompleted` in the reaper log. A request
-remaining in `erasing` needs investigation of object storage, Auth, or
-database failures; fix the dependency and let the reaper retry. Never mark a
-request complete by hand. A request in `blocked` means Box ownership still
-needs resolution. A pending request past its deadline may be waiting for an
-in-flight upload to finish or expire.
+At the deadline, the repair function atomically changes the account to
+`deleting`, revokes Auth sessions, and denies all web access even while
+cleanup retries. It then deletes owned media and export objects, content and
+references, the Auth user, and finally the account records. Every step is
+generation-checked, so a cancelled or re-requested deletion cannot be
+completed by a stale run. A request that stays in `deleting` needs
+investigation of Storage, Auth, or Firestore failures; fix the dependency and
+let the next run retry. Never mark a request complete by hand. A request in
+`blocked` means Box ownership still needs resolution. A pending request past
+its deadline may be waiting for an in-flight upload to finish or expire.
+
+Local repair against the emulators (see
+[account-lifecycle.md](../firebase/account-lifecycle.md) for the full
+environment): `pnpm firebase:box-repair:local`,
+`pnpm firebase:media-repair:local`, and `pnpm --filter @paldora/firebase-trusted
+repair:account:local`.
 
 ## Hosted gate before signup
 
-After D5 hosting is chosen, validate with disposable provisioned accounts on
-the hosted environment: a blocked or unauthorized reporter cannot identify a
-target; a moderator can process a case with an audit trail; a takedown makes
-an already-issued media URL fail; suspension ends API and stream access; JSON
+The Firebase project `paldora-dev` stays on Spark. Scheduled functions need
+Blaze, so none of the schedules above are proven hosted. After D5 hosting is
+chosen, validate with disposable provisioned accounts on the hosted
+environment: a blocked or unauthorized reporter cannot identify a target; a
+moderator can process a case with an audit trail; a takedown makes an
+already-issued media URL fail; suspension ends web and stream access; JSON
 export is private and expires; deletion can be cancelled before the deadline
-and finishes after it; worker retries survive a deliberate dependency outage.
-Review queue staffing, appeal contact, rate-limit behavior, logs, backup
-retention, and alerts with the owner before any signup activation.
+and finishes after it; scheduled-function retries survive a deliberate
+dependency outage; IAM grants only the intended service accounts. Review queue
+staffing, appeal contact, rate-limit behavior, logs, backup and restore,
+alerts, load and cost with the owner before any signup activation.

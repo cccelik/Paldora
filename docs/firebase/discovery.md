@@ -1,9 +1,9 @@
 # Firebase migration discovery record
 
 Status: Phase 0 in progress, 2026-10-22. This record implements the first
-checkpoint in [the Firebase rewrite plan](../plans/firebase-rewrite.md). No
-Firebase project or hosted environment has been chosen. The existing
-PostgreSQL/Supabase/Redis/S3 application remains canonical, and public signup
+checkpoint in [the Firebase rewrite plan](../plans/firebase-rewrite.md). The
+local web app now runs entirely on Firebase (historical discovery notes
+below). The hosted `paldora-dev` project stays on Spark, and public signup
 remains disabled. The `firebase/` files are a local, deny-all emulator scaffold,
 not a production deployment.
 

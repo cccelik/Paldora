@@ -1,5 +1,7 @@
 # Deployment
 
+> **Historical.** This document describes the retired NestJS/PostgreSQL/Supabase/Redis stack, kept for behavior reference. The active architecture is Firebase; see [Firebase implementation](firebase/implementation.md).
+
 No hosted environment exists yet. The production topology waits on decision
 D5 ([ADR 014](adr/014-release-topology.md), still proposed), to be made against
 current official provider pricing and limits.

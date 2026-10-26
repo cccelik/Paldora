@@ -1,5 +1,7 @@
 # Database
 
+> **Historical.** This document describes the retired NestJS/PostgreSQL/Supabase/Redis stack, kept for behavior reference. The active architecture is Firebase; see [Firebase implementation](firebase/implementation.md).
+
 PostgreSQL 17 is the source of truth ([ADR 001](adr/001-postgresql-drizzle.md)).
 
 - **Schema.** Every table lives in the `paldora` schema. The migration journal
