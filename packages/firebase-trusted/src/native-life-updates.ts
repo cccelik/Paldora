@@ -12,6 +12,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import { nativeBlockPairId } from './native-box-invitations.js';
+import { emptyInteractionIndex } from './native-interaction-index.js';
 
 export class NativeLifeUpdateError extends Error {
   public constructor(public readonly code: 'INVALID' | 'UNAVAILABLE') {
@@ -174,6 +175,7 @@ export class NativeLifeUpdates {
           moderationHidden: false,
           createdAt: now,
           updatedAt: now,
+          interactionIndex: emptyInteractionIndex(),
         });
         tx.create(this.db.collection('nativePostPointers').doc(postId), {
           boxId,

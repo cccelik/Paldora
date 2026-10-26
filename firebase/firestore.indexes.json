@@ -440,6 +440,11 @@
     },
     {
       "collectionGroup": "posts",
+      "fieldPath": "interactionIndex",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "posts",
       "fieldPath": "authorUid",
       "indexes": [
         { "order": "ASCENDING", "queryScope": "COLLECTION" },

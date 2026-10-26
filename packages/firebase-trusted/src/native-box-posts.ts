@@ -6,10 +6,19 @@ import {
   type Firestore,
   type Query,
   type QueryDocumentSnapshot,
+  type Transaction,
 } from 'firebase-admin/firestore';
 import { emojiSchema } from '@paldora/validation';
 import { REAL_REACTION_KIND } from '@paldora/domain';
 import { nativeBlockPairId } from './native-box-invitations.js';
+import {
+  applyIndexWrite,
+  emptyInteractionIndex,
+  planIndexWrite,
+} from './native-interaction-index.js';
+
+/** Retries for transactions that write the shared post document. */
+const HOT_POST_ATTEMPTS = 30;
 
 export class NativePostError extends Error {
   public constructor(
@@ -316,6 +325,7 @@ export class NativeBoxPosts {
         createdAt: now,
         updatedAt: now,
         mediaAssetIds,
+        interactionIndex: emptyInteractionIndex(),
       });
       tx.create(this.db.collection('nativePostPointers').doc(postId), {
         boxId,
@@ -566,6 +576,17 @@ export class NativeBoxPosts {
     });
   }
 
+  /**
+   * Comments and reactions now write the post's interaction index, so busy
+   * posts serialise. Firestore backs off between attempts; a higher limit keeps
+   * ordinary bursts from surfacing as errors (see ADR 022).
+   */
+  private hotPostTransaction<T>(
+    update: (tx: Transaction) => Promise<T>,
+  ): Promise<T> {
+    return this.db.runTransaction(update, { maxAttempts: HOT_POST_ATTEMPTS });
+  }
+
   public async createComment(
     boxId: string,
     postId: string,
@@ -579,7 +600,7 @@ export class NativeBoxPosts {
     const commentId = randomUUID();
     const activityId = randomUUID();
     // eslint-disable-next-line complexity -- Existing reply visibility and ancestry checks share one transaction.
-    await this.db.runTransaction(async (tx) => {
+    await this.hotPostTransaction(async (tx) => {
       await this.access(tx, boxId, authorUid, true);
       const post = await tx.get(this.postRef(boxId, postId));
       if (!(await this.visible(tx, boxId, authorUid, post)))
@@ -661,6 +682,15 @@ export class NativeBoxPosts {
         postId,
         authorUid,
       });
+      applyIndexWrite(
+        tx,
+        post.ref,
+        planIndexWrite(post.get('interactionIndex'), {
+          type: 'comment',
+          uid: authorUid,
+          delta: 1,
+        }),
+      );
       if (recipientUid !== authorUid) {
         tx.create(this.db.collection('nativeActivity').doc(activityId), {
           schemaVersion: 1,
@@ -1117,9 +1147,12 @@ export class NativeBoxPosts {
     authorUid: string,
     now = Date.now(),
   ): Promise<void> {
-    await this.db.runTransaction(async (tx) => {
+    await this.hotPostTransaction(async (tx) => {
       await this.access(tx, boxId, authorUid, false);
-      const comment = await tx.get(this.commentRef(boxId, postId, commentId));
+      const [comment, post] = await Promise.all([
+        tx.get(this.commentRef(boxId, postId, commentId)),
+        tx.get(this.postRef(boxId, postId)),
+      ]);
       if (
         !comment.exists ||
         comment.get('status') !== 'active' ||
@@ -1128,6 +1161,17 @@ export class NativeBoxPosts {
         throw new NativePostError('UNAVAILABLE');
       tx.update(comment.ref, { status: 'deleted', updatedAt: now });
       tx.delete(this.db.collection('nativeCommentPointers').doc(commentId));
+      // Only a comment the index counted (active and not moderation-hidden).
+      if (post.exists && comment.get('moderationHidden') === false)
+        applyIndexWrite(
+          tx,
+          post.ref,
+          planIndexWrite(post.get('interactionIndex'), {
+            type: 'comment',
+            uid: authorUid,
+            delta: -1,
+          }),
+        );
     });
   }
 
@@ -1190,7 +1234,7 @@ export class NativeBoxPosts {
     )
       throw new NativePostError('INVALID');
     // eslint-disable-next-line complexity -- Reaction replacement checks asset ownership and canonical post access atomically.
-    return this.db.runTransaction(async (tx) => {
+    return this.hotPostTransaction(async (tx) => {
       await this.access(tx, boxId, uid, kind !== null);
       const target = await this.reactionTarget(
         tx,
@@ -1231,8 +1275,25 @@ export class NativeBoxPosts {
           attachedReactionUid: uid,
           unattachedExpiresAt: null,
         });
+      const indexed = (
+        reaction: { kind: string; mediaAssetId?: string } | null,
+      ) =>
+        commentId
+          ? undefined
+          : applyIndexWrite(
+              tx,
+              target,
+              planIndexWrite(targetSnapshot.get('interactionIndex'), {
+                type: 'reaction',
+                uid,
+                reaction,
+              }),
+            );
       if (kind === null) {
-        if (existing.exists) tx.delete(reactionRef);
+        if (existing.exists) {
+          tx.delete(reactionRef);
+          indexed(null);
+        }
       } else if (
         !existing.exists ||
         existing.get('kind') !== kind ||
@@ -1244,6 +1305,7 @@ export class NativeBoxPosts {
           ...(mediaAssetId ? { mediaAssetId } : {}),
           createdAt: Date.now(),
         });
+        indexed({ kind, ...(mediaAssetId ? { mediaAssetId } : {}) });
         const recipientUid = targetSnapshot.get('authorUid') as string;
         if (recipientUid !== uid) {
           const id = randomUUID();

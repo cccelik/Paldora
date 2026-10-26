@@ -3,6 +3,7 @@ export * from './native-account-lifecycle.js';
 export * from './native-block-pairs.js';
 export * from './native-box-invitations.js';
 export * from './native-box-posts.js';
+export * from './native-interaction-index.js';
 export * from './native-rate-limits.js';
 export * from './native-moderation.js';
 export * from './native-notifications.js';

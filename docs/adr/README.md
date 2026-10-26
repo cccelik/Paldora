@@ -31,3 +31,4 @@ accepted when their phase is built.
 | [019](019-moderation-authority-and-audit.md)      | Explicit staff grants, private reports, durable audit, and gated account lifecycle                   | Accepted foundation; lifecycle in progress             |
 | [020](020-hosted-staff-grants.md)                 | IAM-gated, audited hosted staff grants with two-person approval for administrators                   | Proposed (waits on D5 hosting)                         |
 | [021](021-firebase-native-contract.md)            | Firebase native contract: callable registry, fixtures, opaque cursors, epoch-ms timestamps           | Proposed (supersedes 004 for native; owner decisions)  |
+| [022](022-post-interaction-index.md)              | Per-actor interaction index on the post document, maintained in the writing transaction              | Proposed                                               |
