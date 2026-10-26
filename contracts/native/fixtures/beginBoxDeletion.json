@@ -1,0 +1,30 @@
+{
+  "callable": "beginBoxDeletion",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "confirmName": "Synthetic Box"
+      }
+    ],
+    "invalid": [
+      {},
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" },
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8", "confirmName": "" },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "confirmName": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      { "boxId": "", "confirmName": "a" },
+      { "boxId": 7, "confirmName": "a" }
+    ]
+  },
+  "response": { "valid": [{ "jobId": "job_synthetic_0001" }] },
+  "errors": [
+    { "code": "failed-precondition" },
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

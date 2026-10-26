@@ -1,0 +1,19 @@
+{
+  "callable": "reserveUsername",
+  "request": {
+    "valid": [{ "username": "synthetic_user" }],
+    "invalid": [
+      {},
+      { "username": "" },
+      { "username": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu" }
+    ]
+  },
+  "response": { "valid": [{ "normalized": "synthetic_user" }] },
+  "errors": [
+    { "code": "already-exists" },
+    { "code": "failed-precondition" },
+    { "code": "invalid-argument" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

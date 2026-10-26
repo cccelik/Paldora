@@ -16,6 +16,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "pnpm firebase:web:local:test",
+    "contract:native:generate": "pnpm --filter @paldora/validation exec tsx ../../scripts/native-contract.ts",
+    "contract:native:check": "pnpm --filter @paldora/validation exec tsx ../../scripts/native-contract.ts --check",
     "tokens:generate": "pnpm --filter @paldora/tokens tokens:generate",
     "tokens:check": "pnpm --filter @paldora/tokens tokens:check",
     "firebase:emulators": "firebase emulators:start --only auth,firestore,storage,functions,pubsub --project demo-paldora --config firebase.native.json",

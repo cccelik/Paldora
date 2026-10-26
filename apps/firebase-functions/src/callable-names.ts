@@ -1,0 +1,45 @@
+/**
+ * Every `onCall` export of this package, in source order. Native clients
+ * (iOS, Android, web) address callables by these exact names. Adding,
+ * renaming or removing one is a contract change: update
+ * `packages/validation/src/native/registry.ts` and `contracts/native/`.
+ */
+export const callableNames = [
+  'beginBoxDeletion',
+  'boxDeletionStatus',
+  'createLifeUpdate',
+  'getLifeUpdate',
+  'listMyLifeUpdates',
+  'editLifeUpdate',
+  'deleteLifeUpdate',
+  'inviteBox',
+  'provisionMyAccount',
+  'sendFriendRequest',
+  'acceptFriendRequest',
+  'closeFriendship',
+  'listMyFriendships',
+  'listMyBoxInvitations',
+  'listBoxInvitations',
+  'listBoxMembers',
+  'acceptBoxInvitation',
+  'declineBoxInvitation',
+  'revokeBoxInvitation',
+  'reserveUsername',
+  'createBoxPost',
+  'getBoxPost',
+  'listBoxPosts',
+  'editBoxPost',
+  'deleteBoxPost',
+  'setUserBlock',
+  'createBoxComment',
+  'listBoxComments',
+  'editBoxComment',
+  'deleteBoxComment',
+  'setBoxReaction',
+  'listBoxReactions',
+  'reportBoxPost',
+  'listModerationReports',
+  'hideReportedPost',
+] as const;
+
+export type CallableName = (typeof callableNames)[number];

@@ -1,0 +1,50 @@
+{
+  "callable": "getLifeUpdate",
+  "request": {
+    "valid": [{ "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809" }],
+    "invalid": [
+      {},
+      { "id": "" },
+      { "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809",
+        "authorUid": "uid_synthetic_0001",
+        "audience": "boxes",
+        "sections": { "travel": "Synthetic trip." },
+        "mediaAssetIds": ["9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"],
+        "createdAt": 1790000000000,
+        "updatedAt": 1790000000000,
+        "canEdit": true,
+        "contexts": [
+          {
+            "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "boxName": "Synthetic Box",
+            "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "canInteract": true
+          }
+        ]
+      },
+      {
+        "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809",
+        "authorUid": "uid_synthetic_0001",
+        "audience": "only_me",
+        "sections": { "travel": "Synthetic trip." },
+        "mediaAssetIds": [],
+        "createdAt": 1790000000000,
+        "updatedAt": 1790000000000,
+        "canEdit": true,
+        "contexts": []
+      }
+    ]
+  },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

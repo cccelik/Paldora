@@ -1,0 +1,54 @@
+{
+  "callable": "listMyFriendships",
+  "request": {
+    "valid": [
+      { "status": "pending" },
+      { "status": "sent" },
+      { "status": "accepted", "cursor": "req_synthetic_0001" }
+    ],
+    "invalid": [
+      {},
+      { "status": "requests" },
+      { "status": "blocked" },
+      { "status": "accepted", "cursor": "" },
+      {
+        "status": "accepted",
+        "cursor": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      { "items": [], "nextCursor": null },
+      {
+        "items": [
+          {
+            "id": "req_synthetic_0001",
+            "otherUid": "uid_synthetic_0002",
+            "status": "accepted",
+            "requesterUid": "uid_synthetic_0001",
+            "createdAt": 1790000000000,
+            "updatedAt": 1790000000000,
+            "username": "synthetic_user",
+            "displayName": "Synthetic User"
+          }
+        ],
+        "nextCursor": "req_synthetic_0001"
+      }
+    ]
+  },
+  "errors": [
+    { "code": "already-exists" },
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "permission-denied" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

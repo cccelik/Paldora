@@ -1,0 +1,17 @@
+{
+  "callable": "declineBoxInvitation",
+  "request": {
+    "valid": [{ "invitationId": "inv_synthetic_0001" }],
+    "invalid": [{}, { "invitationId": "" }]
+  },
+  "response": { "valid": [{ "ok": true }] },
+  "errors": [
+    { "code": "already-exists" },
+    { "code": "failed-precondition" },
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "permission-denied" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

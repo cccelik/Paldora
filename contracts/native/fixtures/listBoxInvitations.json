@@ -1,0 +1,57 @@
+{
+  "callable": "listBoxInvitations",
+  "request": {
+    "valid": [
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "abababababababababababababababababababababababababababababababab"
+      }
+    ],
+    "invalid": [
+      {},
+      { "boxId": "" },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      { "items": [], "nextCursor": null },
+      {
+        "items": [
+          {
+            "id": "abababababababababababababababababababababababababababababababab",
+            "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "inviteeUid": "uid_synthetic_0002",
+            "inviteeUsername": "synthetic_two",
+            "inviteeDisplayName": null,
+            "inviterUid": "uid_synthetic_0001",
+            "inviterUsername": "synthetic_user",
+            "inviterDisplayName": "Synthetic User",
+            "expiresAt": 1790086400000,
+            "createdAt": 1790000000000
+          }
+        ],
+        "nextCursor": "abababababababababababababababababababababababababababababababab"
+      }
+    ]
+  },
+  "errors": [
+    { "code": "already-exists" },
+    { "code": "failed-precondition" },
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "permission-denied" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

@@ -1,0 +1,184 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import type { z } from 'zod';
+import { callableNames } from '../../../../apps/firebase-functions/src/callable-names.js';
+import { FUNCTIONS_ERROR_CODES, nativeErrorSchema } from './errors.js';
+import {
+  nativeBoxDocSchema,
+  nativeBoxRefDocSchema,
+  nativeMemberDocSchema,
+} from './firestore.js';
+import { nativeCallableRegistry } from './registry.js';
+
+interface CallableFixture {
+  callable: string;
+  request: { valid: unknown[]; invalid: unknown[] };
+  response: { valid: unknown[] };
+  errors: Array<{ code: string }>;
+  cursorPage?: {
+    itemsKey: string;
+    nextCursorKey: string;
+    nextCursorNullable: boolean;
+    pageSize: number;
+  };
+}
+
+interface FirestoreFixture {
+  path: string;
+  schema: string;
+  valid: unknown[];
+  invalid: unknown[];
+}
+
+const contractDirectory = new URL(
+  '../../../../contracts/native/',
+  import.meta.url,
+);
+const readJson = <T>(directory: string, name: string): T =>
+  JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL(`${directory}/${name}`, contractDirectory)),
+      'utf8',
+    ),
+  ) as T;
+const jsonNames = (directory: string) =>
+  readdirSync(
+    fileURLToPath(new URL(`${directory}/`, contractDirectory)),
+  ).filter((name) => name.endsWith('.json'));
+
+const fixtures = new Map(
+  jsonNames('fixtures').map((name) => {
+    const fixture = readJson<CallableFixture>('fixtures', name);
+    return [fixture.callable, { file: name, fixture }] as const;
+  }),
+);
+const registry = new Map(
+  nativeCallableRegistry.map((entry) => [entry.name, entry]),
+);
+
+describe('native callable registry', () => {
+  it('registers every callable name, once, in callableNames order', () => {
+    expect(nativeCallableRegistry.map((entry) => entry.name)).toEqual([
+      ...callableNames,
+    ]);
+  });
+
+  it('declares only real Functions error codes and a positive limit', () => {
+    for (const entry of nativeCallableRegistry) {
+      expect(entry.errors.length).toBeGreaterThan(0);
+      for (const code of entry.errors)
+        expect(FUNCTIONS_ERROR_CODES).toContain(code);
+      expect(entry.limit.perHour).toBeGreaterThan(0);
+      expect(entry.limit.scope).toBe(entry.name);
+    }
+  });
+
+  it('has a fixture for every entry and an entry for every fixture', () => {
+    expect([...fixtures.keys()].sort()).toEqual([...registry.keys()].sort());
+    for (const [name, { file }] of fixtures) expect(file).toBe(`${name}.json`);
+  });
+});
+
+describe.each([...registry.values()])('callable $name', (entry) => {
+  const { fixture } = fixtures.get(entry.name)!;
+
+  it('accepts every valid request and rejects every invalid one', () => {
+    expect(fixture.request.valid.length).toBeGreaterThan(0);
+    for (const request of fixture.request.valid)
+      expect(
+        entry.input.safeParse(request).success,
+        JSON.stringify(request),
+      ).toBe(true);
+    for (const request of fixture.request.invalid)
+      expect(
+        entry.input.safeParse(request).success,
+        JSON.stringify(request),
+      ).toBe(false);
+  });
+
+  it('accepts every valid response', () => {
+    expect(fixture.response.valid.length).toBeGreaterThan(0);
+    for (const response of fixture.response.valid)
+      expect(
+        entry.output.safeParse(response).success,
+        JSON.stringify(response),
+      ).toBe(true);
+  });
+
+  it('lists exactly the declared error codes', () => {
+    expect(fixture.errors.map(({ code }) => code).sort()).toEqual(
+      [...entry.errors].sort(),
+    );
+    for (const { code } of fixture.errors)
+      expect(nativeErrorSchema.safeParse({ code, message: 'x' }).success).toBe(
+        true,
+      );
+  });
+
+  it('shapes list responses as an items page with a nullable cursor', () => {
+    if (!fixture.cursorPage) return;
+    const { itemsKey, nextCursorKey, nextCursorNullable } = fixture.cursorPage;
+    expect(fixture.cursorPage.pageSize).toBeGreaterThan(0);
+    const pages = fixture.response.valid as Array<Record<string, unknown>>;
+    for (const page of pages) {
+      expect(Array.isArray(page[itemsKey])).toBe(true);
+      const cursor = page[nextCursorKey];
+      expect(
+        typeof cursor === 'string' || (nextCursorNullable && cursor === null),
+      ).toBe(true);
+    }
+    expect(pages.some((page) => page[nextCursorKey] === null)).toBe(true);
+    expect(pages.some((page) => typeof page[nextCursorKey] === 'string')).toBe(
+      true,
+    );
+  });
+});
+
+describe('error shape', () => {
+  it('requires a code and message and tolerates a future details.reason', () => {
+    expect(
+      nativeErrorSchema.safeParse({ code: 'not-found', message: 'x' }).success,
+    ).toBe(true);
+    expect(
+      nativeErrorSchema.safeParse({
+        code: 'not-found',
+        message: 'x',
+        details: { reason: 'BOX_NOT_FOUND' },
+      }).success,
+    ).toBe(true);
+    expect(
+      nativeErrorSchema.safeParse({ code: 'NOT_FOUND', message: 'x' }).success,
+    ).toBe(false);
+    expect(nativeErrorSchema.safeParse({ code: 'not-found' }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('native Firestore documents', () => {
+  const schemas: Record<string, z.ZodType> = {
+    nativeBoxRefDocSchema,
+    nativeBoxDocSchema,
+    nativeMemberDocSchema,
+  };
+  const files = jsonNames('firestore');
+
+  it('covers the three open paths', () => {
+    expect(files.sort()).toEqual([
+      'nativeAccounts-boxRefs.json',
+      'nativeBoxes-members.json',
+      'nativeBoxes.json',
+    ]);
+  });
+
+  it.each(files)('%s validates', (name) => {
+    const fixture = readJson<FirestoreFixture>('firestore', name);
+    const schema = schemas[fixture.schema];
+    expect(schema).toBeDefined();
+    for (const doc of fixture.valid)
+      expect(schema!.safeParse(doc).success).toBe(true);
+    for (const doc of fixture.invalid)
+      expect(schema!.safeParse(doc).success).toBe(false);
+  });
+});

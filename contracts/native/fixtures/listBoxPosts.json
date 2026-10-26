@@ -1,0 +1,57 @@
+{
+  "callable": "listBoxPosts",
+  "request": {
+    "valid": [
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "not-a-cursor"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8", "cursor": 7 }
+    ]
+  },
+  "response": {
+    "valid": [
+      { "items": [], "nextCursor": null },
+      {
+        "items": [
+          {
+            "id": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "authorUid": "uid_synthetic_0001",
+            "text": "Synthetic post text.",
+            "createdAt": 1790000000000,
+            "updatedAt": 1790000000000,
+            "kind": "post",
+            "lifeUpdateId": null,
+            "mediaAssetIds": []
+          }
+        ],
+        "nextCursor": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9"
+      }
+    ]
+  },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

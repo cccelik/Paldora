@@ -1,0 +1,11 @@
+{
+  "callable": "provisionMyAccount",
+  "request": { "valid": [{}], "invalid": [] },
+  "response": { "valid": [{ "ok": true }] },
+  "errors": [
+    { "code": "failed-precondition" },
+    { "code": "invalid-argument" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

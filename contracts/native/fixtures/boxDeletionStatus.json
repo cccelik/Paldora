@@ -1,0 +1,35 @@
+{
+  "callable": "boxDeletionStatus",
+  "request": {
+    "valid": [{ "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" }],
+    "invalid": [
+      {},
+      { "boxId": "" },
+      {
+        "boxId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "generation": "gen_synthetic_0001",
+        "phase": "blockers",
+        "updatedAt": 1790000000000
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "generation": "gen_synthetic_0001",
+        "phase": "complete",
+        "updatedAt": 1790000000000
+      }
+    ]
+  },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

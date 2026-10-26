@@ -2,6 +2,11 @@
 
 Status: accepted (2026-10-18). Implements R2.
 
+> **Note (2026-10-26).** The HTTP API this ADR describes is retired.
+> For native clients the proposed replacement is the callable registry in
+> [ADR 021](021-firebase-native-contract.md), which supersedes this ADR once
+> accepted. `contracts/openapi.json` is historical.
+
 ## Context
 
 Web, iOS, and Android must interpret errors, cursors, nullability, and DTO

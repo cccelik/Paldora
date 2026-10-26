@@ -1,0 +1,26 @@
+{
+  "callable": "revokeBoxInvitation",
+  "request": {
+    "valid": [
+      {
+        "invitationId": "inv_synthetic_0001",
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+      }
+    ],
+    "invalid": [
+      {},
+      { "invitationId": "inv_synthetic_0001" },
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" }
+    ]
+  },
+  "response": { "valid": [{ "ok": true }] },
+  "errors": [
+    { "code": "already-exists" },
+    { "code": "failed-precondition" },
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "permission-denied" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

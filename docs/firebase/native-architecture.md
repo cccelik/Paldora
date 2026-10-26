@@ -146,6 +146,23 @@ the trusted maintenance transaction removes reporter identity and reason but
 keeps the minimal action pointer and audit record. Scheduling and evidence
 object cleanup remain open.
 
+## Native contract
+
+Native clients will use the callable Functions as their contract, not the
+retired HTTP API. Today that is 35 `onCall` functions in `europe-west4`, each
+rate-limited by `limited()`, with ad-hoc `field()` input checks, outputs typed
+in `packages/firebase-trusted` (epoch-millisecond timestamps), `HttpsError`
+codes with generic messages and no stable `details.reason`, and opaque cursors
+in several formats. Direct Firestore access is experimental and limited to
+`nativeAccounts/{uid}/boxRefs`, `nativeBoxes/{id}` and
+`nativeBoxes/{id}/members/{uid}`; everything else and Storage are deny-all.
+No native entry point exists yet for profile/current user, Rooms, Memories,
+home feed, notifications, media, account export/deletion, or password/session
+changes. Callables currently do not check token revocation or the web session
+epoch. The proposed registry, fixtures, rules and open owner decisions are in
+[ADR 021](../adr/021-firebase-native-contract.md) and
+[contracts/native](../../contracts/native/README.md).
+
 ## Migration gate
 
 Move one vertical slice at a time: identity/account state, social graph and

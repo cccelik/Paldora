@@ -36,6 +36,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
+import type { CallableName } from './callable-names.js';
 import { observedJob } from './observed.js';
 
 if (getApps().length === 0) initializeApp();
@@ -764,3 +765,42 @@ export const hideReportedPost = onCall(options, async (request) => {
     return { ok: true };
   });
 });
+
+/** Compile-time proof that the exports above and `callableNames` agree. */
+void ({
+  beginBoxDeletion,
+  boxDeletionStatus,
+  createLifeUpdate,
+  getLifeUpdate,
+  listMyLifeUpdates,
+  editLifeUpdate,
+  deleteLifeUpdate,
+  inviteBox,
+  provisionMyAccount,
+  sendFriendRequest,
+  acceptFriendRequest,
+  closeFriendship,
+  listMyFriendships,
+  listMyBoxInvitations,
+  listBoxInvitations,
+  listBoxMembers,
+  acceptBoxInvitation,
+  declineBoxInvitation,
+  revokeBoxInvitation,
+  reserveUsername,
+  createBoxPost,
+  getBoxPost,
+  listBoxPosts,
+  editBoxPost,
+  deleteBoxPost,
+  setUserBlock,
+  createBoxComment,
+  listBoxComments,
+  editBoxComment,
+  deleteBoxComment,
+  setBoxReaction,
+  listBoxReactions,
+  reportBoxPost,
+  listModerationReports,
+  hideReportedPost,
+} satisfies Record<CallableName, unknown>);

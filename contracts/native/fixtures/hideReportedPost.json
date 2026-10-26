@@ -1,0 +1,21 @@
+{
+  "callable": "hideReportedPost",
+  "request": {
+    "valid": [{ "reportId": "report_synthetic_0001" }],
+    "invalid": [
+      {},
+      { "reportId": "" },
+      {
+        "reportId": "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+      }
+    ]
+  },
+  "response": { "valid": [{ "ok": true }] },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "permission-denied" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

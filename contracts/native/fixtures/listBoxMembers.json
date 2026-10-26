@@ -1,0 +1,50 @@
+{
+  "callable": "listBoxMembers",
+  "request": {
+    "valid": [
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "uid_synthetic_0001"
+      }
+    ],
+    "invalid": [
+      {},
+      { "boxId": "" },
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8", "cursor": "" },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      { "items": [], "nextCursor": null },
+      {
+        "items": [
+          {
+            "uid": "uid_synthetic_0001",
+            "username": "synthetic_user",
+            "displayName": null,
+            "role": "owner",
+            "joinedAt": 1790000000000
+          }
+        ],
+        "nextCursor": "uid_synthetic_0001"
+      }
+    ]
+  },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

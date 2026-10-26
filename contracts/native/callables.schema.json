@@ -1,0 +1,1480 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Paldora native callable contract",
+  "description": "Firebase callable functions (europe-west4). Generated from packages/validation/src/native; do not edit.",
+  "rateLimitWindowMs": 3600000,
+  "error": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "cancelled",
+          "unknown",
+          "invalid-argument",
+          "deadline-exceeded",
+          "not-found",
+          "already-exists",
+          "permission-denied",
+          "unauthenticated",
+          "resource-exhausted",
+          "failed-precondition",
+          "aborted",
+          "out-of-range",
+          "unimplemented",
+          "internal",
+          "unavailable",
+          "data-loss"
+        ]
+      },
+      "message": { "type": "string" },
+      "details": {
+        "type": "object",
+        "properties": { "reason": { "type": "string" } },
+        "additionalProperties": false
+      }
+    },
+    "required": ["code", "message"],
+    "additionalProperties": false
+  },
+  "callables": {
+    "beginBoxDeletion": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "confirmName": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "required": ["boxId", "confirmName"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "jobId": { "type": "string" } },
+        "required": ["jobId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "beginBoxDeletion", "perHour": 5 }
+    },
+    "boxDeletionStatus": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string" },
+          "generation": { "type": "string" },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "blockers",
+              "derived_refs",
+              "deliveries",
+              "reports",
+              "invitations",
+              "members",
+              "post_pointers",
+              "tree",
+              "complete"
+            ]
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["boxId", "generation", "phase", "updatedAt"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "boxDeletionStatus", "perHour": 120 }
+    },
+    "createLifeUpdate": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "audience": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "only_me" }
+                },
+                "required": ["type"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "boxes" },
+                  "boxIds": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": ["type", "boxIds"],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "sections": {
+            "type": "object",
+            "properties": {
+              "lifeLately": { "type": "string", "maxLength": 2000 },
+              "workOrUniversity": { "type": "string", "maxLength": 2000 },
+              "travel": { "type": "string", "maxLength": 2000 },
+              "currentlyInto": { "type": "string", "maxLength": 2000 },
+              "listeningTo": { "type": "string", "maxLength": 2000 },
+              "watching": { "type": "string", "maxLength": 2000 },
+              "reading": { "type": "string", "maxLength": 2000 },
+              "excitedAbout": { "type": "string", "maxLength": 2000 },
+              "whatsNext": { "type": "string", "maxLength": 2000 }
+            },
+            "additionalProperties": false
+          },
+          "mediaAssetIds": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": ["audience"],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object",
+        "properties": { "id": { "type": "string" } },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "createLifeUpdate", "perHour": 30 }
+    },
+    "getLifeUpdate": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 36 }
+        },
+        "required": ["id"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "authorUid": { "type": "string" },
+          "audience": { "type": "string", "enum": ["only_me", "boxes"] },
+          "sections": {
+            "type": "object",
+            "properties": {
+              "lifeLately": { "type": "string" },
+              "workOrUniversity": { "type": "string" },
+              "travel": { "type": "string" },
+              "currentlyInto": { "type": "string" },
+              "listeningTo": { "type": "string" },
+              "watching": { "type": "string" },
+              "reading": { "type": "string" },
+              "excitedAbout": { "type": "string" },
+              "whatsNext": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "mediaAssetIds": { "type": "array", "items": { "type": "string" } },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "canEdit": { "type": "boolean" },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "boxId": { "type": "string" },
+                "boxName": { "type": "string" },
+                "postId": { "type": "string" },
+                "canInteract": { "type": "boolean" }
+              },
+              "required": ["boxId", "boxName", "postId", "canInteract"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "authorUid",
+          "audience",
+          "sections",
+          "mediaAssetIds",
+          "createdAt",
+          "updatedAt",
+          "canEdit",
+          "contexts"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getLifeUpdate", "perHour": 600 }
+    },
+    "listMyLifeUpdates": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 36 }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "authorUid": { "type": "string" },
+                "audience": { "type": "string", "enum": ["only_me", "boxes"] },
+                "sections": {
+                  "type": "object",
+                  "properties": {
+                    "lifeLately": { "type": "string" },
+                    "workOrUniversity": { "type": "string" },
+                    "travel": { "type": "string" },
+                    "currentlyInto": { "type": "string" },
+                    "listeningTo": { "type": "string" },
+                    "watching": { "type": "string" },
+                    "reading": { "type": "string" },
+                    "excitedAbout": { "type": "string" },
+                    "whatsNext": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                },
+                "mediaAssetIds": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "updatedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "canEdit": { "type": "boolean" },
+                "contexts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "boxId": { "type": "string" },
+                      "boxName": { "type": "string" },
+                      "postId": { "type": "string" },
+                      "canInteract": { "type": "boolean" }
+                    },
+                    "required": ["boxId", "boxName", "postId", "canInteract"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "authorUid",
+                "audience",
+                "sections",
+                "mediaAssetIds",
+                "createdAt",
+                "updatedAt",
+                "canEdit",
+                "contexts"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyLifeUpdates", "perHour": 600 }
+    },
+    "editLifeUpdate": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 36 },
+          "changes": { "$ref": "#/$defs/UpdateLifeUpdateRequest" }
+        },
+        "required": ["id", "changes"],
+        "$defs": {
+          "UpdateLifeUpdateRequest": {
+            "type": "object",
+            "properties": {
+              "sections": {
+                "type": "object",
+                "properties": {
+                  "lifeLately": { "type": "string", "maxLength": 2000 },
+                  "workOrUniversity": { "type": "string", "maxLength": 2000 },
+                  "travel": { "type": "string", "maxLength": 2000 },
+                  "currentlyInto": { "type": "string", "maxLength": 2000 },
+                  "listeningTo": { "type": "string", "maxLength": 2000 },
+                  "watching": { "type": "string", "maxLength": 2000 },
+                  "reading": { "type": "string", "maxLength": 2000 },
+                  "excitedAbout": { "type": "string", "maxLength": 2000 },
+                  "whatsNext": { "type": "string", "maxLength": 2000 }
+                },
+                "additionalProperties": false
+              },
+              "mediaAssetIds": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "editLifeUpdate", "perHour": 60 }
+    },
+    "deleteLifeUpdate": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 36 }
+        },
+        "required": ["id"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "deleteLifeUpdate", "perHour": 30 }
+    },
+    "inviteBox": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "username": { "type": "string", "minLength": 1, "maxLength": 30 }
+        },
+        "required": ["boxId", "username"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "invitationId": { "type": "string" } },
+        "required": ["invitationId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "inviteBox", "perHour": 60 }
+    },
+    "provisionMyAccount": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "provisionMyAccount", "perHour": 10 }
+    },
+    "sendFriendRequest": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 1, "maxLength": 30 }
+        },
+        "required": ["username"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "requestId": { "type": "string" } },
+        "required": ["requestId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "sendFriendRequest", "perHour": 60 }
+    },
+    "acceptFriendRequest": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "requestId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["requestId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "acceptFriendRequest", "perHour": 120 }
+    },
+    "closeFriendship": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "requestId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["requestId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "closeFriendship", "perHour": 120 }
+    },
+    "listMyFriendships": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["pending", "sent", "accepted"]
+          },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["status"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "otherUid": { "type": "string" },
+                "status": {
+                  "type": "string",
+                  "enum": ["pending", "sent", "accepted"]
+                },
+                "requesterUid": { "type": "string" },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "updatedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "username": { "type": "string" },
+                "displayName": { "type": "string" }
+              },
+              "required": [
+                "id",
+                "otherUid",
+                "status",
+                "requesterUid",
+                "createdAt",
+                "updatedAt",
+                "username",
+                "displayName"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyFriendships", "perHour": 600 }
+    },
+    "listMyBoxInvitations": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "boxId": { "type": "string" },
+                "boxName": { "type": "string" },
+                "inviterUid": { "type": "string" },
+                "expiresAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "inviterUsername": { "type": "string" },
+                "inviterDisplayName": { "type": "string" }
+              },
+              "required": [
+                "id",
+                "boxId",
+                "boxName",
+                "inviterUid",
+                "expiresAt",
+                "createdAt",
+                "inviterUsername",
+                "inviterDisplayName"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyBoxInvitations", "perHour": 600 }
+    },
+    "listBoxInvitations": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "boxId": { "type": "string" },
+                "inviteeUid": { "type": "string" },
+                "inviteeUsername": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "inviteeDisplayName": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "inviterUid": { "type": "string" },
+                "inviterUsername": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "inviterDisplayName": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "expiresAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "boxId",
+                "inviteeUid",
+                "inviteeUsername",
+                "inviteeDisplayName",
+                "inviterUid",
+                "inviterUsername",
+                "inviterDisplayName",
+                "expiresAt",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxInvitations", "perHour": 600 }
+    },
+    "listBoxMembers": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "uid": { "type": "string" },
+                "username": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "displayName": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["owner", "admin", "member"]
+                },
+                "joinedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "uid",
+                "username",
+                "displayName",
+                "role",
+                "joinedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxMembers", "perHour": 600 }
+    },
+    "acceptBoxInvitation": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "invitationId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["invitationId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "boxId": { "type": "string" } },
+        "required": ["boxId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "acceptBoxInvitation", "perHour": 120 }
+    },
+    "declineBoxInvitation": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "invitationId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["invitationId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "declineBoxInvitation", "perHour": 120 }
+    },
+    "revokeBoxInvitation": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "invitationId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["invitationId", "boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "revokeBoxInvitation", "perHour": 120 }
+    },
+    "reserveUsername": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 1, "maxLength": 30 }
+        },
+        "required": ["username"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "normalized": { "type": "string" } },
+        "required": ["normalized"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "reserveUsername", "perHour": 30 }
+    },
+    "createBoxPost": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "text": { "type": "string", "minLength": 1, "maxLength": 5000 }
+        },
+        "required": ["boxId", "text"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "postId": { "type": "string" } },
+        "required": ["postId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "createBoxPost", "perHour": 120 }
+    },
+    "getBoxPost": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["boxId", "postId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "boxId": { "type": "string" },
+          "authorUid": { "type": "string" },
+          "text": { "type": "string" },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "kind": { "type": "string", "enum": ["post", "life_update"] },
+          "lifeUpdateId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "mediaAssetIds": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": [
+          "id",
+          "boxId",
+          "authorUid",
+          "text",
+          "createdAt",
+          "updatedAt",
+          "kind",
+          "lifeUpdateId",
+          "mediaAssetIds"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getBoxPost", "perHour": 1200 }
+    },
+    "listBoxPosts": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "cursor": { "type": "string", "pattern": "^[a-f0-9-]{36}$" }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "boxId": { "type": "string" },
+                "authorUid": { "type": "string" },
+                "text": { "type": "string" },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "updatedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "kind": { "type": "string", "enum": ["post", "life_update"] },
+                "lifeUpdateId": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "mediaAssetIds": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "required": [
+                "id",
+                "boxId",
+                "authorUid",
+                "text",
+                "createdAt",
+                "updatedAt",
+                "kind",
+                "lifeUpdateId",
+                "mediaAssetIds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxPosts", "perHour": 600 }
+    },
+    "editBoxPost": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "text": { "type": "string", "minLength": 1, "maxLength": 5000 }
+        },
+        "required": ["boxId", "postId", "text"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "editBoxPost", "perHour": 240 }
+    },
+    "deleteBoxPost": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["boxId", "postId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "deleteBoxPost", "perHour": 240 }
+    },
+    "setUserBlock": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "targetUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "blocked": { "type": "boolean" }
+        },
+        "required": ["targetUid", "blocked"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "setUserBlock", "perHour": 120 }
+    },
+    "createBoxComment": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "text": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "parentId": {
+            "anyOf": [
+              { "type": "string", "pattern": "^[a-f0-9-]{36}$" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["boxId", "postId", "text"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "commentId": { "type": "string" } },
+        "required": ["commentId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "createBoxComment", "perHour": 240 }
+    },
+    "listBoxComments": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "cursor": { "type": "string", "pattern": "^[a-f0-9-]{36}$" }
+        },
+        "required": ["boxId", "postId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "postId": { "type": "string" },
+                "authorUid": { "type": "string" },
+                "parentId": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "text": { "type": "string" },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "updatedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "postId",
+                "authorUid",
+                "parentId",
+                "text",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxComments", "perHour": 600 }
+    },
+    "editBoxComment": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "commentId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "text": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        },
+        "required": ["boxId", "postId", "commentId", "text"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "editBoxComment", "perHour": 240 }
+    },
+    "deleteBoxComment": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "commentId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["boxId", "postId", "commentId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "deleteBoxComment", "perHour": 240 }
+    },
+    "setBoxReaction": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "commentId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "mediaAssetId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "kind": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  { "type": "string" },
+                  { "type": "string", "const": "real" }
+                ]
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["boxId", "postId", "kind"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "setBoxReaction", "perHour": 600 }
+    },
+    "listBoxReactions": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "commentId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["boxId", "postId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "uid": { "type": "string" },
+                "kind": { "type": "string" }
+              },
+              "required": ["uid", "kind"],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxReactions", "perHour": 600 }
+    },
+    "reportBoxPost": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        },
+        "required": ["boxId", "postId", "reason"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "reportId": { "type": "string" } },
+        "required": ["reportId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "reportBoxPost", "perHour": 20 }
+    },
+    "listModerationReports": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "pattern": "^[a-f0-9-]{36}$" }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "boxId": { "type": "string" },
+                "postId": { "type": "string" },
+                "reporterUid": { "type": "string" },
+                "reason": { "type": "string" },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "status": { "type": "string", "const": "open" }
+              },
+              "required": [
+                "id",
+                "boxId",
+                "postId",
+                "reporterUid",
+                "reason",
+                "createdAt",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listModerationReports", "perHour": 600 }
+    },
+    "hideReportedPost": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "reportId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["reportId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "hideReportedPost", "perHour": 120 }
+    }
+  },
+  "firestore": {
+    "nativeAccounts/{uid}/boxRefs/{boxId}": {
+      "type": "object",
+      "properties": {
+        "boxId": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": ["boxId"],
+      "additionalProperties": false
+    },
+    "nativeBoxes/{boxId}": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "status": { "type": "string", "enum": ["active", "archived"] },
+        "version": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["id", "name", "ownerUid", "status", "version"],
+      "additionalProperties": false
+    },
+    "nativeBoxes/{boxId}/members/{uid}": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "role": { "type": "string", "enum": ["owner", "admin", "member"] },
+        "status": { "type": "string", "enum": ["active", "left", "removed"] },
+        "joinedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["uid", "role", "status"],
+      "additionalProperties": false
+    }
+  }
+}

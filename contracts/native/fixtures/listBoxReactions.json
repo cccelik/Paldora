@@ -1,0 +1,55 @@
+{
+  "callable": "listBoxReactions",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "commentId": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8",
+        "cursor": "uid_synthetic_0001"
+      }
+    ],
+    "invalid": [
+      {},
+      { "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "cursor": ""
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "commentId": ""
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      { "items": [], "nextCursor": null },
+      {
+        "items": [
+          { "uid": "uid_synthetic_0001", "kind": "👍" },
+          { "uid": "uid_synthetic_0002", "kind": "real" }
+        ],
+        "nextCursor": "uid_synthetic_0002"
+      }
+    ]
+  },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

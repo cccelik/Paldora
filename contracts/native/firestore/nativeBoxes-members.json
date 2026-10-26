@@ -1,0 +1,32 @@
+{
+  "path": "nativeBoxes/{boxId}/members/{uid}",
+  "schema": "nativeMemberDocSchema",
+  "access": {
+    "get": "the member themself, or the active owner",
+    "list": "denied",
+    "create": "owner bootstrap only (role owner, status active) while the Box does not exist",
+    "update": "role changes by owner/admin, ownership transfer, leave (self) or remove (owner/admin)",
+    "delete": "denied"
+  },
+  "valid": [
+    { "uid": "uid_synthetic_0001", "role": "owner", "status": "active" },
+    {
+      "uid": "uid_synthetic_0002",
+      "role": "member",
+      "status": "removed",
+      "joinedAt": 1790000000000
+    },
+    { "uid": "uid_synthetic_0003", "role": "admin", "status": "left" }
+  ],
+  "invalid": [
+    { "uid": "uid_synthetic_0001", "role": "guest", "status": "active" },
+    { "uid": "uid_synthetic_0001", "role": "member", "status": "banned" },
+    { "role": "member", "status": "active" },
+    {
+      "uid": "uid_synthetic_0001",
+      "role": "member",
+      "status": "active",
+      "joinedAt": -1
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "callable": "createLifeUpdate",
+  "request": {
+    "valid": [
+      {
+        "audience": { "type": "only_me" },
+        "sections": { "travel": "Synthetic trip." }
+      },
+      {
+        "audience": {
+          "type": "boxes",
+          "boxIds": [
+            "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "11c2d3e4-f506-4a71-8b82-a3b4c5d6e7f9"
+          ]
+        },
+        "sections": {},
+        "mediaAssetIds": ["9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"],
+        "idempotencyKey": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809"
+      }
+    ],
+    "invalid": [
+      {},
+      { "audience": { "type": "only_me" } },
+      {
+        "audience": { "type": "boxes", "boxIds": [] },
+        "sections": { "travel": "x" }
+      },
+      {
+        "audience": {
+          "type": "boxes",
+          "boxIds": [
+            "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+          ]
+        },
+        "sections": { "travel": "x" }
+      },
+      {
+        "audience": { "type": "only_me" },
+        "sections": { "unknown_section": "x" }
+      },
+      {
+        "audience": { "type": "only_me" },
+        "sections": { "travel": "x" },
+        "extra": 1
+      }
+    ]
+  },
+  "response": { "valid": [{ "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809" }] },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

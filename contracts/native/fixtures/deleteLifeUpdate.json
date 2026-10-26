@@ -1,0 +1,14 @@
+{
+  "callable": "deleteLifeUpdate",
+  "request": {
+    "valid": [{ "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809" }],
+    "invalid": [{}, { "id": "" }]
+  },
+  "response": { "valid": [{ "ok": true }] },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

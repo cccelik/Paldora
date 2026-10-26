@@ -1,0 +1,22 @@
+{
+  "callable": "setUserBlock",
+  "request": {
+    "valid": [
+      { "targetUid": "uid_synthetic_0002", "blocked": true },
+      { "targetUid": "uid_synthetic_0002", "blocked": false }
+    ],
+    "invalid": [
+      {},
+      { "targetUid": "uid_synthetic_0002" },
+      { "targetUid": "uid_synthetic_0002", "blocked": "true" },
+      { "targetUid": "", "blocked": true }
+    ]
+  },
+  "response": { "valid": [{ "ok": true }] },
+  "errors": [
+    { "code": "failed-precondition" },
+    { "code": "invalid-argument" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "path": "nativeAccounts/{uid}/boxRefs/{boxId}",
+  "schema": "nativeBoxRefDocSchema",
+  "access": {
+    "get": "own active account",
+    "list": "own active account",
+    "create": "own account, atomically with the owner Box and owner member in one batch",
+    "update": "denied",
+    "delete": "denied"
+  },
+  "valid": [{ "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" }],
+  "invalid": [{}, { "boxId": "" }, { "boxId": 5 }]
+}

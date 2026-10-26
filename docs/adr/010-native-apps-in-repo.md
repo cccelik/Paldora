@@ -3,6 +3,11 @@
 Status: accepted (2026-10-18). Implements R11. The apps are built in
 Phases 10–11.
 
+> **Note (2026-10-26).** Repository placement still stands, but the shared
+> contract is no longer `contracts/openapi.json`; see
+> [ADR 021](021-firebase-native-contract.md) (Proposed) for the Firebase
+> callable contract under `contracts/native/`.
+
 ## Decision
 
 - **Two separate native apps:**

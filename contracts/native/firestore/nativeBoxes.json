@@ -1,0 +1,63 @@
+{
+  "path": "nativeBoxes/{boxId}",
+  "schema": "nativeBoxDocSchema",
+  "access": {
+    "get": "active member of an active or archived Box",
+    "list": "denied",
+    "create": "active account, as owner, with owner member and boxRef in the same batch",
+    "update": "owner settings (name, status active|archived, version+1) or atomic ownership transfer",
+    "delete": "denied"
+  },
+  "valid": [
+    {
+      "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+      "name": "Synthetic Box",
+      "ownerUid": "uid_synthetic_0001",
+      "status": "active",
+      "version": 1
+    },
+    {
+      "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+      "name": "Synthetic Box",
+      "ownerUid": "uid_synthetic_0001",
+      "status": "archived",
+      "version": 4
+    }
+  ],
+  "invalid": [
+    {
+      "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+      "name": "",
+      "ownerUid": "uid_synthetic_0001",
+      "status": "active",
+      "version": 1
+    },
+    {
+      "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+      "name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+      "ownerUid": "uid_synthetic_0001",
+      "status": "active",
+      "version": 1
+    },
+    {
+      "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+      "name": "Synthetic Box",
+      "ownerUid": "uid_synthetic_0001",
+      "status": "deleting",
+      "version": 1
+    },
+    {
+      "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+      "name": "Synthetic Box",
+      "ownerUid": "uid_synthetic_0001",
+      "status": "active",
+      "version": 0
+    },
+    {
+      "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+      "name": "Synthetic Box",
+      "status": "active",
+      "version": 1
+    }
+  ]
+}

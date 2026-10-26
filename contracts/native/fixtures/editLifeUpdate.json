@@ -1,0 +1,35 @@
+{
+  "callable": "editLifeUpdate",
+  "request": {
+    "valid": [
+      {
+        "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809",
+        "changes": { "sections": { "travel": "Edited." } }
+      },
+      {
+        "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809",
+        "changes": { "mediaAssetIds": [] }
+      }
+    ],
+    "invalid": [
+      { "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809" },
+      { "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809", "changes": {} },
+      {
+        "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809",
+        "changes": { "audience": { "type": "only_me" } }
+      },
+      {
+        "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809",
+        "changes": { "sections": {}, "mediaAssetIds": [] }
+      },
+      { "changes": { "sections": { "travel": "x" } } }
+    ]
+  },
+  "response": { "valid": [{ "ok": true }] },
+  "errors": [
+    { "code": "invalid-argument" },
+    { "code": "not-found" },
+    { "code": "resource-exhausted" },
+    { "code": "unauthenticated" }
+  ]
+}
