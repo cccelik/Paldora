@@ -1390,49 +1390,23 @@ export class FirebaseWebData {
 
   public async commentThreads(boxId: string, postId: string, cursor?: string) {
     try {
-      const roots = await this.postsService.listCommentRoots(
+      const roots = await this.postsService.commentThreadsPage(
         boxId,
         postId,
         this.uid,
         cursor,
       );
       const items = await Promise.all(
-        roots.items.map(async (root): Promise<FirebaseCommentThread> => {
-          const rootId = root.kind === 'comment' ? root.comment.id : root.id;
-          if (root.kind === 'hidden')
-            return {
-              root: await this.firebaseThreadItem(boxId, postId, root),
-              rootId,
-              replies: [],
-              replyCount: 0,
-            };
-          const [preview, replyCount] = await Promise.all([
-            this.postsService.listCommentReplies(
-              boxId,
-              postId,
-              rootId,
-              this.uid,
-              undefined,
-              3,
+        roots.items.map(async (thread): Promise<FirebaseCommentThread> => ({
+          root: await this.firebaseThreadItem(boxId, postId, thread.root),
+          rootId: thread.rootId,
+          replies: await Promise.all(
+            thread.replies.map((item) =>
+              this.firebaseThreadItem(boxId, postId, item),
             ),
-            this.postsService.countCommentReplies(
-              boxId,
-              postId,
-              rootId,
-              this.uid,
-            ),
-          ]);
-          return {
-            root: await this.firebaseThreadItem(boxId, postId, root),
-            rootId,
-            replies: await Promise.all(
-              preview.items.map((item) =>
-                this.firebaseThreadItem(boxId, postId, item),
-              ),
-            ),
-            replyCount,
-          };
-        }),
+          ),
+          replyCount: thread.replyCount,
+        })),
       );
       return { items, nextCursor: roots.nextCursor };
     } catch (error) {

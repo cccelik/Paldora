@@ -45,7 +45,7 @@ const PREDICTED = {
   unreadCount: 271,
   memoriesMonth: 75,
   roomView: 39,
-  postDetail: 613,
+  postDetail: 40,
 } as const;
 const BUDGETS = {
   homeFeed: budget(PREDICTED.homeFeed),
@@ -516,10 +516,21 @@ describe('Firestore document reads per page', { timeout: 180_000 }, () => {
 
   it('post detail: permalink, first page of 30 root comments, reply previews and counts', async () => {
     const { viewer, boxId, postId } = await postDetailFixture();
+    // The web data layer loads the thread through commentThreadsPage (S4).
     const { value, reads } = await measure(async () => {
       await posts.resolve(postId, viewer);
+      return posts.commentThreadsPage(boxId, postId, viewer);
+    });
+    expect(value.items).toHaveLength(20);
+    expect(value.nextCursor).toBeTruthy();
+    record('post detail', reads, value.items.length);
+    expect(reads).toBeLessThanOrEqual(BUDGETS.postDetail);
+  });
+
+  it('post detail, legacy per-root path (kept for comparison only)', async () => {
+    const { viewer, boxId, postId } = await postDetailFixture();
+    const { value, reads } = await measure(async () => {
       const roots = await posts.listCommentRoots(boxId, postId, viewer);
-      // Mirrors the web data layer: per root, a 3-reply preview and a count.
       await Promise.all(
         roots.items.map(async (root) => {
           const id = root.kind === 'comment' ? root.comment.id : root.id;
@@ -531,9 +542,7 @@ describe('Firestore document reads per page', { timeout: 180_000 }, () => {
       );
       return roots;
     });
-    expect(value.items).toHaveLength(20);
-    expect(value.nextCursor).toBeTruthy();
-    record('post detail', reads, value.items.length);
-    expect(reads).toBeLessThanOrEqual(BUDGETS.postDetail);
+    record('post detail, legacy per-root', reads, value.items.length);
+    expect(reads).toBeGreaterThan(0);
   });
 });

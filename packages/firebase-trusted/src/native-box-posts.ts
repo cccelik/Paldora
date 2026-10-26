@@ -5,6 +5,7 @@ import {
   type DocumentSnapshot,
   type Firestore,
   type Query,
+  type QueryDocumentSnapshot,
 } from 'firebase-admin/firestore';
 import { emojiSchema } from '@paldora/validation';
 import { REAL_REACTION_KIND } from '@paldora/domain';
@@ -43,6 +44,18 @@ export interface NativeComment {
 export type NativeCommentItem =
   | { kind: 'comment'; comment: NativeComment }
   | { kind: 'deleted' | 'hidden'; id: string; createdAt: number };
+
+export interface NativeCommentThread {
+  root: NativeCommentItem;
+  rootId: string;
+  replies: NativeCommentItem[];
+  replyCount: number;
+}
+
+const THREAD_PAGE = 20;
+const THREAD_PREVIEW = 3;
+/** Batched reply probe size; a full probe falls back to per-root queries. */
+const THREAD_PROBE_LIMIT = 60;
 
 export interface NativeReaction {
   uid: string;
@@ -892,6 +905,181 @@ export class NativeBoxPosts {
       .count()
       .get();
     return count.data().count;
+  }
+
+  /**
+   * Roots with a reply preview and reply count in one read-only transaction.
+   * Equivalent to listCommentRoots + listCommentReplies(3) +
+   * countCommentReplies per root, with shared authorization reads.
+   */
+  public async commentThreadsPage(
+    boxId: string,
+    postId: string,
+    viewerUid: string,
+    cursor?: string,
+  ): Promise<{ items: NativeCommentThread[]; nextCursor: string | null }> {
+    if (cursor !== undefined && !validDocId(cursor))
+      throw new NativePostError('UNAVAILABLE');
+    return this.db.runTransaction(
+      async (tx) => {
+        const read = memoReader(tx);
+        const readable = await this.readableBoxes(read, [boxId], viewerUid);
+        const post = await read(this.postRef(boxId, postId));
+        if (
+          !readable.has(boxId) ||
+          !(await this.visibleWith(read, boxId, viewerUid, post))
+        )
+          throw new NativePostError('UNAVAILABLE');
+        const comments = this.postRef(boxId, postId).collection('comments');
+        let query = comments
+          .where('parentId', '==', null)
+          .orderBy('createdAt', 'desc')
+          .orderBy(FieldPath.documentId(), 'desc')
+          .limit(THREAD_PAGE);
+        if (cursor) {
+          const marker = await read(this.commentRef(boxId, postId, cursor));
+          if (!marker.exists || marker.get('parentId') !== null)
+            throw new NativePostError('UNAVAILABLE');
+          query = query.startAfter(marker);
+        }
+        const page = await tx.get(query);
+        const toItem = async (
+          row: DocumentSnapshot,
+          includeDeleted: boolean,
+        ): Promise<NativeCommentItem | null> => {
+          if (!commentPresent(row, postId)) return null;
+          const createdAt = row.get('createdAt') as number;
+          if (row.get('status') !== 'active')
+            return includeDeleted
+              ? { kind: 'deleted', id: row.id, createdAt }
+              : null;
+          const authorUid = row.get('authorUid') as string;
+          const [author, pair] = await Promise.all([
+            read(this.db.collection('nativeAccounts').doc(authorUid)),
+            read(
+              this.db
+                .collection('nativeBlockPairs')
+                .doc(nativeBlockPairId(viewerUid, authorUid)),
+            ),
+          ]);
+          return active(author) &&
+            !(
+              pair.exists &&
+              (pair.get('blockedBy') as string[] | undefined)?.length
+            )
+            ? { kind: 'comment', comment: toComment(row) }
+            : { kind: 'hidden', id: row.id, createdAt };
+        };
+        const roots = (
+          await Promise.all(
+            page.docs.map(async (row) => ({
+              row,
+              item: await toItem(row, true),
+            })),
+          )
+        ).filter(
+          (
+            entry,
+          ): entry is { row: QueryDocumentSnapshot; item: NativeCommentItem } =>
+            entry.item !== null,
+        );
+        const probeIds = roots
+          .filter((entry) => entry.item.kind !== 'hidden')
+          .map((entry) => entry.row.id);
+        const replies = await this.threadReplies(tx, comments, probeIds);
+        const built = await Promise.all(
+          roots.map(
+            async ({ row, item }): Promise<NativeCommentThread | null> => {
+              if (item.kind === 'hidden')
+                return {
+                  root: item,
+                  rootId: row.id,
+                  replies: [],
+                  replyCount: 0,
+                };
+              const group = replies.get(row.id) ?? { preview: [], count: 0 };
+              if (item.kind === 'deleted' && group.count === 0) return null;
+              const preview = (
+                await Promise.all(
+                  group.preview.map((reply) => toItem(reply, false)),
+                )
+              ).filter((entry): entry is NativeCommentItem => entry !== null);
+              return {
+                root: item,
+                rootId: row.id,
+                replies: preview,
+                replyCount: group.count,
+              };
+            },
+          ),
+        );
+        const items = built.filter(
+          (thread): thread is NativeCommentThread => thread !== null,
+        );
+        return {
+          items,
+          nextCursor:
+            page.size === THREAD_PAGE ? page.docs[page.size - 1]!.id : null,
+        };
+      },
+      { readOnly: true },
+    );
+  }
+
+  /**
+   * Active, visible-state replies for the given roots: preview (first three,
+   * oldest first) and raw count, matching countCommentReplies. One batched
+   * query; a saturated probe falls back to bounded per-root queries.
+   */
+  private async threadReplies(
+    tx: FirebaseFirestore.Transaction,
+    comments: FirebaseFirestore.CollectionReference,
+    rootIds: string[],
+  ): Promise<Map<string, { preview: QueryDocumentSnapshot[]; count: number }>> {
+    const result = new Map<
+      string,
+      { preview: QueryDocumentSnapshot[]; count: number }
+    >();
+    if (rootIds.length === 0) return result;
+    const live = (base: Query) =>
+      base
+        .where('status', '==', 'active')
+        .where('moderationHidden', '==', false);
+    const probe = await tx.get(
+      live(comments.where('parentId', 'in', rootIds))
+        .orderBy('createdAt', 'asc')
+        .orderBy(FieldPath.documentId(), 'asc')
+        .limit(THREAD_PROBE_LIMIT),
+    );
+    if (probe.size < THREAD_PROBE_LIMIT) {
+      for (const doc of probe.docs) {
+        const parentId = doc.get('parentId') as string;
+        const group = result.get(parentId) ?? { preview: [], count: 0 };
+        if (group.preview.length < THREAD_PREVIEW) group.preview.push(doc);
+        group.count += 1;
+        result.set(parentId, group);
+      }
+      return result;
+    }
+    await Promise.all(
+      rootIds.map(async (rootId) => {
+        const base = live(comments.where('parentId', '==', rootId));
+        const [preview, count] = await Promise.all([
+          tx.get(
+            base
+              .orderBy('createdAt', 'asc')
+              .orderBy(FieldPath.documentId(), 'asc')
+              .limit(THREAD_PREVIEW),
+          ),
+          tx.get(base.count()),
+        ]);
+        result.set(rootId, {
+          preview: preview.docs,
+          count: count.data().count,
+        });
+      }),
+    );
+    return result;
   }
 
   public async editComment(

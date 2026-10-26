@@ -67,7 +67,7 @@ pricing before turning these into a cost estimate.
 | Unread count         |            271 |      100 rows |            2.7 |
 | Memories month       |             75 |            20 |            3.8 |
 | Room view            |             39 | 8 Top Friends |            4.9 |
-| Post detail          |            613 |      20 roots |           30.7 |
+| Post detail          |             40 |      20 roots |            2.0 |
 
 ## Budgets
 
@@ -75,14 +75,14 @@ pricing before turning these into a cost estimate.
 the value is the source-derived prediction. After the run, replace `PREDICTED`
 in the test with the measured values and recompute.
 
-| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                                    |
-| -------------- | -----------------: | -----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Home feed      |                 62 |     78 | S3 (2026-10-26): `getMany` reads each distinct Box, member, author and block pair once and the post docs in one `getAll`; hint query sized to the page (was 161). Measured: 62 |
-| Box feed       |                465 |    582 | S3: `list` is one read-only snapshot, 25 reads (was 143); the remaining cost is `interactionSummary` per post (~22 each), targeted by S6. Measured: 465                        |
-| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271                    |
-| Memories month |                 75 |     94 | S2 sized the windows to the page, S3 batched the Home source authorization (was 224 then 164). Measured: 75                                                                    |
-| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.                                 |
-| Post detail    |                613 |    767 | `resolve` 7 + `get` 6 + 20 roots + 20 × 9 + per root: reply preview (9 + empty query 1) + count (9 + aggregation 1) = 20 × 20                                                  |
+| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                                                                                                                                             |
+| -------------- | -----------------: | -----: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home feed      |                 62 |     78 | S3 (2026-10-26): `getMany` reads each distinct Box, member, author and block pair once and the post docs in one `getAll`; hint query sized to the page (was 161). Measured: 62                                                                                                          |
+| Box feed       |                465 |    582 | S3: `list` is one read-only snapshot, 25 reads (was 143); the remaining cost is `interactionSummary` per post (~22 each), targeted by S6. Measured: 465                                                                                                                                 |
+| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271                                                                                                                             |
+| Memories month |                 75 |     94 | S2 sized the windows to the page, S3 batched the Home source authorization (was 224 then 164). Measured: 75                                                                                                                                                                             |
+| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.                                                                                                                                          |
+| Post detail    |                 40 |     50 | S4 (2026-10-26): `commentThreadsPage` loads roots, one batched reply query and viewer checks in a single read-only snapshot (the legacy per-root path measures 606). `replyCount` still counts blocked or suspended authors' replies, as `countCommentReplies` always did. Measured: 40 |
 
 **Distinct-author guard.** Doubling the authors from 3 to 6 on the same 45 posts
 may add at most `3 × 2 = 6` reads (an account and a block pair per new author).
@@ -94,17 +94,20 @@ test also requires `reads(6) < 2 × reads(3)`.
 These are the reasons the numbers are high. They are recorded here and are not
 fixed by this test.
 
-- **Home feed over-reads hints.** The hint query always reads 40 documents, so a
-  20-item page pays for 20 unused hints.
-- **Every item is re-authorized.** `posts.get` is its own transaction and costs 6
-  reads. That is the privacy design, but it makes cost linear in page size.
-- **`interactionSummary` scans every comment and reaction on the post.** It costs
-  O(comments + reactions + distinct actors) per post per feed render, so busy
-  posts get more expensive over time.
-- **Unread count resolves up to 100 rows with a 300-row query limit.** Comment
-  rows are not cached per comment, at 9 reads each.
-- **Memories fetch a window of 50 candidates for a 20-item page.**
-- **Post detail does 20 reads per root for empty reply previews and counts.**
+Status after the 2026-10-26 reductions (S1 to S4):
+
+- **Fixed:** the Home feed no longer over-reads hints or re-authorizes each item in
+  its own transaction (S3, 161 to 62). The unread count reads each comment once
+  (S1, 671 to 271). Memories windows follow the page size (S2, 224 to 75 with S3).
+  Post detail loads a thread in one snapshot (S4, 606 to 40).
+- **Still open: `interactionSummary` scans every comment and reaction on the
+  post.** It costs O(comments + reactions + distinct actors) per post per feed
+  render (about 22 reads per post in the fixture), so busy posts get more
+  expensive over time. This is 440 of the Box feed's 465 reads. The planned fix
+  is a per-actor interaction index (S6), which needs a write-path change, a
+  backfill, a repair job and an ADR.
+- **Open product question:** `replyCount` counts replies by blocked or suspended
+  authors even though the preview shows them only as hidden placeholders.
 
 ## Limits of this measurement
 
