@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldPath, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { afterAll, describe, expect, it } from 'vitest';
 import { NativeAccounts } from './native-accounts.js';
 import { NativeAccountLifecycle } from './native-account-lifecycle.js';
 import { NativeBoxes } from './native-boxes.js';
 import { NativeBoxPosts } from './native-box-posts.js';
+import { NativeInteractionIndex } from './native-interaction-index.js';
 import { NativeMedia } from './native-media.js';
 import sharp from 'sharp';
 
@@ -31,6 +32,7 @@ const lifecycle = new NativeAccountLifecycle(db, auth, storage, bucketName);
 const accounts = new NativeAccounts(db, auth);
 const boxes = new NativeBoxes(db);
 const posts = new NativeBoxPosts(db);
+const interactionIndex = new NativeInteractionIndex(db);
 const verify = async (_uid: string, _email: string, password: string) => {
   if (password !== 'correct-password') throw new Error('wrong password');
 };
@@ -495,6 +497,136 @@ describe('private archive and generation-tagged account erasure', () => {
     await expect(auth.getUser(uid)).rejects.toMatchObject({
       code: 'auth/user-not-found',
     });
+  });
+
+  async function indexedFixture() {
+    const uid = await person(),
+      friend = await person(),
+      owner = await person();
+    const box = await boxes.create(owner, 'Index erasure');
+    for (const member of [uid, friend])
+      await db
+        .collection('nativeBoxes')
+        .doc(box.id)
+        .collection('members')
+        .doc(member)
+        .set({ uid: member, role: 'member', status: 'active', joinedAt: 1 });
+    const both = await posts.create(box.id, owner, 'Commented and reacted');
+    const reactOnly = await posts.create(box.id, owner, 'Reacted only');
+    const own = await posts.create(box.id, uid, 'Mine');
+    const mine = await posts.createComment(box.id, both, uid, 'Mine one');
+    await posts.createComment(box.id, both, uid, 'Mine two');
+    const theirs = await posts.createComment(box.id, both, friend, 'Theirs');
+    await posts.createComment(box.id, both, owner, 'Owner');
+    await posts.setReaction(box.id, both, uid, '❤️');
+    await posts.setReaction(box.id, both, friend, '🎉');
+    await posts.setReaction(box.id, reactOnly, uid, '👍');
+    await posts.setReaction(box.id, reactOnly, friend, '👍');
+    await posts.setReaction(box.id, both, friend, '👍', { commentId: mine });
+    await posts.setReaction(box.id, both, uid, '👍', { commentId: theirs });
+    await posts.createComment(box.id, own, friend, 'On my post');
+    return { uid, friend, owner, boxId: box.id, touched: [both, reactOnly] };
+  }
+
+  async function expectErased(
+    uid: string,
+    boxId: string,
+    touched: string[],
+    friend: string,
+  ) {
+    const everyPost = await db.collectionGroup('posts').get();
+    for (const doc of everyPost.docs)
+      expect(JSON.stringify(doc.data())).not.toContain(uid);
+    for (const postId of touched) {
+      expect((await interactionIndex.check(boxId, postId)).ok).toBe(true);
+    }
+    const survivor = await db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .collection('posts')
+      .doc(touched[0]!)
+      .get();
+    expect(
+      survivor.get(new FieldPath('interactionIndex', 'comments', friend)),
+    ).toBe(1);
+    expect(
+      survivor.get(new FieldPath('interactionIndex', 'reactions', friend)),
+    ).toBeDefined();
+  }
+
+  it('removes the erased actor from every post interaction index', async () => {
+    const { uid, friend, boxId, touched } = await indexedFixture();
+    const request = await lifecycle.requestDeletion(
+      uid,
+      'correct-password',
+      verify,
+      1_000,
+    );
+    await drain(uid, Date.parse(request.dueAt));
+    await expectErased(uid, boxId, touched, friend);
+  });
+
+  it('ends with a clean index after a fault injected midway through erasure', async () => {
+    const { uid, friend, boxId, touched } = await indexedFixture();
+    const request = await lifecycle.requestDeletion(
+      uid,
+      'correct-password',
+      verify,
+      1_000,
+    );
+    let injected = false;
+    const failure = new Error('injected restart');
+    const runner = new NativeAccountLifecycle(
+      db,
+      auth,
+      storage,
+      bucketName,
+      (phase) => {
+        if (phase === 'content' && !injected) {
+          injected = true;
+          throw failure;
+        }
+      },
+    );
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      try {
+        await runner.processDeletion(uid, Date.parse(request.dueAt));
+      } catch (error) {
+        expect(error).toBe(failure);
+      }
+      if (
+        !(await db.collection('nativeDeletionRequests').doc(uid).get()).exists
+      )
+        break;
+    }
+    expect(injected).toBe(true);
+    await expectErased(uid, boxId, touched, friend);
+  });
+
+  it('never exports the interaction index or other actors from it', async () => {
+    const { uid, friend } = await indexedFixture();
+    const own = await db
+      .collectionGroup('posts')
+      .where('authorUid', '==', uid)
+      .get();
+    expect(own.docs[0]?.get('interactionIndex')).toBeDefined();
+    const ownerBox = await boxes.create(uid, 'Exporter box');
+    const post = await posts.create(ownerBox.id, uid, 'Exporter post');
+    await db
+      .collection('nativeBoxes')
+      .doc(ownerBox.id)
+      .collection('members')
+      .doc(friend)
+      .set({ uid: friend, role: 'member', status: 'active', joinedAt: 1 });
+    await posts.createComment(ownerBox.id, post, friend, 'Friend comment');
+    await posts.setReaction(ownerBox.id, post, friend, '🎉');
+    const archive = await lifecycle.requestExport(uid);
+    const text = (await lifecycle.download(uid, archive.id)).toString();
+    expect(text).not.toContain('interactionIndex');
+    const parsed = JSON.parse(text) as { posts: Array<{ id: string }> };
+    expect(parsed.posts.map((row) => row.id)).toContain(post);
+    // The friend's uid appears only inside the index of the exporter's posts.
+    expect(text).not.toContain(friend);
   });
 
   it('reaps orphan export bytes across more than one Storage page', async () => {

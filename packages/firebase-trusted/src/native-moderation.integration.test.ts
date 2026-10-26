@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldPath, getFirestore } from 'firebase-admin/firestore';
 import { afterAll, describe, expect, it } from 'vitest';
 import { NativeAccounts } from './native-accounts.js';
 import { NativeBoxes } from './native-boxes.js';
 import { NativeBoxPosts } from './native-box-posts.js';
+import { NativeInteractionIndex } from './native-interaction-index.js';
 import { NativeModeration } from './native-moderation.js';
 
 if (
@@ -21,6 +22,7 @@ const accounts = new NativeAccounts(db, auth);
 const boxes = new NativeBoxes(db);
 const posts = new NativeBoxPosts(db);
 const moderation = new NativeModeration(db);
+const index = new NativeInteractionIndex(db);
 afterAll(() => deleteApp(app));
 
 async function user() {
@@ -145,6 +147,82 @@ describe('trusted moderation', () => {
       .get();
     expect(redacted.get('detail')).toBeUndefined();
     expect(redacted.get('reporterUid')).toBeUndefined();
+  });
+  it('keeps the interaction index exact across comment hide, restore and author delete', async () => {
+    const owner = await user();
+    const member = await user();
+    const staff = await user();
+    await db
+      .collection('nativeStaffGrants')
+      .doc(staff)
+      .set({ status: 'active', role: 'administrator' });
+    const box = await boxes.create(owner, 'Indexed moderation');
+    await db
+      .collection('nativeBoxes')
+      .doc(box.id)
+      .collection('members')
+      .doc(member)
+      .set({ uid: member, role: 'member', status: 'active', joinedAt: 1 });
+    const postId = await posts.create(box.id, owner, 'Content');
+    const kept = await posts.createComment(box.id, postId, member, 'Kept');
+    const target = await posts.createComment(box.id, postId, member, 'Target');
+    const postRef = db
+      .collection('nativeBoxes')
+      .doc(box.id)
+      .collection('posts')
+      .doc(postId);
+    const count = async () =>
+      (await postRef.get()).get(
+        new FieldPath('interactionIndex', 'comments', member),
+      ) as number | undefined;
+    expect(await count()).toBe(2);
+    const report = await moderation.createReport(owner, {
+      targetKind: 'comment',
+      targetId: target,
+      category: 'privacy',
+      detail: 'Review this',
+    });
+    const hide = {
+      action: 'hide' as const,
+      reason,
+      idempotencyKey: randomUUID(),
+    };
+    await moderation.actOnCase(staff, report.id, hide);
+    await moderation.actOnCase(staff, report.id, hide);
+    expect(await count()).toBe(1);
+    expect((await index.check(box.id, postId)).ok).toBe(true);
+    await moderation.actOnCase(staff, report.id, {
+      action: 'restore',
+      reason,
+      idempotencyKey: randomUUID(),
+    });
+    expect(await count()).toBe(2);
+    expect((await index.check(box.id, postId)).ok).toBe(true);
+    // Hide a second comment through a fresh case, then let its author delete it.
+    const second = await moderation.createReport(owner, {
+      targetKind: 'comment',
+      targetId: kept,
+      category: 'privacy',
+      detail: null,
+    });
+    await moderation.actOnCase(staff, second.id, {
+      action: 'hide',
+      reason,
+      idempotencyKey: randomUUID(),
+    });
+    expect(await count()).toBe(1);
+    await posts.deleteComment(box.id, postId, kept, member);
+    expect(await count()).toBe(1);
+    expect((await index.check(box.id, postId)).ok).toBe(true);
+    await expect(
+      moderation.actOnCase(staff, second.id, {
+        action: 'restore',
+        reason,
+        idempotencyKey: randomUUID(),
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(await count()).toBe(1);
+    expect((await index.check(box.id, postId)).ok).toBe(true);
   });
   it('audits staff grant and revoke and rejects invalid targets without audit rows', async () => {
     const target = await user();

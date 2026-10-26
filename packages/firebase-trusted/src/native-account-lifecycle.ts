@@ -7,9 +7,16 @@ import {
   FieldPath,
   FieldValue,
   type Firestore,
+  type DocumentReference,
   type DocumentSnapshot,
+  type Transaction,
   type Query,
 } from 'firebase-admin/firestore';
+import {
+  applyIndexWrite,
+  parseInteractionIndex,
+  planIndexWrite,
+} from './native-interaction-index.js';
 import { NativeMedia } from './native-media.js';
 import type { Storage } from 'firebase-admin/storage';
 
@@ -45,6 +52,47 @@ export class NativeLifecycleError extends Error {
 }
 
 const serializable = (doc: DocumentSnapshot) => ({ id: doc.id, ...doc.data() });
+/** The interaction index holds other users' uids, so exported posts never carry it. */
+const serializablePost = (doc: DocumentSnapshot) => {
+  const row: Record<string, unknown> = serializable(doc);
+  delete row.interactionIndex;
+  return row;
+};
+
+/** Remove one erased actor from a post's index inside the caller's transaction (after its reads). */
+function eraseActorFromIndex(
+  tx: Transaction,
+  postRef: DocumentReference,
+  raw: unknown,
+  target: { map: 'comments' | 'reactions'; uid: string },
+): void {
+  if (parseInteractionIndex(raw).state === 'foreign') {
+    applyIndexWrite(
+      tx,
+      postRef,
+      planIndexWrite(raw, {
+        type: 'reaction',
+        uid: target.uid,
+        reaction: null,
+      }),
+    );
+    return;
+  }
+  const bucket =
+    typeof raw === 'object' && raw !== null
+      ? (raw as Record<string, unknown>)[target.map]
+      : undefined;
+  if (
+    typeof bucket === 'object' &&
+    bucket !== null &&
+    target.uid in (bucket as Record<string, unknown>)
+  )
+    tx.update(
+      postRef,
+      new FieldPath('interactionIndex', target.map, target.uid),
+      FieldValue.delete(),
+    );
+}
 const iso = (time: number) => new Date(time).toISOString();
 
 export class NativeAccountLifecycle {
@@ -64,6 +112,40 @@ export class NativeAccountLifecycle {
   private requestRef(uid: string) {
     return this.db.collection('nativeDeletionRequests').doc(uid);
   }
+  /** Delete a comment, its pointer and the erased author's index key atomically. */
+  private async eraseComment(ref: DocumentReference, uid: string) {
+    const postRef = ref.parent.parent;
+    const pointerRef = this.db.collection('nativeCommentPointers').doc(ref.id);
+    await this.db.runTransaction(async (tx) => {
+      const post = postRef ? await tx.get(postRef) : null;
+      tx.delete(ref);
+      tx.delete(pointerRef);
+      if (postRef && post?.exists)
+        eraseActorFromIndex(tx, postRef, post.get('interactionIndex'), {
+          map: 'comments',
+          uid,
+        });
+    });
+  }
+
+  /** Delete a reaction; a post-level one also leaves the post's interaction index. */
+  private async eraseReaction(ref: DocumentReference, uid: string) {
+    const postRef = ref.parent.parent;
+    if (!postRef || ref.parent.parent?.parent.id !== 'posts') {
+      await ref.delete();
+      return;
+    }
+    await this.db.runTransaction(async (tx) => {
+      const post = await tx.get(postRef);
+      tx.delete(ref);
+      if (post.exists)
+        eraseActorFromIndex(tx, postRef, post.get('interactionIndex'), {
+          map: 'reactions',
+          uid,
+        });
+    });
+  }
+
   private async active(uid: string) {
     if (
       (await this.db.collection('nativeAccounts').doc(uid).get()).get(
@@ -156,7 +238,11 @@ export class NativeAccountLifecycle {
       let first = true;
       for await (const doc of this.pages(query)) {
         const value =
-          name === 'media' ? this.mediaMetadata(doc) : serializable(doc);
+          name === 'media'
+            ? this.mediaMetadata(doc)
+            : name === 'posts'
+              ? serializablePost(doc)
+              : serializable(doc);
         yield `${first ? '' : ','}${JSON.stringify(value)}`;
         first = false;
       }
@@ -629,11 +715,8 @@ export class NativeAccountLifecycle {
         .get();
       for (const comment of comments.docs) {
         await this.assertGeneration(uid, generation, phase);
-        await this.db.recursiveDelete(comment.ref);
-        await this.db
-          .collection('nativeCommentPointers')
-          .doc(comment.id)
-          .delete();
+        await this.db.recursiveDelete(comment.ref.collection('reactions'));
+        await this.eraseComment(comment.ref, uid);
       }
       if (comments.size) return phase;
       const reactions = await this.db
@@ -643,7 +726,7 @@ export class NativeAccountLifecycle {
         .get();
       for (const reaction of reactions.docs) {
         await this.assertGeneration(uid, generation, phase);
-        await reaction.ref.delete();
+        await this.eraseReaction(reaction.ref, uid);
       }
       if (reactions.size < PAGE) {
         this.checkpoint?.(phase);

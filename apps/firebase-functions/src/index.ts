@@ -20,6 +20,7 @@ import {
   NativeFriendships,
   NativeFriendshipError,
   NativeHomeFeed,
+  NativeInteractionIndex,
   NativeLifeUpdates,
   NativeLifeUpdateError,
   NativeMedia,
@@ -82,6 +83,7 @@ const boxDeletion = new NativeBoxDeletion(
 );
 const lifeUpdates = new NativeLifeUpdates(db);
 const homeFeed = new NativeHomeFeed(db);
+const interactionIndex = new NativeInteractionIndex(db);
 const media = new NativeMedia(
   db,
   getStorage(),
@@ -131,6 +133,26 @@ export const repairFeedJobs = onSchedule(
   { schedule: 'every 1 minutes', region: 'europe-west4', maxInstances: 1 },
   observedJob('repairFeedJobs', async () => {
     await homeFeed.processPending(100);
+  }),
+);
+
+/** Repairs a post's interaction index; the job is a durable hint, never authority. */
+export const projectInteractionIndexJob = onDocumentCreated(
+  { document: 'nativeJobs/{jobId}', region: 'europe-west4', maxInstances: 1 },
+  observedJob(
+    'projectInteractionIndexJob',
+    async (event) => {
+      if (event.data?.get('type') !== 'interactionIndexRepair') return;
+      await interactionIndex.processOnce(event.params.jobId);
+    },
+    (event) => event.params.jobId,
+  ),
+);
+
+export const repairInteractionIndexJobs = onSchedule(
+  { schedule: 'every 1 minutes', region: 'europe-west4', maxInstances: 1 },
+  observedJob('repairInteractionIndexJobs', async () => {
+    await interactionIndex.processPending(100);
   }),
 );
 

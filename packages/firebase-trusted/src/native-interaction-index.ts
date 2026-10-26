@@ -295,9 +295,84 @@ export interface BackfillPage {
   nextCursor: string | null;
 }
 
+const JOB_MAX_ATTEMPTS = 5;
+const JOB_BACKOFF_BASE_MS = 30_000;
+const JOB_BACKOFF_MAX_MS = 15 * 60_000;
+
 /** Repair, verification and backfill of `posts.interactionIndex`. */
 export class NativeInteractionIndex {
   public constructor(private readonly db: Firestore) {}
+
+  /** Durable repair intent for one post; one job per post, merged on re-enqueue. */
+  public static jobId(postId: string): string {
+    return `interaction-index-${postId}`;
+  }
+
+  /**
+   * Run one `interactionIndexRepair` job. Retries back off with jitter and the
+   * job turns `failed` after five attempts; the error is rethrown for logs.
+   */
+  public async processOnce(
+    jobId: string,
+    now = Date.now(),
+  ): Promise<'complete' | 'pending' | 'skipped'> {
+    const jobRef = this.db.collection('nativeJobs').doc(jobId);
+    const job = await jobRef.get();
+    if (
+      job.get('type') !== 'interactionIndexRepair' ||
+      job.get('status') !== 'pending'
+    )
+      return 'skipped';
+    if (((job.get('nextAttemptAt') as number | undefined) ?? 0) > now)
+      return 'pending';
+    const boxId = job.get('boxId');
+    const postId = job.get('postId');
+    if (typeof boxId !== 'string' || typeof postId !== 'string') {
+      await jobRef.update({ status: 'failed', updatedAt: now });
+      return 'skipped';
+    }
+    try {
+      await this.repair(boxId, postId);
+    } catch (error) {
+      const attempts = ((job.get('attempts') as number | undefined) ?? 0) + 1;
+      const delay = Math.min(
+        JOB_BACKOFF_MAX_MS,
+        JOB_BACKOFF_BASE_MS * 2 ** (attempts - 1),
+      );
+      await jobRef.update({
+        attempts,
+        status: attempts >= JOB_MAX_ATTEMPTS ? 'failed' : 'pending',
+        nextAttemptAt: now + delay + Math.floor(Math.random() * delay * 0.2),
+        updatedAt: now,
+      });
+      throw error;
+    }
+    await jobRef.update({ status: 'complete', updatedAt: now });
+    return 'complete';
+  }
+
+  /** Scheduled sweep for interrupted or backing-off repair jobs. */
+  public async processPending(limit = 100): Promise<number> {
+    const jobs = await this.db
+      .collection('nativeJobs')
+      .where('type', '==', 'interactionIndexRepair')
+      .where('status', '==', 'pending')
+      .orderBy('updatedAt')
+      .limit(limit)
+      .get();
+    let processed = 0;
+    let firstError: unknown;
+    for (const job of jobs.docs) {
+      try {
+        // eslint-disable-next-line no-await-in-loop -- Bounded batch; one repair transaction per post.
+        if ((await this.processOnce(job.id)) === 'complete') processed += 1;
+      } catch (error) {
+        firstError ??= error;
+      }
+    }
+    if (firstError) throw firstError;
+    return processed;
+  }
 
   private postRef(boxId: string, postId: string): DocumentReference {
     return this.db

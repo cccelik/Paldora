@@ -2,11 +2,17 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
   FieldPath,
   FieldValue,
+  type DocumentSnapshot,
   type Firestore,
 } from 'firebase-admin/firestore';
 
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1_000;
 import { nativeBlockPairId } from './native-box-invitations.js';
+import {
+  applyIndexWrite,
+  planIndexWrite,
+  type IndexWrite,
+} from './native-interaction-index.js';
 import { NativeBoxPosts, NativePostError } from './native-box-posts.js';
 import { NativeBoxes, NativeBoxError } from './native-boxes.js';
 import {
@@ -15,6 +21,20 @@ import {
   type CreateReportInput,
   type ModerationActionInput,
 } from '@paldora/validation';
+
+/** Index change for a comment hide (-1) or restore (+1); no-op without a trusted index. */
+function commentIndexWrite(
+  post: DocumentSnapshot | null,
+  authorUid: unknown,
+  delta: 1 | -1,
+): IndexWrite {
+  if (!post?.exists || typeof authorUid !== 'string') return { kind: 'none' };
+  return planIndexWrite(post.get('interactionIndex'), {
+    type: 'comment',
+    uid: authorUid,
+    delta,
+  });
+}
 
 type CaseKind = CreateReportInput['targetKind'];
 type CaseStatus = 'open' | 'closed';
@@ -331,17 +351,28 @@ export class NativeModeration {
           row.targetKind === 'comment'
             ? postRef.collection('comments').doc(row.targetId)
             : postRef;
-        const target = await tx.get(targetRef);
+        const [target, postSnap] = await Promise.all([
+          tx.get(targetRef),
+          row.targetKind === 'comment'
+            ? tx.get(postRef)
+            : Promise.resolve(null),
+        ]);
         if (
           !target.exists ||
           target.get('status') !== 'active' ||
           target.get('moderationHidden') !== (input.action === 'restore')
         )
           throw new NativeModerationError('INVALID');
+        const indexWrite = commentIndexWrite(
+          postSnap,
+          target.get('authorUid'),
+          input.action === 'hide' ? -1 : 1,
+        );
         tx.update(targetRef, {
           moderationHidden: input.action === 'hide',
           updatedAt: now,
         });
+        if (postSnap) applyIndexWrite(tx, postRef, indexWrite);
         if (input.action === 'hide' && row.targetKind === 'post') {
           tx.set(
             this.db
