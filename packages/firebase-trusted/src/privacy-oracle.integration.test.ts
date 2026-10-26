@@ -646,13 +646,8 @@ describe('a Firestore error on the post-lookup path is not a media oracle', () =
         ).id,
     ],
   ];
-  // Known low-severity gap (audit 2026-10-26): during a Firestore outage a real
-  // attached asset surfaces the raw error while a random id gets UNAVAILABLE.
-  // Reaching it needs an infrastructure failure, so it is not exploitable on
-  // demand. it.fails turns red once read() maps these uniformly; then switch
-  // it to a plain it.
   for (const [name, setup] of cases) {
-    it.fails(`${name}: real and random ids fail identically`, async () => {
+    it(`${name}: real and random ids fail identically`, async () => {
       const viewer = await person();
       const id = await setup(viewer);
       await expectSameDenial(

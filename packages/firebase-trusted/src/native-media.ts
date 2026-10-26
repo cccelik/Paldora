@@ -23,6 +23,7 @@ import {
   NativeLifeUpdateError,
 } from './native-life-updates.js';
 import { nativeBlockPairId } from './native-box-invitations.js';
+import { logEvent } from './log.js';
 
 export class NativeMediaError extends Error {
   public constructor(
@@ -61,6 +62,21 @@ type MediaRecord = {
   attachedRoomUid: string | null;
   attachedReactionPostId: string | null;
 };
+
+/**
+ * Reads must fail closed uniformly: an expected domain denial and an
+ * unexpected infrastructure error both surface as UNAVAILABLE, so a Firestore
+ * failure cannot distinguish a real attached asset from a random id. The error
+ * class is still logged for monitoring.
+ */
+function failClosedLookup(
+  error: unknown,
+  expected: abstract new (...args: never[]) => Error,
+): NativeMediaError {
+  if (!(error instanceof expected))
+    logEvent('ERROR', { event: 'media.read_lookup_failed' }, error);
+  return new NativeMediaError('UNAVAILABLE');
+}
 
 function record(snapshot: DocumentSnapshot): MediaRecord {
   if (!snapshot.exists) throw new NativeMediaError('UNAVAILABLE');
@@ -539,7 +555,9 @@ export class NativeMedia {
         if (!asset.derivativeObjectPaths)
           throw new NativeMediaError('STORAGE_UNAVAILABLE');
         await this.sweepAbandonedAttempts(asset, asset.derivativeObjectPaths);
+        let done = false;
         await this.db.runTransaction(async (tx) => {
+          done = false;
           const [fresh, pending] = await Promise.all([
             tx.get(this.ref(id)),
             tx.get(jobRef),
@@ -557,7 +575,11 @@ export class NativeMedia {
             updatedAt: now,
           });
           tx.update(jobRef, { status: 'complete', updatedAt: now });
+          done = true;
         });
+        // A retire that bumped the epoch mid-process must not leave this job
+        // 'running' for its lease; the delete job owns cleanup. No writes here.
+        if (!done) await this.finishJob(jobRef, claimId, now);
         return;
       }
       let results: Awaited<ReturnType<typeof derivatives>>;
@@ -668,7 +690,9 @@ export class NativeMedia {
       } else {
         await this.bucket.file(asset.rawPath).delete({ ignoreNotFound: true });
         await this.sweepAbandonedAttempts(asset, paths);
+        let done = false;
         await this.db.runTransaction(async (tx) => {
+          done = false;
           const [fresh, pending] = await Promise.all([
             tx.get(this.ref(id)),
             tx.get(jobRef),
@@ -684,7 +708,9 @@ export class NativeMedia {
             updatedAt: now,
           });
           tx.update(jobRef, { status: 'complete', updatedAt: now });
+          done = true;
         });
+        if (!done) await this.finishJob(jobRef, claimId, now);
         if (previousAvatarId)
           await this.retire(previousAvatarId, now).catch(() => undefined);
       }
@@ -897,9 +923,7 @@ export class NativeMedia {
       const post = await this.posts
         .get(asset.boxId, asset.attachedPostId, uid)
         .catch((error: unknown) => {
-          if (error instanceof NativePostError)
-            throw new NativeMediaError('UNAVAILABLE');
-          throw error;
+          throw failClosedLookup(error, NativePostError);
         });
       if (
         !((post as { mediaAssetIds?: string[] }).mediaAssetIds ?? []).includes(
@@ -914,9 +938,7 @@ export class NativeMedia {
       await this.posts
         .get(asset.boxId, asset.attachedReactionPostId, uid)
         .catch((error: unknown) => {
-          if (error instanceof NativePostError)
-            throw new NativeMediaError('UNAVAILABLE');
-          throw error;
+          throw failClosedLookup(error, NativePostError);
         });
       const reactorUid = asset.ownerUid;
       const [reaction, reactor, pair] = await Promise.all([
@@ -945,9 +967,7 @@ export class NativeMedia {
       const update = await new NativeLifeUpdates(this.db)
         .get(asset.attachedLifeUpdateId, uid)
         .catch((error: unknown) => {
-          if (error instanceof NativeLifeUpdateError)
-            throw new NativeMediaError('UNAVAILABLE');
-          throw error;
+          throw failClosedLookup(error, NativeLifeUpdateError);
         });
       if (!update.mediaAssetIds.includes(id))
         throw new NativeMediaError('UNAVAILABLE');
@@ -961,9 +981,7 @@ export class NativeMedia {
       await new NativeRooms(this.db)
         .get(uid, username)
         .catch((error: unknown) => {
-          if (error instanceof NativeRoomError)
-            throw new NativeMediaError('UNAVAILABLE');
-          throw error;
+          throw failClosedLookup(error, NativeRoomError);
         });
       const room = await this.db
         .collection('nativeRooms')

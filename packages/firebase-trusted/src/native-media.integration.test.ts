@@ -598,9 +598,12 @@ describe('private native media lifecycle', () => {
     await expect(media.read(owner, asset.id, 'display')).rejects.toMatchObject({
       code: 'UNAVAILABLE',
     });
-    // Reclaim the epoch-stale processor lease the way the repair loop does.
-    const later = Date.now() + 16 * 60_000;
-    await media.processOnce(jobId, later);
+    // The processor finished its own job after losing the epoch race, so
+    // cleanup must not wait for the 15-minute lease to expire.
+    expect(
+      (await db.collection('nativeJobs').doc(jobId).get()).get('status'),
+    ).toBe('complete');
+    const later = Date.now();
     for (let attempt = 0; attempt < 5; attempt += 1)
       if (
         (await media.cleanupPost(`media-post-cleanup-${postId}`, later)) ===
