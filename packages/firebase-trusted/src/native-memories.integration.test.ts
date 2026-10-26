@@ -131,7 +131,7 @@ describe('live UTC Memories', () => {
     try {
       let cursor: string | undefined;
       let found: string[] = [];
-      for (let index = 0; index < 6; index++) {
+      for (let index = 0; index < 50; index++) {
         const before = calls.mock.calls.length;
         const page = await memories.page(
           owner,
@@ -467,5 +467,168 @@ describe('live UTC Memories', () => {
     expect((await memories.page(reader, { kind: 'personal' })).items).toEqual(
       [],
     );
+  });
+  it('keeps strict descending order and gap-free cursors across sources', async () => {
+    const owner = await user();
+    const box = await boxes.create(owner, 'Two Sources');
+    const day = (value: number) => Date.UTC(2025, 5, value, 12);
+    const expected: { id: string; at: number }[] = [];
+    for (const [d, kind] of [
+      [28, 'post'],
+      [27, 'post'],
+      [26, 'only_me'],
+      [24, 'post'],
+      [23, 'post'],
+      [22, 'only_me'],
+      [21, 'post'],
+      [15, 'post'],
+      [14, 'only_me'],
+      [13, 'post'],
+    ] as const) {
+      const at = day(d);
+      if (kind === 'post') {
+        const id = await posts.create(box.id, owner, `Post ${d}`, at);
+        await home.processOnce(NativeHomeFeed.publishJobId(id));
+        expected.push({ id, at });
+      } else {
+        const id = await updates.create(
+          owner,
+          { audience: { type: 'only_me' }, sections: { travel: `Me ${d}` } },
+          at,
+        );
+        expected.push({ id, at });
+      }
+    }
+    const walk = async (limit: number) => {
+      const seen: { id: string; at: number }[] = [];
+      let pages = 0;
+      let cursor: string | undefined;
+      do {
+        const page = await memories.page(
+          owner,
+          { kind: 'personal' },
+          { year: 2025, month: 6, limit, cursor },
+        );
+        pages += 1;
+        expect(page.items.length).toBeLessThanOrEqual(limit);
+        seen.push(
+          ...page.items.map((item) => ({
+            id: item.id,
+            at: item.occurredAt,
+          })),
+        );
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor && pages < 40);
+      return { seen, pages };
+    };
+    for (const limit of [2, 3]) {
+      const { seen, pages } = await walk(limit);
+      expect(pages).toBeGreaterThanOrEqual(3);
+      expect(new Set(seen.map((item) => item.id)).size).toBe(seen.length);
+      expect(seen).toEqual(expected);
+      for (let index = 1; index < seen.length; index++)
+        expect(seen[index - 1]!.at).toBeGreaterThan(seen[index]!.at);
+    }
+  });
+
+  it('refills past candidates rejected by authorization without changing the item set', async () => {
+    const owner = await user();
+    const viewer = await user();
+    const blockedByViewer = await user();
+    const blocksViewer = await user();
+    const box = await boxes.create(owner, 'Reject Mix');
+    const left = await boxes.create(owner, 'Left Box');
+    for (const [boxId, uid] of [
+      [box.id, viewer],
+      [box.id, blockedByViewer],
+      [box.id, blocksViewer],
+      [left.id, viewer],
+    ] as const) {
+      await db
+        .collection('nativeBoxes')
+        .doc(boxId)
+        .collection('members')
+        .doc(uid)
+        .set({ uid, role: 'member', status: 'active', joinedAt: 1 });
+      await db
+        .collection('nativeAccounts')
+        .doc(uid)
+        .collection('boxRefs')
+        .doc(boxId)
+        .set({ boxId });
+    }
+    const day = (value: number) => Date.UTC(2025, 5, value, 12);
+    const publish = async (boxId: string, uid: string, d: number) => {
+      const id = await posts.create(boxId, uid, `Post ${d}`, day(d));
+      await home.processOnce(NativeHomeFeed.publishJobId(id));
+      return id;
+    };
+    // Newest first: every rejected candidate sorts ahead of the visible ones.
+    const hidden = await publish(box.id, owner, 29);
+    await db
+      .collection('nativeBoxes')
+      .doc(box.id)
+      .collection('posts')
+      .doc(hidden)
+      .update({ moderationHidden: true });
+    await publish(box.id, blockedByViewer, 28);
+    await publish(box.id, blocksViewer, 27);
+    await publish(left.id, owner, 26);
+    await updates.create(
+      owner,
+      { audience: { type: 'only_me' }, sections: { travel: 'Not yours' } },
+      day(25),
+    );
+    const visible = [
+      await publish(box.id, owner, 20),
+      await publish(box.id, owner, 19),
+      await publish(box.id, owner, 18),
+      await publish(box.id, owner, 17),
+      await publish(box.id, owner, 16),
+    ];
+    await db
+      .collection('nativeBlockPairs')
+      .doc(nativeBlockPairId(viewer, blockedByViewer))
+      .set({ blockedBy: [viewer], epoch: 1 });
+    await db
+      .collection('nativeBlockPairs')
+      .doc(nativeBlockPairId(viewer, blocksViewer))
+      .set({ blockedBy: [blocksViewer], epoch: 1 });
+    await db
+      .collection('nativeBoxes')
+      .doc(left.id)
+      .collection('members')
+      .doc(viewer)
+      .update({ status: 'removed' });
+
+    for (const scope of [
+      { kind: 'personal' as const },
+      { kind: 'box' as const, boxId: box.id },
+    ]) {
+      const first = await memories.page(viewer, scope, {
+        year: 2025,
+        month: 6,
+        limit: 3,
+      });
+      // A bounded scan may return a short (even empty) page with a cursor; what
+      // is guaranteed is that whatever it returns is a correct prefix, and that
+      // walking every cursor yields the full visible set in order.
+      expect(first.items.map((item) => item.id)).toEqual(
+        visible.slice(0, first.items.length),
+      );
+      const seen = first.items.map((item) => item.id);
+      let cursor = first.nextCursor ?? undefined;
+      for (let pages = 0; cursor && pages < 30; pages++) {
+        const page = await memories.page(viewer, scope, {
+          year: 2025,
+          month: 6,
+          limit: 3,
+          cursor,
+        });
+        seen.push(...page.items.map((item) => item.id));
+        cursor = page.nextCursor ?? undefined;
+      }
+      expect(seen).toEqual(visible);
+    }
   });
 });

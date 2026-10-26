@@ -101,6 +101,9 @@ type MemoryWindow = {
   nextCursor: string | null;
 };
 
+/** Extra window reads per source per page when authorization rejects candidates. */
+const MAX_WINDOW_REFILLS = 2;
+
 function sources(
   scope: NativeMemoryScope,
   filter: NativeMemoryFilter,
@@ -329,15 +332,17 @@ export class NativeMemories {
     source: MemorySource,
     position: string | null,
     options: {
+      size: number;
       beforeAt: number | undefined;
       afterAt: number | undefined;
       ownerUid: string | undefined;
     },
   ): Promise<MemoryWindow> {
+    const time = { beforeAt: options.beforeAt, afterAt: options.afterAt };
     if (source === 'box') {
       if (scope.kind !== 'box') throw new NativeMemoryError('INVALID');
       const page = await this.posts
-        .list(scope.boxId, uid, position ?? undefined, 50, options)
+        .list(scope.boxId, uid, position ?? undefined, options.size, time)
         .catch((error: unknown) => {
           if (error instanceof NativePostError)
             throw new NativeMemoryError('UNAVAILABLE');
@@ -358,7 +363,7 @@ export class NativeMemories {
     }
     if (source === 'home') {
       const page = await this.home
-        .page(uid, position ?? undefined, 50, options.ownerUid, options)
+        .page(uid, position ?? undefined, options.size, options.ownerUid, time)
         .catch((error: unknown) => {
           if (error instanceof NativeHomeFeedError)
             throw new NativeMemoryError('UNAVAILABLE');
@@ -445,6 +450,13 @@ export class NativeMemories {
               throw error;
             })
         : undefined;
+    const readWindow = (source: MemorySource, position: string | null) =>
+      this.window(uid, scope, source, position, {
+        size,
+        beforeAt,
+        afterAt,
+        ownerUid,
+      });
     const windows = Object.fromEntries(
       await Promise.all(
         activeSources.map(
@@ -453,13 +465,7 @@ export class NativeMemories {
               source,
               marker.states[source].done
                 ? { candidates: [], nextCursor: null }
-                : await this.window(
-                    uid,
-                    scope,
-                    source,
-                    marker.states[source].position,
-                    { beforeAt, afterAt, ownerUid },
-                  ),
+                : await readWindow(source, marker.states[source].position),
             ] as const,
         ),
       ),
@@ -467,7 +473,39 @@ export class NativeMemories {
     const offsets = Object.fromEntries(
       activeSources.map((source) => [source, 0]),
     ) as Record<MemorySource, number>;
+    // Each source window holds `size` candidates. A candidate rejected by
+    // authorization (item null) shortens the usable window, so an exhausted
+    // window that still has a nextCursor is refilled a bounded number of times.
+    // The merge never emits past a source whose next candidate is unknown.
+    const refills = Object.fromEntries(
+      activeSources.map((source) => [source, 0]),
+    ) as Record<MemorySource, number>;
+    // A read that returned no candidates already used the source's own scan
+    // budget (hidden-heavy history); the cursor advances instead of re-reading.
+    const lastRead = Object.fromEntries(
+      activeSources.map((source) => [
+        source,
+        windows[source].candidates.length,
+      ]),
+    ) as Record<MemorySource, number>;
     while (items.length < size) {
+      const starved = activeSources.find(
+        (source) =>
+          !marker.states[source].done &&
+          offsets[source] >= windows[source].candidates.length &&
+          windows[source].nextCursor !== null,
+      );
+      if (starved) {
+        if (refills[starved] >= MAX_WINDOW_REFILLS || !lastRead[starved]) break;
+        refills[starved] += 1;
+        const more = await readWindow(starved, windows[starved].nextCursor);
+        lastRead[starved] = more.candidates.length;
+        windows[starved] = {
+          candidates: [...windows[starved].candidates, ...more.candidates],
+          nextCursor: more.nextCursor,
+        };
+        continue;
+      }
       const next = activeSources.flatMap(
         (source) => windows[source].candidates[offsets[source]] ?? [],
       );

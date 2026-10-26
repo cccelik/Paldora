@@ -42,8 +42,8 @@ const budget = (predicted: number) => Math.ceil(predicted * HEADROOM);
 const PREDICTED = {
   homeFeed: 161,
   boxFeed: 583,
-  unreadCount: 671,
-  memoriesMonth: 224,
+  unreadCount: 271,
+  memoriesMonth: 164,
   roomView: 39,
   postDetail: 613,
 } as const;

@@ -3,7 +3,11 @@ import {
   FieldValue,
   type Firestore,
 } from 'firebase-admin/firestore';
-import { NativeBoxPosts, NativePostError } from './native-box-posts.js';
+import {
+  commentReadable,
+  NativeBoxPosts,
+  NativePostError,
+} from './native-box-posts.js';
 import { nativeBlockPairId } from './native-box-invitations.js';
 
 export class NativeNotificationError extends Error {
@@ -29,6 +33,7 @@ export interface NativeNotification {
 interface VisibilityCache {
   actors: Map<string, Promise<boolean>>;
   posts: Map<string, Promise<Awaited<ReturnType<NativeBoxPosts['get']>>>>;
+  comments: Map<string, Promise<FirebaseFirestore.DocumentSnapshot>>;
 }
 
 /** Private pointers only. Canonical access is rechecked on every read. */
@@ -119,6 +124,31 @@ export class NativeNotifications {
     return pending;
   }
 
+  private cachedComment(
+    boxId: string,
+    postId: string,
+    commentId: string,
+    cache?: VisibilityCache,
+  ) {
+    const load = () =>
+      this.db
+        .collection('nativeBoxes')
+        .doc(boxId)
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId)
+        .get();
+    if (!cache) return load();
+    const key = `${boxId}/${postId}/${commentId}`;
+    let pending = cache.comments.get(key);
+    if (!pending) {
+      pending = load();
+      cache.comments.set(key, pending);
+    }
+    return pending;
+  }
+
   /** True when the actor is active and no block exists in either direction. */
   private actorUsable(
     uid: string,
@@ -147,6 +177,27 @@ export class NativeNotifications {
     return pending;
   }
 
+  /** Comment-level proof: readable, expected author, and author usable. */
+  private async commentRowUsable(
+    uid: string,
+    data: FirebaseFirestore.DocumentData,
+    cache?: VisibilityCache,
+  ): Promise<boolean> {
+    const postId = data.postId as string;
+    // The caller's post check already proved Box, membership and post state.
+    const comment = await this.cachedComment(
+      data.boxId as string,
+      postId,
+      data.commentId as string,
+      cache,
+    );
+    if (!commentReadable(comment, postId)) return false;
+    const authorUid = comment.get('authorUid') as string;
+    if (data.type !== 'comment.reaction' && authorUid !== data.actorUid)
+      return false;
+    return this.actorUsable(uid, authorUid, cache);
+  }
+
   private async visible(
     uid: string,
     id: string,
@@ -161,14 +212,7 @@ export class NativeNotifications {
       const post = await this.cachedPost(uid, boxId, postId, cache);
       if (!(await this.actorUsable(uid, actorUid, cache))) return null;
       if (commentId) {
-        const { comment } = await this.posts.commentDetail(
-          boxId,
-          postId,
-          commentId,
-          uid,
-        );
-        if (data.type !== 'comment.reaction' && comment.authorUid !== actorUid)
-          return null;
+        if (!(await this.commentRowUsable(uid, data, cache))) return null;
       }
       if (data.type === 'post.reaction' || data.type === 'comment.reaction') {
         const target = commentId
@@ -254,20 +298,28 @@ export class NativeNotifications {
     const account = await this.db.collection('nativeAccounts').doc(uid).get();
     if (account.get('status') !== 'active')
       throw new NativeNotificationError('UNAVAILABLE');
-    const page = await this.items(uid)
-      .where('read', '==', false)
-      .limit(300)
-      .get();
     let count = 0;
-    const cache: VisibilityCache = { actors: new Map(), posts: new Map() };
-    for (let i = 0; i < page.docs.length && count < 100; i += 25) {
-      // eslint-disable-next-line no-await-in-loop -- bounded chunks; stop once the cap is reached.
+    const cache: VisibilityCache = {
+      actors: new Map(),
+      posts: new Map(),
+      comments: new Map(),
+    };
+    let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+    for (let scanned = 0; scanned < 300 && count < 100; scanned += 50) {
+      let query = this.items(uid)
+        .where('read', '==', false)
+        .orderBy(FieldPath.documentId())
+        .limit(50);
+      if (last) query = query.startAfter(last);
+      // eslint-disable-next-line no-await-in-loop -- each page resumes after the prior one; stops at the cap.
+      const page = await query.get();
+      // eslint-disable-next-line no-await-in-loop -- bounded chunk; stop once the cap is reached.
       const chunk = await Promise.all(
-        page.docs
-          .slice(i, i + 25)
-          .map((row) => this.visible(uid, row.id, row.data(), cache)),
+        page.docs.map((row) => this.visible(uid, row.id, row.data(), cache)),
       );
       count += chunk.filter((item) => item !== null).length;
+      if (page.size < 50) break;
+      last = page.docs[page.docs.length - 1];
     }
     return { count: Math.min(count, 100), capped: count >= 100 };
   }

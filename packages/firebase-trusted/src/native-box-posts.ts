@@ -50,6 +50,25 @@ export interface NativeReaction {
   mediaAssetId?: string;
 }
 
+/** Comment exists in this post and is not moderation-hidden (any status). */
+function commentPresent(snapshot: DocumentSnapshot, postId: string): boolean {
+  return (
+    snapshot.exists &&
+    snapshot.get('postId') === postId &&
+    snapshot.get('moderationHidden') === false
+  );
+}
+
+/** Pure comment-level readability: present, not hidden, and active. */
+export function commentReadable(
+  snapshot: DocumentSnapshot,
+  postId: string,
+): boolean {
+  return (
+    commentPresent(snapshot, postId) && snapshot.get('status') === 'active'
+  );
+}
+
 function active(snapshot: DocumentSnapshot): boolean {
   return snapshot.exists && snapshot.get('status') === 'active';
 }
@@ -594,9 +613,7 @@ export class NativeBoxPosts {
       ]);
       if (
         !(await this.visible(tx, boxId, viewerUid, post)) ||
-        !comment.exists ||
-        comment.get('postId') !== postId ||
-        comment.get('moderationHidden') !== false
+        !commentPresent(comment, postId)
       )
         return null;
       const createdAt = comment.get('createdAt') as number;

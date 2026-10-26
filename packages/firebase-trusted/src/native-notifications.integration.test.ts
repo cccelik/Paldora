@@ -136,4 +136,125 @@ describe('private notification projection', () => {
       capped: true,
     });
   });
+
+  describe('comment notification rows are rechecked in unread counts', () => {
+    async function fixture() {
+      const owner = await user();
+      const peer = await user();
+      const box = await boxes.create(owner, 'Rechecked');
+      await db
+        .collection('nativeBoxes')
+        .doc(box.id)
+        .collection('members')
+        .doc(peer)
+        .set({ uid: peer, role: 'member', status: 'active', joinedAt: 1 });
+      const postId = await posts.create(box.id, owner, 'Hello');
+      const commentId = await posts.createComment(box.id, postId, peer, 'Hi');
+      await notifications.processPending();
+      expect(await notifications.unreadCount(owner)).toMatchObject({
+        count: 1,
+      });
+      const comment = db
+        .collection('nativeBoxes')
+        .doc(box.id)
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId);
+      return { owner, peer, box, comment };
+    }
+
+    it('drops the row when the comment is soft-deleted', async () => {
+      const { owner, comment } = await fixture();
+      await comment.update({ status: 'deleted' });
+      expect((await notifications.unreadCount(owner)).count).toBe(0);
+    });
+
+    it('drops the row when the comment is moderation-hidden', async () => {
+      const { owner, comment } = await fixture();
+      await comment.update({ moderationHidden: true });
+      expect((await notifications.unreadCount(owner)).count).toBe(0);
+    });
+
+    it('drops the row when the comment author is suspended', async () => {
+      const { owner, peer } = await fixture();
+      await db
+        .collection('nativeAccounts')
+        .doc(peer)
+        .update({ status: 'suspended' });
+      expect((await notifications.unreadCount(owner)).count).toBe(0);
+    });
+
+    it.each(['viewer', 'author'] as const)(
+      'drops the row when the %s blocks the other',
+      async (blocker) => {
+        const { owner, peer } = await fixture();
+        await db
+          .collection('nativeBlockPairs')
+          .doc(nativeBlockPairId(owner, peer))
+          .set({
+            blockedBy: [blocker === 'viewer' ? owner : peer],
+            epoch: 1,
+          });
+        expect((await notifications.unreadCount(owner)).count).toBe(0);
+      },
+    );
+
+    it('drops the row when the viewer leaves the Box', async () => {
+      const { owner, box } = await fixture();
+      await db
+        .collection('nativeBoxes')
+        .doc(box.id)
+        .collection('members')
+        .doc(owner)
+        .update({ status: 'removed' });
+      expect((await notifications.unreadCount(owner)).count).toBe(0);
+    });
+
+    it('drops the row when Box deletion starts', async () => {
+      const { owner, box } = await fixture();
+      await db
+        .collection('nativeBoxes')
+        .doc(box.id)
+        .update({ status: 'deleting' });
+      expect((await notifications.unreadCount(owner)).count).toBe(0);
+    });
+  });
+
+  it('stops at the cap of 100 with 300 unread rows', async () => {
+    const owner = await user();
+    const peer = await user();
+    const box = await boxes.create(owner, 'Capped');
+    await db
+      .collection('nativeBoxes')
+      .doc(box.id)
+      .collection('members')
+      .doc(peer)
+      .set({ uid: peer, role: 'member', status: 'active', joinedAt: 1 });
+    const postId = await posts.create(box.id, owner, 'Hello');
+    const commentId = await posts.createComment(box.id, postId, peer, 'Hi');
+    const items = db
+      .collection('nativeNotifications')
+      .doc(owner)
+      .collection('items');
+    await Promise.all(
+      Array.from({ length: 300 }, (_, i) =>
+        items.doc(`cap-${String(i).padStart(4, '0')}`).set({
+          schemaVersion: 1,
+          type: 'post.comment',
+          actorUid: peer,
+          boxId: box.id,
+          postId,
+          commentId,
+          reactionKind: null,
+          read: false,
+          createdAt: 2_000 + i,
+        }),
+      ),
+    );
+    expect(await notifications.unreadCount(owner)).toEqual({
+      count: 100,
+      capped: true,
+    });
+  });
 });
