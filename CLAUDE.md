@@ -135,6 +135,8 @@ mature, language-neutral contract.
 
 ## E. Architecture and dependency rules
 
+> The diagram below is the retired reference architecture. The active one is Firebase Auth, Firestore, Storage and Functions behind `@paldora/firebase-trusted` (see [docs/firebase/implementation.md](docs/firebase/implementation.md) and [docs/deployment.md](docs/deployment.md)).
+
 ```text
 Next.js web ────────────┐
 iOS (SwiftUI) ──────────┼─> versioned HTTP API (/api/v1) ─> NestJS API ─> PostgreSQL (canonical)
@@ -149,7 +151,7 @@ Android (Compose) ──────┘                                    ├�
 - Clients never touch PostgreSQL, Redis, or storage credentials. They receive only short-lived signed URLs.
 - Controllers are thin (parse → rate-limit → delegate). Services and `*-authorization-policy.service.ts` own rules. Persistence sits behind focused data boundaries.
 - `domain` is framework-neutral and `validation` owns shared Zod schemas. `api-client` centralizes HTTP, auth headers, and typed errors. Workspace packages stay acyclic.
-- **Contract boundary:** a language-neutral, versioned OpenAPI document (greenfield, §R2). Generate or verify Swift and Kotlin transport models from it. Domain and UI layers stay native and hand-written.
+- **Contract boundary:** the native Firebase contract: the callable registry, generated JSON Schema, and fixtures under `contracts/native/` ([ADR 021](docs/adr/021-firebase-native-contract.md), Proposed). Generate or verify Swift and Kotlin transport models from it; `pnpm contract:native:check` guards drift. Domain and UI layers stay native and hand-written. The OpenAPI pipeline in §R2 is historical.
 - Web, iOS, and Android share API semantics, token values, terminology, fixtures, and conformance tests. They **never share UI source**.
 - Native apps follow platform conventions (navigation, accessibility APIs, Keychain/Keystore, lifecycle, background work, media, push). They do not chase pixel parity.
 - Modular monolith until measured scale or ownership pressure says otherwise. No microservices.
@@ -259,7 +261,7 @@ Invariants:
 
 1. domain DTOs;
 2. a shared Zod schema;
-3. a typed client method (and an OpenAPI entry in the greenfield);
+3. a typed client method (and, for native clients, a callable registry entry and fixture under `contracts/native/`);
 4. an explicit policy plus stable non-leaking errors;
 5. a transaction and constraint design;
 6. a rate-limit decision;
@@ -382,8 +384,8 @@ Update that table when a phase exits.
 | 7   | Rooms, 14 themes, Top Friends, widgets, banner/music, app appearance                                                                                      |
 | 8   | Advanced personalization, only after a dedicated security review                                                                                          |
 | 9   | Moderation/admin, reporting, audit, account deletion/export, **signup gate**                                                                              |
-| 10  | iOS app (Swift/SwiftUI): complete native client on the stable API                                                                                         |
-| 11  | Android app (Kotlin/Compose): separate complete native client on the same contract                                                                        |
+| 10  | iOS app (Swift/SwiftUI): complete native client on the frozen Firebase callable contract                                                                  |
+| 11  | Android app (Kotlin/Compose): separate complete native client on the same callable contract                                                               |
 | 12  | Discovery, collections, premium, recaps, once their privacy models are explicit                                                                           |
 
 Public registration stays disabled until Phase 9 passes. Phases 10 and 11 each
@@ -402,7 +404,7 @@ include:
 - TestFlight or Play internal testing;
 - store privacy labels and data-safety forms.
 
-Do not start them to mirror screens while the web/API is still churning.
+Do not start them to mirror screens while the web app or the callable contract is still churning.
 
 ## M. Testing and definition of done
 
@@ -604,7 +606,7 @@ Format: problem → design → why for Paldora → trade-offs → migration → 
 - **Validate:** a test enumerates every route and asserts it is guarded unless allowlisted.
 - **Revisit when:** a module needs independent deployment.
 
-**R2 Replace: hand-written contract with an OpenAPI pipeline.**
+**R2 Replace: hand-written contract with an OpenAPI pipeline.** _Historical: superseded for native clients by the callable contract in `contracts/native/` (ADR 021)._
 
 - **Problem:** a hand-maintained 842-line client, with native apps coming.
 - **Design:**
