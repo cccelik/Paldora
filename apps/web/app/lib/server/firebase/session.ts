@@ -5,6 +5,10 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
+import {
+  assertHostedEnvironment,
+  deploymentEnvironment,
+} from '@/lib/server/environment';
 import 'server-only';
 
 export const FIREBASE_SESSION_COOKIE = 'paldora_session';
@@ -16,7 +20,8 @@ function configuration() {
   const apiKey = process.env.FIREBASE_WEB_API_KEY;
   if (!projectId || !apiKey)
     throw new Error('Firebase web identity is not configured.');
-  if (process.env.PALDORA_ENV === 'local') {
+  assertHostedEnvironment();
+  if (deploymentEnvironment() === 'local') {
     if (
       projectId !== 'demo-paldora' ||
       process.env.FIREBASE_AUTH_EMULATOR_HOST !== '127.0.0.1:9099' ||
@@ -31,15 +36,6 @@ function configuration() {
       restBaseUrl: 'http://127.0.0.1:9099/identitytoolkit.googleapis.com',
     };
   }
-  if (
-    process.env.FIREBASE_AUTH_EMULATOR_HOST ||
-    process.env.FIRESTORE_EMULATOR_HOST ||
-    process.env.FIREBASE_STORAGE_EMULATOR_HOST ||
-    process.env.FIREBASE_FUNCTIONS_EMULATOR_HOST
-  )
-    throw new Error(
-      'Firebase emulators must not be configured for hosted web.',
-    );
   return {
     projectId,
     apiKey,

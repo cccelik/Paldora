@@ -107,10 +107,18 @@ and cost are an open staging gate.
 | Staging     | not created                     | n/a   | Required before private beta. Must be a separate project with a named billing owner, budget and alerts.                                                                    |
 | Production  | not created                     | n/a   | Separate project. Requires everything in the staging checklist, then a separate owner decision for signup.                                                                 |
 
-Local safety is enforced in code. With `PALDORA_ENV=local`, the web session
+Environment safety is enforced in code
+(`apps/web/app/lib/server/environment.ts`, called from
+`apps/web/app/lib/server/firebase/session.ts`). `PALDORA_ENV` must be exactly
+`local`, `staging` or `production`; a missing or misspelled value **fails
+closed** at the first request that needs Firebase. With `local`, the session
 service insists on project `demo-paldora` and the four exact emulator host
-values. Outside `local`, it **refuses to start if any emulator host variable
-is set** (`apps/web/app/lib/server/firebase/session.ts`). Origin checks on
+values. With `staging` or `production`, it refuses to run if any emulator host
+variable is set, if `NEXT_PUBLIC_WEB_URL` is not HTTPS, if `FIREBASE_PROJECT_ID`
+is missing or starts with `demo-`, or if `FIREBASE_WEB_API_KEY` is missing or
+looks like a demo or `dev_only` credential. `next build` does not require
+`PALDORA_ENV`, so CI builds are unaffected. This is unit tested
+(`environment.test.ts`) but has not been exercised against a hosted project. Origin checks on
 Server Actions are looser only in `local`
 (`apps/web/app/lib/server/firebase/origin.ts`), and the HSTS header is sent
 whenever `PALDORA_ENV` is not `local` (`apps/web/next.config.ts`).
