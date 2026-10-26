@@ -27,8 +27,10 @@ import {
 import {
   connectFunctionsEmulator,
   getFunctions,
-  httpsCallable,
+  httpsCallable as sdkHttpsCallable,
+  type Functions,
 } from 'firebase/functions';
+import { native } from '@paldora/validation';
 import { afterAll, describe, expect, it } from 'vitest';
 
 if (
@@ -40,6 +42,47 @@ if (
   throw new Error(
     'This test requires the disposable Auth, Firestore, Storage, and Functions emulators',
   );
+
+const registry = new Map(
+  native.nativeCallableRegistry.map((entry) => [entry.name, entry]),
+);
+const exercised = new Set<string>();
+
+/**
+ * Every real response and error in this flow is checked against the frozen
+ * native contract, so the registry cannot drift from what the callables return.
+ */
+function httpsCallable<Request = unknown, Response = unknown>(
+  functions: Functions,
+  name: string,
+) {
+  const call = sdkHttpsCallable<Request, Response>(functions, name);
+  const entry = registry.get(name);
+  return async (data?: Request) => {
+    if (!entry) throw new Error(`${name} is missing from the native registry`);
+    exercised.add(name);
+    let result;
+    try {
+      result = await call(data);
+    } catch (error) {
+      const code = (error as { code?: string }).code?.replace(
+        /^functions\//,
+        '',
+      );
+      if (code)
+        expect(entry.errors, `${name} raised an undeclared ${code}`).toContain(
+          code,
+        );
+      throw error;
+    }
+    const parsed = entry.output.safeParse(result.data);
+    expect(
+      parsed.success ? null : parsed.error.issues,
+      `${name} response matches the native contract`,
+    ).toBeNull();
+    return result;
+  };
+}
 
 const adminApp = initializeAdminApp(
   { projectId: 'demo-paldora' },
@@ -639,4 +682,14 @@ describe('local Firebase Box vertical flow', () => {
       code: 'functions/not-found',
     });
   }, 30_000);
+});
+
+describe('native contract coverage of this flow', () => {
+  it('reports which callables the flow exercised', () => {
+    const missing = [...registry.keys()].filter((name) => !exercised.has(name));
+    process.stdout.write(
+      `native-contract: ${exercised.size}/${registry.size} callables exercised; not exercised: ${missing.join(', ')}\n`,
+    );
+    expect(exercised.size).toBeGreaterThan(0);
+  });
 });

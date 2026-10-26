@@ -64,6 +64,9 @@ importers:
       '@paldora/firebase-native':
         specifier: workspace:*
         version: link:../../packages/firebase-native
+      '@paldora/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       firebase:
         specifier: 13.0.0
         version: 13.0.0
