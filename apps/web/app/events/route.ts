@@ -2,13 +2,22 @@ import {
   firebaseAdminServices,
   FIREBASE_SESSION_COOKIE,
 } from '@/lib/server/firebase/session';
-import { NativeNotifications } from '@paldora/firebase-trusted';
+import {
+  logEvent,
+  NativeNotifications,
+  requestIdFrom,
+} from '@paldora/firebase-trusted';
 import 'server-only';
 
 export const dynamic = 'force-dynamic';
 
 /** Opaque, short-lived invalidation stream. Each poll rechecks the cookie and account. */
 export async function GET(request: Request): Promise<Response> {
+  const requestId = requestIdFrom(request.headers.get('x-request-id'));
+  const failed = (event: string) => (error: unknown) => {
+    logEvent('WARNING', { event, route: 'events', requestId }, error);
+    return null;
+  };
   const cookie = request.headers
     .get('cookie')
     ?.split(';')
@@ -17,10 +26,14 @@ export async function GET(request: Request): Promise<Response> {
     ?.slice(FIREBASE_SESSION_COOKIE.length + 1);
   if (!cookie) return new Response(null, { status: 401 });
   const services = firebaseAdminServices();
-  const uid = await services.sessions.verify(cookie).catch(() => null);
+  const uid = await services.sessions
+    .verify(cookie)
+    .catch(failed('events.session_verify_failed'));
   if (!uid) return new Response(null, { status: 401 });
   const notifications = new NativeNotifications(services.db);
-  const initial = await notifications.hintVersion(uid).catch(() => null);
+  const initial = await notifications
+    .hintVersion(uid)
+    .catch(failed('events.hint_failed'));
   if (initial === null) return new Response(null, { status: 401 });
   const encoder = new TextEncoder();
   let closed = false;
@@ -42,10 +55,12 @@ export async function GET(request: Request): Promise<Response> {
             // eslint-disable-next-line no-await-in-loop -- Revocation is rechecked before every hint.
             const valid = await services.sessions
               .verify(cookie)
-              .catch(() => null);
+              .catch(failed('events.session_verify_failed'));
             if (valid !== uid) break;
             // eslint-disable-next-line no-await-in-loop -- Account status is rechecked before every hint.
-            const next = await notifications.hintVersion(uid).catch(() => null);
+            const next = await notifications
+              .hintVersion(uid)
+              .catch(failed('events.hint_failed'));
             if (closed || request.signal.aborted) break;
             if (next === null) break;
             if (next !== version) {
@@ -53,7 +68,12 @@ export async function GET(request: Request): Promise<Response> {
               send({ type: 'notifications.changed' });
             } else controller.enqueue(encoder.encode(': keepalive\n\n'));
           }
-        } catch {
+        } catch (error) {
+          logEvent(
+            'WARNING',
+            { event: 'events.stream_failed', route: 'events', requestId },
+            error,
+          );
           // A disconnected reader can reject an enqueue after an async check.
         } finally {
           if (!closed) {

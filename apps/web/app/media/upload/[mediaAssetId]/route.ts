@@ -3,7 +3,12 @@ import {
   firebaseAdminServices,
   firebaseSessionUid,
 } from '@/lib/server/firebase/session';
-import { NativeMedia, NativeMediaError } from '@paldora/firebase-trusted';
+import {
+  logEvent,
+  NativeMedia,
+  NativeMediaError,
+  requestIdFrom,
+} from '@paldora/firebase-trusted';
 import { uuidSchema } from '@paldora/validation';
 import { boundedBody } from '@/lib/media/bounded-body';
 
@@ -42,6 +47,15 @@ export async function PUT(
     );
     return new Response(null, { status: 204, headers: noStore });
   } catch (error) {
+    logEvent(
+      'WARNING',
+      {
+        event: 'media.upload_failed',
+        route: 'media.upload',
+        requestId: requestIdFrom(request.headers.get('x-request-id')),
+      },
+      error,
+    );
     if (error instanceof NativeMediaError)
       return new Response(null, {
         status: error.code === 'UNAVAILABLE' ? 404 : 400,

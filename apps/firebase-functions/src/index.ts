@@ -25,6 +25,7 @@ import {
   NativeMedia,
   NativeUsernameError,
   NativeUsernames,
+  logEvent,
 } from '@paldora/firebase-trusted';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -35,6 +36,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
+import { observedJob } from './observed.js';
 
 if (getApps().length === 0) initializeApp();
 const db = getFirestore();
@@ -89,42 +91,46 @@ const options = { region: 'europe-west4', maxInstances: 1 } as const;
 
 export const repairAccountLifecycle = onSchedule(
   { schedule: 'every 1 minutes', region: 'europe-west4', maxInstances: 1 },
-  async () => {
+  observedJob('repairAccountLifecycle', async () => {
     const results = await Promise.allSettled([
       accountLifecycle.repairExports(),
       accountLifecycle.repairDeletions(),
     ]);
     const failed = results.find((result) => result.status === 'rejected');
     if (failed?.status === 'rejected') throw failed.reason;
-  },
+  }),
 );
 
 /** A retryable local worker; hosted scheduling waits for the Blaze decision. */
 export const repairBoxDeletionJobs = onSchedule(
   { schedule: 'every 1 minutes', region: 'europe-west4', maxInstances: 1 },
-  async () => {
+  observedJob('repairBoxDeletionJobs', async () => {
     await boxDeletion.repairPending();
-  },
+  }),
 );
 
 /** New intents start immediately; the scheduled pass repairs interrupted work. */
 export const projectFeedJob = onDocumentCreated(
   { document: 'nativeJobs/{jobId}', region: 'europe-west4', maxInstances: 1 },
-  async (event) => {
-    if (event.data?.get('type') !== 'feed') return;
-    for (let page = 0; page < 100; page += 1) {
-      // eslint-disable-next-line no-await-in-loop -- One job cursor must advance in order.
-      if ((await homeFeed.processOnce(event.params.jobId)) === 'complete')
-        break;
-    }
-  },
+  observedJob(
+    'projectFeedJob',
+    async (event) => {
+      if (event.data?.get('type') !== 'feed') return;
+      for (let page = 0; page < 100; page += 1) {
+        // eslint-disable-next-line no-await-in-loop -- One job cursor must advance in order.
+        if ((await homeFeed.processOnce(event.params.jobId)) === 'complete')
+          break;
+      }
+    },
+    (event) => event.params.jobId,
+  ),
 );
 
 export const repairFeedJobs = onSchedule(
   { schedule: 'every 1 minutes', region: 'europe-west4', maxInstances: 1 },
-  async () => {
+  observedJob('repairFeedJobs', async () => {
     await homeFeed.processPending(100);
-  },
+  }),
 );
 
 /** The canonical transaction writes activity first; projection can be retried. */
@@ -134,45 +140,53 @@ export const projectNotification = onDocumentCreated(
     region: 'europe-west4',
     maxInstances: 1,
   },
-  async (event) => {
-    await notifications.processOnce(event.params.activityId);
-  },
+  observedJob(
+    'projectNotification',
+    async (event) => {
+      await notifications.processOnce(event.params.activityId);
+    },
+    (event) => event.params.activityId,
+  ),
 );
 
 export const repairNotificationProjection = onSchedule(
   { schedule: 'every 1 minutes', region: 'europe-west4', maxInstances: 1 },
-  async () => {
+  observedJob('repairNotificationProjection', async () => {
     await notifications.processPending(100);
-  },
+  }),
 );
 
 export const redactModerationEvidence = onSchedule(
   { schedule: 'every 24 hours', region: 'europe-west4', maxInstances: 1 },
-  async () => {
+  observedJob('redactModerationEvidence', async () => {
     await moderation.redactClosedReports();
-  },
+  }),
 );
 
 /** Firestore is the durable intent; a task only carries its opaque job ID. */
 export const dispatchMediaJob = onDocumentCreated(
   { document: 'nativeJobs/{jobId}', region: 'europe-west4', maxInstances: 1 },
-  async (event) => {
-    if (event.data?.get('type') !== 'media') return;
-    if (
-      process.env.FUNCTIONS_EMULATOR === 'true' &&
-      process.env.GCLOUD_PROJECT === 'demo-paldora'
-    ) {
-      // The task emulator can stall while Admin resolves local credentials.
-      // The same durable intent and lease code still runs in the demo project.
-      await media.processOnce(event.params.jobId);
-      return;
-    }
-    await getFunctions()
-      .taskQueue<{ jobId: string }>(
-        'locations/europe-west4/functions/executeMediaJob',
-      )
-      .enqueue({ jobId: event.params.jobId });
-  },
+  observedJob(
+    'dispatchMediaJob',
+    async (event) => {
+      if (event.data?.get('type') !== 'media') return;
+      if (
+        process.env.FUNCTIONS_EMULATOR === 'true' &&
+        process.env.GCLOUD_PROJECT === 'demo-paldora'
+      ) {
+        // The task emulator can stall while Admin resolves local credentials.
+        // The same durable intent and lease code still runs in the demo project.
+        await media.processOnce(event.params.jobId);
+        return;
+      }
+      await getFunctions()
+        .taskQueue<{ jobId: string }>(
+          'locations/europe-west4/functions/executeMediaJob',
+        )
+        .enqueue({ jobId: event.params.jobId });
+    },
+    (event) => event.params.jobId,
+  ),
 );
 
 export const executeMediaJob = onTaskDispatched<{ jobId: string }>(
@@ -181,23 +195,27 @@ export const executeMediaJob = onTaskDispatched<{ jobId: string }>(
     maxInstances: 1,
     retryConfig: { maxAttempts: 5, minBackoffSeconds: 10 },
   },
-  async (request) => {
-    if (
-      typeof request.data.jobId !== 'string' ||
-      !request.data.jobId.startsWith('media-')
-    )
-      return;
-    await media.processOnce(request.data.jobId);
-  },
+  observedJob(
+    'executeMediaJob',
+    async (request) => {
+      if (
+        typeof request.data.jobId !== 'string' ||
+        !request.data.jobId.startsWith('media-')
+      )
+        return;
+      await media.processOnce(request.data.jobId);
+    },
+    (request) => request.data.jobId,
+  ),
 );
 
 export const repairMediaJobs = onSchedule(
   { schedule: 'every 1 minutes', region: 'europe-west4', maxInstances: 1 },
-  async () => {
+  observedJob('repairMediaJobs', async () => {
     await media.repairPending(100);
     await media.repairPostCleanups(100);
     await media.expireUnattached(100);
-  },
+  }),
 );
 
 async function drainPostMedia(postId: string): Promise<void> {
@@ -304,6 +322,7 @@ async function invoke<T>(work: () => Promise<T>): Promise<T> {
       error instanceof NativeBoxDeletionError
     )
       throw boxError(error);
+    logEvent('ERROR', { event: 'callable.failed' }, error);
     throw error;
   }
 }

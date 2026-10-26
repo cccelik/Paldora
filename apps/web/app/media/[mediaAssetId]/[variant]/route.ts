@@ -2,7 +2,12 @@ import {
   firebaseAdminServices,
   firebaseSessionUid,
 } from '@/lib/server/firebase/session';
-import { NativeMedia, NativeMediaError } from '@paldora/firebase-trusted';
+import {
+  logEvent,
+  NativeMedia,
+  NativeMediaError,
+  requestIdFrom,
+} from '@paldora/firebase-trusted';
 import { uuidSchema } from '@paldora/validation';
 
 export const runtime = 'nodejs';
@@ -13,7 +18,7 @@ const noStore = {
 
 /** Every read rechecks the session, asset state and canonical visibility. */
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ mediaAssetId: string; variant: string }> },
 ) {
   const uid = await firebaseSessionUid();
@@ -36,6 +41,16 @@ export async function GET(
       headers: { ...noStore, 'Content-Type': 'image/webp' },
     });
   } catch (error) {
+    logEvent(
+      'WARNING',
+      {
+        event: 'media.read_failed',
+        route: 'media.read',
+        requestId: requestIdFrom(request.headers.get('x-request-id')),
+        status: error instanceof NativeMediaError ? 404 : 500,
+      },
+      error,
+    );
     if (error instanceof NativeMediaError)
       return new Response(null, { status: 404, headers: noStore });
     throw error;

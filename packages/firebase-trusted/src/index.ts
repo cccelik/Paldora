@@ -18,3 +18,4 @@ export * from './native-media.js';
 export * from './native-usernames.js';
 export * from './native-web-sessions.js';
 export * from './native-profiles.js';
+export * from './log.js';
