@@ -212,4 +212,78 @@ describe('trusted Room policy and versioned writes', () => {
     ).rejects.toMatchObject({ code: 'INVALID' });
     expect((await rooms.personalizationSource(owner)).widgets).toHaveLength(1);
   });
+  it('lets exactly one of two concurrent writes with the same expectedUpdatedAt win', async () => {
+    const owner = await person(`owner${randomUUID().slice(0, 8)}`);
+    const base = await rooms.update(owner, {
+      visibility: 'members',
+      expectedUpdatedAt: null,
+    });
+    const results = await Promise.allSettled([
+      rooms.update(owner, {
+        location: 'Paris',
+        expectedUpdatedAt: base.updatedAt,
+      }),
+      rooms.update(owner, {
+        currently: 'Reading',
+        expectedUpdatedAt: base.updatedAt,
+      }),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const lost = results.find((r) => r.status === 'rejected');
+    expect(lost).toMatchObject({ reason: { code: 'STALE' } });
+    const final = await rooms.get(owner);
+    expect([final.location, final.currently].filter(Boolean)).toHaveLength(1);
+  });
+
+  it('treats a stale write that changes nothing as an idempotent success', async () => {
+    const owner = await person(`owner${randomUUID().slice(0, 8)}`);
+    const first = await rooms.update(owner, {
+      location: 'Paris',
+      expectedUpdatedAt: null,
+    });
+    await rooms.update(owner, {
+      currently: 'Reading',
+      expectedUpdatedAt: first.updatedAt,
+    });
+    // No-op against current state (e.g. a retried request) succeeds without a
+    // version bump, even with a stale token; any real change is still STALE.
+    const retry = await rooms.update(owner, {
+      location: 'Paris',
+      expectedUpdatedAt: first.updatedAt,
+    });
+    expect(retry.currently).toBe('Reading');
+    await expect(
+      rooms.update(owner, {
+        location: 'Rome',
+        expectedUpdatedAt: first.updatedAt,
+      }),
+    ).rejects.toMatchObject({ code: 'STALE' });
+  });
+
+  it('does not attach banner media on a stale write', async () => {
+    const owner = await person(`owner${randomUUID().slice(0, 8)}`);
+    const first = await rooms.update(owner, {
+      location: 'Paris',
+      expectedUpdatedAt: null,
+    });
+    await rooms.update(owner, {
+      currently: 'Reading',
+      expectedUpdatedAt: first.updatedAt,
+    });
+    const assetId = randomUUID();
+    const assetRef = db.collection('nativeMediaAssets').doc(assetId);
+    await assetRef.set({
+      status: 'ready',
+      purpose: 'room_banner',
+      ownerUid: owner,
+      attachedRoomUid: null,
+    });
+    await expect(
+      rooms.update(owner, {
+        bannerMediaId: assetId,
+        expectedUpdatedAt: first.updatedAt,
+      }),
+    ).rejects.toMatchObject({ code: 'STALE' });
+    expect((await assetRef.get()).get('attachedRoomUid')).toBeNull();
+  });
 });
