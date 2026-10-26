@@ -542,4 +542,159 @@ describe('private archive and generation-tagged account erasure', () => {
       .get();
     expect(left.size).toBe(0);
   });
+
+  it('keeps cancellation and erasure coherent when they race at the deadline', async () => {
+    for (const cancelAtOffset of [-1, 0]) {
+      const uid = await person();
+      const boxId = randomUUID(),
+        postId = randomUUID();
+      await db
+        .collection('nativeBoxes')
+        .doc(boxId)
+        .set({ status: 'active', ownerUid: randomUUID() });
+      const post = db
+        .collection('nativeBoxes')
+        .doc(boxId)
+        .collection('posts')
+        .doc(postId);
+      await post.set({
+        boxId,
+        authorUid: uid,
+        text: 'must not be erased unless deletion completes',
+        status: 'active',
+      });
+      const request = await lifecycle.requestDeletion(
+        uid,
+        'correct-password',
+        verify,
+        1_000,
+      );
+      const due = Date.parse(request.dueAt);
+      const [cancelled, processed] = await Promise.allSettled([
+        lifecycle.cancelDeletion(
+          uid,
+          'correct-password',
+          verify,
+          due + cancelAtOffset,
+        ),
+        lifecycle.processDeletion(uid, due),
+      ]);
+      const requestRow = db.collection('nativeDeletionRequests').doc(uid);
+      const status = (await requestRow.get()).get('status') as string;
+      const accountStatus = (
+        await db.collection('nativeAccounts').doc(uid).get()
+      ).get('status') as string;
+      if (cancelAtOffset === 0) {
+        expect(cancelled.status).toBe('rejected');
+        expect((cancelled as PromiseRejectedResult).reason).toMatchObject({
+          code: 'WINDOW_CLOSED',
+        });
+      }
+      if (status === 'cancelled') {
+        expect(cancelled.status).toBe('fulfilled');
+        expect(accountStatus).toBe('active');
+        expect((await post.get()).exists).toBe(true);
+        await auth.getUser(uid);
+        expect(await lifecycle.processDeletion(uid, due + 1)).toBe('complete');
+        expect((await post.get()).exists).toBe(true);
+        expect(
+          (await db.collection('nativeAccounts').doc(uid).get()).get('status'),
+        ).toBe('active');
+      } else {
+        expect(cancelled.status).toBe('rejected');
+        expect(processed.status).toBe('fulfilled');
+        expect(accountStatus).toBe('deleting');
+        await drain(uid, due);
+        expect((await post.get()).exists).toBe(false);
+        expect(
+          (await db.collection('nativeAccounts').doc(uid).get()).exists,
+        ).toBe(false);
+        await expect(auth.getUser(uid)).rejects.toMatchObject({
+          code: 'auth/user-not-found',
+        });
+      }
+    }
+  });
+
+  it('does nothing when erasure steps carry a cancelled request generation', async () => {
+    const uid = await person();
+    const first = await lifecycle.requestDeletion(
+      uid,
+      'correct-password',
+      verify,
+      1_000,
+    );
+    const staleGeneration = first.id;
+    await lifecycle.cancelDeletion(uid, 'correct-password', verify, 2_000);
+    const second = await lifecycle.requestDeletion(
+      uid,
+      'correct-password',
+      verify,
+      3_000,
+    );
+    expect(second.id).not.toBe(staleGeneration);
+    const survivorId = randomUUID(),
+      boxId = randomUUID();
+    await db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .set({ status: 'active', ownerUid: randomUUID() });
+    const survivor = db
+      .collection('nativeBoxes')
+      .doc(boxId)
+      .collection('posts')
+      .doc(survivorId);
+    await survivor.set({ boxId, authorUid: uid, status: 'active', text: 'x' });
+    // Move the second generation into a running phase so only the generation differs.
+    expect(await lifecycle.processDeletion(uid, Date.parse(second.dueAt))).toBe(
+      'media',
+    );
+    const requestRef = db.collection('nativeDeletionRequests').doc(uid);
+    const before = await requestRef.get();
+    expect(before.get('generation')).toBe(second.id);
+    expect(before.get('phase')).toBe('media');
+    type Internals = {
+      advance(
+        uid: string,
+        generation: string,
+        from: string,
+        to: string,
+      ): Promise<void>;
+      assertGeneration(
+        uid: string,
+        generation: string,
+        phase: string,
+      ): Promise<void>;
+      erasePage(
+        uid: string,
+        generation: string,
+        phase: string,
+        query: FirebaseFirestore.Query,
+      ): Promise<number>;
+    };
+    const internals = lifecycle as unknown as Internals;
+    await expect(
+      internals.assertGeneration(uid, staleGeneration, 'media'),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await expect(
+      internals.advance(uid, staleGeneration, 'media', 'exports'),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    await expect(
+      internals.erasePage(
+        uid,
+        staleGeneration,
+        'media',
+        db
+          .collection('nativeBoxes')
+          .doc(boxId)
+          .collection('posts')
+          .where('authorUid', '==', uid),
+      ),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    expect((await survivor.get()).exists).toBe(true);
+    const after = await requestRef.get();
+    expect(after.get('phase')).toBe('media');
+    expect(after.get('generation')).toBe(second.id);
+    expect(after.get('updatedAt')).toBe(before.get('updatedAt'));
+  });
 });

@@ -520,4 +520,110 @@ describe('private native media lifecycle', () => {
       media.read(visitor, asset.id, 'display'),
     ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
   });
+
+  it('leaves no readable or stored derivative when a moderation hide lands between publish and raw retirement', async () => {
+    // An asset can only attach to a post once it is ready, so the earliest
+    // moment a post can exist for a processing job is right after publish.
+    const owner = await user();
+    const staff = await user();
+    await db
+      .collection('nativeStaffGrants')
+      .doc(staff)
+      .set({ status: 'active' });
+    const box = await boxes.create(owner, 'Hide During Processing');
+    const bytes = await image();
+    const asset = await media.reserve(owner, {
+      purpose: 'post_image',
+      boxId: box.id,
+      contentType: 'image/jpeg',
+      contentLength: bytes.length,
+    });
+    await media.upload(owner, asset.id, bytes, 'image/jpeg');
+    await media.complete(owner, asset.id);
+    const assetRef = db.collection('nativeMediaAssets').doc(asset.id);
+    const rawPath = (await assetRef.get()).get('rawPath') as string;
+    const jobId = `media-process-${asset.id}-0`;
+    const posts = new NativeBoxPosts(db);
+    const moderation = new NativeModeration(db);
+    let postId = '';
+    let published: string[] = [];
+    let hidden = false;
+    const hideWhilePublishing = async () => {
+      published = Object.values(
+        (await assetRef.get()).get('derivativeObjectPaths') as Record<
+          string,
+          string
+        >,
+      );
+      postId = await posts.create(box.id, owner, '', Date.now(), [asset.id]);
+      const report = await moderation.createReport(owner, {
+        targetKind: 'post',
+        targetId: postId,
+        category: 'privacy',
+        detail: 'Please remove this image',
+      });
+      await moderation.actOnCase(staff, report.id, {
+        action: 'hide',
+        reason: 'The reported image must be removed from this Box.',
+        idempotencyKey: randomUUID(),
+      });
+      // The running processor lease must make premature retirement fail closed.
+      await media
+        .cleanupPost(`media-post-cleanup-${postId}`)
+        .catch(() => undefined);
+    };
+    const intercepted = {
+      bucket: () => ({
+        file: (path: string) => {
+          const original = bucket.file(path);
+          return {
+            save: original.save.bind(original),
+            download: original.download.bind(original),
+            delete: async (...args: Parameters<typeof original.delete>) => {
+              if (path === rawPath && !hidden) {
+                hidden = true;
+                await hideWhilePublishing();
+              }
+              return original.delete(...args);
+            },
+          };
+        },
+        getFiles: bucket.getFiles.bind(bucket),
+      }),
+    } as unknown as Storage;
+    const processor = new NativeMedia(db, intercepted, bucketName);
+    await processor.processOnce(jobId);
+    expect(hidden).toBe(true);
+    expect(published).toHaveLength(3);
+    await expect(media.read(owner, asset.id, 'display')).rejects.toMatchObject({
+      code: 'UNAVAILABLE',
+    });
+    // Reclaim the epoch-stale processor lease the way the repair loop does.
+    const later = Date.now() + 16 * 60_000;
+    await media.processOnce(jobId, later);
+    for (let attempt = 0; attempt < 5; attempt += 1)
+      if (
+        (await media.cleanupPost(`media-post-cleanup-${postId}`, later)) ===
+        'complete'
+      )
+        break;
+    expect(
+      (
+        await db
+          .collection('nativeJobs')
+          .doc(`media-post-cleanup-${postId}`)
+          .get()
+      ).get('status'),
+    ).toBe('complete');
+    await expect(
+      media.read(owner, asset.id, 'thumbnail'),
+    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    for (const path of published)
+      expect((await bucket.file(path).exists())[0]).toBe(false);
+    const [left] = await bucket.getFiles({
+      prefix: `${rawPath.slice(0, -4)}/`,
+    });
+    expect(left).toHaveLength(0);
+    expect((await assetRef.get()).get('objectPaths')).toEqual([]);
+  });
 });

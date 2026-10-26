@@ -188,4 +188,55 @@ describe('trusted Box lifecycle', () => {
       ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
     }
   });
+
+  it('keeps one active owner when removing a member races transfer to that member', async () => {
+    for (const removerFirst of [true, false]) {
+      const owner = await admittedUser();
+      const target = await admittedUser();
+      const box = await boxes.create(owner, 'Remove Transfer Race');
+      const boxRef = db.collection('nativeBoxes').doc(box.id);
+      await boxRef.collection('members').doc(target).set({
+        uid: target,
+        role: 'member',
+        status: 'active',
+        joinedAt: Date.now(),
+      });
+      await db
+        .collection('nativeAccounts')
+        .doc(target)
+        .collection('boxRefs')
+        .doc(box.id)
+        .set({ boxId: box.id });
+      await boxRef.update({ memberCount: 2 });
+      const operations = [
+        () => boxes.removeMember(box.id, owner, target),
+        () => boxes.transfer(box.id, owner, target),
+      ];
+      if (!removerFirst) operations.reverse();
+      const results = await Promise.allSettled(
+        operations.map((operation) => operation()),
+      );
+      expect(
+        results.filter((result) => result.status === 'fulfilled'),
+      ).toHaveLength(1);
+      const members = await boxRef.collection('members').get();
+      const owners = members.docs.filter(
+        (member) =>
+          member.get('role') === 'owner' && member.get('status') === 'active',
+      );
+      expect(owners).toHaveLength(1);
+      const state = await boxRef.get();
+      expect(state.get('ownerUid')).toBe(owners[0]!.id);
+      const targetMember = members.docs.find((member) => member.id === target)!;
+      if (targetMember.get('status') === 'removed') {
+        expect(state.get('ownerUid')).toBe(owner);
+        expect(targetMember.get('role')).not.toBe('owner');
+        expect(state.get('memberCount')).toBe(1);
+      } else {
+        expect(state.get('ownerUid')).toBe(target);
+        expect(targetMember.get('status')).toBe('active');
+        expect(state.get('memberCount')).toBe(2);
+      }
+    }
+  });
 });

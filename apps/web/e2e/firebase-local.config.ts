@@ -12,7 +12,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 export default defineConfig({
   ...sharedConfig,
   testDir: '.',
-  testMatch: '**/firebase-local.spec.ts',
+  testMatch: ['**/firebase-local.spec.ts', '**/web-hardening.spec.ts'],
   fullyParallel: false,
   workers: 1,
   retries: 0,
