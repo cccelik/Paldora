@@ -94,13 +94,10 @@ Two options, neither chosen:
    Blaze plan (and provider setup per platform). Spark is the current plan.
 4. **Sign in with Apple.** Required by App Store review only if a third-party
    or social login is added. Email/password alone does not require it.
-5. **Session and revocation model.** Callables take `request.auth.uid` and do
-   not call `checkRevoked` or compare `paldoraSessionEpoch` (only the web
-   session layer uses that epoch). A native ID token therefore stays valid
-   for up to an hour after password change, sign-out-everywhere or
-   revocation, except where trusted code re-reads account status (suspended
-   accounts are rejected by account checks). Decide whether to enforce
-   revocation or epoch in callables, accept the hour, or shorten it.
+5. **Session and revocation model.** _Decided below._ Before the decision,
+   callables took `request.auth.uid` without comparing `paldoraSessionEpoch`,
+   so a native ID token stayed valid for up to an hour after a password change
+   or sign-out-everywhere.
 6. **Versioning scheme:** V1 suffix versus `contractVersion` field.
 7. **`details.reason` wire change:** adopt a stable reason enum on
    `HttpsError.details`, or keep code-only errors.
@@ -118,9 +115,15 @@ Two options, neither chosen:
 - **#2 Native realtime:** polling first. Revisit with push notifications when
   Phase 10 starts and a hosted project exists.
 - **#5 Revocation:** callables enforce the session epoch (`paldoraSessionEpoch`)
-  like the web session layer, using a cached account read. Not implemented yet;
-  it needs a code change, a contract fixture for the error, and tests for
-  password change and sign-out-everywhere.
+  like the web session layer. Implemented locally: every callable first runs
+  `requireSession`, which compares the ID token's `paldoraSessionEpoch` claim
+  with `nativeAccounts/{uid}.sessionEpoch` (both absent counts as equal) through
+  `NativeCallableSessions`, a per-instance cache with a 10 second TTL that fails
+  closed. A rotated epoch answers `unauthenticated`, already in the contract, so
+  no new wire error. The revocation window is therefore seconds, not an hour.
+  Covered by unit tests and a local flow test; a password change or
+  sign-out-everywhere forces native clients to sign in again because refresh
+  tokens are revoked too.
 - **Still open:** #3 App Check, #4 Sign in with Apple, #6 versioning,
   #7 `details.reason`, #8 callable order for web-only features, #9 hosted
   deployment. The ADR stays Proposed until these are decided.

@@ -1,5 +1,7 @@
 import {
   NativeBoxInvitations,
+  NativeCallableSessionError,
+  NativeCallableSessions,
   NativeInvitationError,
   NativeBoxPosts,
   NativeBoxMembers,
@@ -48,6 +50,7 @@ const members = new NativeBoxMembers(db);
 const blocks = new NativeBlockPairs(db);
 const usernames = new NativeUsernames(db);
 const rateLimits = new NativeRateLimits(db);
+const callableSessions = new NativeCallableSessions(db);
 const moderation = new NativeModeration(db);
 const notifications = new NativeNotifications(db);
 const accounts = new NativeAccounts(db, getAuth());
@@ -250,9 +253,19 @@ async function drainPostMedia(postId: string): Promise<void> {
   throw new Error('Post media cleanup remains pending.');
 }
 
-function requireUid(uid: string | undefined): string {
-  if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
-  return uid;
+/** ADR 021 #5: an ID token from before a session-epoch rotation is refused. */
+async function requireSession(
+  auth: { uid: string; token: Record<string, unknown> } | undefined,
+): Promise<string> {
+  if (!auth?.uid) throw new HttpsError('unauthenticated', 'Sign in required.');
+  try {
+    await callableSessions.require(auth.uid, auth.token.paldoraSessionEpoch);
+  } catch (error) {
+    if (error instanceof NativeCallableSessionError)
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    throw error;
+  }
+  return auth.uid;
 }
 
 function field(data: unknown, key: string, maxLength = 128): string {
@@ -363,7 +376,7 @@ function limited<T>(
 }
 
 export const beginBoxDeletion = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const confirmName = field(request.data, 'confirmName', 80);
   return limited(uid, 'beginBoxDeletion', 5, async () => ({
@@ -372,7 +385,7 @@ export const beginBoxDeletion = onCall(options, async (request) => {
 });
 
 export const boxDeletionStatus = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   return limited(uid, 'boxDeletionStatus', 120, () =>
     boxDeletion.status(boxId, uid),
@@ -380,20 +393,20 @@ export const boxDeletionStatus = onCall(options, async (request) => {
 });
 
 export const createLifeUpdate = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   return limited(uid, 'createLifeUpdate', 30, async () => ({
     id: await lifeUpdates.create(uid, request.data),
   }));
 });
 
 export const getLifeUpdate = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const id = field(request.data, 'id', 36);
   return limited(uid, 'getLifeUpdate', 600, () => lifeUpdates.get(id, uid));
 });
 
 export const listMyLifeUpdates = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const data = request.data as Record<string, unknown> | null;
   const cursor =
     data?.cursor === undefined ? undefined : field(data, 'cursor', 36);
@@ -403,7 +416,7 @@ export const listMyLifeUpdates = onCall(options, async (request) => {
 });
 
 export const editLifeUpdate = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const id = field(request.data, 'id', 36);
   const changes =
     request.data && typeof request.data === 'object'
@@ -417,7 +430,7 @@ export const editLifeUpdate = onCall(options, async (request) => {
 });
 
 export const deleteLifeUpdate = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const id = field(request.data, 'id', 36);
   return limited(uid, 'deleteLifeUpdate', 30, async () => {
     const current = await lifeUpdates.get(id, uid);
@@ -431,7 +444,7 @@ export const deleteLifeUpdate = onCall(options, async (request) => {
 });
 
 export const inviteBox = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const username = field(request.data, 'username', 30);
   return limited(uid, 'inviteBox', 60, async () => ({
@@ -440,7 +453,7 @@ export const inviteBox = onCall(options, async (request) => {
 });
 
 export const provisionMyAccount = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   return limited(uid, 'provisionMyAccount', 10, async () => {
     await accounts.provision(uid);
     return { ok: true };
@@ -448,7 +461,7 @@ export const provisionMyAccount = onCall(options, async (request) => {
 });
 
 export const sendFriendRequest = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const username = field(request.data, 'username', 30);
   return limited(uid, 'sendFriendRequest', 60, async () => ({
     requestId: await friendships.sendByUsername(uid, username),
@@ -456,7 +469,7 @@ export const sendFriendRequest = onCall(options, async (request) => {
 });
 
 export const acceptFriendRequest = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const requestId = field(request.data, 'requestId', 64);
   return limited(uid, 'acceptFriendRequest', 120, async () => {
     await friendships.accept(requestId, uid);
@@ -465,7 +478,7 @@ export const acceptFriendRequest = onCall(options, async (request) => {
 });
 
 export const closeFriendship = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const requestId = field(request.data, 'requestId', 64);
   return limited(uid, 'closeFriendship', 120, async () => {
     await friendships.close(requestId, uid);
@@ -474,7 +487,7 @@ export const closeFriendship = onCall(options, async (request) => {
 });
 
 export const listMyFriendships = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const data = request.data as Record<string, unknown>;
   const status = data.status;
   if (status !== 'pending' && status !== 'sent' && status !== 'accepted')
@@ -487,7 +500,7 @@ export const listMyFriendships = onCall(options, async (request) => {
 });
 
 export const listMyBoxInvitations = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const cursor =
     request.data && typeof request.data === 'object'
       ? (request.data as Record<string, unknown>).cursor
@@ -503,7 +516,7 @@ export const listMyBoxInvitations = onCall(options, async (request) => {
 });
 
 export const listBoxInvitations = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const raw = request.data as Record<string, unknown>;
   const cursor =
@@ -514,7 +527,7 @@ export const listBoxInvitations = onCall(options, async (request) => {
 });
 
 export const listBoxMembers = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const raw = request.data as Record<string, unknown>;
   const cursor = raw.cursor === undefined ? undefined : field(raw, 'cursor');
@@ -524,7 +537,7 @@ export const listBoxMembers = onCall(options, async (request) => {
 });
 
 export const acceptBoxInvitation = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const invitationId = field(request.data, 'invitationId', 64);
   return limited(uid, 'acceptBoxInvitation', 120, async () => ({
     boxId: await invitations.accept(invitationId, uid),
@@ -532,7 +545,7 @@ export const acceptBoxInvitation = onCall(options, async (request) => {
 });
 
 export const declineBoxInvitation = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const invitationId = field(request.data, 'invitationId', 64);
   return limited(uid, 'declineBoxInvitation', 120, async () => {
     await invitations.decline(invitationId, uid);
@@ -541,7 +554,7 @@ export const declineBoxInvitation = onCall(options, async (request) => {
 });
 
 export const revokeBoxInvitation = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const invitationId = field(request.data, 'invitationId', 64);
   const boxId = field(request.data, 'boxId');
   return limited(uid, 'revokeBoxInvitation', 120, async () => {
@@ -551,7 +564,7 @@ export const revokeBoxInvitation = onCall(options, async (request) => {
 });
 
 export const reserveUsername = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const username = field(request.data, 'username', 30);
   return limited(uid, 'reserveUsername', 30, async () => ({
     normalized: await usernames.reserve(uid, username),
@@ -559,7 +572,7 @@ export const reserveUsername = onCall(options, async (request) => {
 });
 
 export const createBoxPost = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const text = field(request.data, 'text', 5_000);
   return limited(uid, 'createBoxPost', 120, async () => ({
@@ -568,7 +581,7 @@ export const createBoxPost = onCall(options, async (request) => {
 });
 
 export const getBoxPost = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   return limited(uid, 'getBoxPost', 1200, () =>
     posts.get(
       field(request.data, 'boxId'),
@@ -579,7 +592,7 @@ export const getBoxPost = onCall(options, async (request) => {
 });
 
 export const listBoxPosts = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const cursor =
     request.data && typeof request.data === 'object'
@@ -596,7 +609,7 @@ export const listBoxPosts = onCall(options, async (request) => {
 });
 
 export const editBoxPost = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   return limited(uid, 'editBoxPost', 240, async () => {
     await posts.edit(
       field(request.data, 'boxId'),
@@ -609,7 +622,7 @@ export const editBoxPost = onCall(options, async (request) => {
 });
 
 export const deleteBoxPost = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   return limited(uid, 'deleteBoxPost', 240, async () => {
     const postId = field(request.data, 'postId', 64);
     const removed = await posts.remove(
@@ -624,7 +637,7 @@ export const deleteBoxPost = onCall(options, async (request) => {
 });
 
 export const setUserBlock = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const targetUid = field(request.data, 'targetUid');
   const blocked =
     request.data && typeof request.data === 'object'
@@ -639,7 +652,7 @@ export const setUserBlock = onCall(options, async (request) => {
 });
 
 export const createBoxComment = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const postId = field(request.data, 'postId', 64);
   const text = field(request.data, 'text', 2_000);
@@ -665,7 +678,7 @@ export const createBoxComment = onCall(options, async (request) => {
 });
 
 export const listBoxComments = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const postId = field(request.data, 'postId', 64);
   const cursor =
@@ -683,7 +696,7 @@ export const listBoxComments = onCall(options, async (request) => {
 });
 
 export const editBoxComment = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   return limited(uid, 'editBoxComment', 240, async () => {
     await posts.editComment(
       field(request.data, 'boxId'),
@@ -697,7 +710,7 @@ export const editBoxComment = onCall(options, async (request) => {
 });
 
 export const deleteBoxComment = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   return limited(uid, 'deleteBoxComment', 240, async () => {
     await posts.deleteComment(
       field(request.data, 'boxId'),
@@ -710,7 +723,7 @@ export const deleteBoxComment = onCall(options, async (request) => {
 });
 
 export const setBoxReaction = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const postId = field(request.data, 'postId', 64);
   const data = request.data as Record<string, unknown>;
@@ -734,7 +747,7 @@ export const setBoxReaction = onCall(options, async (request) => {
 });
 
 export const listBoxReactions = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const postId = field(request.data, 'postId', 64);
   const data = request.data as Record<string, unknown>;
@@ -753,7 +766,7 @@ export const listBoxReactions = onCall(options, async (request) => {
 });
 
 export const reportBoxPost = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
   const postId = field(request.data, 'postId', 64);
   const reason = field(request.data, 'reason', 2_000);
@@ -763,7 +776,7 @@ export const reportBoxPost = onCall(options, async (request) => {
 });
 
 export const listModerationReports = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const cursor =
     request.data && typeof request.data === 'object'
       ? (request.data as Record<string, unknown>).cursor
@@ -779,7 +792,7 @@ export const listModerationReports = onCall(options, async (request) => {
 });
 
 export const hideReportedPost = onCall(options, async (request) => {
-  const uid = requireUid(request.auth?.uid);
+  const uid = await requireSession(request.auth);
   const reportId = field(request.data, 'reportId', 64);
   return limited(uid, 'hideReportedPost', 120, async () => {
     const postId = await moderation.hideReportedPost(reportId, uid);

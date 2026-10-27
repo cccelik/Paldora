@@ -703,6 +703,49 @@ describe('local Firebase Box vertical flow', () => {
     expect((await listMine({})).data.items).toEqual([]);
   }, 30_000);
 
+  it('refuses an ID token whose session epoch was rotated (ADR 021 #5)', async () => {
+    async function epochClient(tokenEpoch: string, accountEpoch: string) {
+      const uid = randomUUID();
+      const password = `Local-${randomUUID()}!`;
+      const email = `${uid}@example.invalid`;
+      await adminAuth.createUser({ uid, email, password, emailVerified: true });
+      await adminAuth.setCustomUserClaims(uid, {
+        paldoraAdmitted: true,
+        paldoraSessionEpoch: tokenEpoch,
+      });
+      await adminDb
+        .collection('nativeAccounts')
+        .doc(uid)
+        .set({ status: 'active', sessionEpoch: accountEpoch });
+      const app = initializeApp(
+        {
+          projectId: 'demo-paldora',
+          apiKey: 'demo-api-key',
+          appId: `demo-${uid}`,
+        },
+        `epoch-${uid}`,
+      );
+      clientApps.push(app);
+      const auth = getAuth(app);
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099', {
+        disableWarnings: true,
+      });
+      const functions = getFunctions(app, 'europe-west4');
+      connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+      await signInWithEmailAndPassword(auth, email, password);
+      return httpsCallable<object, { items: unknown[] }>(
+        functions,
+        'listMyLifeUpdates',
+      );
+    }
+    const current = await epochClient('epoch-a', 'epoch-a');
+    expect((await current({})).data.items).toEqual([]);
+    const stale = await epochClient('epoch-old', 'epoch-new');
+    await expect(stale({})).rejects.toMatchObject({
+      code: 'functions/unauthenticated',
+    });
+  }, 30_000);
+
   it('lets invitees decline and Box owners revoke pending invitations', async () => {
     const owner = await client(`inviter_${randomUUID().slice(0, 8)}`);
     const declineName = `decline_${randomUUID().slice(0, 8)}`;

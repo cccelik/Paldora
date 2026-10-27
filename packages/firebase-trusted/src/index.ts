@@ -17,6 +17,7 @@ export * from './native-box-deletion.js';
 export * from './native-life-updates.js';
 export * from './native-media.js';
 export * from './native-usernames.js';
+export * from './native-callable-session.js';
 export * from './native-web-sessions.js';
 export * from './native-profiles.js';
 export * from './log.js';
