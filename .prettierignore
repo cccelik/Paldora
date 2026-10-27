@@ -20,3 +20,4 @@ graphify-out
 apps/ios/**/.build
 apps/ios/**/.swiftpm
 apps/ios/**/DerivedData
+apps/firebase-functions/deploy

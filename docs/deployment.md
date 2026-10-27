@@ -71,16 +71,37 @@ Notes grounded in the config files:
 
 - `firebase.json` is the hosted config: deny-all Firestore and Storage rules,
   the shared indexes file, a `functions` block (source
-  `apps/firebase-functions`, codebase `paldora`, runtime `nodejs24`, predeploy
-  build) and emulator ports. The runtime value follows `engines.node: "24"`;
-  the Firebase Functions docs page last read listed only Node 22 and 20, while
-  Google Cloud runtime pages list `nodejs24` (some locales as preview):
-  **verify against current official docs**, and fall back to `nodejs22` in
-  both places if the CLI rejects it. **Known gap:** `@paldora/firebase-trusted`
-  is a `workspace:*` dependency, which Cloud Build cannot resolve from the
-  `apps/firebase-functions` source alone; a packaging step (for example
-  `pnpm deploy` output or bundling) is unresolved and must be solved before the
-  first Functions deploy. `pnpm hosted:check` guards this config.
+  `apps/firebase-functions/deploy`, codebase `paldora`, runtime `nodejs24`,
+  predeploy `pnpm functions:prepare`) and emulator ports. The runtime value
+  follows `engines.node: "24"`; the Firebase Functions docs page last read
+  listed only Node 22 and 20, while Google Cloud runtime pages list `nodejs24`
+  (some locales as preview): **verify against current official docs**, and
+  fall back to `nodejs22` in both places if the CLI rejects it.
+  `pnpm hosted:check` guards this config, including that `source` is the
+  generated bundle directory.
+- **Functions deploy artifact.** `firebase deploy` uploads only the `source`
+  directory and Cloud Build runs `npm install` there, so `workspace:*`
+  packages cannot resolve from `apps/firebase-functions`. `pnpm
+functions:bundle` (`apps/firebase-functions/scripts/bundle.mjs`, esbuild
+  0.28.2) builds the gitignored `apps/firebase-functions/deploy/`: one ESM
+  `index.js` containing `src/index.ts`, `@paldora/firebase-trusted`,
+  `validation`, `domain`, `personalization` and their pure-JS dependencies
+  (zod, parse5, postcss), plus a generated `package.json` (`main`,
+  `engines.node` copied from the source package, exact-pinned runtime
+  `dependencies` only: `firebase-admin`, `firebase-functions`, `sharp`).
+  `sharp` stays external because it loads platform-specific native binaries.
+  `pnpm functions:prepare` (the predeploy hook) also runs `npm install
+--omit=dev --ignore-scripts` in `deploy/`: the CLI discovers exports locally
+  through `deploy/node_modules/.bin/firebase-functions` before uploading, and
+  the resulting `package-lock.json` makes Cloud Build install the same tree
+  (`node_modules` is excluded from the upload by `ignore`).
+  `pnpm functions:bundle:test` rebuilds and statically checks the artifact
+  (no `@paldora/*` left, every external import listed with an exact version,
+  all 64 exports present, entry loads); `VERIFY_CLEAN_INSTALL=1` also installs
+  it in a scratch copy. Local emulators are unchanged: `firebase.native.json`
+  still points at `apps/firebase-functions` and its `tsc` `dist/`.
+  Not yet verified: the `sharp` native binary under Cloud Build and the
+  `nodejs24` runtime on a hosted project.
 - `firebase.native.json` is the local config used by every emulator script
   (`--config firebase.native.json`). It points at the permissive
   `firestore.native.rules` and declares the Functions source

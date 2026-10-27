@@ -112,12 +112,20 @@ function checkFunctions(root, config, failures) {
     if (block.region !== undefined && block.region !== HOSTED_REGION)
       failures.push(`firebase.json functions region must be ${HOSTED_REGION}`);
   }
-  const source = join(
-    root,
-    blocks[0]?.source ?? 'apps/firebase-functions',
-    'src',
+  // `source` is the generated bundle directory (apps/firebase-functions/deploy);
+  // the TypeScript sources it is built from live in ../src.
+  const declared = join(root, blocks[0]?.source ?? 'apps/firebase-functions');
+  if (!/(^|[\\/])deploy$/.test(declared) && blocks[0]?.source !== undefined)
+    failures.push(
+      'firebase.json functions.source must be the generated bundle directory (apps/firebase-functions/deploy)',
+    );
+  const source = [join(declared, 'src'), join(declared, '..', 'src')].find(
+    (dir) => existsSync(dir),
   );
-  if (!existsSync(source)) return;
+  if (source === undefined) {
+    failures.push('functions source directory src was not found');
+    return;
+  }
   for (const name of readdirSync(source)) {
     if (!/\.ts$/.test(name) || /\.test\.ts$/.test(name)) continue;
     for (const match of read(join(source, name)).matchAll(

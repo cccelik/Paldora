@@ -44,3 +44,4 @@ test-results
 
 # Graphify knowledge graph (rebuilt locally; never committed).
 graphify-out/
+apps/firebase-functions/deploy

@@ -49,8 +49,11 @@ commit it to `.firebaserc`; use `firebase use --add` locally.
 
 ## 3. Functions (checklist F)
 
-11. Resolve the `workspace:*` packaging gap for
-    `@paldora/firebase-trusted` (see deployment.md); this blocks the deploy.
+11. The deploy artifact is a generated bundle (`pnpm functions:prepare`, run
+    by the `firebase.json` predeploy; see deployment.md "Functions deploy
+    artifact"). Run `pnpm functions:bundle:test` first and confirm it passes.
+    After the deploy, confirm Cloud Build installs `sharp` for the runtime
+    platform (first hosted verification).
 12. **OWNER ACTION.** Cloud Tasks API enabled and, if required, queue/IAM for
     `executeMediaJob` (**verify**). Confirm runtime `nodejs24` is accepted
     (**verify**; fallback `nodejs22` in `firebase.json` and `engines`).
@@ -125,5 +128,5 @@ paldora-firebase-web-api-key --project <STAGING>` (paste the Web API key
   `--project <STAGING>`.
 - Any key file, token or the Web API key would be written into the repo.
 - The App Hosting build cannot use `apps/web` as root, or Node 24 is refused.
-- The Functions packaging gap is unresolved.
+- `pnpm functions:bundle:test` fails, or Cloud Build cannot install `sharp`.
 - Any smoke test shows a CSP duplicate, public bucket, or client data access.

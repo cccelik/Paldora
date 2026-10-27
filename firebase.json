@@ -7,11 +7,11 @@
     "rules": "firebase/storage.rules"
   },
   "functions": {
-    "source": "apps/firebase-functions",
+    "source": "apps/firebase-functions/deploy",
     "codebase": "paldora",
     "runtime": "nodejs24",
-    "predeploy": ["pnpm turbo run build --filter=@paldora/firebase-functions"],
-    "ignore": ["node_modules", "src", "*.log", ".turbo", "tsconfig*.json"]
+    "predeploy": ["pnpm functions:prepare"],
+    "ignore": ["node_modules", "*.log"]
   },
   "emulators": {
     "auth": {

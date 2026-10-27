@@ -109,8 +109,8 @@ describe('hosted config check', () => {
     expect(
       failuresAfter('firebase.json', (t) =>
         t.replace(
-          'pnpm turbo',
-          'FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm turbo',
+          'pnpm functions:prepare',
+          'FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm functions:prepare',
         ),
       ),
     ).toMatch(/functions: contains \*_EMULATOR_HOST/);
@@ -145,6 +145,17 @@ describe('hosted config check', () => {
         t.replace('"codebase"', '"region": "us-central1", "codebase"'),
       ),
     ).toMatch(/region must be europe-west4/);
+  });
+
+  it('requires the functions source to be the generated bundle directory', () => {
+    expect(
+      failuresAfter('firebase.json', (t) =>
+        t.replace(
+          '"source": "apps/firebase-functions/deploy"',
+          '"source": "apps/firebase-functions"',
+        ),
+      ),
+    ).toMatch(/must be the generated bundle directory/);
   });
 
   it('rejects a missing functions block', () => {

@@ -10,6 +10,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "bundle": "node scripts/bundle.mjs",
+    "bundle:install": "node scripts/bundle.mjs --install",
+    "test:bundle": "node scripts/verify-bundle.mjs",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --exclude '**/*.integration.test.ts' --passWithNoTests",
@@ -18,11 +21,13 @@
   "dependencies": {
     "@paldora/firebase-trusted": "workspace:*",
     "firebase-admin": "14.5.0",
-    "firebase-functions": "7.4.0"
+    "firebase-functions": "7.4.0",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@paldora/firebase-native": "workspace:*",
     "@paldora/validation": "workspace:*",
+    "esbuild": "0.28.2",
     "firebase": "13.0.0",
     "vitest": "4.1.11"
   }

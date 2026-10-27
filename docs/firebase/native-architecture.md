@@ -148,6 +148,8 @@ object cleanup remain open.
 
 ## Native contract
 
+The callables ship to hosted projects as an esbuild bundle (`pnpm functions:bundle`, output `apps/firebase-functions/deploy/`), not from the workspace source; the local emulator flow still loads the `tsc` output unchanged (see deployment.md).
+
 Native clients will use the callable Functions as their contract, not the
 retired HTTP API. Today that is 49 `onCall` functions plus 2 `onRequest` media functions in `europe-west4`, each
 rate-limited by `limited()`, with ad-hoc `field()` input checks, outputs typed

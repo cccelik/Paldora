@@ -13,6 +13,7 @@ export default [
       '**/.next/**',
       '**/coverage/**',
       '**/dist/**',
+      '**/deploy/**',
       '**/generated/**',
       '**/node_modules/**',
       '**/playwright-report/**',
