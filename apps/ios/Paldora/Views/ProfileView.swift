@@ -11,6 +11,7 @@ struct ProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.space8) {
                     header
+                    ProfileLinks()
                     AvatarSection(model: model, env: env)
                     ProfileEditor(model: model, profile: profile)
                     PreferencesSection(model: model)
@@ -24,6 +25,11 @@ struct ProfileView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(Theme.canvas)
+            .navigationDestination(for: FriendsRoute.self) { _ in FriendsView(env: env) }
+            .navigationDestination(for: LifeUpdatesRoute.self) { _ in MyLifeUpdatesView(env: env) }
+            .navigationDestination(for: LifeUpdateRoute.self) { LifeUpdateDetailView(env: env, route: $0) }
+            .navigationDestination(for: LifeUpdateComposeRoute.self) { _ in LifeUpdateComposerView(env: env) }
+            .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
         }

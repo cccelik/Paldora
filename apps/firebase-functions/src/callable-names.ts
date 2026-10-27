@@ -31,6 +31,7 @@ export const callableNames = [
   'editBoxPost',
   'deleteBoxPost',
   'setUserBlock',
+  'listMyBlocks',
   'createBoxComment',
   'listBoxComments',
   'editBoxComment',

@@ -21,14 +21,23 @@ extension XCTestCase {
         app.launch()
         let emailField = app.textFields["email-field"]
         XCTAssertTrue(emailField.waitForExistence(timeout: 30), "Sign-in screen did not appear")
-        emailField.tap()
-        emailField.typeText(email)
-        let passwordField = app.secureTextFields["password-field"]
-        passwordField.tap()
-        passwordField.typeText(password)
+        focusAndType(email, into: emailField, app: app)
+        focusAndType(password, into: app.secureTextFields["password-field"], app: app)
         app.buttons["sign-in-button"].tap()
         XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 30), "Tab shell did not appear")
         return app
+    }
+}
+
+extension XCTestCase {
+    /// Taps until the field has keyboard focus (the first tap can race the launch), then types.
+    func focusAndType(_ text: String, into field: XCUIElement, app: XCUIApplication) {
+        for _ in 0..<4 {
+            field.tap()
+            if (field.value(forKey: "hasKeyboardFocus") as? Bool) == true { break }
+            if app.keyboards.firstMatch.waitForExistence(timeout: 2) { break }
+        }
+        field.typeText(text)
     }
 }
 
@@ -49,6 +58,14 @@ extension XCUIApplication {
         XCTAssertTrue(field.waitForExistence(timeout: timeout), "\(id) did not appear")
         field.tap()
         field.typeText(text)
+    }
+
+    /// Taps `tapElement` until `target` exists; the first tap right after launch can be lost.
+    func tap(_ tapElement: XCUIElement, until target: XCUIElement, attempts: Int = 3) {
+        for _ in 0..<attempts where !target.exists {
+            if tapElement.isHittable { tapElement.tap() }
+            _ = target.waitForExistence(timeout: 6)
+        }
     }
 
     /// Swipes up until the element is hittable (bounded).

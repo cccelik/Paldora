@@ -67,3 +67,18 @@ struct FeatureHarness {
 func failure(_ code: String, _ reason: String? = nil) -> TransportError {
     TransportError(code: code, reason: reason)
 }
+
+extension JSON {
+    static func friendship(_ id: String, status: String, other: String = "u2", name: String = "Kai") -> [String: Any] {
+        ["id": id, "otherUid": other, "status": status, "requesterUid": other, "createdAt": 1, "updatedAt": 1,
+         "username": name.lowercased(), "displayName": name]
+    }
+
+    static func lifeUpdate(_ id: String = "l1", audience: String = "boxes", sections: [String: String] = ["travel": "Lisbon"],
+                           media: [String] = [], contexts: [[String: Any]]? = nil) -> [String: Any] {
+        ["id": id, "authorUid": "u1", "audience": audience, "sections": sections, "mediaAssetIds": media,
+         "createdAt": 1_700_000_000_000, "updatedAt": 1_700_000_000_000, "canEdit": true,
+         "contexts": contexts ?? [["boxId": "b2", "boxName": "Zed", "postId": "p2", "canInteract": true],
+                                  ["boxId": "b1", "boxName": "alpha", "postId": "p1", "canInteract": true]]]
+    }
+}

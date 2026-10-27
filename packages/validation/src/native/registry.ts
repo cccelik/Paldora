@@ -302,6 +302,15 @@ export const nativeCallableRegistry: readonly NativeCallable[] = [
     ['failed-precondition'],
   ),
   callable(
+    'listMyBlocks',
+    600,
+    {
+      input: friendships.listMyBlocksInputSchema,
+      output: friendships.listMyBlocksOutputSchema,
+    },
+    ['failed-precondition'],
+  ),
+  callable(
     'createBoxComment',
     240,
     {

@@ -119,7 +119,7 @@ describe('hosted break-glass guards', () => {
 describe('grantStaff breakGlass option', () => {
   function fakeDb(created: Record<string, unknown>[]) {
     const doc = (
-      name: string,
+      _name: string,
       exists: boolean,
       fields: Record<string, unknown>,
     ) => ({

@@ -29,9 +29,17 @@ if [[ "${1:-}" == "--inner" ]]; then
   node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs" >/dev/null
   echo "Seeded a fully onboarded fixture account in demo-paldora."
 
+  # A second, fully onboarded account for friend-request flows.
+  PEER_USERNAME="iosuipeer${suffix}"
+  PALDORA_FIXTURE_EMAIL="ios-ui-peer-${suffix}@example.invalid" \
+    PALDORA_FIXTURE_USERNAME="$PEER_USERNAME" PALDORA_FIXTURE_DISPLAY_NAME="iOS UI Peer" \
+    node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs" >/dev/null
+  echo "Seeded a second fixture account (peer)."
+
   # xcodebuild forwards TEST_RUNNER_* to the UI test runner, prefix stripped.
   export TEST_RUNNER_PALDORA_UI_EMAIL="$PALDORA_FIXTURE_EMAIL"
   export TEST_RUNNER_PALDORA_UI_PASSWORD="$PALDORA_FIXTURE_PASSWORD"
+  export TEST_RUNNER_PALDORA_UI_PEER_USERNAME="$PEER_USERNAME"
 
   cd "$IOS_DIR"
   xcodegen generate

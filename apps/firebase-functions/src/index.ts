@@ -742,6 +742,14 @@ export const setUserBlock = onCall(options, async (request) => {
   });
 });
 
+export const listMyBlocks = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const raw = request.data as Record<string, unknown>;
+  const cursor =
+    raw.cursor === undefined ? undefined : field(raw, 'cursor', 128);
+  return limited(uid, 'listMyBlocks', 600, () => blocks.list(uid, cursor));
+});
+
 export const createBoxComment = onCall(options, async (request) => {
   const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
@@ -1163,6 +1171,7 @@ void ({
   editBoxPost,
   deleteBoxPost,
   setUserBlock,
+  listMyBlocks,
   createBoxComment,
   listBoxComments,
   editBoxComment,

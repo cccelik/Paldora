@@ -27,6 +27,7 @@ public enum Contracts {
     public enum ListBoxPosts: CallableContract { public typealias Request = ListBoxPostsRequest; public typealias Response = Page<BoxPost>; public static let name = CallableName.listBoxPosts }
     public enum EditBoxPost: CallableContract { public typealias Request = EditBoxPostRequest; public typealias Response = OkResponse; public static let name = CallableName.editBoxPost }
     public enum DeleteBoxPost: CallableContract { public typealias Request = PostReference; public typealias Response = OkResponse; public static let name = CallableName.deleteBoxPost }
+    public enum ListMyBlocks: CallableContract { public typealias Request = CursorRequest; public typealias Response = Page<BlockedUser>; public static let name = CallableName.listMyBlocks }
     public enum SetUserBlock: CallableContract { public typealias Request = SetUserBlockRequest; public typealias Response = OkResponse; public static let name = CallableName.setUserBlock }
     public enum CreateBoxComment: CallableContract { public typealias Request = CreateBoxCommentRequest; public typealias Response = CreateBoxCommentResponse; public static let name = CallableName.createBoxComment }
     public enum ListBoxComments: CallableContract { public typealias Request = ListBoxCommentsRequest; public typealias Response = Page<BoxComment>; public static let name = CallableName.listBoxComments }
@@ -79,6 +80,7 @@ public enum Contracts {
         EditBoxPost.self,
         DeleteBoxPost.self,
         SetUserBlock.self,
+        ListMyBlocks.self,
         CreateBoxComment.self,
         ListBoxComments.self,
         EditBoxComment.self,

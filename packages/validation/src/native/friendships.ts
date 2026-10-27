@@ -47,3 +47,17 @@ export const setUserBlockInputSchema = z.object({
   blocked: z.boolean(),
 });
 export const setUserBlockOutputSchema = nativeOkSchema;
+
+/** The members you blocked, as the web "Blocked people" list. Never the other direction. */
+export const listMyBlocksInputSchema = z.object({
+  cursor: nativeString(128).optional(),
+});
+export const nativeBlockedUserSchema = z.object({
+  userId: z.string(),
+  username: z.string(),
+  displayName: z.string(),
+  blockedAt: nativeTimestampSchema,
+});
+export const listMyBlocksOutputSchema = nativePageSchema(
+  nativeBlockedUserSchema,
+);

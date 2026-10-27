@@ -76,8 +76,23 @@ pnpm and Turborepo graph (no `package.json`, not listed in
       actors). Profile photo upload is on the Profile tab.
     - UI-test hook: with `PALDORA_UI_TEST_IMAGE=1` a DEBUG-only "Attach test
       photo" button adds a generated image. It is compiled out of Release.
-  - Not in the app yet: friends and blocks, Life Update composer, camera
-    reactions, comment reactions, Rooms. Deleted comments are simply absent because the
+  - `Friends/`: send a request by username (every failure is one neutral
+    line, rate limits keep their own), incoming and sent requests,
+    accept/decline/withdraw/remove (`closeFriendship`), block from a friend
+    row, and the blocked list with unblock (`listMyBlocks`, your own blocks
+    only). Reached from Profile. Copy follows the web Friends page.
+  - `LifeUpdates/`: composer (nine sections, 2,000 each and 10,000 total, up to
+    4 photos, Only me or 1 to 20 active Boxes chosen once, one idempotency key
+    per form), my Life Updates, detail (sections, photos, delivery contexts
+    ordered alphabetically, link to the conversation in the selected Box; Only
+    Me has no interactions), edit (sections and photos, never the audience) and
+    delete. Feed Life Update cards open the detail on their own delivery.
+  - Comment reactions: a "React" sheet per comment (`setBoxReaction` with
+    `commentId`), presets plus any single emoji, optimistic with rollback.
+  - Not in the app yet: camera reactions, reports of comments, Boxes or people,
+    Rooms, Memories, staff screens. Reports: web can report posts and comments
+    (`createReport`), native has only `reportBoxPost`, so only posts are
+    reportable on iOS; there is no web report for Boxes or people. Deleted comments are simply absent because the
     contract returns no placeholder for them.
 - `PaldoraTests/`: unit tests (Swift Testing) with a fake `AuthService` and
   fake `CallableTransport`. `PaldoraUITests/`: one XCUITest.
@@ -153,7 +168,8 @@ onboarded fixture account with `packages/firebase-trusted/scripts/seed-local.mjs
 (random credentials per run), passes them to the UI tests through
 `PALDORA_UI_EMAIL` and `PALDORA_UI_PASSWORD` (`TEST_RUNNER_` prefix), runs them
 on the iPhone 16e simulator, and shuts the simulator down. The UI tests cover
-sign-in, profile edit and sign-out, and creating a Box, posting, opening the
+sign-in, profile edit and sign-out, a friend request to a second seeded
+account, an Only Me Life Update (create, edit, delete), and creating a Box, posting, opening the
 post with a generated photo, opening it from Home and the photo viewer,
 reacting and commenting. Override with
 `IOS_SIM_NAME` and `IOS_SIM_OS`.
@@ -161,5 +177,5 @@ reacting and commenting. Override with
 The fixture suite loads every file in `contracts/native/fixtures` and
 round-trips each valid request and response through the Swift types. A fixture
 whose callable has no Swift contract fails the suite unless it is listed, with
-a reason, in `notYetCovered` in `FixtureConformanceTests.swift`. All 46
+a reason, in `notYetCovered` in `FixtureConformanceTests.swift`. All 47
 callables are typed today.

@@ -7,7 +7,7 @@ public enum CallableName: String, CaseIterable, Hashable, Sendable {
     case inviteBox, provisionMyAccount, sendFriendRequest, acceptFriendRequest, closeFriendship
     case listMyFriendships, listMyBoxInvitations, listBoxInvitations, listBoxMembers
     case acceptBoxInvitation, declineBoxInvitation, revokeBoxInvitation, reserveUsername
-    case createBoxPost, getBoxPost, listBoxPosts, editBoxPost, deleteBoxPost, setUserBlock
+    case createBoxPost, getBoxPost, listBoxPosts, editBoxPost, deleteBoxPost, setUserBlock, listMyBlocks
     case createBoxComment, listBoxComments, editBoxComment, deleteBoxComment
     case setBoxReaction, listBoxReactions
     case reportBoxPost, listModerationReports, hideReportedPost
@@ -202,6 +202,10 @@ extension PaldoraAPI {
     }
     public func listBoxInvitations(_ request: ListBoxInvitationsRequest) async throws -> Page<BoxInvitation> {
         try await perform(Contracts.ListBoxInvitations.self, request)
+    }
+
+    public func listMyBlocks(cursor: String? = nil) async throws -> Page<BlockedUser> {
+        try await perform(Contracts.ListMyBlocks.self, CursorRequest(cursor: cursor))
     }
 
     // Life Updates

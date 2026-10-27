@@ -23,8 +23,10 @@ final class ProfileFlowUITests: XCTestCase {
         let nameField = app.textFields["display-name-field"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.tap()
-        nameField.press(forDuration: 1.0)
-        if app.menuItems["Select All"].waitForExistence(timeout: 2) { app.menuItems["Select All"].tap() }
+        nameField.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: 0.5)).tap()
+        // Clear deterministically: move to the end, then delete every character.
+        let current = (nameField.value as? String) ?? ""
+        nameField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 5))
         nameField.typeText(newName)
         let save = app.buttons["save-profile-button"]
         XCTAssertTrue(save.isEnabled)

@@ -1307,6 +1307,19 @@ describe('native private media over callables and authenticated HTTP', () => {
     await call(bob, 'setUserBlock')({ targetUid: carol.uid, blocked: true });
     expect((await get(id, 'thumbnail', carolToken)).status).toBe(404);
     expect((await get(id, 'thumbnail', bobToken)).status).toBe(200);
+    // The blocker sees the block in their own list only.
+    const blockedList = await call<{ items: { userId: string }[] }>(
+      bob,
+      'listMyBlocks',
+    )({});
+    expect(blockedList.data.items.map((item) => item.userId)).toContain(
+      carol.uid,
+    );
+    const theirList = await call<{ items: unknown[] }>(
+      carol,
+      'listMyBlocks',
+    )({});
+    expect(theirList.data.items).toEqual([]);
 
     // Deleting the post closes reads for members.
     await call(bob, 'deleteBoxPost')({ boxId, postId: created.data.postId });

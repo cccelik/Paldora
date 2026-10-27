@@ -4,6 +4,7 @@ import SwiftUI
 struct CommentsSection: View {
     let model: PostDetailViewModel
     @State private var pendingDelete: BoxComment?
+    @State private var reacting: BoxComment?
 
     private var comments: CommentsViewModel { model.comments }
 
@@ -16,6 +17,9 @@ struct CommentsSection: View {
             case .unavailable: UnavailableBlock()
             case .loaded: loaded
             }
+        }
+        .sheet(item: $reacting) { comment in
+            CommentReactionSheet(model: model.reactions(for: comment))
         }
         .confirmationDialog("Delete this comment?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
@@ -51,6 +55,8 @@ struct CommentsSection: View {
                      + (comment.updatedAt > comment.createdAt ? " · edited" : ""))
                     .font(Typography.caption).foregroundStyle(Theme.textMuted)
                 Spacer()
+                Button("React") { reacting = comment }.buttonStyle(QuietButtonStyle())
+                    .accessibilityIdentifier("react-comment")
                 if !indented {
                     Button("Reply") { comments.reply(to: comment) }.buttonStyle(QuietButtonStyle())
                 }

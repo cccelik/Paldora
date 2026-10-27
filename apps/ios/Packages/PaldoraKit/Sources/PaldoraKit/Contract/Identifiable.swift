@@ -24,3 +24,10 @@ extension FeedItem: Identifiable {
         }
     }
 }
+
+extension Friendship: Identifiable {}
+extension LifeUpdate: Identifiable {}
+
+extension BlockedUser: Identifiable {
+    public var id: String { userId }
+}

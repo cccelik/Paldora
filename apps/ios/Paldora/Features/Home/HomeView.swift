@@ -6,7 +6,7 @@ struct HomeView: View {
     let isActive: Bool
     @State private var seenVersion = 0
     @State private var feed: PagedList<FeedItem>
-    @State private var path: [PostRoute] = []
+    @State private var path = NavigationPath()
 
     init(env: FeatureEnvironment, isActive: Bool) {
         self.env = env
@@ -26,6 +26,17 @@ struct HomeView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(for: PostRoute.self) { route in
                     PostDetailView(env: env, route: route) { Task { await feed.refresh() } }
+                }
+                .navigationDestination(for: LifeUpdateRoute.self) { LifeUpdateDetailView(env: env, route: $0) }
+                .navigationDestination(for: LifeUpdateComposeRoute.self) { _ in LifeUpdateComposerView(env: env) }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { path.append(LifeUpdateComposeRoute()) } label: {
+                            Image(systemName: "square.and.pencil").frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
+                        }
+                        .accessibilityLabel("New Life Update")
+                        .accessibilityIdentifier("home-new-life-update")
+                    }
                 }
         }
         .task {
@@ -77,12 +88,21 @@ struct HomeView: View {
     @ViewBuilder private func row(_ item: FeedItem) -> some View {
         let name = boxId(of: item).flatMap { env.boxes.name(for: $0) }
         if let route = route(of: item) {
-            Button { path.append(route) } label: { FeedItemCard(item: item, boxName: name) }
+            Button { open(item, route) } label: { FeedItemCard(item: item, boxName: name) }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityIdentifier("feed-item")
         } else {
             FeedItemCard(item: item, boxName: name)
+        }
+    }
+
+    /// A Life Update card opens the structured Life Update, starting on its delivery context.
+    private func open(_ item: FeedItem, _ route: PostRoute) {
+        if case .lifeUpdate(let update) = item {
+            path.append(LifeUpdateRoute(id: update.id, postId: update.postId))
+        } else {
+            path.append(route)
         }
     }
 

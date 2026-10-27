@@ -39,6 +39,14 @@ public struct ListMyFriendshipsRequest: Codable, Sendable, Equatable {
     }
 }
 
+/// A member you blocked (your own list only).
+public struct BlockedUser: Codable, Sendable, Equatable {
+    public let userId: String
+    public let username: String
+    public let displayName: String
+    public let blockedAt: EpochMillis
+}
+
 public struct SetUserBlockRequest: Codable, Sendable, Equatable {
     public var targetUid: String
     public var blocked: Bool

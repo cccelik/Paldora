@@ -61,6 +61,10 @@ final class PostDetailViewModel {
         return env.people.name(for: uid, in: route.boxId) ?? "A member"
     }
 
+    func reactions(for comment: BoxComment) -> CommentReactionsViewModel {
+        CommentReactionsViewModel(env: env, route: route, commentId: comment.id)
+    }
+
     func authorAvatar(_ uid: String) -> String? { env.people.avatar(for: uid, in: route.boxId) }
 
     func load() async {

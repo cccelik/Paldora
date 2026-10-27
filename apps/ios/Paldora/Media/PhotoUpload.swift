@@ -7,11 +7,13 @@ import UIKit
 enum UploadPurpose: Equatable, Sendable {
     case postImage(boxId: String)
     case avatar
+    case lifeUpdate
 
     var purpose: String {
         switch self {
         case .postImage: MediaPurpose.postImage
         case .avatar: MediaPurpose.avatar
+        case .lifeUpdate: MediaPurpose.lifeUpdateImage
         }
     }
 

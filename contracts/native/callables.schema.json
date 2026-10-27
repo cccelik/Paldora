@@ -1134,6 +1134,47 @@
       ],
       "limit": { "scope": "setUserBlock", "perHour": 120 }
     },
+    "listMyBlocks": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": { "type": "string" },
+                "username": { "type": "string" },
+                "displayName": { "type": "string" },
+                "blockedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["userId", "username", "displayName", "blockedAt"],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyBlocks", "perHour": 600 }
+    },
     "createBoxComment": {
       "input": {
         "type": "object",
