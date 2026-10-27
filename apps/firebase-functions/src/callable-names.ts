@@ -51,6 +51,15 @@ export const callableNames = [
   'markNotificationRead',
   'markAllNotificationsRead',
   'getHomeFeed',
+  'createMediaUpload',
+  'completeMediaUpload',
+  'getMediaAsset',
 ] as const;
 
 export type CallableName = (typeof callableNames)[number];
+
+/**
+ * Every `onRequest` export (authenticated HTTP bytes for private media, ADR 021
+ * decision 8). Documented in `contracts/native` under `http`.
+ */
+export const httpFunctionNames = ['mediaUpload', 'mediaRead'] as const;

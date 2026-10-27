@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   NativeBoxDeletion,
   NativeBoxes,
+  NativeMedia,
   NativeModeration,
 } from '@paldora/firebase-trusted';
 import { createBox, getBox } from '@paldora/firebase-native';
@@ -137,7 +138,7 @@ async function client(username: string, verified = true, admitted = true) {
     );
     await reserve({ username });
   }
-  return { uid, db, functions };
+  return { uid, db, functions, auth };
 }
 
 describe('local Firebase Box vertical flow', () => {
@@ -1051,6 +1052,319 @@ describe('local Firebase Box vertical flow', () => {
         (item) => item.authorUid === alice.uid,
       ),
     ).toEqual([]);
+  }, 60_000);
+});
+
+describe('native private media over callables and authenticated HTTP', () => {
+  // A real 1x1 PNG; Sharp decodes it, so the processing path is the real one.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  const base = 'http://127.0.0.1:5001/demo-paldora/europe-west4';
+  const mediaMaintenance = new NativeMedia(
+    adminDb,
+    getAdminStorage(adminApp),
+    'demo-paldora.firebasestorage.app',
+  );
+  type Client = Awaited<ReturnType<typeof client>>;
+  const tokenOf = (user: Client) => user.auth.currentUser!.getIdToken();
+  const put = (
+    id: string,
+    token: string | null,
+    body: Buffer,
+    contentType = 'image/png',
+  ) =>
+    fetch(`${base}/mediaUpload/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': contentType,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: new Uint8Array(body),
+    });
+  const get = (id: string, variant: string, token: string | null) =>
+    fetch(`${base}/mediaRead/${id}/${variant}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  type Asset = { id: string; status: string };
+  const reserve = (
+    user: Client,
+    request: Record<string, unknown>,
+  ): Promise<{
+    data: { mediaAsset: Asset; upload: { path: string; method: string } };
+  }> =>
+    httpsCallable<Record<string, unknown>, never>(
+      user.functions,
+      'createMediaUpload',
+    )(request) as never;
+  const assetStatus = async (user: Client, assetId: string) =>
+    (
+      await httpsCallable<
+        { assetId: string },
+        { status: string; available: boolean; width: number | null }
+      >(
+        user.functions,
+        'getMediaAsset',
+      )({ assetId })
+    ).data;
+
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  async function waitReady(user: Client, id: string) {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const details = await assetStatus(user, id);
+      if (details.status === 'ready') return details;
+      await sleep(250);
+    }
+    throw new Error('media never became ready');
+  }
+
+  async function readyAsset(
+    user: Client,
+    request: Record<string, unknown>,
+  ): Promise<string> {
+    const { data } = await reserve(user, request);
+    const id = data.mediaAsset.id;
+    expect(data.upload).toMatchObject({ method: 'PUT', path: `/${id}` });
+    const uploaded = await put(id, await tokenOf(user), png);
+    expect(uploaded.status).toBe(204);
+    await httpsCallable<{ assetId: string }, Asset>(
+      user.functions,
+      'completeMediaUpload',
+    )({ assetId: id });
+    // The Firestore trigger may already be processing; the lease makes this safe.
+    await mediaMaintenance.processOnce(`media-process-${id}-0`);
+    await waitReady(user, id);
+    return id;
+  }
+
+  it('reserves, uploads, processes and serves a photo with live authorization', async () => {
+    const call = <Response = Record<string, unknown>>(
+      user: Client,
+      name: string,
+    ) => httpsCallable<Record<string, unknown>, Response>(user.functions, name);
+    const bobName = `bob_${randomUUID().slice(0, 8)}`;
+    const carolName = `carol_${randomUUID().slice(0, 8)}`;
+    const alice = await client(`alice_${randomUUID().slice(0, 8)}`);
+    const bob = await client(bobName);
+    const carol = await client(carolName);
+    const eve = await client(`eve_${randomUUID().slice(0, 8)}`);
+    const boxId = (
+      await call<{ id: string }>(alice, 'createBox')({ name: 'Media Crew' })
+    ).data.id;
+    for (const [user, name] of [
+      [bob, bobName],
+      [carol, carolName],
+    ] as const) {
+      const invite = await call<{ invitationId: string }>(
+        alice,
+        'inviteBox',
+      )({ boxId, username: name });
+      await call(
+        user,
+        'acceptBoxInvitation',
+      )({
+        invitationId: invite.data.invitationId,
+      });
+    }
+
+    // A non-member cannot reserve a Box photo; validation matches the web.
+    await expect(
+      reserve(eve, {
+        purpose: 'post_image',
+        boxId,
+        contentType: 'image/png',
+        contentLength: png.length,
+      }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await expect(
+      reserve(bob, {
+        purpose: 'post_image',
+        contentType: 'image/png',
+        contentLength: png.length,
+      }),
+    ).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+      details: { reason: 'INVALID_INPUT' },
+    });
+    await expect(
+      reserve(bob, {
+        purpose: 'avatar',
+        contentType: 'image/gif',
+        contentLength: 10,
+      }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+
+    // Reserve, then exercise rejection paths before any valid upload.
+    const { data: reservation } = await reserve(bob, {
+      purpose: 'post_image',
+      boxId,
+      contentType: 'image/png',
+      contentLength: png.length,
+    });
+    const id = reservation.mediaAsset.id;
+    const bobToken = await tokenOf(bob);
+    expect((await put(id, null, png)).status).toBe(401);
+    expect((await put(id, 'not-a-token', png)).status).toBe(401);
+    expect((await put(id, await tokenOf(eve), png)).status).toBe(404);
+    expect((await put(id, bobToken, png, 'image/jpeg')).status).toBe(400);
+    expect(
+      (await put(id, bobToken, Buffer.concat([png, Buffer.from([0])]))).status,
+    ).toBe(400);
+    const oversize = await put(
+      id,
+      bobToken,
+      Buffer.alloc(10 * 1024 * 1024 + 1),
+    );
+    expect(oversize.status).toBe(413);
+    // Read before the bytes arrive: not found, for the owner too.
+    expect((await get(id, 'display', bobToken)).status).toBe(404);
+    expect((await assetStatus(bob, id)).status).toBe('pending');
+
+    // Valid upload; the same asset cannot be written twice.
+    expect((await put(id, bobToken, png)).status).toBe(204);
+    expect((await put(id, bobToken, png)).status).toBe(404);
+    // Complete is owner-only and idempotent.
+    await expect(
+      call(eve, 'completeMediaUpload')({ assetId: id }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await call(bob, 'completeMediaUpload')({ assetId: id });
+    await call(bob, 'completeMediaUpload')({ assetId: id });
+    await mediaMaintenance.processOnce(`media-process-${id}-0`);
+    const ready = await waitReady(bob, id);
+    expect(ready).toMatchObject({ status: 'ready', available: true, width: 1 });
+    await expect(
+      call(eve, 'getMediaAsset')({ assetId: id }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+
+    // Ready but unattached: only the owner may read it.
+    expect((await get(id, 'display', bobToken)).status).toBe(200);
+    expect((await get(id, 'display', await tokenOf(alice))).status).toBe(404);
+
+    // Attach to a post: Box members can read, others cannot.
+    const created = await call<{ postId: string }>(
+      bob,
+      'createBoxPost',
+    )({ boxId, text: '', mediaAssetIds: [id] });
+    await expect(
+      call(bob, 'createBoxPost')({ boxId, text: 'again', mediaAssetIds: [id] }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    await expect(
+      call(bob, 'createBoxPost')({ boxId, text: '', mediaAssetIds: [] }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    const aliceToken = await tokenOf(alice);
+    for (const [token, variant] of [
+      [bobToken, 'display'],
+      [aliceToken, 'display'],
+      [aliceToken, 'thumbnail'],
+    ] as const) {
+      const response = await get(id, variant, token);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toBe('image/webp');
+      expect(response.headers.get('cache-control')).toBe('private, no-store');
+
+      const bytes = Buffer.from(await response.arrayBuffer());
+      expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF');
+    }
+    expect(
+      (
+        await call<{ mediaAssetIds: string[] }>(
+          alice,
+          'getBoxPost',
+        )({ boxId, postId: created.data.postId })
+      ).data.mediaAssetIds,
+    ).toEqual([id]);
+
+    // Absence and denial are the same 404 with the same body.
+    const denied = await get(id, 'display', await tokenOf(eve));
+    const absent = await get(randomUUID(), 'display', await tokenOf(eve));
+    const master = await get(id, 'master', aliceToken);
+    const malformed = await get('not-a-uuid', 'display', aliceToken);
+    for (const response of [denied, absent, master, malformed])
+      expect(response.status).toBe(404);
+    const bodies = await Promise.all(
+      [denied, absent, master, malformed].map((r) => r.text()),
+    );
+    expect(new Set(bodies).size).toBe(1);
+    expect((await get(id, 'display', null)).status).toBe(401);
+    expect((await get(id, 'display', 'garbage')).status).toBe(401);
+    expect(
+      (await fetch(`${base}/mediaRead/${id}/display`, { method: 'POST' }))
+        .status,
+    ).toBe(405);
+
+    // A block overrides Box membership on the very next read.
+    const carolToken = await tokenOf(carol);
+    expect((await get(id, 'thumbnail', carolToken)).status).toBe(200);
+    await call(bob, 'setUserBlock')({ targetUid: carol.uid, blocked: true });
+    expect((await get(id, 'thumbnail', carolToken)).status).toBe(404);
+    expect((await get(id, 'thumbnail', bobToken)).status).toBe(200);
+
+    // Deleting the post closes reads for members.
+    await call(bob, 'deleteBoxPost')({ boxId, postId: created.data.postId });
+    expect((await get(id, 'display', aliceToken)).status).toBe(404);
+  }, 90_000);
+
+  it('serves avatars and life update photos, and refuses a stale session epoch', async () => {
+    const owner = await client(`owner_${randomUUID().slice(0, 8)}`);
+    const avatar = await readyAsset(owner, {
+      purpose: 'avatar',
+      contentType: 'image/png',
+      contentLength: png.length,
+    });
+    expect((await get(avatar, 'thumbnail', await tokenOf(owner))).status).toBe(
+      200,
+    );
+    const photo = await readyAsset(owner, {
+      purpose: 'life_update_image',
+      contentType: 'image/png',
+      contentLength: png.length,
+    });
+    await httpsCallable(
+      owner.functions,
+      'createLifeUpdate',
+    )({
+      audience: { type: 'only_me' },
+      sections: { travel: 'With a photo' },
+      mediaAssetIds: [photo],
+    });
+    expect((await get(photo, 'display', await tokenOf(owner))).status).toBe(
+      200,
+    );
+
+    // A token minted under an older session epoch is refused, like a callable.
+    const uid = randomUUID();
+    const password = `Local-${randomUUID()}!`;
+    const email = `${uid}@example.invalid`;
+    await adminAuth.createUser({ uid, email, password, emailVerified: true });
+    await adminAuth.setCustomUserClaims(uid, {
+      paldoraAdmitted: true,
+      paldoraSessionEpoch: 'epoch-old',
+    });
+    await adminDb
+      .collection('nativeAccounts')
+      .doc(uid)
+      .set({ status: 'active', sessionEpoch: 'epoch-new' });
+    const app = initializeApp(
+      {
+        projectId: 'demo-paldora',
+        apiKey: 'demo-api-key',
+        appId: `demo-${uid}`,
+      },
+      `media-epoch-${uid}`,
+    );
+    clientApps.push(app);
+    const auth = getAuth(app);
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', {
+      disableWarnings: true,
+    });
+    await signInWithEmailAndPassword(auth, email, password);
+    const stale = await auth.currentUser!.getIdToken();
+    expect((await get(photo, 'display', stale)).status).toBe(401);
+    expect((await put(photo, stale, png)).status).toBe(401);
   }, 60_000);
 });
 

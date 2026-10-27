@@ -450,11 +450,7 @@ export class NativeMedia {
   }
 
   public async status(uid: string, id: string) {
-    await this.account(uid);
-    if (!uuidSchema.safeParse(id).success)
-      throw new NativeMediaError('UNAVAILABLE');
-    const asset = record(await this.ref(id).get());
-    if (asset.ownerUid !== uid) throw new NativeMediaError('UNAVAILABLE');
+    const asset = await this.owned(uid, id);
     return {
       id,
       purpose: asset.purpose,
@@ -463,6 +459,38 @@ export class NativeMedia {
       contentLength: asset.contentLength,
       createdAt: asset.createdAt,
     };
+  }
+
+  /**
+   * Owner-only native status: `status` plus availability and the master
+   * derivative's dimensions. Never a path, key or URL.
+   */
+  public async view(uid: string, id: string) {
+    const asset = await this.owned(uid, id);
+    const ready = asset.status === 'ready';
+    const width = (asset as { width?: number }).width;
+    const height = (asset as { height?: number }).height;
+    return {
+      id,
+      purpose: asset.purpose,
+      status:
+        asset.status === 'uploading' ? ('pending' as const) : asset.status,
+      contentType: asset.contentType,
+      contentLength: asset.contentLength,
+      createdAt: asset.createdAt,
+      available: ready,
+      width: ready && typeof width === 'number' ? width : null,
+      height: ready && typeof height === 'number' ? height : null,
+    };
+  }
+
+  private async owned(uid: string, id: string): Promise<MediaRecord> {
+    await this.account(uid);
+    if (!uuidSchema.safeParse(id).success)
+      throw new NativeMediaError('UNAVAILABLE');
+    const asset = record(await this.ref(id).get());
+    if (asset.ownerUid !== uid) throw new NativeMediaError('UNAVAILABLE');
+    return asset;
   }
 
   /** A worker may be retried after any storage or Firestore failure. */

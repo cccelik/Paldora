@@ -17,12 +17,17 @@ public struct BoxPost: Codable, Sendable, Equatable {
     public let mediaAssetIds: [String]
 }
 
+/// `text` may be empty only when `mediaAssetIds` (at most 4) is non-empty.
+/// Each asset must be a ready `post_image` you reserved for this Box; it can be
+/// attached once.
 public struct CreateBoxPostRequest: Codable, Sendable, Equatable {
     public var boxId: String
     public var text: String
-    public init(boxId: String, text: String) {
+    public var mediaAssetIds: [String]?
+    public init(boxId: String, text: String, mediaAssetIds: [String]? = nil) {
         self.boxId = boxId
         self.text = text
+        self.mediaAssetIds = mediaAssetIds
     }
 }
 

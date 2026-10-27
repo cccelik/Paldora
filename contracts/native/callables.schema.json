@@ -917,7 +917,12 @@
         "type": "object",
         "properties": {
           "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
-          "text": { "type": "string", "minLength": 1, "maxLength": 5000 }
+          "text": { "type": "string", "maxLength": 5000 },
+          "mediaAssetIds": {
+            "maxItems": 4,
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+          }
         },
         "required": ["boxId", "text"]
       },
@@ -2325,6 +2330,313 @@
         "unauthenticated"
       ],
       "limit": { "scope": "getHomeFeed", "perHour": 600 }
+    },
+    "createMediaUpload": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "avatar",
+              "post_image",
+              "reaction_image",
+              "life_update_image",
+              "room_banner"
+            ]
+          },
+          "boxId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "contentType": {
+            "type": "string",
+            "enum": ["image/jpeg", "image/png", "image/webp"]
+          },
+          "contentLength": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760
+          }
+        },
+        "required": ["purpose", "contentType", "contentLength"],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "mediaAsset": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "avatar",
+                  "post_image",
+                  "reaction_image",
+                  "life_update_image",
+                  "room_banner"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "processing", "ready", "failed", "deleted"]
+              },
+              "contentType": {
+                "type": "string",
+                "enum": ["image/jpeg", "image/png", "image/webp"]
+              },
+              "contentLength": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "createdAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "purpose",
+              "status",
+              "contentType",
+              "contentLength",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          },
+          "upload": {
+            "type": "object",
+            "properties": {
+              "method": { "type": "string", "const": "PUT" },
+              "function": { "type": "string", "const": "mediaUpload" },
+              "path": { "type": "string" },
+              "headers": {
+                "type": "object",
+                "properties": {
+                  "Content-Type": {
+                    "type": "string",
+                    "enum": ["image/jpeg", "image/png", "image/webp"]
+                  }
+                },
+                "required": ["Content-Type"],
+                "additionalProperties": false
+              },
+              "expiresAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["method", "function", "path", "headers", "expiresAt"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["mediaAsset", "upload"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "createMediaUpload", "perHour": 480 }
+    },
+    "completeMediaUpload": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "assetId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["assetId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "avatar",
+              "post_image",
+              "reaction_image",
+              "life_update_image",
+              "room_banner"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "ready", "failed", "deleted"]
+          },
+          "contentType": {
+            "type": "string",
+            "enum": ["image/jpeg", "image/png", "image/webp"]
+          },
+          "contentLength": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "status",
+          "contentType",
+          "contentLength",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "completeMediaUpload", "perHour": 480 }
+    },
+    "getMediaAsset": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "assetId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["assetId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "avatar",
+              "post_image",
+              "reaction_image",
+              "life_update_image",
+              "room_banner"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "ready", "failed", "deleted"]
+          },
+          "contentType": {
+            "type": "string",
+            "enum": ["image/jpeg", "image/png", "image/webp"]
+          },
+          "contentLength": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "available": { "type": "boolean" },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              { "type": "null" }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "status",
+          "contentType",
+          "contentLength",
+          "createdAt",
+          "available",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getMediaAsset", "perHour": 1200 }
+    }
+  },
+  "http": {
+    "mediaUpload": {
+      "method": "PUT",
+      "path": "/{assetId}",
+      "auth": "Bearer Firebase ID token",
+      "limit": { "scope": "mediaUpload", "perHour": 480 },
+      "maxBodyBytes": 10485760,
+      "requestHeaders": {
+        "Authorization": "Bearer <Firebase ID token>",
+        "Content-Type": "Exactly the contentType reserved by createMediaUpload; body length must equal the reserved contentLength."
+      },
+      "responseHeaders": {
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "statuses": {
+        "204": "Bytes accepted; call completeMediaUpload next.",
+        "400": "Type, length or image content does not match the reservation, or the reservation expired.",
+        "401": "Missing, invalid or ended session.",
+        "404": "Unknown, foreign, already used or unavailable asset (indistinguishable).",
+        "405": "Method is not PUT.",
+        "413": "Body larger than the largest media policy.",
+        "429": "Rate limited.",
+        "503": "Storage or the backing store is unavailable."
+      }
+    },
+    "mediaRead": {
+      "method": "GET",
+      "path": "/{assetId}/{variant}",
+      "auth": "Bearer Firebase ID token",
+      "limit": { "scope": "mediaRead", "perHour": 6000 },
+      "variants": ["display", "thumbnail"],
+      "requestHeaders": { "Authorization": "Bearer <Firebase ID token>" },
+      "responseHeaders": {
+        "Cache-Control": "private, no-store",
+        "Content-Type": "image/webp",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "statuses": {
+        "200": "WebP bytes of the display or thumbnail variant.",
+        "401": "Missing, invalid or ended session.",
+        "404": "Unknown asset or variant, not ready, or not visible to the caller (indistinguishable).",
+        "405": "Method is not GET.",
+        "429": "Rate limited.",
+        "503": "Storage or the backing store is unavailable."
+      }
     }
   },
   "firestore": {

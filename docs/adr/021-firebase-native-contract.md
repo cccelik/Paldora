@@ -150,6 +150,27 @@ Two options, neither chosen:
 - **#8 Callable order:** profile and current user, notifications, home feed
   first; media, Rooms, Memories and export/deletion follow. Media waits for a
   Storage design.
+- **#8 Media (decided and implemented locally, 2026-10-27):** callables for
+  state and authenticated HTTP Functions for bytes. `createMediaUpload`,
+  `completeMediaUpload` and `getMediaAsset` wrap `NativeMedia` exactly as the web
+  adapter does (purpose policy, exact MIME and length, owner check, expiry,
+  single-use attachment). `mediaUpload` (`PUT /{assetId}`) and `mediaRead`
+  (`GET /{assetId}/{display|thumbnail}`) in `europe-west4` require
+  `Authorization: Bearer <Firebase ID token>`, verify it with Admin Auth, apply
+  the callables' session-epoch check and a per-user limit, and run the web
+  `/media` routes' authorization on every request (live Box membership, blocks,
+  content state, and the second check after the Storage download). Absence and
+  denial are the same `404`. `createBoxPost` gained `mediaAssetIds`
+  (`createLifeUpdate` and `setBoxReaction` already carried media ids); an avatar
+  attaches through its reservation. **Why not signed URLs:** a signed or
+  download URL outlives the membership, block or deletion that revoked access,
+  and Firestore permission cannot revoke it; HTTP bytes keep authorization on
+  every read and keep object keys server-side. **Trade-off:** all image bytes
+  pass through Functions (egress, per-request cost, cold starts, a 10 MB request
+  limit), and clients cannot hand a URL to a system image cache without a
+  custom authenticated loader. Revisit with a CDN or signed-cookie design only
+  after measuring cost on a hosted (Blaze) project. Declared in
+  `contracts/native` (`http` in `callables.schema.json`, README).
 - **Still open:** #3 App Check, #4 Sign in with Apple, #9 hosted deployment
   (App Check and hosted deployment depend on Blaze; hosted staging is skipped
   for now). The ADR stays Proposed until these are decided.

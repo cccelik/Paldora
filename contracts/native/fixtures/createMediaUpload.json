@@ -1,0 +1,102 @@
+{
+  "callable": "createMediaUpload",
+  "request": {
+    "valid": [
+      {
+        "purpose": "post_image",
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "contentType": "image/jpeg",
+        "contentLength": 48213
+      },
+      {
+        "purpose": "avatar",
+        "contentType": "image/png",
+        "contentLength": 1024
+      },
+      {
+        "purpose": "life_update_image",
+        "contentType": "image/webp",
+        "contentLength": 2048
+      },
+      {
+        "purpose": "reaction_image",
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "contentType": "image/jpeg",
+        "contentLength": 5242880
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "purpose": "post_image",
+        "contentType": "image/jpeg",
+        "contentLength": 10
+      },
+      {
+        "purpose": "avatar",
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "contentType": "image/png",
+        "contentLength": 10
+      },
+      {
+        "purpose": "avatar",
+        "contentType": "image/gif",
+        "contentLength": 10
+      },
+      {
+        "purpose": "avatar",
+        "contentType": "image/png",
+        "contentLength": 0
+      },
+      {
+        "purpose": "reaction_image",
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "contentType": "image/jpeg",
+        "contentLength": 5242881
+      },
+      {
+        "purpose": "avatar",
+        "contentType": "image/png",
+        "contentLength": 10,
+        "extra": true
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "mediaAsset": {
+          "id": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+          "purpose": "post_image",
+          "status": "pending",
+          "contentType": "image/jpeg",
+          "contentLength": 48213,
+          "createdAt": 1767225600000
+        },
+        "upload": {
+          "method": "PUT",
+          "function": "mediaUpload",
+          "path": "/9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+          "headers": {
+            "Content-Type": "image/jpeg"
+          },
+          "expiresAt": 1767225900000
+        }
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

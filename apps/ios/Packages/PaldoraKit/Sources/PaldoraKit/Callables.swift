@@ -15,6 +15,7 @@ public enum CallableName: String, CaseIterable, Hashable, Sendable {
     case listMyBoxes, createBox, getBox
     case listMyNotifications, countMyUnreadNotifications, markNotificationRead, markAllNotificationsRead
     case getHomeFeed
+    case createMediaUpload, completeMediaUpload, getMediaAsset
 }
 
 /// JSON in, JSON out. The app target implements this with Firebase Functions
@@ -218,6 +219,17 @@ extension PaldoraAPI {
     }
     public func deleteLifeUpdate(id: String) async throws -> OkResponse {
         try await perform(Contracts.DeleteLifeUpdate.self, LifeUpdateReference(id: id))
+    }
+
+    // Media (bytes travel over the `mediaUpload` / `mediaRead` HTTP Functions)
+    public func createMediaUpload(_ request: CreateMediaUploadRequest) async throws -> CreateMediaUploadResponse {
+        try await perform(Contracts.CreateMediaUpload.self, request)
+    }
+    public func completeMediaUpload(assetId: String) async throws -> MediaAsset {
+        try await perform(Contracts.CompleteMediaUpload.self, MediaAssetReference(assetId: assetId))
+    }
+    public func getMediaAsset(assetId: String) async throws -> MediaAssetDetails {
+        try await perform(Contracts.GetMediaAsset.self, MediaAssetReference(assetId: assetId))
     }
 
     // Moderation

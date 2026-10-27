@@ -7,6 +7,7 @@ import type { FunctionsErrorCode } from './errors.js';
 import * as friendships from './friendships.js';
 import * as invitations from './invitations.js';
 import * as lifeUpdates from './life-updates.js';
+import * as mediaSchemas from './media.js';
 import * as moderation from './moderation.js';
 import * as notifications from './notifications.js';
 import * as profile from './profile.js';
@@ -477,6 +478,33 @@ export const nativeCallableRegistry: readonly NativeCallable[] = [
     {
       input: feed.getHomeFeedInputSchema,
       output: feed.getHomeFeedOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'createMediaUpload',
+    480,
+    {
+      input: mediaSchemas.createMediaUploadInputSchema,
+      output: mediaSchemas.createMediaUploadOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'completeMediaUpload',
+    480,
+    {
+      input: mediaSchemas.completeMediaUploadInputSchema,
+      output: mediaSchemas.completeMediaUploadOutputSchema,
+    },
+    ['not-found', 'failed-precondition'],
+  ),
+  callable(
+    'getMediaAsset',
+    1200,
+    {
+      input: mediaSchemas.getMediaAssetInputSchema,
+      output: mediaSchemas.getMediaAssetOutputSchema,
     },
     ['not-found'],
   ),

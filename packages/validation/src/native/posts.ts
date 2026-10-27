@@ -10,10 +10,22 @@ import {
 /** `listBoxPosts`, `listBoxComments` and `listModerationReports` share it. */
 export const nativeUuidCursorSchema = z.string().regex(/^[a-f0-9-]{36}$/);
 
-export const createBoxPostInputSchema = z.object({
-  boxId: nativeIdSchema,
-  text: nativeString(5_000),
-});
+/**
+ * `text` may be empty only when `mediaAssetIds` is non-empty. Each asset must
+ * be a `ready` `post_image` the caller reserved for this Box and has not
+ * attached yet (single use); the trusted service enforces it.
+ */
+export const createBoxPostInputSchema = z
+  .object({
+    boxId: nativeIdSchema,
+    text: z.string().max(5_000),
+    mediaAssetIds: z.array(nativeString(64)).max(4).optional(),
+  })
+  .refine(
+    ({ text, mediaAssetIds }) =>
+      text.trim().length > 0 || (mediaAssetIds?.length ?? 0) > 0,
+    { message: 'Write something or attach a photo.' },
+  );
 export const createBoxPostOutputSchema = z.object({ postId: z.string() });
 
 export const getBoxPostInputSchema = z.object({

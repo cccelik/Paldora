@@ -32,6 +32,7 @@ import {
   NativeLifeUpdates,
   NativeLifeUpdateError,
   NativeMedia,
+  NativeMediaError,
   NativeUsernameError,
   NativeUsernames,
   logEvent,
@@ -41,13 +42,14 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { getFunctions } from 'firebase-admin/functions';
-import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import type { CallableName } from './callable-names.js';
 import { observedJob } from './observed.js';
 import { boxView, NativeViews } from './native-views.js';
+import { handleMediaRead, handleMediaUpload } from './media-http.js';
 import type { native } from '@paldora/validation';
 
 if (getApps().length === 0) initializeApp();
@@ -300,6 +302,17 @@ function field(data: unknown, key: string, maxLength = 128): string {
   return value;
 }
 
+function optionalIds(value: unknown, max: number): string[] {
+  if (value === undefined) return [];
+  if (
+    !Array.isArray(value) ||
+    value.length > max ||
+    value.some((id) => typeof id !== 'string' || !id || id.length > 64)
+  )
+    throw reasoned('invalid-argument', 'Invalid media.', 'INVALID_INPUT');
+  return value as string[];
+}
+
 function invitationError(error: NativeInvitationError): HttpsError {
   if (error.code === 'FORBIDDEN')
     return new HttpsError('permission-denied', 'Action unavailable.');
@@ -350,6 +363,15 @@ function boxError(
   return new HttpsError('not-found', 'Box unavailable.');
 }
 
+/** Absence and denial share `not-found`; the rest only ever reach the owner. */
+function mediaError(error: NativeMediaError): HttpsError {
+  if (error.code === 'INVALID')
+    return reasoned('invalid-argument', 'Invalid media.', 'INVALID_INPUT');
+  if (error.code === 'UNAVAILABLE')
+    return new HttpsError('not-found', 'Media unavailable.');
+  return new HttpsError('failed-precondition', 'Media unavailable.');
+}
+
 function usernameError(error: NativeUsernameError): HttpsError {
   return error.code === 'TAKEN'
     ? new HttpsError('already-exists', 'Username unavailable.')
@@ -375,6 +397,7 @@ function readError(
 
 function accountReadError(error: unknown): HttpsError | null {
   if (error instanceof NativeProfileError) return profileError(error);
+  if (error instanceof NativeMediaError) return mediaError(error);
   if (error instanceof NativeAccountError)
     return new HttpsError('failed-precondition', 'Account unavailable.');
   if (
@@ -638,9 +661,12 @@ export const reserveUsername = onCall(options, async (request) => {
 export const createBoxPost = onCall(options, async (request) => {
   const uid = await requireSession(request.auth);
   const boxId = field(request.data, 'boxId');
-  const text = field(request.data, 'text', 5_000);
+  const data = request.data as Record<string, unknown>;
+  // Empty text is allowed only with photos; the service enforces the rule.
+  const text = typeof data.text === 'string' ? data.text : '';
+  const mediaAssetIds = optionalIds(data.mediaAssetIds, 4);
   return limited(uid, 'createBoxPost', 120, async () => ({
-    postId: await posts.create(boxId, uid, text),
+    postId: await posts.create(boxId, uid, text, Date.now(), mediaAssetIds),
   }));
 });
 
@@ -1029,6 +1055,78 @@ export const getHomeFeed = onCall(options, async (request) => {
   });
 });
 
+export const createMediaUpload = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'createMediaUpload', 480, async () => {
+    // Camera reactions keep the web's tighter capture budget.
+    const data = request.data as Record<string, unknown> | null;
+    if (data?.purpose === 'reaction_image')
+      await rateLimits.consume(uid, 'cameraUpload', 120, 60 * 60 * 1_000);
+    const asset = await media.reserve(uid, request.data);
+    return {
+      mediaAsset: asset,
+      upload: {
+        method: 'PUT' as const,
+        function: 'mediaUpload' as const,
+        path: `/${asset.id}`,
+        headers: { 'Content-Type': asset.contentType },
+        expiresAt: asset.createdAt + 300_000,
+      },
+    };
+  });
+});
+
+export const completeMediaUpload = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const assetId = field(request.data, 'assetId', 64);
+  return limited(uid, 'completeMediaUpload', 480, () =>
+    media.complete(uid, assetId),
+  );
+});
+
+export const getMediaAsset = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const assetId = field(request.data, 'assetId', 64);
+  return limited(uid, 'getMediaAsset', 1200, () => media.view(uid, assetId));
+});
+
+const mediaHttp = {
+  verifyIdToken: async (token: string) => {
+    const decoded = await getAuth().verifyIdToken(token);
+    return {
+      uid: decoded.uid,
+      paldoraSessionEpoch: decoded.paldoraSessionEpoch,
+    };
+  },
+  sessions: callableSessions,
+  rateLimits,
+  media,
+};
+
+/** `PUT /{assetId}`; body limit equals the largest media policy. */
+export const mediaUpload = onRequest(
+  {
+    region: 'europe-west4',
+    maxInstances: 2,
+    memory: '512MiB',
+    timeoutSeconds: 60,
+    cors: false,
+  },
+  (request, response) => handleMediaUpload(request, response, mediaHttp),
+);
+
+/** `GET /{assetId}/{display|thumbnail}`; authorization runs on every read. */
+export const mediaRead = onRequest(
+  {
+    region: 'europe-west4',
+    maxInstances: 2,
+    memory: '512MiB',
+    timeoutSeconds: 60,
+    cors: false,
+  },
+  (request, response) => handleMediaRead(request, response, mediaHttp),
+);
+
 /** Compile-time proof that the exports above and `callableNames` agree. */
 void ({
   beginBoxDeletion,
@@ -1077,4 +1175,7 @@ void ({
   markNotificationRead,
   markAllNotificationsRead,
   getHomeFeed,
+  createMediaUpload,
+  completeMediaUpload,
+  getMediaAsset,
 } satisfies Record<CallableName, unknown>);

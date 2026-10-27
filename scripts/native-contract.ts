@@ -16,6 +16,7 @@ import {
   nativeCallableRegistry,
   NATIVE_ERROR_REASONS,
   nativeErrorSchema,
+  nativeHttpEndpoints,
   nativeMemberDocSchema,
 } from '../packages/validation/src/native/index.js';
 
@@ -54,6 +55,9 @@ const document = {
         limit: entry.limit,
       },
     ]),
+  ),
+  http: Object.fromEntries(
+    nativeHttpEndpoints.map(({ name, ...endpoint }) => [name, endpoint]),
   ),
   firestore: {
     'nativeAccounts/{uid}/boxRefs/{boxId}': jsonSchema(

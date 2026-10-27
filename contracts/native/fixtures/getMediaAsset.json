@@ -1,0 +1,56 @@
+{
+  "callable": "getMediaAsset",
+  "request": {
+    "valid": [
+      {
+        "assetId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "assetId": ""
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "id": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+        "purpose": "post_image",
+        "status": "ready",
+        "contentType": "image/jpeg",
+        "contentLength": 48213,
+        "createdAt": 1767225600000,
+        "available": true,
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "id": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+        "purpose": "post_image",
+        "status": "pending",
+        "contentType": "image/jpeg",
+        "contentLength": 48213,
+        "createdAt": 1767225600000,
+        "available": false,
+        "width": null,
+        "height": null
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

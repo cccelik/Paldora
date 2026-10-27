@@ -26,6 +26,25 @@ before completing the job. A ready asset is only readable while
 the corresponding post, Life Update, Room banner, avatar or camera reaction
 still grants access. A second policy check runs after the Storage download.
 
+## Native clients
+
+Native apps use the same pipeline without cookies. `createMediaUpload`
+reserves an asset; `PUT` the bytes to the `mediaUpload` Function
+(`http://127.0.0.1:5001/demo-paldora/europe-west4/mediaUpload/{assetId}` in the
+emulator) with the reserved `Content-Type`, the exact length and
+`Authorization: Bearer <Firebase ID token>`; `completeMediaUpload` queues the
+same processing job; `getMediaAsset` reports `status`, `available`, `width` and
+`height`. Read display or thumbnail WebP from `mediaRead/{assetId}/{variant}`
+with the bearer. Both functions check the session epoch like a callable, apply
+rate limits (`mediaUpload` 480, `mediaRead` 6000 an hour), and run
+`NativeMedia.upload` and `NativeMedia.read`, so Box membership, blocks, content
+state and the post-download recheck behave exactly as on web. Every refusal for
+an asset the caller may not see is the same `404`; `401` is only for a missing,
+invalid or ended session. Responses are `Cache-Control: private, no-store` and
+never contain object keys or URLs. `pnpm firebase:local:flow:test` covers the
+full round trip, including rejected uploads and revocation.
+Contract: `contracts/native/README.md`.
+
 ## Repair and retirement
 
 Every processing or deletion intent is recorded in `nativeJobs` before the

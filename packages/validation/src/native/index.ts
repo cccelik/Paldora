@@ -12,5 +12,7 @@ export * from './moderation.js';
 export * from './profile.js';
 export * from './notifications.js';
 export * from './feed.js';
+export * from './media.js';
+export * from './http.js';
 export * from './firestore.js';
 export * from './registry.js';

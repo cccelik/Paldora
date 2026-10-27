@@ -2,7 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
-import { callableNames } from '../../../../apps/firebase-functions/src/callable-names.js';
+import {
+  callableNames,
+  httpFunctionNames,
+} from '../../../../apps/firebase-functions/src/callable-names.js';
 import {
   FUNCTIONS_ERROR_CODES,
   NATIVE_ERROR_REASONS,
@@ -14,6 +17,7 @@ import {
   nativeBoxRefDocSchema,
   nativeMemberDocSchema,
 } from './firestore.js';
+import { nativeHttpEndpoints } from './http.js';
 import { nativeCallableRegistry } from './registry.js';
 
 interface CallableFixture {
@@ -201,5 +205,26 @@ describe('native Firestore documents', () => {
       expect(schema!.safeParse(doc).success).toBe(true);
     for (const doc of fixture.invalid)
       expect(schema!.safeParse(doc).success).toBe(false);
+  });
+});
+
+describe('native HTTP endpoints', () => {
+  it('registers every onRequest Function once, in source order', () => {
+    expect(nativeHttpEndpoints.map(({ name }) => name)).toEqual([
+      ...httpFunctionNames,
+    ]);
+  });
+
+  it('declares auth, a positive limit and private no-store responses', () => {
+    for (const endpoint of nativeHttpEndpoints) {
+      expect(endpoint.auth).toBe('Bearer Firebase ID token');
+      expect(endpoint.limit.perHour).toBeGreaterThan(0);
+      expect(endpoint.responseHeaders['Cache-Control']).toBe(
+        'private, no-store',
+      );
+      expect(endpoint.statuses['401']).toBeDefined();
+      expect(endpoint.statuses['404']).toBeDefined();
+      expect(endpoint.statuses['429']).toBeDefined();
+    }
   });
 });

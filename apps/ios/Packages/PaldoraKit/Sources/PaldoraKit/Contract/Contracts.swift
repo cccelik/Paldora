@@ -48,6 +48,9 @@ public enum Contracts {
     public enum MarkNotificationRead: CallableContract { public typealias Request = NotificationReference; public typealias Response = PaldoraNotification; public static let name = CallableName.markNotificationRead }
     public enum MarkAllNotificationsRead: CallableContract { public typealias Request = EmptyRequest; public typealias Response = OkResponse; public static let name = CallableName.markAllNotificationsRead }
     public enum GetHomeFeed: CallableContract { public typealias Request = CursorRequest; public typealias Response = Page<FeedItem>; public static let name = CallableName.getHomeFeed }
+    public enum CreateMediaUpload: CallableContract { public typealias Request = CreateMediaUploadRequest; public typealias Response = CreateMediaUploadResponse; public static let name = CallableName.createMediaUpload }
+    public enum CompleteMediaUpload: CallableContract { public typealias Request = MediaAssetReference; public typealias Response = MediaAsset; public static let name = CallableName.completeMediaUpload }
+    public enum GetMediaAsset: CallableContract { public typealias Request = MediaAssetReference; public typealias Response = MediaAssetDetails; public static let name = CallableName.getMediaAsset }
 
     public static let all: [any CallableContract.Type] = [
         BeginBoxDeletion.self,
@@ -96,5 +99,8 @@ public enum Contracts {
         MarkNotificationRead.self,
         MarkAllNotificationsRead.self,
         GetHomeFeed.self,
+        CreateMediaUpload.self,
+        CompleteMediaUpload.self,
+        GetMediaAsset.self,
     ]
 }

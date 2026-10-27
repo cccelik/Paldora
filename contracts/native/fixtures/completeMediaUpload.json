@@ -1,0 +1,48 @@
+{
+  "callable": "completeMediaUpload",
+  "request": {
+    "valid": [
+      {
+        "assetId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "assetId": ""
+      },
+      {
+        "assetId": 123
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "id": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+        "purpose": "post_image",
+        "status": "processing",
+        "contentType": "image/jpeg",
+        "contentLength": 48213,
+        "createdAt": 1767225600000
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "failed-precondition"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}
