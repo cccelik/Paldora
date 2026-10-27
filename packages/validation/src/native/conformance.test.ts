@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import { callableNames } from '../../../../apps/firebase-functions/src/callable-names.js';
-import { FUNCTIONS_ERROR_CODES, nativeErrorSchema } from './errors.js';
+import {
+  FUNCTIONS_ERROR_CODES,
+  NATIVE_ERROR_REASONS,
+  nativeErrorReasonSchema,
+  nativeErrorSchema,
+} from './errors.js';
 import {
   nativeBoxDocSchema,
   nativeBoxRefDocSchema,
@@ -136,7 +141,7 @@ describe.each([...registry.values()])('callable $name', (entry) => {
 });
 
 describe('error shape', () => {
-  it('requires a code and message and tolerates a future details.reason', () => {
+  it('requires a code and message and tolerates an optional details.reason', () => {
     expect(
       nativeErrorSchema.safeParse({ code: 'not-found', message: 'x' }).success,
     ).toBe(true);
@@ -151,6 +156,22 @@ describe('error shape', () => {
       nativeErrorSchema.safeParse({ code: 'NOT_FOUND', message: 'x' }).success,
     ).toBe(false);
     expect(nativeErrorSchema.safeParse({ code: 'not-found' }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('error reasons', () => {
+  it('are a small closed set that names no resource or state', () => {
+    expect([...NATIVE_ERROR_REASONS]).toEqual([
+      'SIGN_IN_REQUIRED',
+      'SESSION_ENDED',
+      'INVALID_INPUT',
+      'RATE_LIMITED',
+    ]);
+    for (const reason of NATIVE_ERROR_REASONS)
+      expect(nativeErrorReasonSchema.safeParse(reason).success).toBe(true);
+    expect(nativeErrorReasonSchema.safeParse('BOX_NOT_FOUND').success).toBe(
       false,
     );
   });

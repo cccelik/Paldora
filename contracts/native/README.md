@@ -25,8 +25,11 @@ API and are historical.
   them and send back exactly what the server returned.
 - **Timestamps:** epoch milliseconds (integers).
 - **Errors:** the `HttpsError` code plus a generic message. Do not display or
-  parse the message. A stable `details.reason` is a proposed future field,
-  not current behavior.
+  parse the message. `details.reason` is optional and one of `errorReasons` in
+  `callables.schema.json` (`SIGN_IN_REQUIRED`, `SESSION_ENDED`,
+  `INVALID_INPUT`, `RATE_LIMITED`). It never names a resource, membership,
+  block or moderation state, so absence and denial stay identical. Treat an
+  unknown or missing reason as no reason.
 
 ## Regenerate and check
 

@@ -41,6 +41,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import type { CallableName } from './callable-names.js';
 import { observedJob } from './observed.js';
+import type { native } from '@paldora/validation';
 
 if (getApps().length === 0) initializeApp();
 const db = getFirestore();
@@ -253,16 +254,28 @@ async function drainPostMedia(postId: string): Promise<void> {
   throw new Error('Post media cleanup remains pending.');
 }
 
+type NativeErrorReason = native.NativeErrorReason;
+
+/** ADR 021 decision 7: a stable, non-leaking reason beside the code. */
+function reasoned(
+  code: ConstructorParameters<typeof HttpsError>[0],
+  message: string,
+  reason: NativeErrorReason,
+): HttpsError {
+  return new HttpsError(code, message, { reason });
+}
+
 /** ADR 021 #5: an ID token from before a session-epoch rotation is refused. */
 async function requireSession(
   auth: { uid: string; token: Record<string, unknown> } | undefined,
 ): Promise<string> {
-  if (!auth?.uid) throw new HttpsError('unauthenticated', 'Sign in required.');
+  if (!auth?.uid)
+    throw reasoned('unauthenticated', 'Sign in required.', 'SIGN_IN_REQUIRED');
   try {
     await callableSessions.require(auth.uid, auth.token.paldoraSessionEpoch);
   } catch (error) {
     if (error instanceof NativeCallableSessionError)
-      throw new HttpsError('unauthenticated', 'Sign in required.');
+      throw reasoned('unauthenticated', 'Sign in required.', 'SESSION_ENDED');
     throw error;
   }
   return auth.uid;
@@ -274,7 +287,7 @@ function field(data: unknown, key: string, maxLength = 128): string {
       ? (data as Record<string, unknown>)[key]
       : undefined;
   if (typeof value !== 'string' || !value || value.length > maxLength)
-    throw new HttpsError('invalid-argument', `Invalid ${key}.`);
+    throw reasoned('invalid-argument', `Invalid ${key}.`, 'INVALID_INPUT');
   return value;
 }
 
@@ -290,7 +303,7 @@ function invitationError(error: NativeInvitationError): HttpsError {
 
 function moderationError(error: NativeModerationError): HttpsError {
   if (error.code === 'INVALID')
-    return new HttpsError('invalid-argument', 'Invalid report.');
+    return reasoned('invalid-argument', 'Invalid report.', 'INVALID_INPUT');
   if (error.code === 'FORBIDDEN')
     return new HttpsError('permission-denied', 'Action unavailable.');
   return new HttpsError('not-found', 'Action unavailable.');
@@ -308,7 +321,7 @@ function contentError(
   error: NativePostError | NativeLifeUpdateError,
 ): HttpsError {
   if (error.code === 'INVALID')
-    return new HttpsError('invalid-argument', 'Invalid content.');
+    return reasoned('invalid-argument', 'Invalid content.', 'INVALID_INPUT');
   return new HttpsError('not-found', 'Content unavailable.');
 }
 
@@ -317,7 +330,11 @@ function boxError(
 ): HttpsError {
   if (error instanceof NativeBoxDeletionError) {
     if (error.code === 'INVALID')
-      return new HttpsError('invalid-argument', 'Confirmation does not match.');
+      return reasoned(
+        'invalid-argument',
+        'Confirmation does not match.',
+        'INVALID_INPUT',
+      );
     if (error.code === 'DEPENDENCY_PENDING')
       return new HttpsError('failed-precondition', 'Box cleanup is waiting.');
   }
@@ -344,11 +361,15 @@ async function invoke<T>(work: () => Promise<T>): Promise<T> {
       throw contentError(error);
     if (error instanceof NativeBlockError) {
       if (error.code === 'INVALID')
-        throw new HttpsError('invalid-argument', 'Invalid block target.');
+        throw reasoned(
+          'invalid-argument',
+          'Invalid block target.',
+          'INVALID_INPUT',
+        );
       throw new HttpsError('failed-precondition', 'Account unavailable.');
     }
     if (error instanceof NativeRateLimitError)
-      throw new HttpsError('resource-exhausted', 'Try again later.');
+      throw reasoned('resource-exhausted', 'Try again later.', 'RATE_LIMITED');
     if (error instanceof NativeModerationError) throw moderationError(error);
     if (error instanceof NativeAccountError)
       throw new HttpsError('failed-precondition', 'Account unavailable.');
@@ -491,7 +512,11 @@ export const listMyFriendships = onCall(options, async (request) => {
   const data = request.data as Record<string, unknown>;
   const status = data.status;
   if (status !== 'pending' && status !== 'sent' && status !== 'accepted')
-    throw new HttpsError('invalid-argument', 'Invalid friendship status.');
+    throw reasoned(
+      'invalid-argument',
+      'Invalid friendship status.',
+      'INVALID_INPUT',
+    );
   const cursor =
     data.cursor === undefined ? undefined : field(data, 'cursor', 64);
   return limited(uid, 'listMyFriendships', 600, () =>
@@ -509,7 +534,7 @@ export const listMyBoxInvitations = onCall(options, async (request) => {
     cursor !== undefined &&
     (typeof cursor !== 'string' || !/^[a-f0-9]{64}$/.test(cursor))
   )
-    throw new HttpsError('invalid-argument', 'Invalid cursor.');
+    throw reasoned('invalid-argument', 'Invalid cursor.', 'INVALID_INPUT');
   return limited(uid, 'listMyBoxInvitations', 600, () =>
     invitations.listPending(uid, cursor),
   );
@@ -602,7 +627,7 @@ export const listBoxPosts = onCall(options, async (request) => {
     cursor !== undefined &&
     (typeof cursor !== 'string' || !/^[a-f0-9-]{36}$/.test(cursor))
   )
-    throw new HttpsError('invalid-argument', 'Invalid cursor.');
+    throw reasoned('invalid-argument', 'Invalid cursor.', 'INVALID_INPUT');
   return limited(uid, 'listBoxPosts', 600, () =>
     posts.list(boxId, uid, cursor),
   );
@@ -644,7 +669,7 @@ export const setUserBlock = onCall(options, async (request) => {
       ? (request.data as Record<string, unknown>).blocked
       : undefined;
   if (typeof blocked !== 'boolean')
-    throw new HttpsError('invalid-argument', 'Invalid block state.');
+    throw reasoned('invalid-argument', 'Invalid block state.', 'INVALID_INPUT');
   return limited(uid, 'setUserBlock', 120, async () => {
     await blocks.setBlocked(uid, targetUid, blocked);
     return { ok: true };
@@ -665,7 +690,7 @@ export const createBoxComment = onCall(options, async (request) => {
     parentId !== null &&
     (typeof parentId !== 'string' || !/^[a-f0-9-]{36}$/.test(parentId))
   )
-    throw new HttpsError('invalid-argument', 'Invalid parent.');
+    throw reasoned('invalid-argument', 'Invalid parent.', 'INVALID_INPUT');
   return limited(uid, 'createBoxComment', 240, async () => ({
     commentId: await posts.createComment(
       boxId,
@@ -689,7 +714,7 @@ export const listBoxComments = onCall(options, async (request) => {
     cursor !== undefined &&
     (typeof cursor !== 'string' || !/^[a-f0-9-]{36}$/.test(cursor))
   )
-    throw new HttpsError('invalid-argument', 'Invalid cursor.');
+    throw reasoned('invalid-argument', 'Invalid cursor.', 'INVALID_INPUT');
   return limited(uid, 'listBoxComments', 600, () =>
     posts.listComments(boxId, postId, uid, cursor),
   );
@@ -735,7 +760,7 @@ export const setBoxReaction = onCall(options, async (request) => {
       : field(data, 'mediaAssetId', 64);
   const kind = data.kind;
   if (kind !== null && typeof kind !== 'string')
-    throw new HttpsError('invalid-argument', 'Invalid reaction.');
+    throw reasoned('invalid-argument', 'Invalid reaction.', 'INVALID_INPUT');
   return limited(uid, 'setBoxReaction', 600, async () => {
     const previous = await posts.setReaction(boxId, postId, uid, kind, {
       ...(commentId ? { commentId } : {}),
@@ -785,7 +810,7 @@ export const listModerationReports = onCall(options, async (request) => {
     cursor !== undefined &&
     (typeof cursor !== 'string' || !/^[a-f0-9-]{36}$/.test(cursor))
   )
-    throw new HttpsError('invalid-argument', 'Invalid cursor.');
+    throw reasoned('invalid-argument', 'Invalid cursor.', 'INVALID_INPUT');
   return limited(uid, 'listModerationReports', 600, () =>
     moderation.listReports(uid, cursor),
   );

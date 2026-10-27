@@ -73,6 +73,13 @@ function httpsCallable<Request = unknown, Response = unknown>(
         expect(entry.errors, `${name} raised an undeclared ${code}`).toContain(
           code,
         );
+      const reason = (error as { details?: { reason?: unknown } }).details
+        ?.reason;
+      if (reason !== undefined)
+        expect(
+          native.nativeErrorReasonSchema.safeParse(reason).success,
+          `${name} raised an unknown reason`,
+        ).toBe(true);
       throw error;
     }
     const parsed = entry.output.safeParse(result.data);
@@ -408,7 +415,10 @@ describe('local Firebase Box vertical flow', () => {
     ]);
     await expect(
       setReaction({ boxId, postId, kind: 'not emoji' }),
-    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    ).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+      details: { reason: 'INVALID_INPUT' },
+    });
     const guestReaction = httpsCallable<{
       boxId: string;
       postId: string;
@@ -589,6 +599,7 @@ describe('local Firebase Box vertical flow', () => {
     ).rejects.toMatchObject({
       code: 'functions/unauthenticated',
     });
+    // An unsigned call is stopped by the platform before any reason is added.
   }, 45_000);
 
   it('starts Box deletion through an Auth-bound callable and resumes cleanup', async () => {
@@ -743,6 +754,7 @@ describe('local Firebase Box vertical flow', () => {
     const stale = await epochClient('epoch-old', 'epoch-new');
     await expect(stale({})).rejects.toMatchObject({
       code: 'functions/unauthenticated',
+      details: { reason: 'SESSION_ENDED' },
     });
   }, 30_000);
 

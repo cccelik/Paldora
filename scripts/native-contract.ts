@@ -14,6 +14,7 @@ import {
   nativeBoxDocSchema,
   nativeBoxRefDocSchema,
   nativeCallableRegistry,
+  NATIVE_ERROR_REASONS,
   nativeErrorSchema,
   nativeMemberDocSchema,
 } from '../packages/validation/src/native/index.js';
@@ -42,6 +43,7 @@ const document = {
     'Firebase callable functions (europe-west4). Generated from packages/validation/src/native; do not edit.',
   rateLimitWindowMs: NATIVE_RATE_LIMIT_WINDOW_MS,
   error: jsonSchema(nativeErrorSchema, 'output'),
+  errorReasons: NATIVE_ERROR_REASONS,
   callables: Object.fromEntries(
     nativeCallableRegistry.map((entry) => [
       entry.name,

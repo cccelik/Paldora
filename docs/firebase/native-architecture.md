@@ -152,7 +152,7 @@ Native clients will use the callable Functions as their contract, not the
 retired HTTP API. Today that is 35 `onCall` functions in `europe-west4`, each
 rate-limited by `limited()`, with ad-hoc `field()` input checks, outputs typed
 in `packages/firebase-trusted` (epoch-millisecond timestamps), `HttpsError`
-codes with generic messages and no stable `details.reason`, and opaque cursors
+codes with generic messages, an optional non-leaking `details.reason` for sign-in, session, input and rate-limit failures only, and opaque cursors
 in several formats. Direct Firestore access is experimental and limited to
 `nativeAccounts/{uid}/boxRefs`, `nativeBoxes/{id}` and
 `nativeBoxes/{id}/members/{uid}`; everything else and Storage are deny-all.

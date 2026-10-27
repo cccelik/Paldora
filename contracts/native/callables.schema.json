@@ -38,6 +38,12 @@
     "required": ["code", "message"],
     "additionalProperties": false
   },
+  "errorReasons": [
+    "SIGN_IN_REQUIRED",
+    "SESSION_ENDED",
+    "INVALID_INPUT",
+    "RATE_LIMITED"
+  ],
   "callables": {
     "beginBoxDeletion": {
       "input": {

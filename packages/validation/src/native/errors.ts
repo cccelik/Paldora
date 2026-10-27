@@ -26,9 +26,24 @@ export type FunctionsErrorCode = (typeof FUNCTIONS_ERROR_CODES)[number];
 export const functionsErrorCodeSchema = z.enum(FUNCTIONS_ERROR_CODES);
 
 /**
- * What a callable failure looks like to a client. `details.reason` is NOT
- * emitted today; it is a documented future field and must stay optional.
+ * Stable reasons on `HttpsError.details.reason` (ADR 021 decision 7). Each
+ * reason is derivable from the error code and the caller's own request, so it
+ * never separates "does not exist" from "not allowed": no reason names a
+ * resource, a membership, a block or a moderation state. Clients must tolerate
+ * unknown reasons and must not require one.
  */
+export const NATIVE_ERROR_REASONS = [
+  'SIGN_IN_REQUIRED',
+  'SESSION_ENDED',
+  'INVALID_INPUT',
+  'RATE_LIMITED',
+] as const;
+
+export type NativeErrorReason = (typeof NATIVE_ERROR_REASONS)[number];
+
+export const nativeErrorReasonSchema = z.enum(NATIVE_ERROR_REASONS);
+
+/** What a callable failure looks like to a client. */
 export const nativeErrorSchema = z.object({
   code: functionsErrorCodeSchema,
   message: z.string(),
