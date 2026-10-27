@@ -1,0 +1,11 @@
+// Hosted Firebase configuration for RELEASE builds.
+//
+// Intentionally empty: no hosted Firebase project exists for Paldora yet
+// (ADR 021 decision 9). A RELEASE build with these values unset shows a
+// "not configured" screen and never contacts Firebase. These are public
+// client identifiers (never secrets). Fill them in only when the owner
+// provisions a hosted project; never use a `demo-*` project id.
+PALDORA_HOSTED_PROJECT_ID =
+PALDORA_HOSTED_API_KEY =
+PALDORA_HOSTED_APP_ID =
+PALDORA_HOSTED_GCM_SENDER_ID =

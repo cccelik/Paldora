@@ -74,3 +74,19 @@ the test starts its own emulators on the same ports. It seeds only those test
 emulators and stops them afterward. `test:e2e` is an alias for that suite.
 Details for media repair are in
 [media-local.md](firebase/media-local.md).
+
+## iOS app (`apps/ios`)
+
+Native SwiftUI, outside pnpm and Turborepo. Needs Xcode and XcodeGen
+(`brew install xcodegen`). Details and the Firebase SDK pin are in
+[apps/ios/README.md](../apps/ios/README.md).
+
+```bash
+cd apps/ios && xcodegen generate                  # Paldora.xcodeproj (gitignored)
+cd apps/ios/Packages/PaldoraKit && swift test     # contract core
+apps/ios/scripts/ui-test.sh                       # XCUITest against demo-paldora emulators
+```
+
+DEBUG builds talk only to the `demo-paldora` emulators; release builds refuse
+emulator hosts and `demo-*` projects and show "not configured" until a hosted
+project exists. Keep derived data outside `~/Desktop`.

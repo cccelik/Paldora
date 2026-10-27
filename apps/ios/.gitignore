@@ -4,3 +4,7 @@ xcuserdata/
 DerivedData/
 *.xcodeproj
 *.xcworkspace
+Paldora.xcodeproj/
+Paldora/Info.plist
+*.xcresult
+build/

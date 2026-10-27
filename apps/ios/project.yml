@@ -1,0 +1,99 @@
+name: Paldora
+options:
+  bundleIdPrefix: com.paldora
+  deploymentTarget:
+    iOS: '17.0'
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+configFiles:
+  Debug: Config/Hosted.xcconfig
+  Release: Config/Hosted.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '1'
+    DEVELOPMENT_TEAM: ''
+    CODE_SIGN_STYLE: Automatic
+packages:
+  PaldoraKit:
+    path: Packages/PaldoraKit
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    exactVersion: 13.0.1
+targets:
+  Paldora:
+    type: application
+    platform: iOS
+    deploymentTarget: '17.0'
+    sources:
+      - path: Paldora
+    dependencies:
+      - package: PaldoraKit
+        product: PaldoraKit
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFunctions
+    info:
+      path: Paldora/Info.plist
+      properties:
+        CFBundleDisplayName: Paldora
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        ITSAppUsesNonExemptEncryption: false
+        PaldoraHostedProjectID: $(PALDORA_HOSTED_PROJECT_ID)
+        PaldoraHostedAPIKey: $(PALDORA_HOSTED_API_KEY)
+        PaldoraHostedAppID: $(PALDORA_HOSTED_APP_ID)
+        PaldoraHostedGCMSenderID: $(PALDORA_HOSTED_GCM_SENDER_ID)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.paldora.app
+        TARGETED_DEVICE_FAMILY: '1,2'
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+  PaldoraTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: '17.0'
+    sources:
+      - path: PaldoraTests
+    dependencies:
+      - target: Paldora
+      - package: PaldoraKit
+        product: PaldoraKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.paldora.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+  PaldoraUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: '17.0'
+    sources:
+      - path: PaldoraUITests
+    dependencies:
+      - target: Paldora
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.paldora.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Paldora:
+    build:
+      targets:
+        Paldora: all
+    test:
+      targets:
+        - PaldoraTests
+        - PaldoraUITests

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, deleteApp } from 'firebase-admin/app';
-import { NativeAccounts } from '../dist/index.js';
+import { NativeAccounts, NativeProfiles } from '../dist/index.js';
 
 if (
   process.env.GCLOUD_PROJECT !== 'demo-paldora' ||
@@ -30,7 +30,17 @@ try {
   const uid = randomUUID();
   await auth.createUser({ uid, email, password, emailVerified: true });
   await auth.setCustomUserClaims(uid, { paldoraAdmitted: true });
-  await new NativeAccounts(getFirestore(app), auth).provision(uid);
+  const db = getFirestore(app);
+  await new NativeAccounts(db, auth).provision(uid);
+  // Optional: fully onboard the account (native UI tests need a complete profile).
+  const username = process.env.PALDORA_FIXTURE_USERNAME?.trim();
+  const displayName = process.env.PALDORA_FIXTURE_DISPLAY_NAME?.trim();
+  if (username && displayName)
+    await new NativeProfiles(db, auth).update(uid, {
+      username,
+      displayName,
+      onboardingState: 'complete',
+    });
   process.stdout.write(
     `Created local fixture account ${email} (${uid}), schema v1.\n`,
   );
