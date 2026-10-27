@@ -124,9 +124,21 @@ Two options, neither chosen:
   Covered by unit tests and a local flow test; a password change or
   sign-out-everywhere forces native clients to sign in again because refresh
   tokens are revoked too.
-- **Still open:** #3 App Check, #4 Sign in with Apple, #6 versioning,
-  #7 `details.reason`, #8 callable order for web-only features, #9 hosted
-  deployment. The ADR stays Proposed until these are decided.
+- **#6 Versioning:** a `contractVersion` field on requests, not a name suffix.
+  Additive changes stay compatible; a breaking change bumps the version and
+  the server supports the previous one for a stated window. Design pending:
+  the field's position in the registry and the unsupported-version error.
+- **#7 `details.reason`:** adopt a stable reason enum, limited to reasons that
+  keep absence and denial identical (for example rate limited, session ended,
+  stale save, invalid input). Never a reason that distinguishes "not found"
+  from "not allowed". This is a wire change, so it needs registry, fixtures
+  and flow-test coverage before the ADR is Accepted.
+- **#8 Callable order:** profile and current user, notifications, home feed
+  first; media, Rooms, Memories and export/deletion follow. Media waits for a
+  Storage design.
+- **Still open:** #3 App Check, #4 Sign in with Apple, #9 hosted deployment
+  (App Check and hosted deployment depend on Blaze; hosted staging is skipped
+  for now). The ADR stays Proposed until these are decided.
 
 ## Alternatives considered
 
