@@ -45,6 +45,12 @@ PALDORA_FIXTURE_EMAIL=me@example.test \
 pnpm dev
 ```
 
+`pnpm dev` sets `PALDORA_TRUST_INTERACTION_INDEX=1`, so local reads use the
+per-actor interaction index (ADR 022). Posts created before the index existed
+fall back to the scan; run `pnpm firebase:interaction-index:local` against the
+emulators to backfill them. Hosted environments leave the flag off until the
+staging rollout in the checklist.
+
 The website is at `http://127.0.0.1:3000`. Use only `demo-paldora` for local
 emulators. Sign in with the fixture email and password, then finish onboarding.
 The seed command requires running emulators and an email/password; see

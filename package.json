@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "pnpm --filter @paldora/web dev",
+    "dev": "PALDORA_TRUST_INTERACTION_INDEX=1 pnpm --filter @paldora/web dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint scripts --max-warnings=0 && turbo run lint",
