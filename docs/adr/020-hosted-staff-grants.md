@@ -94,8 +94,9 @@ with `status: revoked`. Staff-grant audit rows have no `reportId`, so the
   The audit row carries `breakGlass: true` whenever proposer and approver were
   not both in the standing operator group, and a page-level alert fires (below).
   If the project has only one human, this is a weak control and is recorded as
-  such; the owner must decide whether a single-operator first grant, always
-  flagged `breakGlass`, is acceptable. This ADR does not choose for them.
+  such. **Owner decision (2026-10-27):** a single-operator first grant, always
+  flagged `breakGlass` and alarmed, is acceptable for the bootstrap. The
+  two-person rule applies as soon as a second operator exists.
 - A target must be an existing, `active` `nativeAccounts` account. The service
   refuses to revoke the last active administrator unless `breakGlass` applies.
 

@@ -111,6 +111,20 @@ Two options, neither chosen:
 9. **Hosted deployment.** Callables, App Check and new buckets need Blaze;
    `paldora-dev` stays on Spark without an owner instruction.
 
+## Owner decisions recorded (2026-10-27)
+
+- **#1 Reads:** callables for all content. Direct Firestore stays limited to the
+  three Box paths already proved in emulator tests.
+- **#2 Native realtime:** polling first. Revisit with push notifications when
+  Phase 10 starts and a hosted project exists.
+- **#5 Revocation:** callables enforce the session epoch (`paldoraSessionEpoch`)
+  like the web session layer, using a cached account read. Not implemented yet;
+  it needs a code change, a contract fixture for the error, and tests for
+  password change and sign-out-everywhere.
+- **Still open:** #3 App Check, #4 Sign in with Apple, #6 versioning,
+  #7 `details.reason`, #8 callable order for web-only features, #9 hosted
+  deployment. The ADR stays Proposed until these are decided.
+
 ## Alternatives considered
 
 - **Keep ADR 004 / OpenAPI.** Rejected for native: there is no HTTP API to
