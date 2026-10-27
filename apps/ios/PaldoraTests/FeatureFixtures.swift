@@ -52,13 +52,13 @@ struct FeatureHarness {
     let auth: FakeAuth
     let transport: FakeTransport
 
-    init(_ handler: @escaping FakeTransport.Handler) async {
+    init(media: (any MediaClient)? = nil, _ handler: @escaping FakeTransport.Handler) async {
         auth = FakeAuth(hasSession: true)
         transport = FakeTransport { name, data in
             if name == .getMyProfile { return Fixtures.profileJSON() }
             return try handler(name, data)
         }
-        model = AppModel(auth: auth, api: PaldoraAPI(transport: transport))
+        model = AppModel(auth: auth, api: PaldoraAPI(transport: transport), media: media)
         await model.start()
         env = model.makeFeatureEnvironment(userID: "u1")!
     }

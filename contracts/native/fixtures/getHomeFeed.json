@@ -36,7 +36,7 @@
               "commentCount": 2,
               "reactions": [
                 {
-                  "kind": "\u2764\ufe0f",
+                  "kind": "❤️",
                   "count": 1
                 }
               ],
@@ -53,13 +53,14 @@
                 }
               ],
               "viewerReaction": {
-                "kind": "\u2764\ufe0f"
+                "kind": "❤️"
               },
               "canInteract": true
             },
             "text": "Synthetic post.",
             "edited": false,
-            "canEdit": true
+            "canEdit": true,
+            "authorAvatarMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
           },
           {
             "kind": "life_update",
@@ -74,7 +75,7 @@
               "commentCount": 2,
               "reactions": [
                 {
-                  "kind": "\u2764\ufe0f",
+                  "kind": "❤️",
                   "count": 1
                 }
               ],
@@ -89,7 +90,8 @@
                 "key": "travel",
                 "content": "Synthetic trip."
               }
-            ]
+            ],
+            "authorAvatarMediaId": null
           }
         ],
         "nextCursor": "eyJhdCI6MTc5MDAwMDAwMDAwMCwiaWQiOiJwX3N5bnRoZXRpYyJ9"

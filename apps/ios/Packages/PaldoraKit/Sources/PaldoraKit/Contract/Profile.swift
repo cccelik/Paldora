@@ -25,6 +25,8 @@ public struct MyProfile: Codable, Sendable, Equatable {
         public let username: String?
         public let displayName: String?
         public let bio: String?
+        /// Opaque media id for the `mediaRead` thumbnail, or nil.
+        public let avatarMediaId: String?
         public let onboardingState: OnboardingState
         public let updatedAt: EpochMillis
     }

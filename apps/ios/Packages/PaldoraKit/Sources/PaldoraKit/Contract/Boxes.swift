@@ -66,6 +66,7 @@ public struct BoxMember: Codable, Sendable, Equatable {
     public let uid: String
     public let username: String?
     public let displayName: String?
+    public let avatarMediaId: String?
     public let role: BoxRole
     public let joinedAt: EpochMillis
 }

@@ -28,10 +28,17 @@ final class AppModel {
 
     private let auth: (any AuthService)?
     private let api: PaldoraAPI?
+    private let media: (any MediaClient)?
 
-    init(auth: (any AuthService)?, api: PaldoraAPI?, configurationIssue: ConfigurationIssue? = nil) {
+    init(
+        auth: (any AuthService)?,
+        api: PaldoraAPI?,
+        media: (any MediaClient)? = nil,
+        configurationIssue: ConfigurationIssue? = nil
+    ) {
         self.auth = auth
         self.api = api
+        self.media = media
         if let configurationIssue { state = .notConfigured(configurationIssue) }
     }
 
@@ -91,6 +98,7 @@ final class AppModel {
         guard let api else { return nil }
         return FeatureEnvironment(
             api: api,
+            media: media ?? UnavailableMediaClient(),
             currentUserID: userID,
             reactionPresets: { [weak self] in self?.preferences?.reactionPresets ?? [] },
             handleFailure: { [weak self] error in self?.failureMessage(error) ?? UserMessages.generic }

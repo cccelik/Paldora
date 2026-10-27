@@ -857,13 +857,18 @@ describe('local Firebase Box vertical flow', () => {
     // Profile and preferences.
     const me = await call<{
       user: { id: string };
-      profile: { displayName: string | null; bio: string | null };
+      profile: {
+        displayName: string | null;
+        bio: string | null;
+        avatarMediaId: string | null;
+      };
       preferences: { appearance: string; reactionPresets: string[] };
     }>(
       alice.functions,
       'getMyProfile',
     )({});
     expect(me.data.user.id).toBe(alice.uid);
+    expect(me.data.profile.avatarMediaId).toBeNull();
     expect(me.data.preferences.reactionPresets).toHaveLength(5);
     const updated = await call<{
       profile: { displayName: string; bio: string };
@@ -1318,6 +1323,15 @@ describe('native private media over callables and authenticated HTTP', () => {
     expect((await get(avatar, 'thumbnail', await tokenOf(owner))).status).toBe(
       200,
     );
+    // The profile exposes the avatar as an opaque id only.
+    const profile = await httpsCallable<
+      unknown,
+      { profile: { avatarMediaId: string | null } }
+    >(
+      owner.functions,
+      'getMyProfile',
+    )({});
+    expect(profile.data.profile.avatarMediaId).toBe(avatar);
     const photo = await readyAsset(owner, {
       purpose: 'life_update_image',
       contentType: 'image/png',

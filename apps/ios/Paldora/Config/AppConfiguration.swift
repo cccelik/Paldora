@@ -61,6 +61,16 @@ enum AppConfiguration {
         )))
     }
 
+    /// Base URL of the HTTP media Functions (`mediaUpload`, `mediaRead`).
+    static func functionsBaseURL(for setup: FirebaseSetup) -> URL? {
+        switch setup {
+        case .emulator:
+            URL(string: "http://\(emulatorHost):5001/\(emulatorProjectID)/\(functionsRegion)")
+        case .hosted(let config):
+            URL(string: "https://\(functionsRegion)-\(config.projectID).cloudfunctions.net")
+        }
+    }
+
     /// Unset xcconfig values arrive as "", or as an unexpanded `$(NAME)`.
     private static func value(_ info: [String: Any], _ key: String) -> String? {
         guard let raw = (info[key] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),

@@ -33,6 +33,8 @@ const feedBase = {
   boxId: z.string(),
   authorUid: z.string(),
   authorName: z.string(),
+  /** Opaque media id for `mediaRead` thumbnail, or null. */
+  authorAvatarMediaId: z.string().nullable(),
   mediaAssetIds: z.array(z.string()),
   createdAt: nativeTimestampSchema,
   interactions: nativeInteractionSummarySchema,

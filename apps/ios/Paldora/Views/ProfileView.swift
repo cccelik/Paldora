@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ProfileView: View {
     let model: AppModel
+    let env: FeatureEnvironment
     let profile: MyProfile
 
     var body: some View {
@@ -10,6 +11,7 @@ struct ProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.space8) {
                     header
+                    AvatarSection(model: model, env: env)
                     ProfileEditor(model: model, profile: profile)
                     PreferencesSection(model: model)
                     Button("Sign out") { model.signOut() }
@@ -29,13 +31,8 @@ struct ProfileView: View {
 
     private var header: some View {
         HStack(spacing: Theme.space4) {
-            Text(initial)
-                .font(Typography.brandSmall)
-                .foregroundStyle(Theme.text)
-                .frame(width: 56, height: 56)
-                .background(Theme.highlight, in: Circle())
-                .overlay(Circle().stroke(Theme.gold, lineWidth: 1))
-                .accessibilityHidden(true)
+            AvatarView(mediaId: profile.profile.avatarMediaId,
+                       name: profile.profile.displayName ?? profile.profile.username ?? "Paldora", size: 56)
             VStack(alignment: .leading, spacing: Theme.space1) {
                 Text(profile.profile.displayName ?? "Unnamed")
                     .font(Typography.brandSmall)
@@ -47,9 +44,5 @@ struct ProfileView: View {
                 Text(profile.user.email).font(Typography.caption).foregroundStyle(Theme.textMuted)
             }
         }
-    }
-
-    private var initial: String {
-        String((profile.profile.displayName ?? profile.profile.username ?? "P").prefix(1)).uppercased()
     }
 }

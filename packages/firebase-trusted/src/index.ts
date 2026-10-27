@@ -15,6 +15,7 @@ export * from './native-box-members.js';
 export * from './native-boxes.js';
 export * from './native-box-deletion.js';
 export * from './native-life-updates.js';
+export * from './native-avatars.js';
 export * from './native-media.js';
 export * from './native-usernames.js';
 export * from './native-callable-session.js';

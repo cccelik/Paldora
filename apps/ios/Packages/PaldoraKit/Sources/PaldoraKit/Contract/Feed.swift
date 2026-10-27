@@ -61,6 +61,7 @@ public struct FeedPost: Codable, Sendable, Equatable {
     public let boxId: String
     public let authorUid: String
     public let authorName: String
+    public let authorAvatarMediaId: String?
     public let mediaAssetIds: [String]
     public let createdAt: EpochMillis
     public let interactions: InteractionSummary
@@ -81,6 +82,7 @@ public struct FeedLifeUpdate: Codable, Sendable, Equatable {
     public let boxId: String
     public let authorUid: String
     public let authorName: String
+    public let authorAvatarMediaId: String?
     public let mediaAssetIds: [String]
     public let createdAt: EpochMillis
     public let interactions: InteractionSummary

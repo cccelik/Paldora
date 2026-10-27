@@ -18,6 +18,8 @@ export const nativePersonSchema = z.object({
   uid: z.string(),
   username: z.string(),
   displayName: z.string(),
+  /** Opaque media id for `mediaRead` thumbnail. Absent when not provided. */
+  avatarMediaId: z.string().nullable().optional(),
 });
 
 /** Visibility is rechecked live on every read; hidden rows are never returned. */

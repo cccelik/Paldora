@@ -49,6 +49,8 @@ public struct Person: Codable, Sendable, Equatable {
     public let uid: String
     public let username: String
     public let displayName: String
+    /// Opaque media id for the `mediaRead` thumbnail. Nil when absent or hidden.
+    public let avatarMediaId: String?
 }
 
 /// Request carrying only an optional pagination cursor.

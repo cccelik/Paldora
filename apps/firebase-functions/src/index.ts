@@ -36,6 +36,7 @@ import {
   NativeUsernameError,
   NativeUsernames,
   logEvent,
+  readyAvatarMediaId,
 } from '@paldora/firebase-trusted';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -900,7 +901,10 @@ function optionalCursor(data: unknown): string | undefined {
   return field({ cursor: raw }, 'cursor');
 }
 
-function profileView(current: Awaited<ReturnType<NativeProfiles['current']>>) {
+function profileView(
+  current: Awaited<ReturnType<NativeProfiles['current']>>,
+  avatarMediaId: string | null,
+) {
   return {
     user: {
       id: current.user.id,
@@ -912,6 +916,7 @@ function profileView(current: Awaited<ReturnType<NativeProfiles['current']>>) {
       username: current.profile.username,
       displayName: current.profile.displayName,
       bio: current.profile.bio,
+      avatarMediaId,
       onboardingState: current.profile.onboardingState,
       updatedAt: Date.parse(current.profile.updatedAt),
     },
@@ -932,7 +937,7 @@ function pick(data: unknown, keys: readonly string[]): Record<string, unknown> {
 export const getMyProfile = onCall(options, async (request) => {
   const uid = await requireSession(request.auth);
   return limited(uid, 'getMyProfile', 600, async () =>
-    profileView(await profiles.current(uid)),
+    profileView(await profiles.current(uid), await readyAvatarMediaId(db, uid)),
   );
 });
 
@@ -945,7 +950,10 @@ export const updateMyProfile = onCall(options, async (request) => {
     'onboardingState',
   ]);
   return limited(uid, 'updateMyProfile', 30, async () =>
-    profileView(await profiles.update(uid, changes)),
+    profileView(
+      await profiles.update(uid, changes),
+      await readyAvatarMediaId(db, uid),
+    ),
   );
 });
 

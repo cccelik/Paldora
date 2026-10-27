@@ -40,17 +40,12 @@
           "displayName": "Synthetic User",
           "bio": null,
           "onboardingState": "complete",
-          "updatedAt": 1790000000000
+          "updatedAt": 1790000000000,
+          "avatarMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
         },
         "preferences": {
           "appearance": "system",
-          "reactionPresets": [
-            "\ud83d\udc4d",
-            "\u2764\ufe0f",
-            "\ud83d\ude02",
-            "\ud83d\ude2e",
-            "\ud83c\udf89"
-          ]
+          "reactionPresets": ["👍", "❤️", "😂", "😮", "🎉"]
         }
       }
     ]

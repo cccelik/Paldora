@@ -1,5 +1,6 @@
 import {
   NativeLifeUpdateError,
+  readyAvatarMediaId,
   type NativeBoxes,
   type NativeBoxPosts,
   type NativeLifeUpdates,
@@ -9,7 +10,12 @@ import {
 import type { Firestore } from 'firebase-admin/firestore';
 import { native } from '@paldora/validation';
 
-type Person = { uid: string; username: string; displayName: string };
+type Person = {
+  uid: string;
+  username: string;
+  displayName: string;
+  avatarMediaId: string | null;
+};
 type Post = Awaited<ReturnType<NativeBoxPosts['get']>>;
 type Notification = Awaited<ReturnType<NativeNotifications['get']>>;
 type Summary = Awaited<ReturnType<NativeBoxPosts['interactionSummary']>>;
@@ -28,7 +34,7 @@ export function boxView(box: TrustedBox) {
   };
 }
 
-/** Display-only identity reads, shared per request. Never avatars or media URLs. */
+/** Display-only identity reads, shared per request. Avatars are opaque media ids, never URLs. */
 export class NativeViews {
   private readonly people = new Map<string, Promise<Person>>();
 
@@ -49,14 +55,17 @@ export class NativeViews {
   }
 
   private async loadPerson(uid: string): Promise<Person> {
-    const [account, profile] = await this.db.getAll(
-      this.db.collection('nativeAccounts').doc(uid),
-      this.db.collection('nativeProfiles').doc(uid),
-    );
+    const [[account, profile], avatarMediaId] = await Promise.all([
+      this.db.getAll(
+        this.db.collection('nativeAccounts').doc(uid),
+        this.db.collection('nativeProfiles').doc(uid),
+      ),
+      readyAvatarMediaId(this.db, uid),
+    ]);
     const username = (account?.get('username') as string | undefined) ?? uid;
     const displayName =
       (profile?.get('displayName') as string | undefined) ?? 'Member';
-    return { uid, username, displayName };
+    return { uid, username, displayName, avatarMediaId };
   }
 
   public async notification(
@@ -135,6 +144,7 @@ export class NativeViews {
       boxId: post.boxId,
       authorUid: post.authorUid,
       authorName: author.displayName,
+      authorAvatarMediaId: author.avatarMediaId,
       mediaAssetIds: post.mediaAssetIds,
       createdAt: post.createdAt,
       interactions,
@@ -160,6 +170,8 @@ export class NativeViews {
         ...base,
         authorUid: update.authorUid,
         authorName: (await this.person(update.authorUid)).displayName,
+        authorAvatarMediaId: (await this.person(update.authorUid))
+          .avatarMediaId,
         mediaAssetIds: update.mediaAssetIds,
         createdAt: update.createdAt,
         sections: native.NATIVE_LIFE_UPDATE_SECTION_KEYS.flatMap((key) =>

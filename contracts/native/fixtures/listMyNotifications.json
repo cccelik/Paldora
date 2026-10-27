@@ -34,7 +34,8 @@
             "actor": {
               "uid": "uid_synthetic_0002",
               "username": "synthetic_friend",
-              "displayName": "Synthetic Friend"
+              "displayName": "Synthetic Friend",
+              "avatarMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
             },
             "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
             "boxName": "Synthetic Box",
@@ -42,7 +43,7 @@
             "lifeUpdateId": null,
             "commentId": null,
             "reaction": {
-              "kind": "\u2764\ufe0f"
+              "kind": "❤️"
             },
             "read": false,
             "createdAt": 1790000000000

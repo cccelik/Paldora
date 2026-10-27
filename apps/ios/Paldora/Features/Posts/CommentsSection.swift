@@ -41,7 +41,10 @@ struct CommentsSection: View {
 
     private func row(_ comment: BoxComment, indented: Bool) -> some View {
         VStack(alignment: .leading, spacing: Theme.space1) {
-            Text(model.authorName(comment.authorUid)).font(Typography.label).foregroundStyle(Theme.text)
+            HStack(spacing: Theme.space2) {
+                AvatarView(mediaId: model.authorAvatar(comment.authorUid), name: model.authorName(comment.authorUid), size: 28)
+                Text(model.authorName(comment.authorUid)).font(Typography.label).foregroundStyle(Theme.text)
+            }
             Text(comment.text).font(Typography.body).foregroundStyle(Theme.text)
             HStack(spacing: 0) {
                 Text(Formatting.relativeTime(comment.createdAt)

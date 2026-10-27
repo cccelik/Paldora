@@ -43,6 +43,8 @@ export const nativeBoxMemberSchema = z.object({
   uid: z.string(),
   username: z.string().nullable(),
   displayName: z.string().nullable(),
+  /** Opaque media id for `mediaRead` thumbnail, or null. */
+  avatarMediaId: z.string().nullable(),
   role: z.enum(['owner', 'admin', 'member']),
   joinedAt: nativeTimestampSchema,
 });

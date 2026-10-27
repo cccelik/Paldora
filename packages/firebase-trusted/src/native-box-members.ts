@@ -3,6 +3,7 @@ import {
   type DocumentSnapshot,
   type Firestore,
 } from 'firebase-admin/firestore';
+import { readyAvatarMediaId } from './native-avatars.js';
 import { nativeBlockPairId } from './native-box-invitations.js';
 
 export class NativeBoxMemberError extends Error {
@@ -15,6 +16,7 @@ export interface NativeBoxMember {
   uid: string;
   username: string | null;
   displayName: string | null;
+  avatarMediaId: string | null;
   role: 'owner' | 'admin' | 'member';
   joinedAt: number;
 }
@@ -121,6 +123,7 @@ export class NativeBoxMembers {
             uid: item.id,
             username: (account.get('username') as string | undefined) ?? null,
             displayName: (profile.get('displayName') as string | null) ?? null,
+            avatarMediaId: await readyAvatarMediaId(this.db, item.id),
             role,
             joinedAt: (member.get('joinedAt') as number | undefined) ?? 0,
           };

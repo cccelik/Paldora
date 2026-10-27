@@ -68,17 +68,18 @@ struct PostDetailView: View {
 
     private func postCard(_ post: BoxPost) -> some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
-            Text(model.authorName(post.authorUid)).font(Typography.headline).foregroundStyle(Theme.text)
-            Text("\(env.boxes.name(for: post.boxId) ?? "Box") · \(Formatting.relativeTime(post.createdAt))"
-                 + (post.updatedAt > post.createdAt ? " · edited" : ""))
-                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+            HStack(spacing: Theme.space3) {
+                AvatarView(mediaId: model.authorAvatar(post.authorUid), name: model.authorName(post.authorUid))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(model.authorName(post.authorUid)).font(Typography.headline).foregroundStyle(Theme.text)
+                    Text("\(env.boxes.name(for: post.boxId) ?? "Box") · \(Formatting.relativeTime(post.createdAt))"
+                         + (post.updatedAt > post.createdAt ? " · edited" : ""))
+                        .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                }
+            }
             Text(post.text).font(Typography.body).foregroundStyle(Theme.text)
                 .accessibilityIdentifier("post-text")
-            if !post.mediaAssetIds.isEmpty {
-                Label(Formatting.countLabel(post.mediaAssetIds.count, singular: "photo", plural: "photos"),
-                      systemImage: "photo")
-                    .font(Typography.callout).foregroundStyle(Theme.textMuted)
-            }
+            PhotoStrip(assetIds: post.mediaAssetIds)
             if let error = model.actionError { InlineMessage(text: error) }
             if model.reportSent { InlineMessage(text: "Thanks. We'll take a look.", kind: .success) }
         }

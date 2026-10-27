@@ -61,6 +61,8 @@ final class PostDetailViewModel {
         return env.people.name(for: uid, in: route.boxId) ?? "A member"
     }
 
+    func authorAvatar(_ uid: String) -> String? { env.people.avatar(for: uid, in: route.boxId) }
+
     func load() async {
         phase = .loading
         do {

@@ -780,6 +780,9 @@
                 "displayName": {
                   "anyOf": [{ "type": "string" }, { "type": "null" }]
                 },
+                "avatarMediaId": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
                 "role": {
                   "type": "string",
                   "enum": ["owner", "admin", "member"]
@@ -794,6 +797,7 @@
                 "uid",
                 "username",
                 "displayName",
+                "avatarMediaId",
                 "role",
                 "joinedAt"
               ],
@@ -1476,6 +1480,9 @@
                 "anyOf": [{ "type": "string" }, { "type": "null" }]
               },
               "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
               "onboardingState": {
                 "type": "string",
                 "enum": ["username", "profile", "avatar", "complete"]
@@ -1490,6 +1497,7 @@
               "username",
               "displayName",
               "bio",
+              "avatarMediaId",
               "onboardingState",
               "updatedAt"
             ],
@@ -1570,6 +1578,9 @@
                 "anyOf": [{ "type": "string" }, { "type": "null" }]
               },
               "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
               "onboardingState": {
                 "type": "string",
                 "enum": ["username", "profile", "avatar", "complete"]
@@ -1584,6 +1595,7 @@
               "username",
               "displayName",
               "bio",
+              "avatarMediaId",
               "onboardingState",
               "updatedAt"
             ],
@@ -1859,7 +1871,10 @@
                   "properties": {
                     "uid": { "type": "string" },
                     "username": { "type": "string" },
-                    "displayName": { "type": "string" }
+                    "displayName": { "type": "string" },
+                    "avatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    }
                   },
                   "required": ["uid", "username", "displayName"],
                   "additionalProperties": false
@@ -1974,7 +1989,10 @@
             "properties": {
               "uid": { "type": "string" },
               "username": { "type": "string" },
-              "displayName": { "type": "string" }
+              "displayName": { "type": "string" },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              }
             },
             "required": ["uid", "username", "displayName"],
             "additionalProperties": false
@@ -2065,6 +2083,9 @@
                     "boxId": { "type": "string" },
                     "authorUid": { "type": "string" },
                     "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
                     "mediaAssetIds": {
                       "type": "array",
                       "items": { "type": "string" }
@@ -2118,7 +2139,13 @@
                                 "properties": {
                                   "uid": { "type": "string" },
                                   "username": { "type": "string" },
-                                  "displayName": { "type": "string" }
+                                  "displayName": { "type": "string" },
+                                  "avatarMediaId": {
+                                    "anyOf": [
+                                      { "type": "string" },
+                                      { "type": "null" }
+                                    ]
+                                  }
                                 },
                                 "required": ["uid", "username", "displayName"],
                                 "additionalProperties": false
@@ -2166,6 +2193,7 @@
                     "boxId",
                     "authorUid",
                     "authorName",
+                    "authorAvatarMediaId",
                     "mediaAssetIds",
                     "createdAt",
                     "interactions",
@@ -2184,6 +2212,9 @@
                     "boxId": { "type": "string" },
                     "authorUid": { "type": "string" },
                     "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
                     "mediaAssetIds": {
                       "type": "array",
                       "items": { "type": "string" }
@@ -2237,7 +2268,13 @@
                                 "properties": {
                                   "uid": { "type": "string" },
                                   "username": { "type": "string" },
-                                  "displayName": { "type": "string" }
+                                  "displayName": { "type": "string" },
+                                  "avatarMediaId": {
+                                    "anyOf": [
+                                      { "type": "string" },
+                                      { "type": "null" }
+                                    ]
+                                  }
                                 },
                                 "required": ["uid", "username", "displayName"],
                                 "additionalProperties": false
@@ -2308,6 +2345,7 @@
                     "boxId",
                     "authorUid",
                     "authorName",
+                    "authorAvatarMediaId",
                     "mediaAssetIds",
                     "createdAt",
                     "interactions",

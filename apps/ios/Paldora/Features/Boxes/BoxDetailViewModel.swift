@@ -20,11 +20,13 @@ final class BoxDetailViewModel {
     private(set) var composeError: String?
     private(set) var isPosting = false
     let boxId: String
+    let attachments: PhotoAttachments
     private let env: FeatureEnvironment
 
     init(env: FeatureEnvironment, boxId: String) {
         self.env = env
         self.boxId = boxId
+        attachments = PhotoAttachments(env: env, purpose: .postImage(boxId: boxId))
         let api = env.api
         posts = PagedList(env: env) { cursor in
             let page = try await api.listBoxPosts(ListBoxPostsRequest(boxId: boxId, cursor: cursor))
@@ -40,13 +42,16 @@ final class BoxDetailViewModel {
     var canPost: Bool { box?.status == .active }
 
     var canSubmit: Bool {
-        !isPosting && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && draft.count <= Self.textLimit
+        let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasPhotos = !attachments.readyAssetIds.isEmpty
+        return !isPosting && !attachments.isBusy && !attachments.hasFailure && (hasText || hasPhotos) && draft.count <= Self.textLimit
     }
 
     func authorName(_ uid: String) -> String {
         uid == env.currentUserID ? "You" : (env.people.name(for: uid, in: boxId) ?? "A member")
     }
+
+    func authorAvatar(_ uid: String) -> String? { env.people.avatar(for: uid, in: boxId) }
 
     func load() async {
         do {
@@ -69,8 +74,10 @@ final class BoxDetailViewModel {
         defer { isPosting = false }
         do {
             _ = try await env.api.createBoxPost(CreateBoxPostRequest(
-                boxId: boxId, text: draft.trimmingCharacters(in: .whitespacesAndNewlines)))
+                boxId: boxId, text: draft.trimmingCharacters(in: .whitespacesAndNewlines),
+                mediaAssetIds: attachments.readyAssetIds.isEmpty ? nil : attachments.readyAssetIds))
             draft = ""
+            attachments.clear()
             env.contentChanged()
             await posts.refresh()
         } catch {

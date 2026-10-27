@@ -42,11 +42,14 @@ struct MainTabView: View {
                 .badge(env.badge.count)
                 .tag(Tab.notifications)
 
-            ProfileView(model: model, profile: profile)
+            ProfileView(model: model, env: env, profile: profile)
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
                 .tag(Tab.profile)
         }
         .toolbarBackground(Theme.canvas, for: .tabBar)
+        .environment(\.imageLoader, env.images)
+        // Private images live in memory only; drop them when the shell goes away (sign-out).
+        .onDisappear { env.images.clear() }
         // Polling first (ADR 021 decision 2): on foreground and every 30 s.
         .task(id: scenePhase) {
             if scenePhase == .active { await env.badge.poll() }

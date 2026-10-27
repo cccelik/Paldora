@@ -71,6 +71,7 @@ struct NotificationsView: View {
         HStack(alignment: .top, spacing: Theme.space3) {
             Circle().fill(item.read ? Color.clear : Theme.gold).frame(width: 8, height: 8)
                 .padding(.top, Theme.space2).accessibilityHidden(true)
+            AvatarView(mediaId: item.actor.avatarMediaId, name: item.actor.displayName, size: 36)
             VStack(alignment: .leading, spacing: Theme.space1) {
                 Text(NotificationsViewModel.summary(item)).font(Typography.body)
                     .foregroundStyle(Theme.text).multilineTextAlignment(.leading)

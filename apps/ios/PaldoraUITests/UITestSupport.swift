@@ -10,13 +10,14 @@ extension XCTestCase {
     }
 
     /// Launches signed out, signs in with the seeded fixture, waits for the tab shell.
-    func launchSignedIn() throws -> XCUIApplication {
+    func launchSignedIn(environment: [String: String] = [:]) throws -> XCUIApplication {
         guard let (email, password) = credentials() else {
             XCTFail("Set PALDORA_UI_EMAIL and PALDORA_UI_PASSWORD (use apps/ios/scripts/ui-test.sh).")
             throw XCTSkip("missing credentials")
         }
         let app = XCUIApplication()
         app.launchEnvironment["PALDORA_UI_RESET_SESSION"] = "1"
+        environment.forEach { app.launchEnvironment[$0.key] = $0.value }
         app.launch()
         let emailField = app.textFields["email-field"]
         XCTAssertTrue(emailField.waitForExistence(timeout: 30), "Sign-in screen did not appear")

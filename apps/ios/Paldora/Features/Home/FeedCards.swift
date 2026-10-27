@@ -10,13 +10,12 @@ struct FeedItemCard: View {
     var body: some View {
         switch item {
         case .post(let post):
-            card(author: post.authorName, time: post.createdAt, media: post.mediaAssetIds.count,
-                 summary: post.interactions, edited: post.edited) {
+            card(author: post.authorName, avatar: post.authorAvatarMediaId, assets: post.mediaAssetIds, time: post.createdAt, summary: post.interactions, edited: post.edited) {
                 Text(post.text).font(Typography.body).foregroundStyle(Theme.text)
             }
         case .lifeUpdate(let update):
-            card(author: update.authorName, time: update.createdAt, media: update.mediaAssetIds.count,
-                 summary: update.interactions, edited: false, tag: "Life update") {
+            card(author: update.authorName, avatar: update.authorAvatarMediaId, assets: update.mediaAssetIds,
+                 time: update.createdAt, summary: update.interactions, edited: false, tag: "Life update") {
                 VStack(alignment: .leading, spacing: Theme.space2) {
                     ForEach(update.sections.indices, id: \.self) { index in
                         VStack(alignment: .leading, spacing: 2) {
@@ -35,21 +34,21 @@ struct FeedItemCard: View {
     }
 
     private func card<Body: View>(
-        author: String, time: EpochMillis, media: Int, summary: InteractionSummary,
+        author: String, avatar: String?, assets: [String], time: EpochMillis, summary: InteractionSummary,
         edited: Bool, tag: String? = nil, @ViewBuilder body: () -> Body
     ) -> some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
-            VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: Theme.space3) {
+                AvatarView(mediaId: avatar, name: author)
+                VStack(alignment: .leading, spacing: 2) {
                 Text(author).font(Typography.headline).foregroundStyle(Theme.text)
                 Text([boxName ?? "Box", tag, Formatting.relativeTime(time), edited ? "edited" : nil]
                     .compactMap { $0 }.joined(separator: " · "))
                     .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                }
             }
             body()
-            if media > 0 {
-                Label(Formatting.countLabel(media, singular: "photo", plural: "photos"), systemImage: "photo")
-                    .font(Typography.callout).foregroundStyle(Theme.textMuted)
-            }
+            PhotoStrip(assetIds: assets, interactive: false)
             Text("\(Formatting.countLabel(summary.commentCount, singular: "comment", plural: "comments")) · "
                  + Formatting.countLabel(summary.reactionCount, singular: "reaction", plural: "reactions"))
                 .font(Typography.caption).foregroundStyle(Theme.textMuted)

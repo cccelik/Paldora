@@ -26,6 +26,8 @@ export const nativeMyProfileSchema = z.object({
     username: z.string().nullable(),
     displayName: z.string().nullable(),
     bio: z.string().nullable(),
+    /** Opaque media id for `mediaRead` thumbnail, or null. Never a URL. */
+    avatarMediaId: z.string().nullable(),
     onboardingState: z.enum(ONBOARDING_STATES),
     updatedAt: nativeTimestampSchema,
   }),

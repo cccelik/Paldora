@@ -52,8 +52,32 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     - `Notifications/`: paged list, tap marks read and opens the post,
       mark-all-read, tab badge. The badge polls on foreground and every 30 s
       (ADR 021 decision 2: polling first).
-  - Not in the app yet: friends and blocks, Life Update composer, media,
-    comment reactions, Rooms. Deleted comments are simply absent because the
+  - `Media/`: the authenticated media layer (ADR 021 decision 8).
+    - `MediaClient` (`URLSessionMediaClient`): `mediaUpload` PUT with the exact
+      `Content-Type` and length from `createMediaUpload`, `mediaRead` GET, both
+      with `Authorization: Bearer <Firebase ID token>` (one forced token refresh
+      on 401). Ephemeral session, no URL cache, no cookies.
+    - `ImageLoader`: in-memory only (`NSCache`), in-flight de-duplication,
+      cancel when the last waiter goes away, 404 becomes a neutral "Photo
+      unavailable" placeholder (briefly remembered), cleared on sign-out. No
+      disk cache and no URLs are kept.
+    - `ImagePreparer`: on-device downscale (long edge 2560) and JPEG re-encode
+      from raw pixels, so EXIF and GPS never leave the device; stays under the
+      10 MB policy.
+    - `PhotoUpload` / `PhotoAttachments`: prepare, reserve, upload (with
+      progress), complete, then poll `getMediaAsset` (bounded) with an honest
+      "Processing" state; failures keep their stage so Retry resumes there.
+      Up to four photos per post; the post is created with `mediaAssetIds`.
+    - Views: `PhotosPicker` attachments, `PhotoStrip` thumbnails, a full-screen
+      `PhotoViewer` (display variant, pinch to zoom). Save and share are
+      omitted on purpose: web shares the post permalink, never bytes.
+    - Avatars: `AvatarView` (initials fallback) from the opaque
+      `avatarMediaId` fields (profile, feed authors, members, notification
+      actors). Profile photo upload is on the Profile tab.
+    - UI-test hook: with `PALDORA_UI_TEST_IMAGE=1` a DEBUG-only "Attach test
+      photo" button adds a generated image. It is compiled out of Release.
+  - Not in the app yet: friends and blocks, Life Update composer, camera
+    reactions, comment reactions, Rooms. Deleted comments are simply absent because the
     contract returns no placeholder for them.
 - `PaldoraTests/`: unit tests (Swift Testing) with a fake `AuthService` and
   fake `CallableTransport`. `PaldoraUITests/`: one XCUITest.
@@ -130,7 +154,8 @@ onboarded fixture account with `packages/firebase-trusted/scripts/seed-local.mjs
 `PALDORA_UI_EMAIL` and `PALDORA_UI_PASSWORD` (`TEST_RUNNER_` prefix), runs them
 on the iPhone 16e simulator, and shuts the simulator down. The UI tests cover
 sign-in, profile edit and sign-out, and creating a Box, posting, opening the
-post from Home, reacting and commenting. Override with
+post with a generated photo, opening it from Home and the photo viewer,
+reacting and commenting. Override with
 `IOS_SIM_NAME` and `IOS_SIM_OS`.
 
 The fixture suite loads every file in `contracts/native/fixtures` and

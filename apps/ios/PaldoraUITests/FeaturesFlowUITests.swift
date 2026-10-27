@@ -5,7 +5,8 @@ final class FeaturesFlowUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
     func testCreateBoxPostOpenFromHomeCommentAndReact() throws {
-        let app = try launchSignedIn()
+        // PALDORA_UI_TEST_IMAGE enables the DEBUG-only generated test photo (never in Release).
+        let app = try launchSignedIn(environment: ["PALDORA_UI_TEST_IMAGE": "1"])
         let stamp = Int.random(in: 1000...9999)
         let boxName = "UI Box \(stamp)"
         let postText = "UI post \(stamp)"
@@ -28,6 +29,11 @@ final class FeaturesFlowUITests: XCTestCase {
             _ = app.element("post-field").waitForExistence(timeout: 5)
         }
         app.type(postText, into: "post-field")
+        // Attach a generated photo: upload, process, then wait until it is ready.
+        let attach = app.buttons["attach-test-photo"]
+        XCTAssertTrue(attach.waitForExistence(timeout: 10), "Test photo button missing")
+        attach.tap()
+        XCTAssertTrue(app.staticTexts["Ready"].waitForExistence(timeout: 90), "Photo did not finish processing")
         app.buttons["publish-post"].tap()
         XCTAssertTrue(app.element("box-post", containing: postText).waitForExistence(timeout: 20),
                       "Post did not appear in the Box")
@@ -38,6 +44,14 @@ final class FeaturesFlowUITests: XCTestCase {
         XCTAssertTrue(item.waitForExistence(timeout: 30), "Post did not appear on Home")
         item.tap()
         XCTAssertTrue(app.staticTexts["post-text"].waitForExistence(timeout: 20))
+
+        // The photo loads through the authenticated media client and opens full screen.
+        let photo = app.buttons["post-photo"].firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 20), "Post photo missing")
+        XCTAssertFalse(app.staticTexts["Photo unavailable"].waitForExistence(timeout: 5), "Photo showed the unavailable placeholder")
+        photo.tap()
+        XCTAssertTrue(app.buttons["close-photo"].waitForExistence(timeout: 10), "Viewer did not open")
+        app.buttons["close-photo"].tap()
 
         // React with a preset, then comment.
         let thumbs = app.buttons["reaction-👍"]

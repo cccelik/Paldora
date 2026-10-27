@@ -48,6 +48,17 @@ Both functions apply the callables' session-epoch check and a per-user hourly
 limit (`mediaUpload` 480, `mediaRead` 6000). `createMediaUpload` is limited to
 480 an hour, plus 120 an hour for `reaction_image`.
 
+## Avatars
+
+Avatars are opaque media asset ids, never URLs. `getMyProfile` and
+`updateMyProfile` return `profile.avatarMediaId`; feed items carry
+`authorAvatarMediaId`, `listBoxMembers` items `avatarMediaId`, and notification
+actors an optional `avatarMediaId`. Each is `null` unless the web adapter would
+show the avatar (the profile points at it and the asset is `ready` and owned by
+that member). Render it with `GET mediaRead/{id}/thumbnail`; whether a viewer
+may see the bytes is re-checked on that read, and a hidden avatar is the same
+`404` as any other absence, so show initials.
+
 ## Rules
 
 - **Versioning:** undecided (V1 function suffix versus `contractVersion`

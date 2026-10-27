@@ -43,7 +43,10 @@ struct PaldoraApp: App {
             #endif
             let functions = Functions.functions(region: AppConfiguration.functionsRegion)
             let api = PaldoraAPI(transport: FirebaseCallableTransport(functions: functions))
-            return AppModel(auth: auth, api: api)
+            let media = AppConfiguration.functionsBaseURL(for: setup).map {
+                URLSessionMediaClient(baseURL: $0, tokens: FirebaseTokenProvider())
+            }
+            return AppModel(auth: auth, api: api, media: media)
         }
     }
 }

@@ -68,7 +68,8 @@ struct BoxDetailView: View {
             }
             ForEach(model.posts.items) { post in
                 NavigationLink(value: PostRoute(boxId: post.boxId, postId: post.id)) {
-                    BoxPostRow(post: post, author: model.authorName(post.authorUid))
+                    BoxPostRow(post: post, author: model.authorName(post.authorUid),
+                               avatar: model.authorAvatar(post.authorUid))
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("box-post")
@@ -82,18 +83,21 @@ struct BoxDetailView: View {
 struct BoxPostRow: View {
     let post: BoxPost
     let author: String
+    var avatar: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
-            Text(author).font(Typography.headline).foregroundStyle(Theme.text)
-            Text(Formatting.relativeTime(post.createdAt) + (post.kind == .lifeUpdate ? " · Life update" : ""))
-                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+            HStack(spacing: Theme.space3) {
+                AvatarView(mediaId: avatar, name: author)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(author).font(Typography.headline).foregroundStyle(Theme.text)
+                    Text(Formatting.relativeTime(post.createdAt) + (post.kind == .lifeUpdate ? " · Life update" : ""))
+                        .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                }
+            }
             Text(post.text).font(Typography.body).foregroundStyle(Theme.text)
                 .multilineTextAlignment(.leading).lineLimit(6)
-            if !post.mediaAssetIds.isEmpty {
-                Label(Formatting.countLabel(post.mediaAssetIds.count, singular: "photo", plural: "photos"),
-                      systemImage: "photo").font(Typography.callout).foregroundStyle(Theme.textMuted)
-            }
+            PhotoStrip(assetIds: post.mediaAssetIds, interactive: false)
         }
         .paldoraCard()
         .accessibilityElement(children: .combine)
@@ -113,6 +117,7 @@ struct PostComposer: View {
                     .focused($focused)
                     .accessibilityIdentifier("post-field")
             }
+            PhotoAttachmentsView(attachments: model.attachments)
             HStack {
                 Text("\(model.draft.count) of \(BoxDetailViewModel.textLimit)").font(Typography.caption)
                     .foregroundStyle(model.draft.count > BoxDetailViewModel.textLimit ? Theme.danger : Theme.textMuted)
@@ -154,10 +159,13 @@ struct MembersView: View {
             case .loaded:
                 List {
                     ForEach(members.items) { member in
+                        HStack(spacing: Theme.space3) {
+                        AvatarView(mediaId: member.avatarMediaId, name: member.displayName ?? member.username ?? "Member")
                         VStack(alignment: .leading, spacing: 2) {
                             Text(member.displayName ?? member.username ?? "Member").font(Typography.headline)
                             Text(member.role.rawValue.capitalized).font(Typography.caption)
                                 .foregroundStyle(Theme.textMuted)
+                        }
                         }
                         .frame(minHeight: Theme.touchTarget, alignment: .leading)
                         .accessibilityElement(children: .combine)
