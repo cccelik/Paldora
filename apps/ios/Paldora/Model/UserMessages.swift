@@ -9,3 +9,9 @@ enum UserMessages {
     static let signInTooMany = "Too many tries. Wait a moment, then try again."
     static let signInMissing = "Enter your email and password."
 }
+
+extension UserMessages {
+    static let passwordChanged = "Your password was changed. Sign in again."
+    static let signedOutEverywhere = "You were signed out everywhere. Sign in again."
+    static let wrongPassword = "That password didn't match."
+}

@@ -113,6 +113,24 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     filter is All, Posts or Life Updates, pages use opaque cursors, and each
     item opens the underlying post or Life Update (never a copy). Summary
     failures (60 an hour) do not block the list.
+  - `Settings/` (Profile, Settings): **Security** (change password with current
+    plus new of 10 to 1,024 characters and a confirmation, secure fields,
+    passwords cleared after the call and redacted in every description; success
+    and "sign out everywhere" both sign out locally and show a neutral "Sign in
+    again" notice). **Your data** (request an archive, status pending, ready,
+    expired or failed with web copy, bounded polling while pending, download
+    through `accountExportDownload` with the Bearer ID token into a
+    complete-file-protection temp file, system share sheet, file deleted when
+    the sheet closes, 404 is one neutral "isn't available anymore"). **Delete
+    account** (seven-day grace period and "transfer every owned Box first"
+    explained, blocked state, password plus a destructive confirmation to
+    request or cancel; like the web, neither signs you out). **Your reports**
+    (receipts) and **Content notices** with honest empty states.
+  - Reports: a comment row has Report (category Harassment, Spam, Privacy or
+    Something else, plus optional detail up to 2,000) using `reportBoxComment`;
+    posts are reported from the post menu with `reportBoxPost`. A revoked
+    session (for example after a password change elsewhere) signs out
+    neutrally from any call.
   - Not in the app yet: camera reactions, reports of comments, Boxes or people,
     Phase 8 Room personalization (web-only), staff screens. Reports: web can report posts and comments
     (`createReport`), native has only `reportBoxPost`, so only posts are
@@ -194,7 +212,10 @@ onboarded fixture account with `packages/firebase-trusted/scripts/seed-local.mjs
 on the iPhone 16e simulator, and shuts the simulator down. The UI tests cover
 sign-in, profile edit and sign-out, a friend request to a second seeded
 account, an Only Me Life Update (create, edit, delete), My Room (change theme, save,
-reopen to see it), Memories, and creating a Box, posting, opening the
+reopen to see it), Memories, a password change and sign-in with the new
+password (then restored), a data export reaching ready and opening the share
+sheet, reporting a peer's comment (the script seeds a Box the peer owns with a
+post and comment) and its receipt, and creating a Box, posting, opening the
 post with a generated photo, opening it from Home and the photo viewer,
 reacting and commenting. Override with
 `IOS_SIM_NAME` and `IOS_SIM_OS`.

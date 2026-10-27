@@ -21,7 +21,7 @@ final class PostDetailViewModel {
     private(set) var reportSent = false
     let comments: CommentsViewModel
     let route: PostRoute
-    private let env: FeatureEnvironment
+    let env: FeatureEnvironment
 
     init(env: FeatureEnvironment, route: PostRoute) {
         self.env = env

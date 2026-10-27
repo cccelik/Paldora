@@ -26,15 +26,22 @@ if [[ "${1:-}" == "--inner" ]]; then
   export FIREBASE_FUNCTIONS_EMULATOR_HOST=127.0.0.1:5001
 
   # Fully onboarded fixture account (username reserved, profile name set).
-  node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs" >/dev/null
+  FIXTURE_OUT="$(node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs")"
+  FIXTURE_UID="$(echo "$FIXTURE_OUT" | grep -oE '[0-9a-f]{8}-[0-9a-f-]{27}' | head -1)"
   echo "Seeded a fully onboarded fixture account in demo-paldora."
 
   # A second, fully onboarded account for friend-request flows.
   PEER_USERNAME="iosuipeer${suffix}"
-  PALDORA_FIXTURE_EMAIL="ios-ui-peer-${suffix}@example.invalid" \
+  PEER_OUT="$(PALDORA_FIXTURE_EMAIL="ios-ui-peer-${suffix}@example.invalid" \
     PALDORA_FIXTURE_USERNAME="$PEER_USERNAME" PALDORA_FIXTURE_DISPLAY_NAME="iOS UI Peer" \
-    node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs" >/dev/null
+    node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs")"
+  PEER_UID="$(echo "$PEER_OUT" | grep -oE '[0-9a-f]{8}-[0-9a-f-]{27}' | head -1)"
   echo "Seeded a second fixture account (peer)."
+
+  # A Box the peer owns, shared with the fixture, holding a peer post and comment
+  # (the comment is what the UI test reports).
+  PALDORA_FIXTURE_OWNER_UID="$PEER_UID" PALDORA_FIXTURE_MEMBER_UID="$FIXTURE_UID" \
+    node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-shared-box.mjs"
 
   # xcodebuild forwards TEST_RUNNER_* to the UI test runner, prefix stripped.
   export TEST_RUNNER_PALDORA_UI_EMAIL="$PALDORA_FIXTURE_EMAIL"

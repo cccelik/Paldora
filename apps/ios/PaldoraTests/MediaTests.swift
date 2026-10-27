@@ -88,6 +88,17 @@ struct URLSessionMediaClientTests {
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer stale")
     }
 
+    @Test func exportDownloadUsesBearerAndMapsNotFound() async throws {
+        StubURLProtocol.handler = { _ in (200, Data("{}".utf8)) }
+        #expect(try await client().fetchExport(id: "e-1") == Data("{}".utf8))
+        let request = try #require(StubURLProtocol.seen.first)
+        #expect(request.url?.absoluteString == "http://127.0.0.1:5001/demo-paldora/europe-west4/accountExportDownload/e-1")
+        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer stale")
+        StubURLProtocol.handler = { _ in (404, Data()) }
+        await #expect(throws: MediaError.unavailable) { try await client().fetchExport(id: "e-1") }
+        await #expect(throws: MediaError.unavailable) { try await client().fetchExport(id: "../x") }
+    }
+
     @Test func unsafePathsAreRefused() {
         #expect(URLSessionMediaClient.url(base: URL(string: "http://h")!, function: "mediaRead", path: "/a/../b") == nil)
         #expect(URLSessionMediaClient.url(base: URL(string: "http://h")!, function: "x/y", path: "/a") == nil)

@@ -19,17 +19,33 @@ extension XCTestCase {
         app.launchEnvironment["PALDORA_UI_RESET_SESSION"] = "1"
         environment.forEach { app.launchEnvironment[$0.key] = $0.value }
         app.launch()
-        let emailField = app.textFields["email-field"]
-        XCTAssertTrue(emailField.waitForExistence(timeout: 30), "Sign-in screen did not appear")
-        focusAndType(email, into: emailField, app: app)
-        focusAndType(password, into: app.secureTextFields["password-field"], app: app)
-        app.buttons["sign-in-button"].tap()
+        signIn(app, email: email, password: password)
         XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 30), "Tab shell did not appear")
         return app
     }
 }
 
 extension XCTestCase {
+    /// Fills the sign-in form and submits it.
+    func signIn(_ app: XCUIApplication, email: String, password: String) {
+        let emailField = app.textFields["email-field"]
+        XCTAssertTrue(emailField.waitForExistence(timeout: 30), "Sign-in screen did not appear")
+        focusAndType(email, into: emailField, app: app)
+        focusAndType(password, into: app.secureTextFields["password-field"], app: app)
+        app.buttons["sign-in-button"].tap()
+    }
+
+    /// Profile tab, then Settings, then one Settings row.
+    func openSettingsRow(_ app: XCUIApplication, _ id: String) {
+        let settings = app.buttons["settings-link"]
+        app.tap(app.tabBars.buttons["Profile"], until: settings)
+        app.scrollToReveal(settings)
+        settings.tap()
+        let row = app.buttons[id]
+        XCTAssertTrue(row.waitForExistence(timeout: 20), "\(id) missing")
+        row.tap()
+    }
+
     /// Taps until the field has keyboard focus (the first tap can race the launch), then types.
     func focusAndType(_ text: String, into field: XCUIElement, app: XCUIApplication) {
         for _ in 0..<4 {

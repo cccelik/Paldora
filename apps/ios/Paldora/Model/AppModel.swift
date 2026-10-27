@@ -101,7 +101,8 @@ final class AppModel {
             media: media ?? UnavailableMediaClient(),
             currentUserID: userID,
             reactionPresets: { [weak self] in self?.preferences?.reactionPresets ?? [] },
-            handleFailure: { [weak self] error in self?.failureMessage(error) ?? UserMessages.generic }
+            handleFailure: { [weak self] error in self?.failureMessage(error) ?? UserMessages.generic },
+            signOut: { [weak self] notice in self?.endSession(notice: notice) }
         )
     }
 

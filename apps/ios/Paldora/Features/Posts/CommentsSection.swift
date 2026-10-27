@@ -5,6 +5,7 @@ struct CommentsSection: View {
     let model: PostDetailViewModel
     @State private var pendingDelete: BoxComment?
     @State private var reacting: BoxComment?
+    @State private var reporting: BoxComment?
 
     private var comments: CommentsViewModel { model.comments }
 
@@ -20,6 +21,9 @@ struct CommentsSection: View {
         }
         .sheet(item: $reacting) { comment in
             CommentReactionSheet(model: model.reactions(for: comment))
+        }
+        .sheet(item: $reporting) { comment in
+            ReportCommentSheet(env: model.env, commentId: comment.id)
         }
         .confirmationDialog("Delete this comment?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
@@ -59,6 +63,10 @@ struct CommentsSection: View {
                     .accessibilityIdentifier("react-comment")
                 if !indented {
                     Button("Reply") { comments.reply(to: comment) }.buttonStyle(QuietButtonStyle())
+                }
+                if !comments.isOwn(comment) {
+                    Button("Report") { reporting = comment }.buttonStyle(QuietButtonStyle())
+                        .accessibilityIdentifier("report-comment")
                 }
                 if comments.isOwn(comment) {
                     Button("Edit") { comments.edit(comment) }.buttonStyle(QuietButtonStyle())

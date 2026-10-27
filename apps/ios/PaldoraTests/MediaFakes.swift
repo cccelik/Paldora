@@ -31,6 +31,13 @@ final class FakeMediaClient: MediaClient, @unchecked Sendable {
         return try await fetchHandler(assetId, variant)
     }
 
+    func fetchExport(id: String) async throws -> Data {
+        lock.withLock { _fetches.append("export/\(id)") }
+        return try await exportHandler(id)
+    }
+
+    var exportHandler: @Sendable (String) async throws -> Data = { _ in Data("{\"archive\":true}".utf8) }
+
     static func pngData(width: Int = 8, height: Int = 8) -> Data {
         UIGraphicsImageRenderer(size: CGSize(width: width, height: height)).pngData { ctx in
             UIColor.systemTeal.setFill(); ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))

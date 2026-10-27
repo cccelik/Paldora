@@ -15,6 +15,7 @@ final class FeatureEnvironment {
     let media: any MediaClient
     let images: ImageLoader
     private let failureHandler: @MainActor (any Error) -> String
+    private let signOutHandler: @MainActor (String) -> Void
     private let presets: @MainActor () -> [String]
 
     init(
@@ -22,7 +23,8 @@ final class FeatureEnvironment {
         media: any MediaClient,
         currentUserID: String,
         reactionPresets: @escaping @MainActor () -> [String],
-        handleFailure: @escaping @MainActor (any Error) -> String
+        handleFailure: @escaping @MainActor (any Error) -> String,
+        signOut: @escaping @MainActor (String) -> Void = { _ in }
     ) {
         self.api = api
         self.media = media
@@ -30,6 +32,7 @@ final class FeatureEnvironment {
         self.currentUserID = currentUserID
         self.presets = reactionPresets
         self.failureHandler = handleFailure
+        self.signOutHandler = signOut
         boxes = BoxDirectory(api: api)
         people = PeopleDirectory(api: api)
         badge = UnreadBadge(api: api, handleFailure: handleFailure)
@@ -42,6 +45,9 @@ final class FeatureEnvironment {
     private(set) var contentVersion = 0
 
     func contentChanged() { contentVersion += 1 }
+
+    /// Ends the local session and shows `notice` on the sign-in screen.
+    func signOut(notice: String) { signOutHandler(notice) }
 
     /// A user-facing message for a failed call. May sign the user out.
     func message(for error: any Error) -> String {

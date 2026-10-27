@@ -29,6 +29,8 @@ protocol MediaClient: Sendable {
         progress: @escaping @Sendable (Double) -> Void
     ) async throws
     func fetch(assetId: String, variant: MediaVariant) async throws -> Data
+    /// The caller's latest ready account export (`accountExportDownload`). 404 is `unavailable`.
+    func fetchExport(id: String) async throws -> Data
 }
 
 struct URLSessionMediaClient: MediaClient {
@@ -79,6 +81,20 @@ struct URLSessionMediaClient: MediaClient {
     func fetch(assetId: String, variant: MediaVariant) async throws -> Data {
         guard Self.isSafeSegment(assetId),
               let url = Self.url(base: baseURL, function: "mediaRead", path: "/\(assetId)/\(variant.rawValue)")
+        else { throw MediaError.unavailable }
+        let (data, response) = try await send(forceRefresh: false) { token in
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            return try await session.data(for: request)
+        }
+        guard response.statusCode == 200 else { throw Self.error(for: response.statusCode) }
+        return data
+    }
+
+    func fetchExport(id: String) async throws -> Data {
+        guard Self.isSafeSegment(id),
+              let url = Self.url(base: baseURL, function: "accountExportDownload", path: "/\(id)")
         else { throw MediaError.unavailable }
         let (data, response) = try await send(forceRefresh: false) { token in
             var request = URLRequest(url: url)
@@ -156,4 +172,5 @@ struct UnavailableMediaClient: MediaClient {
     func upload(_ reservation: CreateMediaUploadResponse, data: Data,
                 progress: @escaping @Sendable (Double) -> Void) async throws { throw MediaError.transient }
     func fetch(assetId: String, variant: MediaVariant) async throws -> Data { throw MediaError.unavailable }
+    func fetchExport(id: String) async throws -> Data { throw MediaError.unavailable }
 }

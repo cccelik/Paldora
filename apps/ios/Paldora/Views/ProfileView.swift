@@ -26,6 +26,7 @@ struct ProfileView: View {
             .scrollDismissesKeyboard(.interactively)
             .background(Theme.canvas)
             .navigationDestination(for: FriendsRoute.self) { _ in FriendsView(env: env) }
+            .navigationDestination(for: SettingsRoute.self) { _ in SettingsView(env: env) }
             .navigationDestination(for: LifeUpdatesRoute.self) { _ in MyLifeUpdatesView(env: env) }
             .navigationDestination(for: LifeUpdateRoute.self) { LifeUpdateDetailView(env: env, route: $0) }
             .navigationDestination(for: LifeUpdateComposeRoute.self) { _ in LifeUpdateComposerView(env: env) }

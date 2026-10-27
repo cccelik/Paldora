@@ -46,3 +46,9 @@ extension MemoryItem: Identifiable {
         }
     }
 }
+
+extension ReportReceipt: Identifiable {}
+
+extension ModerationNotice: Identifiable {
+    public var id: String { "\(targetKind):\(targetId)" }
+}
