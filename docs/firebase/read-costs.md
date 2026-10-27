@@ -114,8 +114,8 @@ Status after the 2026-10-26/27 reductions (S1 to S4 and S6):
   re-enqueued. A well-formed but wrong v1 index is trusted by the read path;
   `check()` and repair are the safety net. Measured on the emulator on
   2026-10-27: Box feed 465 to 56 reads, 196 when the index is missing. A repair
-  job that already completed keeps its fixed id, so an index lost later is not
-  re-enqueued until that job document is removed (open).
+  job that already completed (or failed) is re-armed to `pending` by the next
+  read that finds the index missing, at most once per 10 minutes.
 - **Open product question:** `replyCount` counts replies by blocked or suspended
   authors even though the preview shows them only as hidden placeholders.
 

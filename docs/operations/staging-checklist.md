@@ -106,6 +106,10 @@ Rules for using this list:
 - [ ] Run each feed, Box, notification, Memories, Room, moderation and
       export query path once on staging and confirm there is no
       missing-index failure.
+- [ ] Confirm the composite indexes for the post-detail reply query (the `in`
+      query on comment parents) and the unread-count paging (document-ID
+      ordering with the read filter) are ready; exercise both once with a
+      disposable account.
 - [ ] Confirm `firebase.native.json` / `firestore.native.rules` were never
       deployed to any hosted project.
 
@@ -256,6 +260,17 @@ Rules for using this list:
       are **to be verified against current official docs**, not assumed.
 - [ ] Record and review hot-document contention (rate-limit counters, Box
       documents, Box-membership counters).
+- [ ] Hot-post write latency (ADR 022): every comment and reaction also
+      writes the post document. Emulator: 80 simultaneous operations on one
+      post serialize to about 76 s with 0 aborts at 30 attempts. Measure real
+      p50/p95/abort rate with 20, 50 and 80 concurrent writers and confirm
+      `readOnly` transactions behave as expected hosted.
+- [ ] Interaction index rollout: run the backfill, confirm
+      `interaction-index check` reports no drift, then enable
+      `PALDORA_TRUST_INTERACTION_INDEX=1` on staging and re-record reads per
+      page (Box feed target about 56 per 20 posts, against about 196 when
+      the index is missing). Confirm a lost index re-arms its repair job
+      after the 10 minute cooldown.
 
 ## M. Backup and restore drill
 

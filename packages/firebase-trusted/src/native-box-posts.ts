@@ -203,6 +203,8 @@ export interface NativeBoxPostsOptions {
 const REAL_PREVIEW_MAX = 4;
 /** Distinct kinds shown per post. */
 const REACTION_KINDS_MAX = 8;
+/** Minimum age of a finished repair job before a missing index re-arms it. */
+const INDEX_REPAIR_REARM_MS = 10 * 60_000;
 const ALREADY_EXISTS = 6;
 
 type ActorVisibility = (uid: string) => Promise<boolean>;
@@ -1566,7 +1568,10 @@ export class NativeBoxPosts {
               updatedAt: now,
             });
         } catch (error) {
-          if ((error as { code?: unknown }).code === ALREADY_EXISTS) return;
+          if ((error as { code?: unknown }).code === ALREADY_EXISTS) {
+            await this.rearmIndexRepair(postId, now);
+            return;
+          }
           logEvent(
             'WARNING',
             { event: 'interaction_index.enqueue_failed' },
@@ -1575,6 +1580,36 @@ export class NativeBoxPosts {
         }
       }),
     );
+  }
+
+  /**
+   * A finished job keeps its fixed id, so an index lost later would never be
+   * repaired. Re-arm it once the cooldown has passed; pending jobs are left alone.
+   */
+  private async rearmIndexRepair(postId: string, now: number): Promise<void> {
+    const ref = this.db
+      .collection('nativeJobs')
+      .doc(NativeInteractionIndex.jobId(postId));
+    try {
+      await this.db.runTransaction(async (tx) => {
+        const job = await tx.get(ref);
+        const status = job.get('status');
+        const updatedAt = (job.get('updatedAt') as number | undefined) ?? 0;
+        if (
+          (status !== 'complete' && status !== 'failed') ||
+          now - updatedAt < INDEX_REPAIR_REARM_MS
+        )
+          return;
+        tx.update(ref, {
+          status: 'pending',
+          attempts: 0,
+          nextAttemptAt: 0,
+          updatedAt: now,
+        });
+      });
+    } catch (error) {
+      logEvent('WARNING', { event: 'interaction_index.rearm_failed' }, error);
+    }
   }
 
   /** Summaries for posts with a trusted index; no comment or reaction reads. */

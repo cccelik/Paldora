@@ -319,6 +319,28 @@ describe(
       expect((await index.check(w.boxId, w.postId)).ok).toBe(true);
     });
 
+    it('re-arms a finished repair job after the cooldown, never before', async () => {
+      const w = await populated();
+      await w.postRef.update({ interactionIndex: FieldValue.delete() });
+      await same(w.boxId, w.postId, w.owner);
+      await index.processOnce(NativeInteractionIndex.jobId(w.postId));
+      expect((await jobRef(w.postId).get()).get('status')).toBe('complete');
+
+      // Index lost again inside the cooldown: job stays complete.
+      await w.postRef.update({ interactionIndex: FieldValue.delete() });
+      await same(w.boxId, w.postId, w.owner);
+      expect((await jobRef(w.postId).get()).get('status')).toBe('complete');
+
+      // Past the cooldown: the next read re-arms it and repair succeeds.
+      await jobRef(w.postId).update({ updatedAt: Date.now() - 11 * 60_000 });
+      await same(w.boxId, w.postId, w.owner);
+      expect((await jobRef(w.postId).get()).get('status')).toBe('pending');
+      expect(
+        await index.processOnce(NativeInteractionIndex.jobId(w.postId)),
+      ).toBe('complete');
+      expect((await index.check(w.boxId, w.postId)).ok).toBe(true);
+    });
+
     it('a v:2 index is not trusted', async () => {
       const w = await populated();
       await w.postRef.update({
