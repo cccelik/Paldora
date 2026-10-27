@@ -29,6 +29,7 @@ accepted when their phase is built.
 | [017](017-rooms.md)                               | Lazy Room rows, closed widget registry, token-only themes, DB-enforced Top Friends, derived previews | Accepted (Phase 7; K4 hex values pending owner review) |
 | [018](018-room-personalization-boundaries.md)     | Constrained typography and static widgets with authorized opaque srcdoc delivery                     | Accepted; production flags default off                 |
 | [019](019-moderation-authority-and-audit.md)      | Explicit staff grants, private reports, durable audit, and gated account lifecycle                   | Accepted foundation; lifecycle in progress             |
-| [020](020-hosted-staff-grants.md)                 | IAM-gated, audited hosted staff grants with two-person approval for administrators                   | Proposed (waits on D5 hosting)                         |
+| [020](020-hosted-staff-grants.md)                 | IAM-gated, audited hosted staff grants with two-person approval for administrators                   | Proposed (D5 decided; first admin by break-glass)      |
 | [021](021-firebase-native-contract.md)            | Firebase native contract: callable registry, fixtures, opaque cursors, epoch-ms timestamps           | Proposed (supersedes 004 for native; owner decisions)  |
 | [022](022-post-interaction-index.md)              | Per-actor interaction index on the post document, maintained in the writing transaction              | Proposed                                               |
+| [023](023-web-hosting-app-hosting.md)             | Web hosted on Firebase App Hosting in `europe-west4`; Functions in the same region                   | Accepted (D5)                                          |

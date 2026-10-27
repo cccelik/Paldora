@@ -1,0 +1,37 @@
+# Firebase App Hosting base config for Paldora web (ADR 023).
+# App Hosting backend root directory: apps/web. Region is chosen at backend
+# creation (`firebase apphosting:backends:create --location europe-west4`) and
+# is NOT a field in this file.
+#
+# Environment overlays (apphosting.staging.yaml, apphosting.production.yaml)
+# are selected by the backend's environment name and override this file.
+# Precedence: Firebase console > apphosting.<env>.yaml > apphosting.yaml.
+# Verify against current official docs:
+# https://firebase.google.com/docs/app-hosting/configure
+#
+# Rules enforced by `pnpm hosted:check`: no emulator hosts, no demo- ids, no
+# dev_only values, no literal secrets, PALDORA_ENV only staging|production, and
+# NEXT_PUBLIC_* limited to an allowlist. Secrets are referenced by NAME only.
+runConfig:
+  minInstances: 0 # scale to zero while private beta traffic is tiny
+  maxInstances: 4 # small cap bounds cost; re-measure in staging checklist L
+  concurrency: 40 # unmeasured starting value
+  cpu: 1
+  memoryMiB: 1024 # unmeasured starting value
+
+env:
+  - variable: LOG_LEVEL
+    value: info
+    availability:
+      - RUNTIME
+  # Server-only Firebase Web API key (Auth REST sign-in). Secret Manager name,
+  # never a value, and never prefixed NEXT_PUBLIC_. Create with
+  # `firebase apphosting:secrets:set paldora-firebase-web-api-key` (OWNER ACTION).
+  - variable: FIREBASE_WEB_API_KEY
+    secret: paldora-firebase-web-api-key
+    availability:
+      - RUNTIME
+  # PALDORA_ENV, FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET (optional) and
+  # NEXT_PUBLIC_WEB_URL are per-environment: see the overlay files.
+  # Do NOT set PALDORA_TRUST_INTERACTION_INDEX until the index backfill is
+  # verified (staging checklist L). Never set any *_EMULATOR_HOST variable.

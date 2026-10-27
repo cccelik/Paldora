@@ -57,15 +57,15 @@ The legacy `auth` and `ui` packages are dropped. Principal types move to
 
 ## Decisions that need your approval before the dependent phase
 
-| #   | Decision                                                                                                                          | Needed by | Recommendation                                                                                                              |
-| --- | --------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Inside a shared Box, are a blocked user's **posts** hidden from the blocker? Legacy hides their Life Updates but not their posts. | Phase 2   | **Confirmed 2026-10-19** ([ADR 013](adr/013-directional-blocks.md)): hidden in both directions, neutral placeholder.        |
-| D2  | Keep uploaded **originals**, which retain EXIF/GPS, after processing?                                                             | Phase 1   | **Confirmed 2026-10-18** ([ADR 011](adr/011-media-pipeline.md)): metadata-free re-encoded master; raw upload deleted.       |
-| D3  | Web styling approach.                                                                                                             | Phase 0   | **Confirmed 2026-10-18** ([ADR 005](adr/005-design-tokens-and-styling.md)): CSS Modules + generated tokens; no Tailwind.    |
-| D4  | Keep Supabase Auth as the identity provider.                                                                                      | Phase 0   | **Confirmed 2026-10-18** ([ADR 003](adr/003-supabase-identity.md)).                                                         |
-| D5  | Production hosting target (not the free demo topology).                                                                           | Phase 4   | Decide with current pricing; requirements are in CLAUDE.md §N.                                                              |
-| D6  | Node runtime line.                                                                                                                | Phase 0   | **Confirmed 2026-10-18** ([ADR 006](adr/006-runtime-and-dependencies.md)): Node 24 "Krypton", the Active LTS on 2026-10-18. |
-| D7  | Accessible text variants for Deep Gold, success, and warning, which fail WCAG AA as text on light surfaces.                       | Phase 1   | **Confirmed 2026-10-18**: darkened variants in `design/tokens/paldora.tokens.json` (`color.accessible.*`).                  |
+| #   | Decision                                                                                                                          | Needed by | Recommendation                                                                                                                                                                                       |
+| --- | --------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Inside a shared Box, are a blocked user's **posts** hidden from the blocker? Legacy hides their Life Updates but not their posts. | Phase 2   | **Confirmed 2026-10-19** ([ADR 013](adr/013-directional-blocks.md)): hidden in both directions, neutral placeholder.                                                                                 |
+| D2  | Keep uploaded **originals**, which retain EXIF/GPS, after processing?                                                             | Phase 1   | **Confirmed 2026-10-18** ([ADR 011](adr/011-media-pipeline.md)): metadata-free re-encoded master; raw upload deleted.                                                                                |
+| D3  | Web styling approach.                                                                                                             | Phase 0   | **Confirmed 2026-10-18** ([ADR 005](adr/005-design-tokens-and-styling.md)): CSS Modules + generated tokens; no Tailwind.                                                                             |
+| D4  | Keep Supabase Auth as the identity provider.                                                                                      | Phase 0   | **Confirmed 2026-10-18** ([ADR 003](adr/003-supabase-identity.md)).                                                                                                                                  |
+| D5  | Production hosting target (not the free demo topology).                                                                           | Phase 4   | **Decided 2026-10-27:** Firebase App Hosting, region `europe-west4` ([ADR 023](adr/023-web-hosting-app-hosting.md)). Nothing deployed; bring-up is [staging-bringup](operations/staging-bringup.md). |
+| D6  | Node runtime line.                                                                                                                | Phase 0   | **Confirmed 2026-10-18** ([ADR 006](adr/006-runtime-and-dependencies.md)): Node 24 "Krypton", the Active LTS on 2026-10-18.                                                                          |
+| D7  | Accessible text variants for Deep Gold, success, and warning, which fail WCAG AA as text on light surfaces.                       | Phase 1   | **Confirmed 2026-10-18**: darkened variants in `design/tokens/paldora.tokens.json` (`color.accessible.*`).                                                                                           |
 
 ## Phase 0: Foundation (first milestone, detailed)
 
@@ -240,7 +240,8 @@ purpose, a keyboard-accessible viewer, no-orphan cleanup on post and Box
 deletion, a hardened reaper (unclaimed photos, dead-deletion retries, outbox
 retention), and fault-injection tests ([ADR 011](adr/011-media-pipeline.md)).
 
-**Not done:** D5 (production hosting) is still open. Nothing built here depends
+**Not done:** D5 (production hosting) is decided (App Hosting, `europe-west4`,
+[ADR 023](adr/023-web-hosting-app-hosting.md)) but nothing is deployed. Nothing built here depends
 on it, but a managed storage lifecycle policy and metrics-based alerting wait for
 it. Alerts today are error logs.
 

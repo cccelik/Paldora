@@ -1,7 +1,18 @@
 # ADR 020: Hosted staff grants
 
-Status: Proposed. Waits on D5 (hosted project and Blaze billing). Nothing here
-has been built or run against a hosted project.
+Status: Proposed. D5 is decided ([ADR 023](023-web-hosting-app-hosting.md)) but
+the hosted project and Blaze billing do not exist yet. The Cloud Run service is
+not built. Nothing here has been run against a hosted project.
+
+**Interim bootstrap (owner decision, 2026-10-27).** Before that service exists,
+the first staff grant uses `pnpm firebase:staff:hosted`
+(`packages/firebase-trusted/scripts/staff-grant-hosted.mjs`), owner-run only.
+It uses Application Default Credentials, requires typed project confirmation
+and an interactive typed phrase, reuses `NativeModeration.grantStaff`, and
+writes `breakGlass: true` on the audit row plus a `staff.grant.break_glass` log
+entry for the alarm. The identity is the free-text operator label plus the
+Cloud Audit Log principal, which is weaker than the `operatorRef` design above.
+Retire this script once `staff-grants` exists. Unverified until run hosted.
 
 ## Context
 

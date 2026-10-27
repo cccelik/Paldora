@@ -22,7 +22,8 @@
     "repair:media:local": "node scripts/repair-media.mjs",
     "repair:account:local": "node scripts/repair-account-lifecycle.mjs",
     "backfill:interaction-index:local": "node scripts/backfill-interaction-index.mjs",
-    "staff:grant:local": "node scripts/staff-grant.mjs"
+    "staff:grant:local": "node scripts/staff-grant.mjs",
+    "staff:grant:hosted": "node scripts/staff-grant-hosted.mjs"
   },
   "dependencies": {
     "@paldora/domain": "workspace:*",

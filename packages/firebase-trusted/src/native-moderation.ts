@@ -509,6 +509,7 @@ export class NativeModeration {
     operator: string,
     targetUid: string,
     role: 'moderator' | 'administrator',
+    options: { breakGlass?: boolean } = {},
   ): Promise<void> {
     if (
       !OPERATOR_LABEL.test(operator) ||
@@ -532,6 +533,7 @@ export class NativeModeration {
         role,
         previousStatus: (grant.get('status') as string | undefined) ?? null,
         previousRole: (grant.get('role') as string | undefined) ?? null,
+        ...(options.breakGlass === true ? { breakGlass: true } : {}),
         createdAt: now,
       });
       tx.set(grantRef, {

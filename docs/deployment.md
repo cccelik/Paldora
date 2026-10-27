@@ -46,10 +46,11 @@ Firestore ──> Cloud Functions v2 (apps/firebase-functions, europe-west4)
 - Region: every Function in `apps/firebase-functions/src/index.ts` is pinned
   to `europe-west4` with `maxInstances: 1`, and the media Cloud Tasks queue is
   addressed as `locations/europe-west4/functions/executeMediaJob`. The
-  Firestore database in `paldora-dev` is also `europe-west4`. Whether
-  `europe-west4` is the final choice for staging and production is not
-  recorded as a decision: the tracker still lists "select one supported EU
-  region" as open.
+  Firestore database in `paldora-dev` is also `europe-west4`. **Decided
+  2026-10-27:** `europe-west4` for staging and production
+  ([ADR 023](adr/023-web-hosting-app-hosting.md)). App Hosting lists
+  `europe-west4` as a backend location (checked 2026-10-27; **verify against
+  current official docs** before creating the backend).
 - Node 24 for the workspace (`.nvmrc`) and for Functions
   (`apps/firebase-functions/package.json` `engines.node: "24"`). Whether Node
   24 is a supported Cloud Functions runtime on the hosting date: **verify
@@ -57,20 +58,29 @@ Firestore ──> Cloud Functions v2 (apps/firebase-functions, europe-west4)
 
 ## What is deployed where
 
-| Component                   | Source                                                                   | Target                       | State today                                              |
-| --------------------------- | ------------------------------------------------------------------------ | ---------------------------- | -------------------------------------------------------- |
-| Firestore rules             | `firebase/firestore.rules` (via `firebase.json`)                         | Hosted Firestore             | Deny-all deployed to `paldora-dev`                       |
-| Firestore indexes           | `firebase/firestore.indexes.json` (31 `collectionGroup` entries)         | Hosted Firestore             | Hosted deployment of this file is not recorded           |
-| Storage rules               | `firebase/storage.rules` (deny-all)                                      | Cloud Storage                | No bucket enabled                                        |
-| Cloud Functions             | `apps/firebase-functions`                                                | Functions v2, `europe-west4` | Not deployed                                             |
-| Web server                  | `apps/web` (Next.js 16, `pnpm turbo run build --filter=@paldora/web...`) | **Undecided** (D5)           | Not deployed                                             |
-| Native rules (not deployed) | `firebase/firestore.native.rules` via `firebase.native.json`             | Local emulators only         | Direct-client prototype; hosted rules must stay deny-all |
+| Component                   | Source                                                           | Target                       | State today                                              |
+| --------------------------- | ---------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------- |
+| Firestore rules             | `firebase/firestore.rules` (via `firebase.json`)                 | Hosted Firestore             | Deny-all deployed to `paldora-dev`                       |
+| Firestore indexes           | `firebase/firestore.indexes.json` (31 `collectionGroup` entries) | Hosted Firestore             | Hosted deployment of this file is not recorded           |
+| Storage rules               | `firebase/storage.rules` (deny-all)                              | Cloud Storage                | No bucket enabled                                        |
+| Cloud Functions             | `apps/firebase-functions`                                        | Functions v2, `europe-west4` | Not deployed                                             |
+| Web server                  | `apps/web` (Next.js 16) with `apps/web/apphosting*.yaml`         | Firebase App Hosting (D5)    | Config committed; not deployed                           |
+| Native rules (not deployed) | `firebase/firestore.native.rules` via `firebase.native.json`     | Local emulators only         | Direct-client prototype; hosted rules must stay deny-all |
 
 Notes grounded in the config files:
 
 - `firebase.json` is the hosted config: deny-all Firestore and Storage rules,
-  the shared indexes file, and emulator ports. It has **no `functions`
-  block**, so a hosted Functions deploy configuration does not exist yet.
+  the shared indexes file, a `functions` block (source
+  `apps/firebase-functions`, codebase `paldora`, runtime `nodejs24`, predeploy
+  build) and emulator ports. The runtime value follows `engines.node: "24"`;
+  the Firebase Functions docs page last read listed only Node 22 and 20, while
+  Google Cloud runtime pages list `nodejs24` (some locales as preview):
+  **verify against current official docs**, and fall back to `nodejs22` in
+  both places if the CLI rejects it. **Known gap:** `@paldora/firebase-trusted`
+  is a `workspace:*` dependency, which Cloud Build cannot resolve from the
+  `apps/firebase-functions` source alone; a packaging step (for example
+  `pnpm deploy` output or bundling) is unresolved and must be solved before the
+  first Functions deploy. `pnpm hosted:check` guards this config.
 - `firebase.native.json` is the local config used by every emulator script
   (`--config firebase.native.json`). It points at the permissive
   `firestore.native.rules` and declares the Functions source
@@ -80,7 +90,9 @@ Notes grounded in the config files:
 - Web build and start: `pnpm turbo run build --filter=@paldora/web...` and
   `pnpm --filter @paldora/web start` (`next start` per `apps/web/package.json`;
   whether the chosen host uses it is part of D5).
-- There is no `.firebaserc` entry for staging or production.
+- There is no `.firebaserc` entry for staging or production. Create the alias
+  locally with `firebase use --add` after the project exists; never commit an
+  invented id.
 
 ### Deployed Functions
 
@@ -131,7 +143,7 @@ Names only; values live in the owning secret store or the untracked `.env`
 
 | Variable                                                                                                                       | Used by                 | Visibility                        | Notes                                                                                                                                                                                                                                                                                                   |
 | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PALDORA_ENV`                                                                                                                  | web                     | server                            | `local` for emulators; any other value selects hosted behavior (strict origin checks, HSTS, emulator hosts forbidden). The exact hosted values (`staging`, `production`) are not enforced by a parser in the web app.                                                                                   |
+| `PALDORA_ENV`                                                                                                                  | web                     | server                            | `local` for emulators; hosted values are `staging` and `production` (set in `apphosting.<env>.yaml`; `pnpm hosted:check` enforces them in committed files, and the web app fails closed on any other value).                                                                                            |
 | `FIREBASE_PROJECT_ID`                                                                                                          | web                     | **server-only**                   | Required. `demo-paldora` locally.                                                                                                                                                                                                                                                                       |
 | `FIREBASE_WEB_API_KEY`                                                                                                         | web                     | **server-only**                   | Required. Used server-side for the Auth REST sign-in. The client-bundle scan treats it as a forbidden marker, so it must not reach the browser.                                                                                                                                                         |
 | `FIREBASE_STORAGE_BUCKET`                                                                                                      | web, Functions          | **server-only**                   | Optional; defaults to `<project>.firebasestorage.app`. Set it if the bucket differs.                                                                                                                                                                                                                    |
@@ -175,7 +187,7 @@ changes, then code, then smoke test, and clean up later.
 
 1. **Verify.** Run the standard gates on the commit to be released:
    `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`,
-   `pnpm tokens:check`, `pnpm firebase:parity:check`, `pnpm build`,
+   `pnpm tokens:check`, `pnpm firebase:parity:check`, `pnpm hosted:check`, `pnpm build`,
    `pnpm scan:client-bundle`, and the emulator suites
    (`pnpm firebase:rules:check`, `pnpm firebase:trusted:test`,
    `pnpm firebase:native:test`, `pnpm firebase:local:flow:test`,
@@ -196,9 +208,9 @@ changes, then code, then smoke test, and clean up later.
      must tolerate new fields and new code must tolerate old documents.
 3. **Functions.** Deploy before web so triggers and scheduled repairs exist
    for any new job type the web will create. Deploy to the target project
-   explicitly, not by alias default. A hosted `functions` entry must first be
-   added to a hosted config (see "Not yet decided").
-4. **Web.** Deploy the Next.js server. Sessions are 7-day cookies verified
+   explicitly, not by alias default (`firebase.json` now has the `functions`
+   block; see the packaging gap above).
+4. **Web.** Roll out the App Hosting backend (root directory `apps/web`). Sessions are 7-day cookies verified
    server-side, so a web rollout does not need to sign people out.
 5. **Smoke test** (disposable provisioned accounts only): sign in, create a
    Box, post, upload and read a photo, check a notification, confirm a
@@ -259,20 +271,22 @@ changes, then code, then smoke test, and clean up later.
 
 Decided nothing here should be treated as settled:
 
-- **D5, web hosting.** The web server host is not chosen. Firebase App Hosting
-  was the planned candidate in the tracker ("Add App Hosting monorepo build
-  for Next.js"), but it needs a billing account, and
-  [ADR 014](adr/014-release-topology.md) is still `proposed`. The host
-  determines secrets, credentials, rollbacks, regions, and custom-domain TLS.
-  Its pnpm/Node 24 support and cold starts are unverified.
+- **D5, web hosting: decided** (Firebase App Hosting, `europe-west4`;
+  [ADR 023](adr/023-web-hosting-app-hosting.md)). It needs Blaze billing, and
+  [ADR 014](adr/014-release-topology.md) is still `proposed`. Unverified: pnpm
+  and Node 24 support in the App Hosting build, cold starts, rollout and
+  rollback mechanics, and custom-domain TLS. Bring-up steps are in
+  [staging bring-up](operations/staging-bringup.md); web config is
+  `apps/web/apphosting.yaml` plus `apphosting.staging.yaml` and
+  `apphosting.production.yaml` (checked by `pnpm hosted:check`).
 - **Moderator and appeal email.** No external appeal or moderation address is
   set. During private beta the invitation contact is the review path; do not
   present an unset address as a working appeal channel.
-- **Hosted moderator grant path.** Staff grants are audited only through a
-  local-emulator command. A hosted grant path is an open gate before hosted
-  moderation.
-- **Billing owner, budgets, alerts, staging and production projects, and the
-  final region.**
+- **Hosted moderator grant path.** The first administrator is granted by the
+  owner-run, flagged and alarmed break-glass script `pnpm firebase:staff:hosted`
+  ([ADR 020](adr/020-hosted-staff-grants.md)); the private `staff-grants`
+  service is not built. Neither has run against a hosted project.
+- **Billing owner, budgets, alerts, staging and production projects.**
 - **Hosted Functions config**, including per-function instance limits,
   retries and dead-letter handling for scheduled functions, and whether
   `maxInstances: 1` is acceptable.

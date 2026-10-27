@@ -37,6 +37,8 @@ jobs:
       - run: pnpm tokens:check
       - run: pnpm contract:native:check
       - run: pnpm firebase:parity:check
+      - run: pnpm hosted:check
+      - run: pnpm hosted:test
       - run: pnpm build
       - run: pnpm scan:client-bundle
 

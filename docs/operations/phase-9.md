@@ -20,7 +20,9 @@ unless `GCLOUD_PROJECT=demo-paldora` and `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
 and refuses if `GOOGLE_APPLICATION_CREDENTIALS` is set. Grants require an
 active account, revokes keep the grant with `status: revoked`, and each writes
 a `nativeModerationAudit` row (`staff.grant`/`staff.revoke`) with a non-email
-operator label. There is still no hosted grant path: building one is an open
+operator label. For the first hosted administrator only, the owner-run break-glass command
+`pnpm firebase:staff:hosted` exists (ADR 020; never run hosted; see
+[staging bring-up](staging-bringup.md) step 21). There is still no hosted grant path: building one is an open
 gate before hosted moderation. The e2e seed
 (`packages/firebase-trusted/scripts/seed-e2e.mjs`) still writes a grant
 directly, for disposable emulator data.

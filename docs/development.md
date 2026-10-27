@@ -59,15 +59,16 @@ The seed command requires running emulators and an email/password; see
 
 ## Verification
 
-| Command                                                  | Purpose                                                      |
-| -------------------------------------------------------- | ------------------------------------------------------------ |
-| `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` | Static, unit, and build gates                                |
-| `pnpm firebase:parity:check`                             | Rejects legacy runtime imports and old workspace services    |
-| `pnpm firebase:rules:check`                              | Hosted and native emulator rule checks                       |
-| `pnpm firebase:trusted:test`                             | Trusted Auth, Firestore, and Storage integration             |
-| `pnpm firebase:local:flow:test`                          | Functions and durable job flow                               |
-| `pnpm firebase:web:local:test`                           | Seeded production web build, desktop and 390px browser tests |
-| `pnpm scan:client-bundle`                                | Checks built browser assets for credentials                  |
+| Command                                                  | Purpose                                                                      |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` | Static, unit, and build gates                                                |
+| `pnpm firebase:parity:check`                             | Rejects legacy runtime imports and old workspace services                    |
+| `pnpm hosted:check` / `pnpm hosted:test`                 | Static guard for hosted config (App Hosting, Functions, rules) and its tests |
+| `pnpm firebase:rules:check`                              | Hosted and native emulator rule checks                                       |
+| `pnpm firebase:trusted:test`                             | Trusted Auth, Firestore, and Storage integration                             |
+| `pnpm firebase:local:flow:test`                          | Functions and durable job flow                                               |
+| `pnpm firebase:web:local:test`                           | Seeded production web build, desktop and 390px browser tests                 |
+| `pnpm scan:client-bundle`                                | Checks built browser assets for credentials                                  |
 
 Stop the manually running emulators before `pnpm firebase:web:local:test`, since
 the test starts its own emulators on the same ports. It seeds only those test

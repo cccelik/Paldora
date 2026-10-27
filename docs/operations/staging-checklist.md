@@ -20,11 +20,12 @@ Rules for using this list:
 
 ## A. Before any hosted work
 
-- [ ] Owner decides D5: where the Next.js web server runs
-      ([ADR 014](../adr/014-release-topology.md) is still `proposed`).
-- [ ] Owner decides the region for staging and production (the code pins
-      Functions to `europe-west4`; confirm Auth, Firestore, Storage and the web
-      host are compatible with it). **Verify against current official docs.**
+- [x] Owner decides D5: Firebase App Hosting (2026-10-27,
+      [ADR 023](../adr/023-web-hosting-app-hosting.md)). Ordered steps:
+      [staging bring-up](staging-bringup.md).
+- [x] Owner decides the region: `europe-west4` for staging and production
+      (2026-10-27). Still confirm Auth, Firestore, Storage and the App Hosting
+      backend accept it. **Verify against current official docs.**
 - [ ] Owner decides whether to move off Spark (the current owner decision is
       to stay on Spark). Required for scheduled functions, the Cloud Tasks
       media queue, Cloud Storage and App Hosting per `phase-9.md` and the
@@ -50,9 +51,8 @@ Rules for using this list:
 - [ ] Confirm Auth does not allow self-service account creation: accounts are
       created administratively and admitted by the trusted provisioning step.
       **Verify the Auth setting against current official docs.**
-- [ ] Add a hosted `functions` section to a hosted Firebase config
-      (`firebase.json` has none today). Never deploy with
-      `firebase.native.json`.
+- [x] `firebase.json` has a hosted `functions` section (codebase `paldora`);
+      `pnpm hosted:check` guards it. Never deploy with `firebase.native.json`.
 - [ ] Confirm exactly one place sets web environment variables and that
       `FIREBASE_AUTH_EMULATOR_HOST`, `FIRESTORE_EMULATOR_HOST`,
       `FIREBASE_STORAGE_EMULATOR_HOST` and `FIREBASE_FUNCTIONS_EMULATOR_HOST`
@@ -293,7 +293,9 @@ Rules for using this list:
 
 ## N. Moderator operations
 
-- [ ] A hosted, audited path to grant and revoke staff exists. Today
+- [ ] A hosted, audited path to grant and revoke staff exists (the break-glass
+      script covers only the first administrator grant; revocation and the
+      `staff-grants` service remain open). Today
       `pnpm firebase:staff:local` is emulator-only and refuses to run against
       anything but `demo-paldora`. Build and review the hosted path first.
 - [ ] Moderator account holds an active `nativeStaffGrants/{uid}` document and

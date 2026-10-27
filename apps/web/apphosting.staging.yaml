@@ -1,0 +1,16 @@
+# App Hosting overlay for staging. Merged over apphosting.yaml (verify naming and
+# precedence against current official docs:
+# https://firebase.google.com/docs/app-hosting/configure).
+#
+# OWNER ACTION at bring-up (docs/operations/staging-bringup.md): add the two
+# entries below that are commented out, using the REAL project id and the
+# backend's exact HTTPS origin. They are intentionally absent from the
+# repository until those values exist; no placeholder ids are committed.
+#   - variable: FIREBASE_PROJECT_ID
+#     value: <real staging project id>
+#   - variable: NEXT_PUBLIC_WEB_URL
+#     value: https://<exact staging origin>
+# The web app fails closed at the first Firebase request if they are missing.
+env:
+  - variable: PALDORA_ENV
+    value: staging

@@ -301,4 +301,23 @@ describe('trusted moderation', () => {
     expect(await audit(suspended)).toHaveLength(0);
     expect(await audit(target)).toHaveLength(2);
   });
+  it('flags a break-glass staff grant in its audit row (hosted bootstrap, ADR 020)', async () => {
+    const target = await user();
+    await moderation.grantStaff('owner.main', target, 'administrator', {
+      breakGlass: true,
+    });
+    const rows = (
+      await db
+        .collection('nativeModerationAudit')
+        .where('targetUid', '==', target)
+        .get()
+    ).docs;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.data()).toMatchObject({
+      action: 'staff.grant',
+      operator: 'owner.main',
+      role: 'administrator',
+      breakGlass: true,
+    });
+  });
 });
