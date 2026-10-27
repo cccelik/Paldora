@@ -1,0 +1,42 @@
+{
+  "callable": "listMyModerationNotices",
+  "request": {
+    "valid": [{}],
+    "invalid": [[]]
+  },
+  "response": {
+    "valid": [
+      {
+        "items": []
+      },
+      {
+        "items": [
+          {
+            "targetKind": "post",
+            "targetId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "originalCreatedAt": 1790000000000
+          },
+          {
+            "targetKind": "comment",
+            "targetId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "originalCreatedAt": 1790000000001
+          }
+        ]
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

@@ -25,6 +25,9 @@ import {
   NativeAccounts,
   NativeAccountLifecycle,
   NativeAccountError,
+  NativeLifecycleError,
+  NativeWebSessions,
+  NativeWebSessionError,
   NativeFriendships,
   NativeFriendshipError,
   NativeHomeFeed,
@@ -65,7 +68,8 @@ import { observedJob } from './observed.js';
 import { boxView, NativeViews } from './native-views.js';
 import { handleMediaRead, handleMediaUpload } from './media-http.js';
 import { isoVersion, roomPhotos, roomView } from './native-room-views.js';
-import type { native } from '@paldora/validation';
+import { native } from '@paldora/validation';
+import { handleAccountExportDownload } from './account-export-http.js';
 
 if (getApps().length === 0) initializeApp();
 const db = getFirestore();
@@ -439,7 +443,25 @@ function readError(
   return new HttpsError('not-found', 'Unavailable.');
 }
 
+/**
+ * Password, session and deletion failures. A wrong or unusable password and
+ * every other session failure share `permission-denied`: the client never
+ * learns which factor failed. Ownership and window rules mirror the web copy.
+ */
+function accountSafetyError(error: unknown): HttpsError | null {
+  if (error instanceof NativeWebSessionError)
+    return new HttpsError('permission-denied', 'Action unavailable.');
+  if (!(error instanceof NativeLifecycleError)) return null;
+  if (error.code === 'REAUTH_FAILED')
+    return new HttpsError('permission-denied', 'Action unavailable.');
+  if (error.code === 'UNAVAILABLE')
+    return new HttpsError('not-found', 'Action unavailable.');
+  return new HttpsError('failed-precondition', 'Action unavailable.');
+}
+
 function accountReadError(error: unknown): HttpsError | null {
+  const safety = accountSafetyError(error);
+  if (safety) return safety;
   if (error instanceof NativeProfileError) return profileError(error);
   if (error instanceof NativeMediaError) return mediaError(error);
   if (error instanceof NativeAccountError)
@@ -1334,6 +1356,178 @@ export const getRoomMemorySummary = onCall(
   memorySummary('getRoomMemorySummary', roomScope),
 );
 
+/** Server-only Auth REST boundary for reauthentication (same class as the web). */
+let webSessionsInstance: NativeWebSessions | undefined;
+function webSessions(): NativeWebSessions {
+  if (webSessionsInstance) return webSessionsInstance;
+  const local =
+    process.env.FUNCTIONS_EMULATOR === 'true' &&
+    process.env.GCLOUD_PROJECT === 'demo-paldora';
+  // The Auth emulator ignores the key; hosted deploys must configure it.
+  const apiKey =
+    process.env.FIREBASE_WEB_API_KEY ?? (local ? 'demo-api-key' : undefined);
+  if (!apiKey)
+    throw new HttpsError('failed-precondition', 'Action unavailable.');
+  const restBaseUrl = local
+    ? `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST ?? '127.0.0.1:9099'}/identitytoolkit.googleapis.com`
+    : 'https://identitytoolkit.googleapis.com';
+  webSessionsInstance = new NativeWebSessions(
+    getAuth(),
+    db,
+    restBaseUrl,
+    apiKey,
+  );
+  return webSessionsInstance;
+}
+
+const reauthenticate = (uid: string, email: string, password: string) =>
+  webSessions().reauthenticate(uid, email, password);
+const signInAgain = { ok: true, signInRequired: true } as const;
+const epoch = (value: string | null) =>
+  value === null ? null : Date.parse(value);
+
+type ExportView = Awaited<ReturnType<NativeAccountLifecycle['latestExport']>>;
+function exportView(row: NonNullable<ExportView['export']>) {
+  return {
+    id: row.id,
+    status: row.status,
+    createdAt: Date.parse(row.createdAt),
+    readyAt: epoch(row.readyAt),
+    expiresAt: epoch(row.expiresAt),
+  };
+}
+type DeletionView = NonNullable<
+  Awaited<ReturnType<NativeAccountLifecycle['currentDeletion']>>['deletion']
+>;
+function deletionView(row: DeletionView) {
+  return {
+    id: row.id,
+    status: row.status,
+    requestedAt: Date.parse(row.requestedAt),
+    dueAt: Date.parse(row.dueAt),
+    cancelledAt: epoch(row.cancelledAt),
+  };
+}
+
+export const changeMyPassword = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const currentPassword = field(request.data, 'currentPassword', 1_024);
+  const newPassword = field(request.data, 'newPassword', 1_024);
+  if (newPassword.length < 10)
+    throw reasoned('invalid-argument', 'Invalid password.', 'INVALID_INPUT');
+  return limited(uid, 'changeMyPassword', 5, async () => {
+    const email = (await getAuth().getUser(uid)).email;
+    if (!email)
+      throw new HttpsError('permission-denied', 'Action unavailable.');
+    await webSessions().changePassword(
+      uid,
+      email,
+      currentPassword,
+      newPassword,
+    );
+    callableSessions.forget(uid);
+    return signInAgain;
+  });
+});
+
+export const signOutEverywhere = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'signOutEverywhere', 5, async () => {
+    await webSessions().signOutEverywhere(uid);
+    callableSessions.forget(uid);
+    return signInAgain;
+  });
+});
+
+export const requestAccountExport = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'requestAccountExport', 5, async () => ({
+    export: exportView(await accountLifecycle.requestExport(uid)),
+  }));
+});
+
+export const getAccountExport = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'getAccountExport', 120, async () => {
+    const { export: latest } = await accountLifecycle.latestExport(uid);
+    return { export: latest ? exportView(latest) : null };
+  });
+});
+
+export const getAccountDeletion = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'getAccountDeletion', 120, async () => {
+    const { deletion } = await accountLifecycle.currentDeletion(uid);
+    return { deletion: deletion ? deletionView(deletion) : null };
+  });
+});
+
+export const requestAccountDeletion = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const password = field(request.data, 'password', 256);
+  return limited(uid, 'requestAccountDeletion', 5, async () => ({
+    deletion: deletionView(
+      await accountLifecycle.requestDeletion(uid, password, reauthenticate),
+    ),
+  }));
+});
+
+export const cancelAccountDeletion = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const password = field(request.data, 'password', 256);
+  return limited(uid, 'cancelAccountDeletion', 5, async () => ({
+    deletion: deletionView(
+      await accountLifecycle.cancelDeletion(uid, password, reauthenticate),
+    ),
+  }));
+});
+
+export const reportBoxComment = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const parsed = native.reportBoxCommentInputSchema.safeParse(request.data);
+  if (!parsed.success)
+    throw reasoned('invalid-argument', 'Invalid report.', 'INVALID_INPUT');
+  const { commentId, category, detail } = parsed.data;
+  return limited(uid, 'reportBoxComment', 20, async () => ({
+    reportId: (
+      await moderation.createReport(uid, {
+        targetKind: 'comment',
+        targetId: commentId,
+        category,
+        detail,
+      })
+    ).id,
+  }));
+});
+
+export const listMyReports = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const parsed = native.listMyReportsInputSchema.safeParse(request.data ?? {});
+  if (!parsed.success)
+    throw reasoned('invalid-argument', 'Invalid cursor.', 'INVALID_INPUT');
+  return limited(uid, 'listMyReports', 120, async () => {
+    const page = await moderation.myReports(uid, parsed.data.cursor, 20);
+    return {
+      items: page.items.map((item) => ({
+        id: item.id,
+        targetKind: item.targetKind,
+        targetId: item.targetId,
+        category: item.category,
+        status: item.status,
+        createdAt: item.createdAt,
+      })),
+      nextCursor: page.nextCursor,
+    };
+  });
+});
+
+export const listMyModerationNotices = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'listMyModerationNotices', 120, async () => ({
+    items: await moderation.notices(uid),
+  }));
+});
+
 const mediaHttp = {
   verifyIdToken: async (token: string) => {
     const decoded = await getAuth().verifyIdToken(token);
@@ -1369,6 +1563,22 @@ export const mediaRead = onRequest(
     cors: false,
   },
   (request, response) => handleMediaRead(request, response, mediaHttp),
+);
+
+/** `GET /{exportId}`: the caller's latest ready archive, streamed. */
+export const accountExportDownload = onRequest(
+  {
+    region: 'europe-west4',
+    maxInstances: 2,
+    memory: '512MiB',
+    timeoutSeconds: 300,
+    cors: false,
+  },
+  (request, response) =>
+    handleAccountExportDownload(request, response, {
+      ...mediaHttp,
+      lifecycle: accountLifecycle,
+    }),
 );
 
 /** Compile-time proof that the exports above and `callableNames` agree. */
@@ -1435,4 +1645,14 @@ void ({
   getBoxMemorySummary,
   listRoomMemories,
   getRoomMemorySummary,
+  changeMyPassword,
+  signOutEverywhere,
+  requestAccountExport,
+  getAccountExport,
+  getAccountDeletion,
+  requestAccountDeletion,
+  cancelAccountDeletion,
+  reportBoxComment,
+  listMyReports,
+  listMyModerationNotices,
 } satisfies Record<CallableName, unknown>);

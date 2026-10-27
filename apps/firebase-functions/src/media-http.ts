@@ -42,7 +42,7 @@ export interface MediaHttpDeps {
   media: Pick<NativeMedia, 'upload' | 'read'>;
 }
 
-const WINDOW_MS = 60 * 60 * 1_000;
+export const WINDOW_MS = 60 * 60 * 1_000;
 const endpoint = (name: string) => {
   const found = native.nativeHttpEndpoints.find((item) => item.name === name);
   if (!found) throw new Error(`${name} is not in the native HTTP registry`);
@@ -50,10 +50,10 @@ const endpoint = (name: string) => {
 };
 const uploadSpec = endpoint('mediaUpload');
 const readSpec = endpoint('mediaRead');
-const uuidPattern =
+export const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
-const errorCodes: Record<number, string> = {
+export const errorCodes: Record<number, string> = {
   400: 'invalid-argument',
   401: 'unauthenticated',
   404: 'not-found',
@@ -64,7 +64,7 @@ const errorCodes: Record<number, string> = {
   503: 'unavailable',
 };
 
-function fail(
+export function fail(
   res: MediaHttpResponse,
   status: number,
   allow?: string,
@@ -81,7 +81,7 @@ function fail(
   return res;
 }
 
-function headerValue(
+export function headerValue(
   request: MediaHttpRequest,
   name: string,
 ): string | undefined {
@@ -89,12 +89,12 @@ function headerValue(
   return Array.isArray(value) ? value[0] : value;
 }
 
-class Unauthenticated extends Error {}
+export class Unauthenticated extends Error {}
 
 /** Same gate as a callable: valid ID token, then the session-epoch check. */
-async function authenticate(
+export async function authenticate(
   request: MediaHttpRequest,
-  deps: MediaHttpDeps,
+  deps: Pick<MediaHttpDeps, 'verifyIdToken' | 'sessions'>,
 ): Promise<string> {
   const match = /^Bearer (\S+)$/iu.exec(
     headerValue(request, 'authorization') ?? '',
@@ -116,7 +116,7 @@ async function authenticate(
   return decoded.uid;
 }
 
-function segments(request: MediaHttpRequest): string[] {
+export function segments(request: MediaHttpRequest): string[] {
   return request.path.split('/').filter(Boolean);
 }
 

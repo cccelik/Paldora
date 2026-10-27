@@ -138,7 +138,7 @@ async function client(username: string, verified = true, admitted = true) {
     );
     await reserve({ username });
   }
-  return { uid, db, functions, auth };
+  return { uid, db, functions, auth, email, password };
 }
 
 describe('local Firebase Box vertical flow', () => {
@@ -1901,6 +1901,408 @@ describe('native private media over callables and authenticated HTTP', () => {
       404,
     );
   }, 120_000);
+});
+
+describe('native account safety: passwords, sessions, export, deletion, reports', () => {
+  type Client = Awaited<ReturnType<typeof client>>;
+  const base = 'http://127.0.0.1:5001/demo-paldora/europe-west4';
+  const call = <Response = Record<string, unknown>>(
+    user: Client,
+    name: string,
+  ) => httpsCallable<Record<string, unknown>, Response>(user.functions, name);
+  const tokenOf = (user: Client) => user.auth.currentUser!.getIdToken();
+  const download = (id: string, token: string | null, method = 'GET') =>
+    fetch(`${base}/accountExportDownload/${id}`, {
+      method,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  const name = (prefix: string) => `${prefix}_${randomUUID().slice(0, 8)}`;
+  const pause = (ms: number) =>
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  /**
+   * The serving instance forgets a rotated epoch at once, but another function
+   * instance may hold the old one for the 10-second epoch cache (the emulator
+   * runs each function in its own worker). Refusal must land within that bound.
+   */
+  async function refusedWithin(user: Client, token: string) {
+    let refused = false;
+    for (let attempt = 0; attempt < 24 && !refused; attempt += 1) {
+      const code = await call(
+        user,
+        'getMyProfile',
+      )({}).then(
+        () => 'accepted',
+        (error: { code?: string }) => error.code,
+      );
+      refused = code === 'functions/unauthenticated';
+
+      if (!refused) await pause(500);
+    }
+    expect(refused, 'an older session was accepted for over 12 seconds').toBe(
+      true,
+    );
+    expect((await download(randomUUID(), token)).status).toBe(401);
+  }
+
+  it('changes the password with reauth and refuses every older token', async () => {
+    const user = await client(name('pw'));
+    const oldToken = await tokenOf(user);
+    const newPassword = `Changed-${randomUUID()}!`;
+    const change = call(user, 'changeMyPassword');
+
+    await expect(
+      change({ currentPassword: 'wrong-password', newPassword }),
+    ).rejects.toMatchObject({ code: 'functions/permission-denied' });
+    await expect(
+      change({ currentPassword: user.password, newPassword: 'short' }),
+    ).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+      details: { reason: 'INVALID_INPUT' },
+    });
+    // Nothing changed yet: the old token and password still work.
+    await call(user, 'getMyProfile')({});
+
+    expect(
+      (await change({ currentPassword: user.password, newPassword })).data,
+    ).toEqual({ ok: true, signInRequired: true });
+
+    // The callable gate and the HTTP gate both refuse the pre-change token.
+    await refusedWithin(user, oldToken);
+    // Old password is dead, new one works and mints a usable session.
+    await expect(
+      signInWithEmailAndPassword(user.auth, user.email, user.password),
+    ).rejects.toThrow();
+    await signInWithEmailAndPassword(user.auth, user.email, newPassword);
+    await call(user, 'getMyProfile')({});
+  }, 60_000);
+
+  it('signs out everywhere without a password', async () => {
+    const user = await client(name('so'));
+    const oldToken = await tokenOf(user);
+    expect((await call(user, 'signOutEverywhere')({})).data).toEqual({
+      ok: true,
+      signInRequired: true,
+    });
+    await refusedWithin(user, oldToken);
+    // The password is unchanged; signing in again restores access.
+    await signInWithEmailAndPassword(user.auth, user.email, user.password);
+    await call(user, 'getMyProfile')({});
+    await expect(
+      httpsCallable(
+        (await client(name('un'), true, false)).functions,
+        'signOutEverywhere',
+      )({}),
+    ).rejects.toMatchObject({ code: 'functions/permission-denied' });
+  }, 60_000);
+
+  it('rate limits password guessing', async () => {
+    const user = await client(name('rl'));
+    const request = call(user, 'requestAccountDeletion');
+    for (let attempt = 0; attempt < 5; attempt += 1)
+      await expect(request({ password: 'wrong' })).rejects.toMatchObject({
+        code: 'functions/permission-denied',
+      });
+    await expect(request({ password: user.password })).rejects.toMatchObject({
+      code: 'functions/resource-exhausted',
+      details: { reason: 'RATE_LIMITED' },
+    });
+  }, 60_000);
+
+  it('exports and downloads only the caller latest ready archive', async () => {
+    const alice = await client(name('exa'));
+    const bob = await client(name('exb'));
+    expect((await call(alice, 'getAccountExport')({})).data).toEqual({
+      export: null,
+    });
+    const first = (
+      await call<{ export: { id: string; status: string } }>(
+        alice,
+        'requestAccountExport',
+      )({})
+    ).data.export;
+    expect(first.status).toBe('ready');
+    expect(
+      (await call<{ export: { id: string } }>(alice, 'getAccountExport')({}))
+        .data.export.id,
+    ).toBe(first.id);
+
+    const ok = await download(first.id, await tokenOf(alice));
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get('cache-control')).toBe('private, no-store');
+    expect(ok.headers.get('content-disposition')).toBe(
+      'attachment; filename="paldora-data.json"',
+    );
+    expect(ok.headers.get('content-type')).toContain('application/json');
+    const archive = (await ok.json()) as Record<string, unknown>;
+    expect(JSON.stringify(archive)).toContain(alice.uid);
+    expect(JSON.stringify(archive)).not.toContain(bob.uid);
+
+    // Absence and denial share one 404 body: foreign, guessed, malformed.
+    const bobToken = await tokenOf(bob);
+    const denied = await download(first.id, bobToken);
+    const guessed = await download(randomUUID(), bobToken);
+    const malformed = await download('not-an-id', bobToken);
+    for (const response of [denied, guessed, malformed])
+      expect(response.status).toBe(404);
+    const body = await denied.text();
+    expect(await guessed.text()).toBe(body);
+    expect(await malformed.text()).toBe(body);
+    expect(denied.headers.get('cache-control')).toBe('private, no-store');
+    expect((await download(first.id, null)).status).toBe(401);
+    expect((await download(first.id, 'garbage')).status).toBe(401);
+    expect(
+      (await download(first.id, await tokenOf(alice), 'POST')).status,
+    ).toBe(405);
+
+    // A newer export supersedes the older id, exactly like the web route.
+    const second = (
+      await call<{ export: { id: string } }>(alice, 'requestAccountExport')({})
+    ).data.export;
+    expect(second.id).not.toBe(first.id);
+    expect((await download(first.id, await tokenOf(alice))).status).toBe(404);
+    expect((await download(second.id, await tokenOf(alice))).status).toBe(200);
+    // Expiry closes the download.
+    await adminDb
+      .collection('nativeExports')
+      .doc(second.id)
+      .update({ expiresAt: Date.now() - 1_000 });
+    expect((await download(second.id, await tokenOf(alice))).status).toBe(404);
+    expect(
+      (
+        await call<{ export: { status: string } }>(
+          alice,
+          'getAccountExport',
+        )({})
+      ).data.export.status,
+    ).toBe('expired');
+  }, 90_000);
+
+  it('applies the web deletion rules: reauth, owned Boxes, grace window, generations', async () => {
+    type Deletion = {
+      deletion: {
+        id: string;
+        status: string;
+        requestedAt: number;
+        dueAt: number;
+      };
+    };
+    const owner = await client(name('dlo'));
+    await call(owner, 'createBox')({ name: 'Owned Box' });
+    await expect(
+      call(owner, 'requestAccountDeletion')({ password: owner.password }),
+    ).rejects.toMatchObject({ code: 'functions/failed-precondition' });
+    expect((await call(owner, 'getAccountDeletion')({})).data).toEqual({
+      deletion: null,
+    });
+
+    const user = await client(name('dlu'));
+    expect((await call(user, 'getAccountDeletion')({})).data).toEqual({
+      deletion: null,
+    });
+    await expect(
+      call(user, 'requestAccountDeletion')({ password: 'wrong' }),
+    ).rejects.toMatchObject({ code: 'functions/permission-denied' });
+    // Another account's password does not authorize this account.
+    await expect(
+      call(user, 'requestAccountDeletion')({ password: owner.password }),
+    ).rejects.toMatchObject({ code: 'functions/permission-denied' });
+    await expect(
+      call(user, 'cancelAccountDeletion')({ password: user.password }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+
+    const requested = (
+      await call<Deletion>(
+        user,
+        'requestAccountDeletion',
+      )({
+        password: user.password,
+      })
+    ).data.deletion;
+    expect(requested.status).toBe('pending');
+    expect(requested.dueAt - requested.requestedAt).toBe(
+      7 * 24 * 60 * 60 * 1_000,
+    );
+    // Repeating while pending is idempotent: same generation.
+    expect(
+      (
+        await call<Deletion>(
+          user,
+          'requestAccountDeletion',
+        )({
+          password: user.password,
+        })
+      ).data.deletion.id,
+    ).toBe(requested.id);
+    expect(
+      (await call<Deletion>(user, 'getAccountDeletion')({})).data.deletion,
+    ).toMatchObject({ id: requested.id, status: 'pending' });
+
+    await expect(
+      call(user, 'cancelAccountDeletion')({ password: 'wrong' }),
+    ).rejects.toMatchObject({ code: 'functions/permission-denied' });
+    // At the deadline the window is closed, even with the right password.
+    const ref = adminDb.collection('nativeDeletionRequests').doc(user.uid);
+    await ref.update({ dueAt: Date.now() - 1_000 });
+    await expect(
+      call(user, 'cancelAccountDeletion')({ password: user.password }),
+    ).rejects.toMatchObject({ code: 'functions/failed-precondition' });
+    await ref.update({ dueAt: requested.dueAt });
+
+    const cancelled = (
+      await call<Deletion>(
+        user,
+        'cancelAccountDeletion',
+      )({
+        password: user.password,
+      })
+    ).data.deletion;
+    expect(cancelled).toMatchObject({ id: requested.id, status: 'cancelled' });
+    expect((await call(user, 'getAccountDeletion')({})).data).toEqual({
+      deletion: null,
+    });
+    await expect(
+      call(user, 'cancelAccountDeletion')({ password: user.password }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    // A new request after cancelling starts a new generation.
+    const again = (
+      await call<Deletion>(
+        user,
+        'requestAccountDeletion',
+      )({
+        password: user.password,
+      })
+    ).data.deletion;
+    expect(again.id).not.toBe(requested.id);
+  }, 90_000);
+
+  it('reports comments, lists own receipts and owner notices without leaking', async () => {
+    type Receipt = {
+      id: string;
+      targetKind: string;
+      targetId: string;
+      status: string;
+    };
+    const alice = await client(name('rpa'));
+    const bobName = name('rpb');
+    const bob = await client(bobName);
+    const outsider = await client(name('rpc'));
+    const boxId = (
+      await call<{ id: string }>(alice, 'createBox')({ name: 'Report Box' })
+    ).data.id;
+    const invite = await call<{ invitationId: string }>(
+      alice,
+      'inviteBox',
+    )({
+      boxId,
+      username: bobName,
+    });
+    await call(
+      bob,
+      'acceptBoxInvitation',
+    )({
+      invitationId: invite.data.invitationId,
+    });
+    const postId = (
+      await call<{ postId: string }>(
+        alice,
+        'createBoxPost',
+      )({
+        boxId,
+        text: 'Post',
+      })
+    ).data.postId;
+    const commentId = (
+      await call<{ commentId: string }>(
+        bob,
+        'createBoxComment',
+      )({
+        boxId,
+        postId,
+        text: 'A comment',
+      })
+    ).data.commentId;
+
+    const report = call<{ reportId: string }>(alice, 'reportBoxComment');
+    await expect(
+      report({ commentId, category: 'bullying', detail: null }),
+    ).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+      details: { reason: 'INVALID_INPUT' },
+    });
+    // Outsiders and guessed ids are indistinguishable.
+    const outsiderReport = call(outsider, 'reportBoxComment');
+    const hidden = await outsiderReport({
+      commentId,
+      category: 'spam',
+      detail: null,
+    }).catch((error: unknown) => error);
+    const guessed = await outsiderReport({
+      commentId: randomUUID(),
+      category: 'spam',
+      detail: null,
+    }).catch((error: unknown) => error);
+    expect(hidden).toMatchObject({ code: 'functions/not-found' });
+    expect(guessed).toMatchObject({ code: 'functions/not-found' });
+    expect((hidden as Error).message).toBe((guessed as Error).message);
+
+    const reportId = (
+      await report({
+        commentId,
+        category: 'spam',
+        detail: 'Synthetic reason for the flow test.',
+      })
+    ).data.reportId;
+    // Repeating is idempotent.
+    expect(
+      (await report({ commentId, category: 'spam', detail: null })).data
+        .reportId,
+    ).toBe(reportId);
+
+    const mine = call<{ items: Receipt[]; nextCursor: string | null }>(
+      alice,
+      'listMyReports',
+    );
+    expect((await mine({})).data.items).toMatchObject([
+      {
+        id: reportId,
+        targetKind: 'comment',
+        targetId: commentId,
+        status: 'open',
+      },
+    ]);
+    // Receipts are private: the reported author and others see none.
+    expect(
+      (await call<{ items: Receipt[] }>(bob, 'listMyReports')({})).data.items,
+    ).toEqual([]);
+    await expect(mine({ cursor: 'bad' })).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+    });
+    await expect(mine({ cursor: randomUUID() })).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+    });
+
+    // The comment owner learns only after staff hide it.
+    const notices = call<{
+      items: Array<{ targetKind: string; targetId: string }>;
+    }>(bob, 'listMyModerationNotices');
+    expect((await notices({})).data.items).toEqual([]);
+    const staff = await client(name('rpm'));
+    await moderationMaintenance.grantStaff('ops.local', staff.uid, 'moderator');
+    await moderationMaintenance.actOnCase(staff.uid, reportId, {
+      action: 'hide',
+      reason: 'Synthetic hide for the flow test.',
+      idempotencyKey: randomUUID(),
+    });
+    expect((await notices({})).data.items).toMatchObject([
+      { targetKind: 'comment', targetId: commentId },
+    ]);
+    expect(
+      (await call<{ items: unknown[] }>(alice, 'listMyModerationNotices')({}))
+        .data.items,
+    ).toEqual([]);
+  }, 90_000);
 });
 
 describe('native contract coverage of this flow', () => {

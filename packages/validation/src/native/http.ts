@@ -85,4 +85,27 @@ export const nativeHttpEndpoints: readonly NativeHttpEndpoint[] = [
       '503': 'Storage or the backing store is unavailable.',
     },
   },
+  {
+    name: 'accountExportDownload',
+    method: 'GET',
+    path: '/{exportId}',
+    auth: 'Bearer Firebase ID token',
+    limit: { scope: 'accountExportDownload', perHour: 20 },
+    requestHeaders: { Authorization: 'Bearer <Firebase ID token>' },
+    responseHeaders: {
+      'Cache-Control': 'private, no-store',
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="paldora-data.json"',
+      'X-Content-Type-Options': 'nosniff',
+    },
+    statuses: {
+      '200': 'The paldora-json-v1 archive of the caller (streamed).',
+      '401': 'Missing, invalid or ended session.',
+      '404':
+        'Unknown, foreign, not-latest, pending, expired or unavailable export (indistinguishable).',
+      '405': 'Method is not GET.',
+      '429': 'Rate limited.',
+      '503': 'Storage or the backing store is unavailable.',
+    },
+  },
 ];

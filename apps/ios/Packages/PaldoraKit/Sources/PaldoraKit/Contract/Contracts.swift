@@ -64,6 +64,16 @@ public enum Contracts {
     public enum GetBoxMemorySummary: CallableContract { public typealias Request = BoxMemorySummaryRequest; public typealias Response = MemorySummary; public static let name = CallableName.getBoxMemorySummary }
     public enum ListRoomMemories: CallableContract { public typealias Request = ListRoomMemoriesRequest; public typealias Response = Page<MemoryItem>; public static let name = CallableName.listRoomMemories }
     public enum GetRoomMemorySummary: CallableContract { public typealias Request = RoomMemorySummaryRequest; public typealias Response = MemorySummary; public static let name = CallableName.getRoomMemorySummary }
+    public enum ChangeMyPassword: CallableContract { public typealias Request = ChangeMyPasswordRequest; public typealias Response = SessionEndedResponse; public static let name = CallableName.changeMyPassword }
+    public enum SignOutEverywhere: CallableContract { public typealias Request = EmptyRequest; public typealias Response = SessionEndedResponse; public static let name = CallableName.signOutEverywhere }
+    public enum RequestAccountExport: CallableContract { public typealias Request = EmptyRequest; public typealias Response = RequestAccountExportResponse; public static let name = CallableName.requestAccountExport }
+    public enum GetAccountExport: CallableContract { public typealias Request = EmptyRequest; public typealias Response = GetAccountExportResponse; public static let name = CallableName.getAccountExport }
+    public enum GetAccountDeletion: CallableContract { public typealias Request = EmptyRequest; public typealias Response = GetAccountDeletionResponse; public static let name = CallableName.getAccountDeletion }
+    public enum RequestAccountDeletion: CallableContract { public typealias Request = PasswordConfirmationRequest; public typealias Response = AccountDeletionResponse; public static let name = CallableName.requestAccountDeletion }
+    public enum CancelAccountDeletion: CallableContract { public typealias Request = PasswordConfirmationRequest; public typealias Response = AccountDeletionResponse; public static let name = CallableName.cancelAccountDeletion }
+    public enum ReportBoxComment: CallableContract { public typealias Request = ReportBoxCommentRequest; public typealias Response = ReportBoxCommentResponse; public static let name = CallableName.reportBoxComment }
+    public enum ListMyReports: CallableContract { public typealias Request = CursorRequest; public typealias Response = Page<ReportReceipt>; public static let name = CallableName.listMyReports }
+    public enum ListMyModerationNotices: CallableContract { public typealias Request = EmptyRequest; public typealias Response = ModerationNoticesResponse; public static let name = CallableName.listMyModerationNotices }
 
     public static let all: [any CallableContract.Type] = [
         BeginBoxDeletion.self,
@@ -128,5 +138,15 @@ public enum Contracts {
         GetBoxMemorySummary.self,
         ListRoomMemories.self,
         GetRoomMemorySummary.self,
+        ChangeMyPassword.self,
+        SignOutEverywhere.self,
+        RequestAccountExport.self,
+        GetAccountExport.self,
+        GetAccountDeletion.self,
+        RequestAccountDeletion.self,
+        CancelAccountDeletion.self,
+        ReportBoxComment.self,
+        ListMyReports.self,
+        ListMyModerationNotices.self,
     ]
 }

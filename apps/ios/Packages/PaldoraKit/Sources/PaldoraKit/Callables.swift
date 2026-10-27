@@ -19,6 +19,10 @@ public enum CallableName: String, CaseIterable, Hashable, Sendable {
     case getMyRoom, getRoom, updateMyRoom, updateMyRoomWidgets, updateMyRoomTopFriends, listRoomPhotos
     case listMyMemories, getMyMemorySummary, listBoxMemories, getBoxMemorySummary
     case listRoomMemories, getRoomMemorySummary
+    case changeMyPassword, signOutEverywhere
+    case requestAccountExport, getAccountExport
+    case getAccountDeletion, requestAccountDeletion, cancelAccountDeletion
+    case reportBoxComment, listMyReports, listMyModerationNotices
 }
 
 /// JSON in, JSON out. The app target implements this with Firebase Functions
@@ -288,5 +292,43 @@ extension PaldoraAPI {
     }
     public func hideReportedPost(reportId: String) async throws -> OkResponse {
         try await perform(Contracts.HideReportedPost.self, HideReportedPostRequest(reportId: reportId))
+    }
+
+    // Password and sessions (both end every older session: sign in again)
+    public func changeMyPassword(_ request: ChangeMyPasswordRequest) async throws -> SessionEndedResponse {
+        try await perform(Contracts.ChangeMyPassword.self, request)
+    }
+    public func signOutEverywhere() async throws -> SessionEndedResponse {
+        try await perform(Contracts.SignOutEverywhere.self, EmptyRequest())
+    }
+
+    // Account export (bytes: GET `accountExportDownload/{exportId}` with the ID token)
+    public func requestAccountExport() async throws -> AccountExport {
+        try await perform(Contracts.RequestAccountExport.self, EmptyRequest()).export
+    }
+    public func getAccountExport() async throws -> AccountExport? {
+        try await perform(Contracts.GetAccountExport.self, EmptyRequest()).export
+    }
+
+    // Account deletion (seven-day grace; owned Boxes must be transferred first)
+    public func getAccountDeletion() async throws -> AccountDeletion? {
+        try await perform(Contracts.GetAccountDeletion.self, EmptyRequest()).deletion
+    }
+    public func requestAccountDeletion(password: String) async throws -> AccountDeletion {
+        try await perform(Contracts.RequestAccountDeletion.self, PasswordConfirmationRequest(password: password)).deletion
+    }
+    public func cancelAccountDeletion(password: String) async throws -> AccountDeletion {
+        try await perform(Contracts.CancelAccountDeletion.self, PasswordConfirmationRequest(password: password)).deletion
+    }
+
+    // Reports and notices for ordinary users
+    public func reportBoxComment(_ request: ReportBoxCommentRequest) async throws -> ReportBoxCommentResponse {
+        try await perform(Contracts.ReportBoxComment.self, request)
+    }
+    public func listMyReports(cursor: String? = nil) async throws -> Page<ReportReceipt> {
+        try await perform(Contracts.ListMyReports.self, CursorRequest(cursor: cursor))
+    }
+    public func listMyModerationNotices() async throws -> [ModerationNotice] {
+        try await perform(Contracts.ListMyModerationNotices.self, EmptyRequest()).items
     }
 }

@@ -90,6 +90,41 @@ decision 8). The source is `packages/validation/src/native/rooms.ts` and
 - **Limits per hour:** Room reads 600, Room writes 60, `listRoomPhotos` 300,
   Memory lists 600, Memory summaries 60.
 
+## Account safety
+
+Ten callables and one HTTP Function wrap the web's account, session and report
+code (ADR 021 decision 8). Source: `packages/validation/src/native/account.ts`,
+`moderation.ts` and `http.ts`.
+
+- **Password and sessions:** `changeMyPassword` (`currentPassword`,
+  `newPassword` of 10 to 1024 characters) and `signOutEverywhere` return
+  `{ ok: true, signInRequired: true }`. Every earlier ID and refresh token is
+  then refused (`unauthenticated`, reason `SESSION_ENDED`): drop local
+  credentials and sign in again. A wrong current password, or any other
+  session failure, is one `permission-denied`. 5 an hour each.
+- **Export:** `requestAccountExport` (5 an hour) builds a `paldora-json-v1`
+  archive and returns `export` (`id`, `status` `pending`/`ready`/`expired`,
+  `createdAt`, `readyAt`, `expiresAt`); `getAccountExport` returns the latest or
+  `null`. When `ready`, `GET <accountExportDownload URL>/{exportId}` with the
+  bearer ID token streams the JSON (`Content-Disposition: attachment`,
+  `Cache-Control: private, no-store`; 20 an hour). Only the caller's latest
+  ready, unexpired export downloads; unknown, foreign, older, pending, expired
+  and malformed ids are the same `404`. `401` is a missing, invalid or ended
+  session. Do not cache the file past the share sheet.
+- **Deletion:** `getAccountDeletion` (`deletion` or `null`),
+  `requestAccountDeletion` and `cancelAccountDeletion` take `password` and
+  return `deletion` (`id` is the generation; `status` `pending`, `blocked` or
+  `cancelled`; `requestedAt`, `dueAt` = requested + 7 days). Errors:
+  `permission-denied` (password), `failed-precondition` (request: transfer
+  every owned Box first; cancel: the window has closed), `not-found` (nothing
+  to cancel). Requesting again while pending returns the same generation.
+- **Reports:** `reportBoxComment` (`commentId`, `category` `harassment`/
+  `spam`/`privacy`/`other`, `detail` string or `null`) returns `reportId`; an
+  unknown or inaccessible comment is `not-found`. `listMyReports` pages your own
+  receipts (`id`, `targetKind`, `targetId`, `category`, `status`,
+  `createdAt`); `listMyModerationNotices` lists your content that moderation
+  hid and that is still hidden. Staff callables are unchanged.
+
 ## Rules
 
 - **Versioning:** undecided (V1 function suffix versus `contractVersion`

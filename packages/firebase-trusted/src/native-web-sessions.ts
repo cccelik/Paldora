@@ -146,6 +146,16 @@ export class NativeWebSessions {
     });
   }
 
+  /**
+   * Ends every session without a password: rotates the session epoch (claim and
+   * account) and revokes refresh tokens, so older ID tokens and cookies are
+   * refused. Used by native `signOutEverywhere`.
+   */
+  public async signOutEverywhere(uid: string): Promise<void> {
+    await this.requireActive(uid);
+    await this.invalidateSessions(uid);
+  }
+
   /** Generic result for unknown, disabled and unadmitted accounts. */
   public async requestPasswordReset(email: string): Promise<void> {
     if (!email || email.length > 320) return;

@@ -627,4 +627,94 @@ export const nativeCallableRegistry: readonly NativeCallable[] = [
     },
     ['not-found'],
   ),
+  callable(
+    'changeMyPassword',
+    5,
+    {
+      input: account.changeMyPasswordInputSchema,
+      output: account.changeMyPasswordOutputSchema,
+    },
+    ['permission-denied', 'failed-precondition'],
+  ),
+  callable(
+    'signOutEverywhere',
+    5,
+    {
+      input: account.signOutEverywhereInputSchema,
+      output: account.signOutEverywhereOutputSchema,
+    },
+    ['permission-denied', 'failed-precondition'],
+  ),
+  callable(
+    'requestAccountExport',
+    5,
+    {
+      input: account.requestAccountExportInputSchema,
+      output: account.requestAccountExportOutputSchema,
+    },
+    ['failed-precondition'],
+  ),
+  callable(
+    'getAccountExport',
+    120,
+    {
+      input: account.getAccountExportInputSchema,
+      output: account.getAccountExportOutputSchema,
+    },
+    ['failed-precondition'],
+  ),
+  callable(
+    'getAccountDeletion',
+    120,
+    {
+      input: account.getAccountDeletionInputSchema,
+      output: account.getAccountDeletionOutputSchema,
+    },
+    ['failed-precondition'],
+  ),
+  callable(
+    'requestAccountDeletion',
+    5,
+    {
+      input: account.requestAccountDeletionInputSchema,
+      output: account.requestAccountDeletionOutputSchema,
+    },
+    ['permission-denied', 'failed-precondition', 'not-found'],
+  ),
+  callable(
+    'cancelAccountDeletion',
+    5,
+    {
+      input: account.cancelAccountDeletionInputSchema,
+      output: account.cancelAccountDeletionOutputSchema,
+    },
+    ['permission-denied', 'failed-precondition', 'not-found'],
+  ),
+  callable(
+    'reportBoxComment',
+    20,
+    {
+      input: moderation.reportBoxCommentInputSchema,
+      output: moderation.reportBoxCommentOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'listMyReports',
+    120,
+    {
+      input: moderation.listMyReportsInputSchema,
+      output: moderation.listMyReportsOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'listMyModerationNotices',
+    120,
+    {
+      input: moderation.listMyModerationNoticesInputSchema,
+      output: moderation.listMyModerationNoticesOutputSchema,
+    },
+    ['not-found'],
+  ),
 ];

@@ -1,0 +1,52 @@
+{
+  "callable": "requestAccountDeletion",
+  "request": {
+    "valid": [
+      {
+        "password": "Synthetic-pass-1"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "password": ""
+      },
+      {
+        "password": 7
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "deletion": {
+          "id": "8c9d0e1f-2a3b-4c4d-9e5f-6a7b8c9d0e1f",
+          "status": "pending",
+          "requestedAt": 1790000000000,
+          "dueAt": 1790604800000,
+          "cancelledAt": null
+        }
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "failed-precondition"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "permission-denied"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

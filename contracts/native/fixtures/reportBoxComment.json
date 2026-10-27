@@ -1,0 +1,59 @@
+{
+  "callable": "reportBoxComment",
+  "request": {
+    "valid": [
+      {
+        "commentId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "category": "spam",
+        "detail": "Synthetic reason."
+      },
+      {
+        "commentId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "category": "other",
+        "detail": null
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "commentId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9"
+      },
+      {
+        "commentId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "category": "bullying",
+        "detail": null
+      },
+      {
+        "commentId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "category": "spam",
+        "detail": ""
+      },
+      {
+        "commentId": "",
+        "category": "spam",
+        "detail": null
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "reportId": "1b2c3d4e-5f60-4172-8384-95a6b7c8d9e0"
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

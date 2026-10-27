@@ -103,6 +103,23 @@ describe('server-only Firebase web sessions', () => {
     );
   });
 
+  it('signs out everywhere without a password and refuses inactive accounts', async () => {
+    const user = await member();
+    const old = await sessions.signIn(user.email, user.password);
+    await sessions.signOutEverywhere(user.uid);
+    await expect(sessions.verify(old.cookie)).rejects.toThrow(
+      'SESSION_UNAVAILABLE',
+    );
+    // The password still works: this only ends existing sessions.
+    expect((await sessions.signIn(user.email, user.password)).uid).toBe(
+      user.uid,
+    );
+    const unadmitted = await member(false);
+    await expect(sessions.signOutEverywhere(unadmitted.uid)).rejects.toThrow(
+      'SESSION_UNAVAILABLE',
+    );
+  });
+
   it('issues recovery only to admitted accounts and invalidates prior sessions on reset', async () => {
     const user = await member();
     const unadmitted = await member(false);

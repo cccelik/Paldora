@@ -1,0 +1,43 @@
+{
+  "callable": "requestAccountExport",
+  "request": {
+    "valid": [{}],
+    "invalid": [[]]
+  },
+  "response": {
+    "valid": [
+      {
+        "export": {
+          "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b",
+          "status": "pending",
+          "createdAt": 1790000000000,
+          "readyAt": null,
+          "expiresAt": null
+        }
+      },
+      {
+        "export": {
+          "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b",
+          "status": "ready",
+          "createdAt": 1790000000000,
+          "readyAt": 1790000060000,
+          "expiresAt": 1790604860000
+        }
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "failed-precondition"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

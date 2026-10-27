@@ -290,3 +290,57 @@ describe('Rooms and Memories contract', () => {
       ).toBe(false);
   });
 });
+
+describe('account safety contract', () => {
+  const entry = (name: string) => registry.get(name)!;
+
+  it('rate limits password-bearing callables strictly', () => {
+    for (const name of [
+      'changeMyPassword',
+      'signOutEverywhere',
+      'requestAccountDeletion',
+      'cancelAccountDeletion',
+      'requestAccountExport',
+    ])
+      expect(entry(name).limit.perHour).toBeLessThanOrEqual(5);
+  });
+
+  it('enforces the web password rules and rejects unknown shapes', () => {
+    const input = entry('changeMyPassword').input;
+    expect(
+      input.safeParse({ currentPassword: 'x', newPassword: 'a'.repeat(10) })
+        .success,
+    ).toBe(true);
+    expect(
+      input.safeParse({ currentPassword: 'x', newPassword: 'a'.repeat(9) })
+        .success,
+    ).toBe(false);
+    expect(
+      input.safeParse({ currentPassword: 'x', newPassword: 'a'.repeat(1025) })
+        .success,
+    ).toBe(false);
+  });
+
+  it('never returns a password, URL or Storage path', () => {
+    for (const name of [
+      'changeMyPassword',
+      'requestAccountExport',
+      'getAccountExport',
+      'getAccountDeletion',
+    ])
+      for (const response of fixtures.get(name)!.fixture.response.valid)
+        expect(JSON.stringify(response)).not.toMatch(
+          /password|https?:|private\/exports|objectPath/iu,
+        );
+  });
+
+  it('documents the export download as a private no-store attachment', () => {
+    const endpoint = nativeHttpEndpoints.find(
+      ({ name }) => name === 'accountExportDownload',
+    )!;
+    expect(endpoint.method).toBe('GET');
+    expect(endpoint.responseHeaders['Content-Disposition']).toMatch(
+      /^attachment;/u,
+    );
+  });
+});

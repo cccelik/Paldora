@@ -37,6 +37,11 @@ export class NativeCallableSessions {
       throw new NativeCallableSessionError();
   }
 
+  /** Drop a cached epoch after this instance rotated it, so it is refused at once. */
+  public forget(uid: string): void {
+    this.cache.delete(uid);
+  }
+
   private async currentEpoch(uid: string): Promise<string | undefined> {
     const now = this.now();
     const hit = this.cache.get(uid);

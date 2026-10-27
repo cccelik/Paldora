@@ -67,3 +67,17 @@ While the disposable emulators are running, an operator can also run
 
 Hosted scheduling, Storage object enumeration cost, large-archive memory,
 backup/restore, and IAM must be validated after a separate Blaze decision.
+
+## Native clients
+
+The same `NativeAccountLifecycle` serves the native callables
+(`requestAccountExport`, `getAccountExport`, `getAccountDeletion`,
+`requestAccountDeletion`, `cancelAccountDeletion`) and the authenticated
+`accountExportDownload` HTTP Function (`GET /{exportId}`, bearer Firebase ID
+token, `contracts/native/README.md`). Rules are unchanged: fresh password
+reauthentication, no owned Box, `requestedAt + 7 days`, generation checks. The
+download streams only the caller's latest ready archive and answers every
+other id with the same 404. Hosted Functions need `FIREBASE_WEB_API_KEY` (the
+same Auth REST key as the web) in their environment for the password
+callables; without it they fail closed as `failed-precondition`. Large
+archives stream, but a hosted load gate is still required.

@@ -117,8 +117,7 @@ Two options, neither chosen:
    dependency:** no avatar, signed URL or object key is returned. Media fields
    are opaque media asset ids only (`mediaAssetIds`, camera-reaction
    `realPreview[].mediaAssetId`), and `getMyProfile` has no avatar until the
-   Storage design lands. Media, Rooms and Memories followed (see the decisions below). Still open: export/deletion,
-   password/session.
+   Storage design lands. Media, Rooms and Memories followed (see the decisions below). Account safety followed (see the decisions below). Nothing else of this decision is open.
 9. **Hosted deployment.** Callables, App Check and new buckets need Blaze;
    `paldora-dev` stays on Spark without an owner instruction.
 
@@ -171,6 +170,36 @@ Two options, neither chosen:
   custom authenticated loader. Revisit with a CDN or signed-cookie design only
   after measuring cost on a hosted (Blaze) project. Declared in
   `contracts/native` (`http` in `callables.schema.json`, README).
+- **#8 Account safety (decided and implemented locally, 2026-10-28), 10
+  callables and one HTTP Function:** `changeMyPassword`, `signOutEverywhere`,
+  `requestAccountExport`, `getAccountExport`, `getAccountDeletion`,
+  `requestAccountDeletion`, `cancelAccountDeletion`, `reportBoxComment`,
+  `listMyReports`, `listMyModerationNotices`, plus `accountExportDownload`
+  (`GET /{exportId}`). They wrap exactly what the web uses:
+  `NativeWebSessions.changePassword` (Firebase REST reauth with
+  `FIREBASE_WEB_API_KEY`, then session-epoch rotation and refresh-token
+  revocation), a new `NativeWebSessions.signOutEverywhere` (same rotation, no
+  password), `NativeAccountLifecycle` and `NativeModeration.createReport` /
+  `myReports` / `notices`. Both session callables answer `{ ok, signInRequired }`
+  and every older ID token is then `unauthenticated` (the instance that served
+  the call forgets its cached epoch; another instance can lag by at most the
+  10-second epoch cache). **No new error reason:** a wrong password, an unusable
+  account and any other session failure are one `permission-denied`; the owned-Box
+  precondition and the closed cancellation window are `failed-precondition`
+  (each reachable from only one callable); a cancel with nothing to cancel is
+  `not-found`. A new password under 10 characters is `invalid-argument` /
+  `INVALID_INPUT` before any factor is checked. Password-bearing callables are
+  limited to 5 an hour per user, and the limiter runs before the password is
+  checked, so guessing is bounded. Passwords are never logged or echoed.
+  `accountExportDownload` follows `mediaRead`: bearer ID token, session-epoch
+  check, 20 an hour, and the web download route's rule (the id must be the
+  caller's latest export, `ready` and unexpired, session re-verified right before
+  the Storage stream starts). Unknown, foreign, superseded, pending, expired and
+  malformed ids are one 404; `Cache-Control: private, no-store`, `Content-
+Disposition: attachment`. `reportBoxComment` takes only `commentId` (as web);
+  hidden or inaccessible comments are `not-found`. Receipts never include
+  detail text or the reported author. Staff and admin callables are unchanged
+  (`listModerationReports`, `hideReportedPost`).
 - **#8 Rooms and Memories (decided and implemented locally, 2026-10-27), 12
   callables:** `getMyRoom`, `getRoom(username)`, `updateMyRoom`,
   `updateMyRoomWidgets`, `updateMyRoomTopFriends`, `listRoomPhotos(username)`,

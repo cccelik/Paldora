@@ -178,8 +178,15 @@ registry id strings; the banner is an opaque `bannerMediaId` served through
 `failed-precondition` with reason `STALE_WRITE`. Memory pages return a compact
 cursor of at most 128 characters (the trusted cursor is several hundred), bound
 to the scope, year, month and type. Phase 8 personalization (custom CSS and
-sandboxed widgets) is web-only. No native entry point exists yet for account
-export/deletion, or password/session changes. Callables compare the ID token's session epoch
+sandboxed widgets) is web-only. Account safety is native too (10 callables and
+the `accountExportDownload` HTTP Function, ADR 021 decision 8): `changeMyPassword`
+and `signOutEverywhere` rotate the session epoch and revoke refresh tokens (sign
+in again), `requestAccountExport`/`getAccountExport` plus the authenticated
+byte download, `getAccountDeletion`/`requestAccountDeletion`/
+`cancelAccountDeletion` (password reauth, owned Boxes first, seven-day grace),
+and the user-facing `reportBoxComment`, `listMyReports` and
+`listMyModerationNotices`. They wrap `NativeWebSessions`,
+`NativeAccountLifecycle` and `NativeModeration`. Callables compare the ID token's session epoch
 with the account's (a rotated epoch answers `unauthenticated`, ADR 021
 decision 5). The proposed registry, fixtures, rules and open owner decisions are in
 [ADR 021](../adr/021-firebase-native-contract.md) and

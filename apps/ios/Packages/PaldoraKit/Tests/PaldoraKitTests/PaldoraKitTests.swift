@@ -185,3 +185,38 @@ struct APITests {
         #expect(await transport.recorder.calls.first?.0 == .getHomeFeed)
     }
 }
+
+@Suite("Account safety")
+struct AccountSafetyTests {
+    @Test func passwordsNeverAppearInDescriptions() {
+        let change = ChangeMyPasswordRequest(currentPassword: "old-secret-1", newPassword: "new-secret-22")
+        let confirm = PasswordConfirmationRequest(password: "hunter2-secret")
+        for text in [String(describing: change), String(reflecting: change), String(describing: confirm), String(reflecting: confirm)] {
+            #expect(!text.contains("secret"))
+        }
+    }
+
+    @Test func reportWithoutDetailSendsExplicitNull() throws {
+        let body = try JSONEncoder().encode(ReportBoxCommentRequest(commentId: "c1", category: .spam))
+        let object = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect(object["detail"] is NSNull)
+        #expect(object["category"] as? String == "spam")
+    }
+
+    @Test func exportAndDeletionCallsUseTheirCallables() async throws {
+        let transport = FakeTransport { name in
+            switch name {
+            case .getAccountExport: return json(#"{"export":null}"#)
+            case .getAccountDeletion: return json(#"{"deletion":null}"#)
+            default: return json(#"{"ok":true,"signInRequired":true}"#)
+            }
+        }
+        let api = PaldoraAPI(transport: transport)
+        #expect(try await api.getAccountExport() == nil)
+        #expect(try await api.getAccountDeletion() == nil)
+        let ended = try await api.signOutEverywhere()
+        #expect(ended.signInRequired)
+        let calls = await transport.recorder.calls.map(\.0)
+        #expect(calls == [.getAccountExport, .getAccountDeletion, .signOutEverywhere])
+    }
+}

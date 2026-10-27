@@ -5488,6 +5488,476 @@
         "unauthenticated"
       ],
       "limit": { "scope": "getRoomMemorySummary", "perHour": 60 }
+    },
+    "changeMyPassword": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1024
+          }
+        },
+        "required": ["currentPassword", "newPassword"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": true },
+          "signInRequired": { "type": "boolean", "const": true }
+        },
+        "required": ["ok", "signInRequired"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "changeMyPassword", "perHour": 5 }
+    },
+    "signOutEverywhere": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": true },
+          "signInRequired": { "type": "boolean", "const": true }
+        },
+        "required": ["ok", "signInRequired"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "signOutEverywhere", "perHour": 5 }
+    },
+    "requestAccountExport": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "export": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "ready", "expired"]
+              },
+              "createdAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "readyAt": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "expiresAt": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["id", "status", "createdAt", "readyAt", "expiresAt"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["export"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "requestAccountExport", "perHour": 5 }
+    },
+    "getAccountExport": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "export": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "ready", "expired"]
+                  },
+                  "createdAt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "readyAt": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "expiresAt": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      { "type": "null" }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "createdAt",
+                  "readyAt",
+                  "expiresAt"
+                ],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["export"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getAccountExport", "perHour": 120 }
+    },
+    "getAccountDeletion": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "deletion": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "blocked", "cancelled"]
+                  },
+                  "requestedAt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "dueAt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "cancelledAt": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      { "type": "null" }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "requestedAt",
+                  "dueAt",
+                  "cancelledAt"
+                ],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["deletion"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getAccountDeletion", "perHour": 120 }
+    },
+    "requestAccountDeletion": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "password": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "required": ["password"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "deletion": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "blocked", "cancelled"]
+              },
+              "requestedAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "dueAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cancelledAt": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["id", "status", "requestedAt", "dueAt", "cancelledAt"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["deletion"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "requestAccountDeletion", "perHour": 5 }
+    },
+    "cancelAccountDeletion": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "password": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "required": ["password"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "deletion": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "blocked", "cancelled"]
+              },
+              "requestedAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "dueAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cancelledAt": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["id", "status", "requestedAt", "dueAt", "cancelledAt"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["deletion"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "cancelAccountDeletion", "perHour": 5 }
+    },
+    "reportBoxComment": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "commentId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "category": {
+            "type": "string",
+            "enum": ["harassment", "spam", "privacy", "other"]
+          },
+          "detail": {
+            "anyOf": [
+              { "type": "string", "minLength": 1, "maxLength": 2000 },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["commentId", "category", "detail"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "reportId": { "type": "string" } },
+        "required": ["reportId"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "reportBoxComment", "perHour": 20 }
+    },
+    "listMyReports": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "pattern": "^[a-f0-9-]{36}$" }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "targetKind": {
+                  "type": "string",
+                  "enum": ["user", "box", "post", "comment"]
+                },
+                "targetId": { "type": "string" },
+                "category": {
+                  "type": "string",
+                  "enum": ["harassment", "spam", "privacy", "other"]
+                },
+                "status": { "type": "string", "enum": ["open", "closed"] },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "targetKind",
+                "targetId",
+                "category",
+                "status",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyReports", "perHour": 120 }
+    },
+    "listMyModerationNotices": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "targetKind": { "type": "string", "enum": ["post", "comment"] },
+                "targetId": { "type": "string" },
+                "originalCreatedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["targetKind", "targetId", "originalCreatedAt"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["items"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyModerationNotices", "perHour": 120 }
     }
   },
   "http": {
@@ -5532,6 +6002,27 @@
         "200": "WebP bytes of the display or thumbnail variant.",
         "401": "Missing, invalid or ended session.",
         "404": "Unknown asset or variant, not ready, or not visible to the caller (indistinguishable).",
+        "405": "Method is not GET.",
+        "429": "Rate limited.",
+        "503": "Storage or the backing store is unavailable."
+      }
+    },
+    "accountExportDownload": {
+      "method": "GET",
+      "path": "/{exportId}",
+      "auth": "Bearer Firebase ID token",
+      "limit": { "scope": "accountExportDownload", "perHour": 20 },
+      "requestHeaders": { "Authorization": "Bearer <Firebase ID token>" },
+      "responseHeaders": {
+        "Cache-Control": "private, no-store",
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": "attachment; filename=\"paldora-data.json\"",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "statuses": {
+        "200": "The paldora-json-v1 archive of the caller (streamed).",
+        "401": "Missing, invalid or ended session.",
+        "404": "Unknown, foreign, not-latest, pending, expired or unavailable export (indistinguishable).",
         "405": "Method is not GET.",
         "429": "Rate limited.",
         "503": "Storage or the backing store is unavailable."

@@ -1,0 +1,32 @@
+{
+  "callable": "signOutEverywhere",
+  "request": {
+    "valid": [{}],
+    "invalid": [[]]
+  },
+  "response": {
+    "valid": [
+      {
+        "ok": true,
+        "signInRequired": true
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "failed-precondition"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "permission-denied"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

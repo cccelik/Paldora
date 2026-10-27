@@ -1,0 +1,71 @@
+{
+  "callable": "listMyReports",
+  "request": {
+    "valid": [
+      {},
+      {
+        "cursor": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8"
+      }
+    ],
+    "invalid": [
+      {
+        "cursor": "bad"
+      },
+      {
+        "cursor": ""
+      },
+      {
+        "cursor": 7
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "items": [],
+        "nextCursor": null
+      },
+      {
+        "items": [
+          {
+            "id": "1b2c3d4e-5f60-4172-8384-95a6b7c8d9e0",
+            "targetKind": "comment",
+            "targetId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "category": "spam",
+            "status": "open",
+            "createdAt": 1790000000000
+          },
+          {
+            "id": "1b2c3d4e-5f60-4172-8384-95a6b7c8d9e0",
+            "targetKind": "user",
+            "targetId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "category": "harassment",
+            "status": "closed",
+            "createdAt": 1790000000000
+          }
+        ],
+        "nextCursor": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8"
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}
