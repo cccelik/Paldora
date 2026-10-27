@@ -33,9 +33,28 @@ pnpm and Turborepo graph (no `package.json`, not listed in
   - `Model/`: `AppModel` (`@Observable`; states loading, signedOut,
     signedIn, accountNotReady, profileUnavailable, notConfigured).
   - `Design/`: `Theme` and `Typography` over `PaldoraTokens`, shared components.
-  - `Views/`: sign-in, tab shell (Home, Boxes, Notifications are honest
-    placeholders for the next slice; Profile is real: edit display name and
-    bio, appearance, reaction presets, sign out).
+  - `Views/`: sign-in, status screens, tab shell, and the Profile tab (edit
+    display name and bio, appearance, reaction presets, sign out).
+  - `Features/`: one folder per feature, `@Observable` view models that take a
+    `FeatureEnvironment` (typed API, current user, failure handling) and are
+    unit-tested through a fake transport.
+    - `Shared/`: `PagedList` (opaque-cursor pagination, refresh, inline
+      errors, neutral "unavailable"), box and member name directories, state
+      views.
+    - `Home/`: `getHomeFeed` cards for posts and Life Updates; unknown feed
+      kinds render a neutral card. Media shows only as a "photo" label until
+      the Storage design lands (ids are opaque).
+    - `Boxes/`: list and create, invitations (accept/decline), Box detail
+      with members, text composer (5,000 characters).
+    - `Posts/`: post detail, edit/delete own post, report, comments (one reply
+      level; create/edit/delete), emoji reactions (presets from your profile
+      plus any single emoji; optimistic with rollback).
+    - `Notifications/`: paged list, tap marks read and opens the post,
+      mark-all-read, tab badge. The badge polls on foreground and every 30 s
+      (ADR 021 decision 2: polling first).
+  - Not in the app yet: friends and blocks, Life Update composer, media,
+    comment reactions, Rooms. Deleted comments are simply absent because the
+    contract returns no placeholder for them.
 - `PaldoraTests/`: unit tests (Swift Testing) with a fake `AuthService` and
   fake `CallableTransport`. `PaldoraUITests/`: one XCUITest.
 - `Config/Hosted.xcconfig`: the hosted Firebase placeholders (empty).
@@ -107,9 +126,11 @@ apps/ios/scripts/ui-test.sh                              # XCUITest on emulators
 `ui-test.sh` (run from anywhere) builds the Functions, starts the
 `demo-paldora` emulators with `firebase emulators:exec`, seeds a fully
 onboarded fixture account with `packages/firebase-trusted/scripts/seed-local.mjs`
-(random credentials per run), passes them to the UI test through
-`PALDORA_UI_EMAIL` and `PALDORA_UI_PASSWORD` (`TEST_RUNNER_` prefix), runs the
-test on the iPhone 16e simulator, and shuts the simulator down. Override with
+(random credentials per run), passes them to the UI tests through
+`PALDORA_UI_EMAIL` and `PALDORA_UI_PASSWORD` (`TEST_RUNNER_` prefix), runs them
+on the iPhone 16e simulator, and shuts the simulator down. The UI tests cover
+sign-in, profile edit and sign-out, and creating a Box, posting, opening the
+post from Home, reacting and commenting. Override with
 `IOS_SIM_NAME` and `IOS_SIM_OS`.
 
 The fixture suite loads every file in `contracts/native/fixtures` and

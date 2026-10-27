@@ -9,30 +9,9 @@ final class ProfileFlowUITests: XCTestCase {
     }
 
     func testSignInEditDisplayNameAndSignOut() throws {
-        let env = ProcessInfo.processInfo.environment
-        guard let email = env["PALDORA_UI_EMAIL"], let password = env["PALDORA_UI_PASSWORD"],
-              !email.isEmpty, !password.isEmpty else {
-            XCTFail("Set PALDORA_UI_EMAIL and PALDORA_UI_PASSWORD (use apps/ios/scripts/ui-test.sh).")
-            return
-        }
+        let app = try launchSignedIn()
 
-        let app = XCUIApplication()
-        app.launchEnvironment["PALDORA_UI_RESET_SESSION"] = "1"
-        app.launch()
-
-        // Sign in.
-        let emailField = app.textFields["email-field"]
-        XCTAssertTrue(emailField.waitForExistence(timeout: 30), "Sign-in screen did not appear")
-        emailField.tap()
-        emailField.typeText(email)
-        let passwordField = app.secureTextFields["password-field"]
-        passwordField.tap()
-        passwordField.typeText(password)
-        app.buttons["sign-in-button"].tap()
-
-        // Tab shell, then the real Profile tab.
         let profileTab = app.tabBars.buttons["Profile"]
-        XCTAssertTrue(profileTab.waitForExistence(timeout: 30), "Tab shell did not appear after sign-in")
         XCTAssertTrue(app.tabBars.buttons["Home"].exists)
         XCTAssertTrue(app.tabBars.buttons["Boxes"].exists)
         XCTAssertTrue(app.tabBars.buttons["Notifications"].exists)

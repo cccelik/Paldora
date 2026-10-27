@@ -2,32 +2,54 @@ import PaldoraKit
 import SwiftUI
 
 struct MainTabView: View {
+    enum Tab: Hashable { case home, boxes, notifications, profile }
+
     let model: AppModel
     let profile: MyProfile
+    @State private var env: FeatureEnvironment?
+    @State private var selection: Tab = .home
+    @Environment(\.scenePhase) private var scenePhase
+
+    init(model: AppModel, profile: MyProfile) {
+        self.model = model
+        self.profile = profile
+        _env = State(initialValue: model.makeFeatureEnvironment(userID: profile.user.id))
+    }
 
     var body: some View {
-        TabView {
-            PlaceholderScreen(
-                title: "Home",
-                message: "Your chronological feed arrives in the next update. Nothing is hidden or missing; it just isn't built in the app yet."
-            )
-            .tabItem { Label("Home", systemImage: "house") }
+        Group {
+            if let env {
+                tabs(env)
+            } else {
+                StatusScreen(title: "Couldn't open your box", message: UserMessages.generic,
+                             actionTitle: nil, action: nil, model: model)
+            }
+        }
+    }
 
-            PlaceholderScreen(
-                title: "Boxes",
-                message: "Your private circles will live here. Boxes are coming to the app in the next update."
-            )
-            .tabItem { Label("Boxes", systemImage: "shippingbox") }
+    private func tabs(_ env: FeatureEnvironment) -> some View {
+        TabView(selection: $selection) {
+            HomeView(env: env, isActive: selection == .home)
+                .tabItem { Label("Home", systemImage: "house") }
+                .tag(Tab.home)
 
-            PlaceholderScreen(
-                title: "Notifications",
-                message: "Notifications are coming to the app in the next update."
-            )
-            .tabItem { Label("Notifications", systemImage: "bell") }
+            BoxesView(env: env)
+                .tabItem { Label("Boxes", systemImage: "shippingbox") }
+                .tag(Tab.boxes)
+
+            NotificationsView(env: env)
+                .tabItem { Label("Notifications", systemImage: "bell") }
+                .badge(env.badge.count)
+                .tag(Tab.notifications)
 
             ProfileView(model: model, profile: profile)
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+                .tag(Tab.profile)
         }
         .toolbarBackground(Theme.canvas, for: .tabBar)
+        // Polling first (ADR 021 decision 2): on foreground and every 30 s.
+        .task(id: scenePhase) {
+            if scenePhase == .active { await env.badge.poll() }
+        }
     }
 }

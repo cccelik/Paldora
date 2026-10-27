@@ -90,25 +90,3 @@ struct InlineMessage: View {
             .accessibilityElement(children: .combine)
     }
 }
-
-/// Honest empty state for tabs whose slice has not shipped.
-struct PlaceholderScreen: View {
-    let title: String
-    let message: String
-
-    var body: some View {
-        VStack(spacing: Theme.space4) {
-            FourPointStar().fill(Theme.gold).frame(width: 22, height: 22).accessibilityHidden(true)
-            Text(title).font(Typography.brandSmall).foregroundStyle(Theme.text)
-            Text(message)
-                .font(Typography.body)
-                .foregroundStyle(Theme.textMuted)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: Theme.readingWidth)
-        .padding(Theme.space8)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.canvas)
-        .accessibilityElement(children: .combine)
-    }
-}

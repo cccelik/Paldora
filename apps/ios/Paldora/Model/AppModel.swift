@@ -86,6 +86,17 @@ final class AppModel {
         }
     }
 
+    /// Wires the feature layer for the signed-in user. Nil without an API.
+    func makeFeatureEnvironment(userID: String) -> FeatureEnvironment? {
+        guard let api else { return nil }
+        return FeatureEnvironment(
+            api: api,
+            currentUserID: userID,
+            reactionPresets: { [weak self] in self?.preferences?.reactionPresets ?? [] },
+            handleFailure: { [weak self] error in self?.failureMessage(error) ?? UserMessages.generic }
+        )
+    }
+
     // MARK: Profile and preferences
 
     /// Returns an error message, or nil on success.

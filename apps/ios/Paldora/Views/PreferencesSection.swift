@@ -49,12 +49,7 @@ struct PreferencesSection: View {
 
     private var canSavePresets: Bool {
         !isSaving && presets != current && presets.count == current.count
-            && presets.allSatisfy(Self.isSingleEmoji)
-    }
-
-    /// Advisory only; the server is the authority.
-    static func isSingleEmoji(_ text: String) -> Bool {
-        text.count == 1 && (text.first?.unicodeScalars.contains { $0.properties.isEmojiPresentation || ($0.properties.isEmoji && $0.value > 0x238C) } ?? false)
+            && presets.allSatisfy(EmojiValidation.isSingleEmoji)
     }
 
     private func binding(_ index: Int) -> Binding<String> {
