@@ -8,7 +8,7 @@ struct FriendsTests {
     private func harness(onClose: @escaping @Sendable () -> Void = {}) async -> (FeatureHarness, Ref<[CallableName]>) {
         let seen = Ref<[CallableName]>([])
         let h = await FeatureHarness { name, data in
-            seen.value.append(name)
+            seen.append(name)
             switch name {
             case .listMyFriendships:
                 switch JSON.body(data)["status"] as? String {
@@ -113,7 +113,7 @@ struct LifeUpdateTests {
             switch name {
             case .listMyBoxes: return boxData
             case .createLifeUpdate:
-                sent.value.append(JSON.body(data))
+                sent.append(JSON.body(data))
                 if failFirst.value { failFirst.value = false; throw failure("unavailable") }
                 return JSON.data(["id": "l1"])
             default: return JSON.data(["ok": true])
@@ -225,7 +225,7 @@ struct CommentReactionTests {
             switch name {
             case .listBoxReactions: return JSON.page([["uid": "u2", "kind": "👍"]])
             case .setBoxReaction:
-                bodies.value.append(JSON.body(data))
+                bodies.append(JSON.body(data))
                 if fail.value { throw failure("resource-exhausted", "RATE_LIMITED") }
                 return JSON.data(["ok": true])
             default: return JSON.data(["ok": true])

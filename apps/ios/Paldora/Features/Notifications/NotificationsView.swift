@@ -26,6 +26,7 @@ struct NotificationsView: View {
                     }
                 }
                 .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
+                .roomRoutes(env: env)
         }
         .task { await model.list.loadFirst() }
     }

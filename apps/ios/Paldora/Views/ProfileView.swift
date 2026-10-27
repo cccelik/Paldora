@@ -30,6 +30,7 @@ struct ProfileView: View {
             .navigationDestination(for: LifeUpdateRoute.self) { LifeUpdateDetailView(env: env, route: $0) }
             .navigationDestination(for: LifeUpdateComposeRoute.self) { _ in LifeUpdateComposerView(env: env) }
             .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
+            .roomRoutes(env: env)
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
         }

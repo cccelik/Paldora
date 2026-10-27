@@ -28,6 +28,7 @@ struct HomeView: View {
                     PostDetailView(env: env, route: route) { Task { await feed.refresh() } }
                 }
                 .navigationDestination(for: LifeUpdateRoute.self) { LifeUpdateDetailView(env: env, route: $0) }
+                .roomRoutes(env: env)
                 .navigationDestination(for: LifeUpdateComposeRoute.self) { _ in LifeUpdateComposerView(env: env) }
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {

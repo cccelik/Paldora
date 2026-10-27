@@ -10,6 +10,8 @@ struct ProfileLinks: View {
             row("Friends", systemImage: "person.2", value: FriendsRoute(), id: "friends-link")
             Divider().overlay(Theme.hairline)
             row("Life Updates", systemImage: "text.book.closed", value: LifeUpdatesRoute(), id: "life-updates-link")
+            Divider().overlay(Theme.hairline)
+            row("Memories", systemImage: "clock.arrow.circlepath", value: MemoriesRoute(scope: .me), id: "memories-link")
         }
         .padding(.horizontal, Theme.space3)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))

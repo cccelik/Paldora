@@ -31,3 +31,18 @@ extension LifeUpdate: Identifiable {}
 extension BlockedUser: Identifiable {
     public var id: String { userId }
 }
+
+extension RoomPhoto: Identifiable {
+    public var id: String { mediaAssetId }
+}
+
+extension MemoryItem: Identifiable {
+    /// Posts and Life Updates are distinct items; unknown kinds never collide.
+    public var id: String {
+        switch self {
+        case .post(let value): "post:\(value.post.id)"
+        case .lifeUpdate(let value): "lu:\(value.id)"
+        case .unsupported(let kind): "unsupported:\(kind)"
+        }
+    }
+}

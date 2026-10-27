@@ -66,17 +66,28 @@ struct PostDetailView: View {
         }
     }
 
+    /// Author header; opens their Room when their username is known.
+    @ViewBuilder private func authorLink(_ post: BoxPost) -> some View {
+        let name = model.authorName(post.authorUid)
+        let header = HStack(spacing: Theme.space3) {
+            AvatarView(mediaId: model.authorAvatar(post.authorUid), name: name)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name).font(Typography.headline).foregroundStyle(Theme.text)
+                Text("\(env.boxes.name(for: post.boxId) ?? "Box") · \(Formatting.relativeTime(post.createdAt))"
+                     + (post.updatedAt > post.createdAt ? " · edited" : ""))
+                    .font(Typography.caption).foregroundStyle(Theme.textMuted)
+            }
+        }
+        if let username = model.authorUsername(post.authorUid) {
+            NavigationLink(value: RoomRoute(username: username)) { header }
+                .buttonStyle(.plain).accessibilityHint("Opens their Room")
+                .accessibilityIdentifier("post-author-room")
+        } else { header }
+    }
+
     private func postCard(_ post: BoxPost) -> some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
-            HStack(spacing: Theme.space3) {
-                AvatarView(mediaId: model.authorAvatar(post.authorUid), name: model.authorName(post.authorUid))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(model.authorName(post.authorUid)).font(Typography.headline).foregroundStyle(Theme.text)
-                    Text("\(env.boxes.name(for: post.boxId) ?? "Box") · \(Formatting.relativeTime(post.createdAt))"
-                         + (post.updatedAt > post.createdAt ? " · edited" : ""))
-                        .font(Typography.caption).foregroundStyle(Theme.textMuted)
-                }
-            }
+            authorLink(post)
             Text(post.text).font(Typography.body).foregroundStyle(Theme.text)
                 .accessibilityIdentifier("post-text")
             PhotoStrip(assetIds: post.mediaAssetIds)

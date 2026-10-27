@@ -2,7 +2,7 @@ import PaldoraKit
 import SwiftUI
 
 struct MainTabView: View {
-    enum Tab: Hashable { case home, boxes, notifications, profile }
+    enum Tab: Hashable { case home, boxes, room, notifications, profile }
 
     let model: AppModel
     let profile: MyProfile
@@ -36,6 +36,10 @@ struct MainTabView: View {
             BoxesView(env: env)
                 .tabItem { Label("Boxes", systemImage: "shippingbox") }
                 .tag(Tab.boxes)
+
+            MyRoomTab(env: env)
+                .tabItem { Label("My Room", systemImage: "door.left.hand.open") }
+                .tag(Tab.room)
 
             NotificationsView(env: env)
                 .tabItem { Label("Notifications", systemImage: "bell") }

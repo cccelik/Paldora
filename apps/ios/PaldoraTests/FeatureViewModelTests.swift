@@ -10,7 +10,7 @@ struct PagedListTests {
         let h = await FeatureHarness { name, data in
             guard name == .getHomeFeed else { throw failure("not-found") }
             let cursor = JSON.body(data)["cursor"] as? String
-            seen.value.append(cursor)
+            seen.append(cursor)
             return cursor == nil
                 ? JSON.page([JSON.feedPost("a"), JSON.feedPost("b")], next: "CURSOR/==")
                 : JSON.page([JSON.feedPost("b"), JSON.feedPost("c")])
@@ -86,9 +86,18 @@ struct PagedListTests {
     }
 }
 
+/// A lock-protected box: view models issue calls concurrently (`async let`).
 final class Ref<Value>: @unchecked Sendable {
-    var value: Value
-    init(_ value: Value) { self.value = value }
+    private let lock = NSLock()
+    private var stored: Value
+    init(_ value: Value) { stored = value }
+    var value: Value {
+        get { lock.withLock { stored } }
+        set { lock.withLock { stored = newValue } }
+    }
+
+    /// Atomic append for concurrent view model calls.
+    func append<E>(_ element: E) where Value == [E] { lock.withLock { stored.append(element) } }
 }
 
 @MainActor

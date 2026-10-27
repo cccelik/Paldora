@@ -89,8 +89,32 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     delete. Feed Life Update cards open the detail on their own delivery.
   - Comment reactions: a "React" sheet per comment (`setBoxReaction` with
     `commentId`), presets plus any single emoji, optimistic with rollback.
+  - `Rooms/`: **My Room is its own tab** (CLAUDE.md section I) and any Room opens
+    by username from member rows, post authors and friends (`getRoom`; a
+    missing, hidden or blocked Room is one neutral "No longer available").
+    The Room renders from registry ids through the generated
+    `PaldoraRoomThemes` tokens (14 themes, 8 accents, 5 system font stacks,
+    decoration packs, sparkles), a banner (opaque `bannerMediaId` through the
+    image loader), a music link card (https only, opened with `Link`, never
+    embedded or autoplayed), widgets (visibility, order, main or sidebar),
+    Top Friends, a photo grid with the full-screen viewer, and Life Update and
+    post snippets. `single` and `two_column` layouts adapt: two columns only on
+    a regular-width screen (iPad), otherwise one column in stored order.
+    Memories, Customize and the visibility note sit in an app-styled bar
+    **outside** the Room theme. The owner editor covers theme, layout, accent,
+    font, decoration, sparkles, location, currently, music, visibility, banner
+    upload, widgets (switch, placement, explicit Move up and Move down buttons,
+    not drag only) and Top Friends (4, 8 or 12, chosen from accepted friends,
+    ordered). Every save carries `expectedUpdatedAt`; `STALE_WRITE` stops the
+    save and shows "changed somewhere else", where Reload discards the edits
+    and loads the latest. Phase 8 personalization stays web-only.
+  - `Memories/`: derived timelines for me (Profile), a Box (Box detail) and a
+    Room (Room bar). Year and month chips come from the summaries, the type
+    filter is All, Posts or Life Updates, pages use opaque cursors, and each
+    item opens the underlying post or Life Update (never a copy). Summary
+    failures (60 an hour) do not block the list.
   - Not in the app yet: camera reactions, reports of comments, Boxes or people,
-    Rooms, Memories, staff screens. Reports: web can report posts and comments
+    Phase 8 Room personalization (web-only), staff screens. Reports: web can report posts and comments
     (`createReport`), native has only `reportBoxPost`, so only posts are
     reportable on iOS; there is no web report for Boxes or people. Deleted comments are simply absent because the
     contract returns no placeholder for them.
@@ -169,7 +193,8 @@ onboarded fixture account with `packages/firebase-trusted/scripts/seed-local.mjs
 `PALDORA_UI_EMAIL` and `PALDORA_UI_PASSWORD` (`TEST_RUNNER_` prefix), runs them
 on the iPhone 16e simulator, and shuts the simulator down. The UI tests cover
 sign-in, profile edit and sign-out, a friend request to a second seeded
-account, an Only Me Life Update (create, edit, delete), and creating a Box, posting, opening the
+account, an Only Me Life Update (create, edit, delete), My Room (change theme, save,
+reopen to see it), Memories, and creating a Box, posting, opening the
 post with a generated photo, opening it from Home and the photo viewer,
 reacting and commenting. Override with
 `IOS_SIM_NAME` and `IOS_SIM_OS`.

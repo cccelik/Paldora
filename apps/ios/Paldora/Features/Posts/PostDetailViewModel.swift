@@ -65,6 +65,8 @@ final class PostDetailViewModel {
         CommentReactionsViewModel(env: env, route: route, commentId: comment.id)
     }
 
+    func authorUsername(_ uid: String) -> String? { env.people.username(for: uid, in: route.boxId) }
+
     func authorAvatar(_ uid: String) -> String? { env.people.avatar(for: uid, in: route.boxId) }
 
     func load() async {

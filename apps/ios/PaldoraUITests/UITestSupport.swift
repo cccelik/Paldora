@@ -56,7 +56,10 @@ extension XCUIApplication {
     func type(_ text: String, into id: String, timeout: TimeInterval = 15) {
         let field = element(id)
         XCTAssertTrue(field.waitForExistence(timeout: timeout), "\(id) did not appear")
-        field.tap()
+        for _ in 0..<4 {
+            field.tap()
+            if keyboards.firstMatch.waitForExistence(timeout: 2) { break }
+        }
         field.typeText(text)
     }
 

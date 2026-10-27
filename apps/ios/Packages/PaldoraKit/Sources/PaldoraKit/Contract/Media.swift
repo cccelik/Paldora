@@ -9,6 +9,7 @@ public enum MediaPurpose {
     public static let postImage = "post_image"
     public static let reactionImage = "reaction_image"
     public static let lifeUpdateImage = "life_update_image"
+    public static let roomBanner = "room_banner"
 }
 
 /// Variants `mediaRead` serves (always `image/webp`).

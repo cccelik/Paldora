@@ -44,6 +44,7 @@ enum Theme {
     static let touchTarget = PaldoraTokens.sizeTouchTarget
     /// Readable column width; keeps iPad layouts from stretching.
     static let readingWidth = PaldoraTokens.sizeReadingColumn
+    static let contentWidth = PaldoraTokens.sizeContentMax
 }
 
 /// Serif for brand moments, system sans for everything functional.

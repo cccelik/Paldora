@@ -133,11 +133,15 @@ struct PersonRowView<Actions: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(Typography.headline).foregroundStyle(Theme.text)
-                Text("@\(username)" + (note.map { " · \($0)" } ?? "")).font(Typography.caption).foregroundStyle(Theme.textMuted)
+            NavigationLink(value: RoomRoute(username: username)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name).font(Typography.headline).foregroundStyle(Theme.text)
+                    Text("@\(username)" + (note.map { " · \($0)" } ?? "")).font(Typography.caption).foregroundStyle(Theme.textMuted)
+                }
+                .frame(minHeight: Theme.touchTarget, alignment: .leading)
             }
             .accessibilityElement(children: .combine)
+            .accessibilityHint("Opens their Room")
             HStack { actions }
         }
         .listRowBackground(Theme.surface)

@@ -32,6 +32,7 @@ struct BoxesView: View {
                 }
                 .navigationDestination(for: BoxRoute.self) { BoxDetailView(env: env, route: $0) }
                 .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
+                .roomRoutes(env: env)
                 .sheet(isPresented: $showCreate) { CreateBoxSheet(model: model) }
         }
         .task { await model.load() }

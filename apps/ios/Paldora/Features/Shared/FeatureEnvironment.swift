@@ -97,6 +97,7 @@ final class BoxDirectory {
 final class PeopleDirectory {
     private(set) var names: [String: [String: String]] = [:]
     private(set) var avatars: [String: [String: String]] = [:]
+    private(set) var usernames: [String: [String: String]] = [:]
     private let api: PaldoraAPI
     private var loading: Set<String> = []
 
@@ -106,24 +107,29 @@ final class PeopleDirectory {
 
     func avatar(for uid: String, in boxId: String) -> String? { avatars[boxId]?[uid] }
 
+    func username(for uid: String, in boxId: String) -> String? { usernames[boxId]?[uid] }
+
     func load(boxId: String) async {
         guard names[boxId] == nil, !loading.contains(boxId) else { return }
         loading.insert(boxId)
         defer { loading.remove(boxId) }
         var found: [String: String] = [:]
         var avatarIds: [String: String] = [:]
+        var handles: [String: String] = [:]
         var cursor: String?
         for _ in 0..<10 {
             guard let page = try? await api.listBoxMembers(ListBoxMembersRequest(boxId: boxId, cursor: cursor)) else { break }
             for member in page.items {
                 found[member.uid] = member.displayName ?? member.username ?? "Member"
                 if let avatar = member.avatarMediaId { avatarIds[member.uid] = avatar }
+                if let handle = member.username { handles[member.uid] = handle }
             }
             guard let next = page.nextCursor else { break }
             cursor = next
         }
         names[boxId] = found
         avatars[boxId] = avatarIds
+        usernames[boxId] = handles
     }
 
     func remember(uid: String, name: String, in boxId: String) {

@@ -27,7 +27,7 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
 struct StubTokens: IDTokenProvider {
     let refreshes = Ref<[Bool]>([])
     func idToken(forceRefresh: Bool) async throws -> String {
-        refreshes.value.append(forceRefresh)
+        refreshes.append(forceRefresh)
         return forceRefresh ? "fresh" : "stale"
     }
 }

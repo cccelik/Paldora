@@ -8,12 +8,14 @@ enum UploadPurpose: Equatable, Sendable {
     case postImage(boxId: String)
     case avatar
     case lifeUpdate
+    case roomBanner
 
     var purpose: String {
         switch self {
         case .postImage: MediaPurpose.postImage
         case .avatar: MediaPurpose.avatar
         case .lifeUpdate: MediaPurpose.lifeUpdateImage
+        case .roomBanner: MediaPurpose.roomBanner
         }
     }
 

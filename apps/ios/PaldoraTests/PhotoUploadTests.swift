@@ -17,7 +17,7 @@ struct PhotoUploadTests {
         let h = await FeatureHarness(media: media) { name, data in
             switch name {
             case .createMediaUpload:
-                reservations.value.append(JSON.body(data))
+                reservations.append(JSON.body(data))
                 return JSON.reservation(id: "m\(reservations.value.count)")
             case .completeMediaUpload:
                 if completeFails.value { throw failure("unavailable") }

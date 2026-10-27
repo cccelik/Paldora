@@ -41,6 +41,12 @@ struct BoxDetailView: View {
                         .frame(minHeight: Theme.touchTarget, alignment: .leading)
                 }
                 .accessibilityIdentifier("members-link")
+                NavigationLink(value: MemoriesRoute(scope: .box(id: box.id))) {
+                    Label("Memories", systemImage: "clock.arrow.circlepath")
+                        .font(Typography.label).foregroundStyle(Theme.goldText)
+                        .frame(minHeight: Theme.touchTarget, alignment: .leading)
+                }
+                .accessibilityIdentifier("box-memories-link")
                 if model.canPost {
                     PostComposer(model: model)
                 } else {
@@ -159,17 +165,7 @@ struct MembersView: View {
             case .loaded:
                 List {
                     ForEach(members.items) { member in
-                        HStack(spacing: Theme.space3) {
-                        AvatarView(mediaId: member.avatarMediaId, name: member.displayName ?? member.username ?? "Member")
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(member.displayName ?? member.username ?? "Member").font(Typography.headline)
-                            Text(member.role.rawValue.capitalized).font(Typography.caption)
-                                .foregroundStyle(Theme.textMuted)
-                        }
-                        }
-                        .frame(minHeight: Theme.touchTarget, alignment: .leading)
-                        .accessibilityElement(children: .combine)
-                        .listRowBackground(Theme.surface)
+                        memberRow(member).listRowBackground(Theme.surface)
                     }
                     LoadMoreFooter(isLoading: members.isLoadingMore, error: members.inlineError,
                                    hasMore: members.hasMore, loadMore: { await members.loadMore() })
@@ -183,5 +179,23 @@ struct MembersView: View {
         .navigationTitle("Members")
         .navigationBarTitleDisplayMode(.inline)
         .task { await members.loadFirst() }
+    }
+}
+
+extension MembersView {
+    @ViewBuilder func memberRow(_ member: BoxMember) -> some View {
+        let name = member.displayName ?? member.username ?? "Member"
+        let content = HStack(spacing: Theme.space3) {
+            AvatarView(mediaId: member.avatarMediaId, name: name)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name).font(Typography.headline)
+                Text(member.role.rawValue.capitalized).font(Typography.caption).foregroundStyle(Theme.textMuted)
+            }
+        }
+        .frame(minHeight: Theme.touchTarget, alignment: .leading)
+        if let username = member.username {
+            NavigationLink(value: RoomRoute(username: username)) { content }
+                .accessibilityHint("Opens their Room")
+        } else { content }
     }
 }
