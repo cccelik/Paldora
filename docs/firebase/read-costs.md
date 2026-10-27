@@ -76,14 +76,14 @@ pricing before turning these into a cost estimate.
 the value is the source-derived prediction. After the run, replace `PREDICTED`
 in the test with the measured values and recompute.
 
-| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                                                                                                                                                          |
-| -------------- | -----------------: | -----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home feed      |                 62 |     78 | S3 (2026-10-26): `getMany` reads each distinct Box, member, author and block pair once and the post docs in one `getAll`; hint query sized to the page (was 161). Measured: 62                                                                                                                       |
-| Box feed       |                 56 |     70 | S3: `list` is one read-only snapshot, 25 reads (was 143). S6 (2026-10-27): summaries come from `posts.interactionIndex` in one batched transaction (31 reads: 3 access + 20 posts + 4 actors x 2). Measured: 56 (was 465 with a per-post scan). With the index missing the batched scan measures 196 |
-| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271                                                                                                                                          |
-| Memories month |                 75 |     94 | S2 sized the windows to the page, S3 batched the Home source authorization (was 224 then 164). Measured: 75                                                                                                                                                                                          |
-| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.                                                                                                                                                       |
-| Post detail    |                 40 |     50 | S4 (2026-10-26): `commentThreadsPage` loads roots, one batched reply query and viewer checks in a single read-only snapshot (the legacy per-root path measures 606). `replyCount` still counts blocked or suspended authors' replies, as `countCommentReplies` always did. Measured: 40              |
+| Path           | Predicted (source) | Budget | How the prediction is built                                                                                                                                                                                                                                                                                                  |
+| -------------- | -----------------: | -----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home feed      |                 62 |     78 | S3 (2026-10-26): `getMany` reads each distinct Box, member, author and block pair once and the post docs in one `getAll`; hint query sized to the page (was 161). Measured: 62                                                                                                                                               |
+| Box feed       |                 56 |     70 | S3: `list` is one read-only snapshot, 25 reads (was 143). S6 (2026-10-27): summaries come from `posts.interactionIndex` in one batched transaction (31 reads: 3 access + 20 posts + 4 actors x 2). Measured: 56 (was 465 with a per-post scan). With the index missing the batched scan measures 196                         |
+| Unread count   |                271 |    339 | S1 (2026-10-26): comment read once through the per-call cache and checked with `commentReadable` (was 671 with the uncached `commentDetail`). Measured: 271                                                                                                                                                                  |
+| Memories month |                 75 |     94 | S2 sized the windows to the page, S3 batched the Home source authorization (was 224 then 164). Measured: 75                                                                                                                                                                                                                  |
+| Room view      |                 39 |     49 | username 1 + viewer, owner, profile, room 4 + friend and block pair 2 + 8 Top Friends × 4. Widgets live in the Room document and cost nothing.                                                                                                                                                                               |
+| Post detail    |                 40 |     50 | S4 (2026-10-26): `commentThreadsPage` loads roots, one batched reply query and viewer checks in a single read-only snapshot (the legacy per-root path measures 606). `replyCount` counts every visible-state reply (blocked and suspended authors appear as placeholders), as `countCommentReplies` always did. Measured: 40 |
 
 **Distinct-author guard.** Doubling the authors from 3 to 6 on the same 45 posts
 may add at most `3 × 2 = 6` reads (an account and a block pair per new author).
@@ -116,8 +116,12 @@ Status after the 2026-10-26/27 reductions (S1 to S4 and S6):
   2026-10-27: Box feed 465 to 56 reads, 196 when the index is missing. A repair
   job that already completed (or failed) is re-armed to `pending` by the next
   read that finds the index missing, at most once per 10 minutes.
-- **Open product question:** `replyCount` counts replies by blocked or suspended
-  authors even though the preview shows them only as hidden placeholders.
+- **Decided (2026-10-27): `replyCount` stays a count of replies in the
+  thread.** Replies by blocked or suspended authors are listed as hidden
+  placeholders, so the count equals the number of rows the viewer pages through
+  and "N more replies" stays accurate. Excluding them would need a read per
+  reply author on every thread and would disagree with the list. The
+  placeholder already reveals only that a reply exists.
 
 ## Limits of this measurement
 
