@@ -172,6 +172,7 @@ describe('error reasons', () => {
       'SESSION_ENDED',
       'INVALID_INPUT',
       'RATE_LIMITED',
+      'STALE_WRITE',
     ]);
     for (const reason of NATIVE_ERROR_REASONS)
       expect(nativeErrorReasonSchema.safeParse(reason).success).toBe(true);
@@ -226,5 +227,66 @@ describe('native HTTP endpoints', () => {
       expect(endpoint.statuses['404']).toBeDefined();
       expect(endpoint.statuses['429']).toBeDefined();
     }
+  });
+});
+
+describe('Rooms and Memories contract', () => {
+  const room = (name: string) => registry.get(name)!;
+  const sample = (name: string) =>
+    (
+      fixtures.get(name)!.fixture.response.valid as Record<string, unknown>[]
+    )[0]!;
+
+  it('declares STALE_WRITE only where a save names expectedUpdatedAt', () => {
+    for (const name of [
+      'updateMyRoom',
+      'updateMyRoomWidgets',
+      'updateMyRoomTopFriends',
+    ])
+      expect(room(name).errors).toContain('failed-precondition');
+    for (const name of ['getMyRoom', 'getRoom', 'listMyMemories'])
+      expect(room(name).errors).not.toContain('failed-precondition');
+  });
+
+  it('never carries a URL or storage key in a Room, only opaque media ids', () => {
+    for (const name of ['getMyRoom', 'getRoom', 'updateMyRoom']) {
+      const keys = Object.keys(sample(name));
+      expect(keys).toContain('bannerMediaId');
+      expect(keys).not.toContain('banner');
+    }
+    expect(JSON.stringify(sample('getMyRoom'))).not.toMatch(
+      /avatarUrl|thumbnailUrl|"banner"/,
+    );
+  });
+
+  it('accepts only the 14 registry themes and rejects CSS-bearing fields', () => {
+    const input = room('updateMyRoom').input;
+    expect(
+      input.safeParse({
+        themePreset: 'polaroid_scrapbook',
+        expectedUpdatedAt: null,
+      }).success,
+    ).toBe(true);
+    for (const bad of [
+      { css: 'x', sparkles: true, expectedUpdatedAt: null },
+      { themePreset: '#fff', expectedUpdatedAt: null },
+      { music: { url: 'javascript:alert(1)' }, expectedUpdatedAt: null },
+    ])
+      expect(input.safeParse(bad).success).toBe(false);
+  });
+
+  it('keeps Memory cursors opaque and within 128 characters', () => {
+    for (const name of [
+      'listMyMemories',
+      'listBoxMemories',
+      'listRoomMemories',
+    ])
+      expect(
+        room(name).input.safeParse({
+          ...(name === 'listBoxMemories' ? { boxId: 'b' } : {}),
+          ...(name === 'listRoomMemories' ? { username: 'u' } : {}),
+          cursor: 'c'.repeat(129),
+        }).success,
+      ).toBe(false);
   });
 });

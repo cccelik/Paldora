@@ -33,6 +33,14 @@ import {
   NativeLifeUpdateError,
   NativeMedia,
   NativeMediaError,
+  NativeMemories,
+  NativeMemoryError,
+  NativeRoomError,
+  NativeRooms,
+  compactMemoryCursor,
+  expandMemoryCursor,
+  type NativeMemoryFilter,
+  type NativeMemoryScope,
   NativeUsernameError,
   NativeUsernames,
   logEvent,
@@ -43,7 +51,12 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { getFunctions } from 'firebase-admin/functions';
-import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
+import {
+  HttpsError,
+  onCall,
+  onRequest,
+  type CallableRequest,
+} from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
@@ -51,6 +64,7 @@ import type { CallableName } from './callable-names.js';
 import { observedJob } from './observed.js';
 import { boxView, NativeViews } from './native-views.js';
 import { handleMediaRead, handleMediaUpload } from './media-http.js';
+import { isoVersion, roomPhotos, roomView } from './native-room-views.js';
 import type { native } from '@paldora/validation';
 
 if (getApps().length === 0) initializeApp();
@@ -97,6 +111,8 @@ const boxDeletion = new NativeBoxDeletion(
 );
 const lifeUpdates = new NativeLifeUpdates(db);
 const homeFeed = new NativeHomeFeed(db);
+const rooms = new NativeRooms(db);
+const memories = new NativeMemories(db);
 const boxes = new NativeBoxes(db);
 const profiles = new NativeProfiles(db, getAuth());
 const interactionIndex = new NativeInteractionIndex(db);
@@ -373,6 +389,33 @@ function mediaError(error: NativeMediaError): HttpsError {
   return new HttpsError('failed-precondition', 'Media unavailable.');
 }
 
+/** Absence, a hidden Room and a block share `not-found`; a stale save is told apart. */
+function roomError(error: NativeRoomError): HttpsError {
+  if (error.code === 'UNAVAILABLE')
+    return new HttpsError('not-found', 'Room unavailable.');
+  if (error.code === 'INVALID')
+    return reasoned(
+      'invalid-argument',
+      'Check your Room settings.',
+      'INVALID_INPUT',
+    );
+  if (error.code === 'STALE')
+    return reasoned('failed-precondition', 'Reload your Room.', 'STALE_WRITE');
+  if (error.code === 'FRIEND_INELIGIBLE')
+    return new HttpsError('failed-precondition', 'Choose from your friends.');
+  return new HttpsError('failed-precondition', 'Banner unavailable.');
+}
+
+function memoryError(error: NativeMemoryError): HttpsError {
+  if (error.code === 'INVALID')
+    return reasoned(
+      'invalid-argument',
+      'Invalid memory page.',
+      'INVALID_INPUT',
+    );
+  return new HttpsError('not-found', 'Memories unavailable.');
+}
+
 function usernameError(error: NativeUsernameError): HttpsError {
   return error.code === 'TAKEN'
     ? new HttpsError('already-exists', 'Username unavailable.')
@@ -401,6 +444,8 @@ function accountReadError(error: unknown): HttpsError | null {
   if (error instanceof NativeMediaError) return mediaError(error);
   if (error instanceof NativeAccountError)
     return new HttpsError('failed-precondition', 'Account unavailable.');
+  if (error instanceof NativeRoomError) return roomError(error);
+  if (error instanceof NativeMemoryError) return memoryError(error);
   if (
     error instanceof NativeBoxError ||
     error instanceof NativeNotificationError ||
@@ -1106,6 +1151,189 @@ export const getMediaAsset = onCall(options, async (request) => {
   return limited(uid, 'getMediaAsset', 1200, () => media.view(uid, assetId));
 });
 
+function viewsFor() {
+  return new NativeViews(db, boxes, posts, lifeUpdates);
+}
+
+export const getMyRoom = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'getMyRoom', 600, async () =>
+    roomView(db, viewsFor(), await rooms.get(uid)),
+  );
+});
+
+export const getRoom = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const username = field(request.data, 'username', 100);
+  return limited(uid, 'getRoom', 600, async () =>
+    roomView(db, viewsFor(), await rooms.get(uid, username)),
+  );
+});
+
+/** Native sends `expectedUpdatedAt` as epoch ms; the trusted schema takes ISO. */
+function roomWrite(data: unknown): Record<string, unknown> {
+  if (!data || typeof data !== 'object' || Array.isArray(data))
+    throw reasoned('invalid-argument', 'Invalid Room.', 'INVALID_INPUT');
+  const input = { ...(data as Record<string, unknown>) };
+  const version = isoVersion(input.expectedUpdatedAt);
+  if (version === undefined)
+    throw reasoned('invalid-argument', 'Invalid Room.', 'INVALID_INPUT');
+  input.expectedUpdatedAt = version;
+  return input;
+}
+
+export const updateMyRoom = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const input = roomWrite(request.data);
+  return limited(uid, 'updateMyRoom', 60, async () => {
+    const previous = await db.collection('nativeRooms').doc(uid).get();
+    const oldBannerId = previous.get('bannerMediaId') as
+      string | null | undefined;
+    const room = await rooms.update(uid, input as never);
+    // Same cleanup as the web adapter: a replaced banner is retired.
+    if (
+      input.bannerMediaId !== undefined &&
+      oldBannerId &&
+      oldBannerId !== input.bannerMediaId
+    )
+      await media.retire(oldBannerId);
+    return roomView(db, viewsFor(), room);
+  });
+});
+
+export const updateMyRoomWidgets = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const input = roomWrite(request.data);
+  return limited(uid, 'updateMyRoomWidgets', 60, async () =>
+    roomView(db, viewsFor(), await rooms.updateWidgets(uid, input as never)),
+  );
+});
+
+export const updateMyRoomTopFriends = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const input = roomWrite(request.data);
+  return limited(uid, 'updateMyRoomTopFriends', 60, async () =>
+    roomView(db, viewsFor(), await rooms.updateTopFriends(uid, input as never)),
+  );
+});
+
+export const listRoomPhotos = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const username = field(request.data, 'username', 100);
+  return limited(uid, 'listRoomPhotos', 300, async () => {
+    await homeFeed.processPending();
+    return {
+      items: await roomPhotos(db, memories, uid, username),
+      nextCursor: null,
+    };
+  });
+});
+
+/** Reads the optional filter fields; the trusted service validates the ranges. */
+function memoryFilter(data: unknown): NativeMemoryFilter {
+  const raw = (data ?? {}) as Record<string, unknown>;
+  const number = (key: string): number | undefined => {
+    const value = raw[key];
+    if (value === undefined) return undefined;
+    if (typeof value !== 'number' || !Number.isSafeInteger(value))
+      throw reasoned('invalid-argument', `Invalid ${key}.`, 'INVALID_INPUT');
+    return value;
+  };
+  const type = raw.type;
+  if (
+    type !== undefined &&
+    type !== 'all' &&
+    type !== 'posts' &&
+    type !== 'life_updates'
+  )
+    throw reasoned('invalid-argument', 'Invalid type.', 'INVALID_INPUT');
+  return {
+    year: number('year'),
+    month: number('month'),
+    type,
+    limit: number('limit'),
+  };
+}
+
+function memoryList(
+  name: string,
+  scopeOf: (data: unknown) => NativeMemoryScope,
+) {
+  return async (request: CallableRequest) => {
+    const uid = await requireSession(request.auth);
+    const scope = scopeOf(request.data);
+    const filter = memoryFilter(request.data);
+    const cursor = optionalCursor(request.data);
+    return limited(uid, name, 600, async () => {
+      // Expanding also proves the cursor belongs to this scope and filter.
+      const long =
+        cursor === undefined
+          ? undefined
+          : expandMemoryCursor(cursor, scope, filter);
+      await homeFeed.processPending();
+      const page = await memories.page(uid, scope, { ...filter, cursor: long });
+      return {
+        items: await viewsFor().memoryItems(uid, page.items),
+        nextCursor:
+          page.nextCursor === null
+            ? null
+            : compactMemoryCursor(page.nextCursor, scope, filter),
+      };
+    });
+  };
+}
+
+function memorySummary(
+  name: string,
+  scopeOf: (data: unknown) => NativeMemoryScope,
+) {
+  return async (request: CallableRequest) => {
+    const uid = await requireSession(request.auth);
+    const scope = scopeOf(request.data);
+    const year = memoryFilter(request.data).year;
+    // An exact scan of everything the viewer can see: keep the budget tight.
+    return limited(uid, name, 60, async () => {
+      await homeFeed.processPending();
+      return memories.summary(uid, scope, year);
+    });
+  };
+}
+
+const personalScope = (): NativeMemoryScope => ({ kind: 'personal' });
+const boxScope = (data: unknown): NativeMemoryScope => ({
+  kind: 'box',
+  boxId: field(data, 'boxId'),
+});
+const roomScope = (data: unknown): NativeMemoryScope => ({
+  kind: 'room',
+  username: field(data, 'username', 100),
+});
+
+export const listMyMemories = onCall(
+  options,
+  memoryList('listMyMemories', personalScope),
+);
+export const getMyMemorySummary = onCall(
+  options,
+  memorySummary('getMyMemorySummary', personalScope),
+);
+export const listBoxMemories = onCall(
+  options,
+  memoryList('listBoxMemories', boxScope),
+);
+export const getBoxMemorySummary = onCall(
+  options,
+  memorySummary('getBoxMemorySummary', boxScope),
+);
+export const listRoomMemories = onCall(
+  options,
+  memoryList('listRoomMemories', roomScope),
+);
+export const getRoomMemorySummary = onCall(
+  options,
+  memorySummary('getRoomMemorySummary', roomScope),
+);
+
 const mediaHttp = {
   verifyIdToken: async (token: string) => {
     const decoded = await getAuth().verifyIdToken(token);
@@ -1195,4 +1423,16 @@ void ({
   createMediaUpload,
   completeMediaUpload,
   getMediaAsset,
+  getMyRoom,
+  getRoom,
+  updateMyRoom,
+  updateMyRoomWidgets,
+  updateMyRoomTopFriends,
+  listRoomPhotos,
+  listMyMemories,
+  getMyMemorySummary,
+  listBoxMemories,
+  getBoxMemorySummary,
+  listRoomMemories,
+  getRoomMemorySummary,
 } satisfies Record<CallableName, unknown>);

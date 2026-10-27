@@ -29,7 +29,9 @@ export const functionsErrorCodeSchema = z.enum(FUNCTIONS_ERROR_CODES);
  * Stable reasons on `HttpsError.details.reason` (ADR 021 decision 7). Each
  * reason is derivable from the error code and the caller's own request, so it
  * never separates "does not exist" from "not allowed": no reason names a
- * resource, a membership, a block or a moderation state. Clients must tolerate
+ * resource, a membership, a block or a moderation state. `STALE_WRITE` answers
+ * `failed-precondition` when a write named an `expectedUpdatedAt` that is no
+ * longer current; only the owner of the thing being saved can reach it. Clients must tolerate
  * unknown reasons and must not require one.
  */
 export const NATIVE_ERROR_REASONS = [
@@ -37,6 +39,7 @@ export const NATIVE_ERROR_REASONS = [
   'SESSION_ENDED',
   'INVALID_INPUT',
   'RATE_LIMITED',
+  'STALE_WRITE',
 ] as const;
 
 export type NativeErrorReason = (typeof NATIVE_ERROR_REASONS)[number];

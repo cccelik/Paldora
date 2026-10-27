@@ -1,0 +1,67 @@
+{
+  "callable": "listRoomPhotos",
+  "request": {
+    "valid": [
+      {
+        "username": "synthetic_friend"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "username": ""
+      },
+      {
+        "username": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "items": [],
+        "nextCursor": null
+      },
+      {
+        "items": [
+          {
+            "mediaAssetId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+            "width": 640,
+            "height": 480,
+            "source": {
+              "kind": "post",
+              "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9"
+            },
+            "occurredAt": 1790000000000
+          },
+          {
+            "mediaAssetId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+            "width": 480,
+            "height": 640,
+            "source": {
+              "kind": "life_update",
+              "lifeUpdateId": "1a2b3c4d-5e6f-4071-8283-94a5b6c7d8e0",
+              "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+            },
+            "occurredAt": 1789000000000
+          }
+        ],
+        "nextCursor": null
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

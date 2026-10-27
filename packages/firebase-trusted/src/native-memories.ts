@@ -1,4 +1,5 @@
 /* eslint-disable no-await-in-loop, complexity -- Derived pages walk bounded Firestore batches and reauthorize each canonical item. */
+import { createHash } from 'node:crypto';
 import { type Firestore } from 'firebase-admin/firestore';
 import {
   NativeBoxPosts,
@@ -164,6 +165,141 @@ function parsePageCursor(
   } catch {
     throw new NativeMemoryError('INVALID');
   }
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const COMPACT_MEMORY_CURSOR_VERSION = 1;
+
+function filterDigest(
+  scope: NativeMemoryScope,
+  filter: NativeMemoryFilter,
+): Buffer {
+  return createHash('sha256')
+    .update(filterKey(scope, filter))
+    .digest()
+    .subarray(0, 4);
+}
+
+function uuidBytes(value: string): Buffer {
+  if (!UUID_PATTERN.test(value)) throw new NativeMemoryError('INVALID');
+  return Buffer.from(value.replaceAll('-', ''), 'hex');
+}
+
+function uuidText(bytes: Buffer): string {
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function packPosition(source: MemorySource, position: string): Buffer {
+  if (source !== 'home') return uuidBytes(position);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(position, 'base64url').toString());
+  } catch {
+    throw new NativeMemoryError('INVALID');
+  }
+  const { at, id } = (parsed ?? {}) as { at?: unknown; id?: unknown };
+  if (
+    typeof at !== 'number' ||
+    !Number.isSafeInteger(at) ||
+    at < 0 ||
+    at >= 2 ** 48 ||
+    typeof id !== 'string' ||
+    !/^[pl]_/.test(id)
+  )
+    throw new NativeMemoryError('INVALID');
+  const head = Buffer.alloc(7);
+  head.writeUIntBE(at, 0, 6);
+  head.writeUInt8(id.startsWith('p') ? 0 : 1, 6);
+  return Buffer.concat([head, uuidBytes(id.slice(2))]);
+}
+
+function unpackPosition(
+  source: MemorySource,
+  bytes: Buffer,
+  offset: number,
+): { position: string; next: number } {
+  if (source !== 'home') {
+    const end = offset + 16;
+    if (bytes.length < end) throw new NativeMemoryError('INVALID');
+    return { position: uuidText(bytes.subarray(offset, end)), next: end };
+  }
+  const end = offset + 23;
+  if (bytes.length < end) throw new NativeMemoryError('INVALID');
+  const kind = bytes.readUInt8(offset + 6);
+  if (kind > 1) throw new NativeMemoryError('INVALID');
+  const id = `${kind === 0 ? 'p' : 'l'}_${uuidText(bytes.subarray(offset + 7, end))}`;
+  return {
+    position: Buffer.from(
+      JSON.stringify({ at: bytes.readUIntBE(offset, 6), id }),
+    ).toString('base64url'),
+    next: end,
+  };
+}
+
+/**
+ * The page cursor `page()` returns is a base64url JSON document of several
+ * hundred characters. Native clients accept at most 128, so the callable layer
+ * sends this packed form instead: a version byte, a digest of the scope and
+ * filter, then per source a flag byte (done, position kind) and the position as
+ * raw bytes. It carries no authority: `expandMemoryCursor` rebuilds the exact
+ * long cursor, and `page()` still validates and re-authorizes every item.
+ */
+export function compactMemoryCursor(
+  cursor: string,
+  scope: NativeMemoryScope,
+  filter: NativeMemoryFilter,
+): string {
+  const marker = parsePageCursor(cursor, scope, filter);
+  const parts: Buffer[] = [
+    Buffer.from([COMPACT_MEMORY_CURSOR_VERSION]),
+    filterDigest(scope, filter),
+  ];
+  for (const source of sources(scope, filter)) {
+    const state = marker.states[source];
+    const position = state.position;
+    parts.push(
+      Buffer.from([(state.done ? 1 : 0) | (position === null ? 0 : 2)]),
+    );
+    if (position !== null) parts.push(packPosition(source, position));
+  }
+  return Buffer.concat(parts).toString('base64url');
+}
+
+export function expandMemoryCursor(
+  compact: string,
+  scope: NativeMemoryScope,
+  filter: NativeMemoryFilter,
+): string {
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(compact))
+    throw new NativeMemoryError('INVALID');
+  const bytes = Buffer.from(compact, 'base64url');
+  if (
+    bytes.length < 5 ||
+    bytes.readUInt8(0) !== COMPACT_MEMORY_CURSOR_VERSION ||
+    !bytes.subarray(1, 5).equals(filterDigest(scope, filter))
+  )
+    throw new NativeMemoryError('INVALID');
+  let offset = 5;
+  const states: Record<string, SourceState> = {};
+  for (const source of sources(scope, filter)) {
+    if (offset >= bytes.length) throw new NativeMemoryError('INVALID');
+    const flags = bytes.readUInt8(offset);
+    offset += 1;
+    if (flags > 3) throw new NativeMemoryError('INVALID');
+    let position: string | null = null;
+    if (flags & 2) {
+      const unpacked = unpackPosition(source, bytes, offset);
+      position = unpacked.position;
+      offset = unpacked.next;
+    }
+    states[source] = { position, done: (flags & 1) === 1 };
+  }
+  if (offset !== bytes.length) throw new NativeMemoryError('INVALID');
+  return Buffer.from(
+    JSON.stringify({ version: 2, filter: filterKey(scope, filter), states }),
+  ).toString('base64url');
 }
 
 /** UTC Memories derive from live posts and updates; no content snapshot is stored. */

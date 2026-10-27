@@ -16,6 +16,9 @@ public enum CallableName: String, CaseIterable, Hashable, Sendable {
     case listMyNotifications, countMyUnreadNotifications, markNotificationRead, markAllNotificationsRead
     case getHomeFeed
     case createMediaUpload, completeMediaUpload, getMediaAsset
+    case getMyRoom, getRoom, updateMyRoom, updateMyRoomWidgets, updateMyRoomTopFriends, listRoomPhotos
+    case listMyMemories, getMyMemorySummary, listBoxMemories, getBoxMemorySummary
+    case listRoomMemories, getRoomMemorySummary
 }
 
 /// JSON in, JSON out. The app target implements this with Firebase Functions
@@ -234,6 +237,46 @@ extension PaldoraAPI {
     }
     public func getMediaAsset(assetId: String) async throws -> MediaAssetDetails {
         try await perform(Contracts.GetMediaAsset.self, MediaAssetReference(assetId: assetId))
+    }
+
+    // Rooms (absence, a hidden Room and a block are all `notFound`)
+    public func getMyRoom() async throws -> Room {
+        try await perform(Contracts.GetMyRoom.self, EmptyRequest())
+    }
+    public func getRoom(username: String) async throws -> Room {
+        try await perform(Contracts.GetRoom.self, RoomReference(username: username))
+    }
+    public func updateMyRoom(_ request: UpdateMyRoomRequest) async throws -> Room {
+        try await perform(Contracts.UpdateMyRoom.self, request)
+    }
+    public func updateMyRoomWidgets(_ request: UpdateMyRoomWidgetsRequest) async throws -> Room {
+        try await perform(Contracts.UpdateMyRoomWidgets.self, request)
+    }
+    public func updateMyRoomTopFriends(_ request: UpdateMyRoomTopFriendsRequest) async throws -> Room {
+        try await perform(Contracts.UpdateMyRoomTopFriends.self, request)
+    }
+    public func listRoomPhotos(username: String) async throws -> Page<RoomPhoto> {
+        try await perform(Contracts.ListRoomPhotos.self, RoomReference(username: username))
+    }
+
+    // Memories (derived and re-authorized on every read)
+    public func listMyMemories(_ request: ListMyMemoriesRequest = .init()) async throws -> Page<MemoryItem> {
+        try await perform(Contracts.ListMyMemories.self, request)
+    }
+    public func getMyMemorySummary(year: Int? = nil) async throws -> MemorySummary {
+        try await perform(Contracts.GetMyMemorySummary.self, MyMemorySummaryRequest(year: year))
+    }
+    public func listBoxMemories(_ request: ListBoxMemoriesRequest) async throws -> Page<MemoryItem> {
+        try await perform(Contracts.ListBoxMemories.self, request)
+    }
+    public func getBoxMemorySummary(boxId: String, year: Int? = nil) async throws -> MemorySummary {
+        try await perform(Contracts.GetBoxMemorySummary.self, BoxMemorySummaryRequest(boxId: boxId, year: year))
+    }
+    public func listRoomMemories(_ request: ListRoomMemoriesRequest) async throws -> Page<MemoryItem> {
+        try await perform(Contracts.ListRoomMemories.self, request)
+    }
+    public func getRoomMemorySummary(username: String, year: Int? = nil) async throws -> MemorySummary {
+        try await perform(Contracts.GetRoomMemorySummary.self, RoomMemorySummaryRequest(username: username, year: year))
     }
 
     // Moderation

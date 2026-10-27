@@ -1,14 +1,18 @@
 import {
+  NativeBoxError,
   NativeLifeUpdateError,
+  NativePostError,
   readyAvatarMediaId,
   type NativeBoxes,
   type NativeBoxPosts,
   type NativeLifeUpdates,
+  type NativeMemoryItem,
   type NativeNotifications,
   type TrustedBox,
 } from '@paldora/firebase-trusted';
 import type { Firestore } from 'firebase-admin/firestore';
 import { native } from '@paldora/validation';
+import { readyPhotos } from './native-room-views.js';
 
 type Person = {
   uid: string;
@@ -37,6 +41,7 @@ export function boxView(box: TrustedBox) {
 /** Display-only identity reads, shared per request. Avatars are opaque media ids, never URLs. */
 export class NativeViews {
   private readonly people = new Map<string, Promise<Person>>();
+  private readonly boxStatuses = new Map<string, Promise<string | null>>();
 
   public constructor(
     private readonly db: Firestore,
@@ -115,6 +120,129 @@ export class NativeViews {
       viewerReaction: summary.viewerReaction,
       canInteract: summary.canInteract,
     };
+  }
+
+  private boxStatus(uid: string, boxId: string): Promise<string | null> {
+    let pending = this.boxStatuses.get(boxId);
+    if (!pending) {
+      pending = this.boxes.get(boxId, uid).then(
+        (box) => box.status,
+        (error: unknown) => {
+          if (error instanceof NativeBoxError) return null;
+          throw error;
+        },
+      );
+      this.boxStatuses.set(boxId, pending);
+    }
+    return pending;
+  }
+
+  /**
+   * Memories as the web adapter projects them: live interaction summaries, and
+   * an item whose Box or summary became unavailable between the canonical scan
+   * and this projection is dropped. Photos are the ready ones only.
+   */
+  public async memoryItems(
+    uid: string,
+    items: NativeMemoryItem[],
+  ): Promise<native.NativeMemoryItem[]> {
+    const refs = items.flatMap((item) =>
+      item.kind === 'post'
+        ? [{ boxId: item.post.boxId, postId: item.post.id }]
+        : item.update.contexts.map((context) => ({
+            boxId: context.boxId,
+            postId: context.postId,
+          })),
+    );
+    const [summaries, ready] = await Promise.all([
+      this.posts.interactionSummaries(refs, uid),
+      readyPhotos(
+        this.db,
+        items.flatMap((item) =>
+          item.kind === 'post'
+            ? item.post.mediaAssetIds
+            : item.update.mediaAssetIds,
+        ),
+      ),
+    ]);
+    const summaryOf = new Map(
+      refs.map((ref, at) => [`${ref.boxId}/${ref.postId}`, summaries[at]]),
+    );
+    const projected = await Promise.all(
+      items.map((item) => this.memoryItem(uid, item, summaryOf, ready)),
+    );
+    return projected.filter(
+      (item): item is native.NativeMemoryItem => item !== null,
+    );
+  }
+
+  private async memoryItem(
+    uid: string,
+    item: NativeMemoryItem,
+    summaryOf: Map<string, Summary | null | undefined>,
+    ready: Map<string, unknown>,
+  ): Promise<native.NativeMemoryItem | null> {
+    const photos = (ids: string[]) => ids.filter((id) => ready.has(id));
+    try {
+      if (item.kind === 'post') {
+        const { post } = item;
+        const raw = summaryOf.get(`${post.boxId}/${post.id}`);
+        const status = await this.boxStatus(uid, post.boxId);
+        if (!raw || !status) return null;
+        const author = await this.person(post.authorUid);
+        return {
+          kind: 'post',
+          occurredAt: item.occurredAt,
+          id: post.id,
+          boxId: post.boxId,
+          authorUid: post.authorUid,
+          authorName: author.displayName,
+          authorAvatarMediaId: author.avatarMediaId,
+          mediaAssetIds: photos(post.mediaAssetIds),
+          createdAt: post.createdAt,
+          interactions: this.summary(raw),
+          text: post.text,
+          edited: post.updatedAt > post.createdAt,
+          canEdit: post.authorUid === uid && status === 'active',
+        };
+      }
+      const { update } = item;
+      const contexts = update.contexts.map((context) => ({
+        context,
+        raw: summaryOf.get(`${context.boxId}/${context.postId}`),
+      }));
+      if (contexts.some(({ raw }) => !raw)) return null;
+      const author = await this.person(update.authorUid);
+      return {
+        kind: 'life_update',
+        occurredAt: item.occurredAt,
+        id: update.id,
+        authorUid: update.authorUid,
+        authorName: author.displayName,
+        authorAvatarMediaId: author.avatarMediaId,
+        audience: update.audience,
+        sections: native.NATIVE_LIFE_UPDATE_SECTION_KEYS.flatMap((key) =>
+          update.sections[key]
+            ? [{ key, content: update.sections[key] as string }]
+            : [],
+        ),
+        mediaAssetIds: photos(update.mediaAssetIds),
+        createdAt: update.createdAt,
+        updatedAt: update.updatedAt,
+        canEdit: update.canEdit,
+        contexts: contexts.map(({ context, raw }) => ({
+          boxId: context.boxId,
+          boxName: context.boxName,
+          postId: context.postId,
+          interactions: this.summary(raw!),
+        })),
+      };
+    } catch (error) {
+      // A Box may close between the canonical scan and DTO projection.
+      if (error instanceof NativePostError && error.code === 'UNAVAILABLE')
+        return null;
+      throw error;
+    }
   }
 
   /** Same projection as the web Home feed; unavailable items drop out. */

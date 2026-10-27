@@ -59,6 +59,37 @@ that member). Render it with `GET mediaRead/{id}/thumbnail`; whether a viewer
 may see the bytes is re-checked on that read, and a hidden avatar is the same
 `404` as any other absence, so show initials.
 
+## Rooms and Memories
+
+Twelve callables wrap the same trusted services as the web adapter (ADR 021
+decision 8). The source is `packages/validation/src/native/rooms.ts` and
+`memories.ts`.
+
+- **Rooms:** `getMyRoom`, `getRoom` (`username`), `updateMyRoom`,
+  `updateMyRoomWidgets`, `updateMyRoomTopFriends`, `listRoomPhotos`. A missing,
+  blocked, hidden or inaccessible Room is one `not-found`. Theme, layout,
+  accent, font, decoration pack, visibility and widget type are registry id
+  strings; there is no CSS, color or URL. The banner is an opaque
+  `bannerMediaId` (render with `mediaRead/{id}/display`; a ready `room_banner`
+  asset you own, attached when you save). `music.url` is a public `https://`
+  link card, never embedded. Phase 8 personalization is web-only.
+- **Saving:** every Room write carries `expectedUpdatedAt`, the `updatedAt` the
+  client loaded (epoch ms, `null` for a never-saved Room). A stale value is
+  `failed-precondition` with reason `STALE_WRITE`: reload and retry. Repeating
+  the exact saved state succeeds. Top Friends that are not accepted, unblocked
+  friends, and an unusable banner, are `failed-precondition` without a reason.
+- **Memories:** `listMyMemories`, `listBoxMemories` (`boxId`),
+  `listRoomMemories` (`username`) take optional `year`, `month` (needs a
+  `year`), `type` (`all`, `posts`, `life_updates`), `cursor` and `limit` (at
+  most 50). Items are `post` or `life_update`, each with `occurredAt` (UTC
+  publish time) and live interaction summaries. A cursor is opaque, at most 128
+  characters, and only valid with the same scope, year, month and type
+  (otherwise `invalid-argument`). `getMyMemorySummary`, `getBoxMemorySummary`,
+  `getRoomMemorySummary` return year and month counts; they are exact scans with
+  a tight limit (60 an hour).
+- **Limits per hour:** Room reads 600, Room writes 60, `listRoomPhotos` 300,
+  Memory lists 600, Memory summaries 60.
+
 ## Rules
 
 - **Versioning:** undecided (V1 function suffix versus `contractVersion`
@@ -70,7 +101,7 @@ may see the bytes is re-checked on that read, and a hidden avatar is the same
 - **Errors:** the `HttpsError` code plus a generic message. Do not display or
   parse the message. `details.reason` is optional and one of `errorReasons` in
   `callables.schema.json` (`SIGN_IN_REQUIRED`, `SESSION_ENDED`,
-  `INVALID_INPUT`, `RATE_LIMITED`). It never names a resource, membership,
+  `INVALID_INPUT`, `RATE_LIMITED`, `STALE_WRITE`). It never names a resource, membership,
   block or moderation state, so absence and denial stay identical. Treat an
   unknown or missing reason as no reason.
 

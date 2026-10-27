@@ -151,10 +151,10 @@ object cleanup remain open.
 The callables ship to hosted projects as an esbuild bundle (`pnpm functions:bundle`, output `apps/firebase-functions/deploy/`), not from the workspace source; the local emulator flow still loads the `tsc` output unchanged (see deployment.md).
 
 Native clients will use the callable Functions as their contract, not the
-retired HTTP API. Today that is 49 `onCall` functions plus 2 `onRequest` media functions in `europe-west4`, each
+retired HTTP API. Today that is 62 `onCall` functions plus 2 `onRequest` media functions in `europe-west4`, each
 rate-limited by `limited()`, with ad-hoc `field()` input checks, outputs typed
 in `packages/firebase-trusted` (epoch-millisecond timestamps), `HttpsError`
-codes with generic messages, an optional non-leaking `details.reason` for sign-in, session, input and rate-limit failures only, and opaque cursors
+codes with generic messages, an optional non-leaking `details.reason` for sign-in, session, input, rate-limit and stale-save (`STALE_WRITE`) failures only, and opaque cursors
 in several formats. Direct Firestore access is experimental and limited to
 `nativeAccounts/{uid}/boxRefs`, `nativeBoxes/{id}` and
 `nativeBoxes/{id}/members/{uid}`; everything else and Storage are deny-all.
@@ -166,8 +166,20 @@ and describe an asset, while two authenticated HTTP Functions (`mediaUpload`,
 `mediaRead`, bearer Firebase ID token, session-epoch check, rate limits, the
 web's per-request media authorization, uniform 404) move the bytes. No signed
 URL or Firebase download URL is issued, so a block, removal or deletion closes
-reads immediately. No native entry point exists yet for Rooms, Memories,
-account export/deletion, or password/session changes. Callables compare the ID token's session epoch
+reads immediately. Rooms and Memories follow (12 callables wrapping the same
+`NativeRooms` and `NativeMemories` services as the web adapter): `getMyRoom`,
+`getRoom`, `updateMyRoom`, `updateMyRoomWidgets`, `updateMyRoomTopFriends`,
+`listRoomPhotos`, `listMyMemories`, `listBoxMemories`, `listRoomMemories` and
+the three `get*MemorySummary` counters. A missing, blocked, hidden or
+non-visible Room is one `not-found`. Theme, accent, font and decoration are
+registry id strings; the banner is an opaque `bannerMediaId` served through
+`mediaRead`, which rechecks the Room's visibility on every read. A save sends
+`expectedUpdatedAt` (epoch ms, `null` for a never-saved Room); a stale one is
+`failed-precondition` with reason `STALE_WRITE`. Memory pages return a compact
+cursor of at most 128 characters (the trusted cursor is several hundred), bound
+to the scope, year, month and type. Phase 8 personalization (custom CSS and
+sandboxed widgets) is web-only. No native entry point exists yet for account
+export/deletion, or password/session changes. Callables compare the ID token's session epoch
 with the account's (a rotated epoch answers `unauthenticated`, ADR 021
 decision 5). The proposed registry, fixtures, rules and open owner decisions are in
 [ADR 021](../adr/021-firebase-native-contract.md) and

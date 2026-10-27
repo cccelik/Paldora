@@ -1,0 +1,82 @@
+{
+  "callable": "getBoxMemorySummary",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 2026
+      }
+    ],
+    "invalid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 1969
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 10000
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": "now"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 2026.5
+      },
+      {},
+      {
+        "boxId": ""
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "years": [],
+        "year": null,
+        "months": []
+      },
+      {
+        "years": [
+          {
+            "year": 2026,
+            "count": 4
+          },
+          {
+            "year": 2025,
+            "count": 1
+          }
+        ],
+        "year": 2026,
+        "months": [
+          {
+            "month": 10,
+            "count": 3
+          },
+          {
+            "month": 3,
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

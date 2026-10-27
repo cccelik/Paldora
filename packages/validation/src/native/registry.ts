@@ -7,12 +7,14 @@ import type { FunctionsErrorCode } from './errors.js';
 import * as friendships from './friendships.js';
 import * as invitations from './invitations.js';
 import * as lifeUpdates from './life-updates.js';
+import * as memories from './memories.js';
 import * as mediaSchemas from './media.js';
 import * as moderation from './moderation.js';
 import * as notifications from './notifications.js';
 import * as profile from './profile.js';
 import * as posts from './posts.js';
 import * as reactions from './reactions.js';
+import * as rooms from './rooms.js';
 
 /** Fixed window of the trusted per-user limiter (`60 * 60 * 1000`). */
 export const NATIVE_RATE_LIMIT_WINDOW_MS = 3_600_000;
@@ -514,6 +516,114 @@ export const nativeCallableRegistry: readonly NativeCallable[] = [
     {
       input: mediaSchemas.getMediaAssetInputSchema,
       output: mediaSchemas.getMediaAssetOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'getMyRoom',
+    600,
+    {
+      input: rooms.getMyRoomInputSchema,
+      output: rooms.getMyRoomOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'getRoom',
+    600,
+    {
+      input: rooms.getRoomInputSchema,
+      output: rooms.getRoomOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'updateMyRoom',
+    60,
+    {
+      input: rooms.updateMyRoomInputSchema,
+      output: rooms.updateMyRoomOutputSchema,
+    },
+    ['not-found', 'failed-precondition'],
+  ),
+  callable(
+    'updateMyRoomWidgets',
+    60,
+    {
+      input: rooms.updateMyRoomWidgetsInputSchema,
+      output: rooms.updateMyRoomWidgetsOutputSchema,
+    },
+    ['not-found', 'failed-precondition'],
+  ),
+  callable(
+    'updateMyRoomTopFriends',
+    60,
+    {
+      input: rooms.updateMyRoomTopFriendsInputSchema,
+      output: rooms.updateMyRoomTopFriendsOutputSchema,
+    },
+    ['not-found', 'failed-precondition'],
+  ),
+  callable(
+    'listRoomPhotos',
+    300,
+    {
+      input: rooms.listRoomPhotosInputSchema,
+      output: rooms.listRoomPhotosOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'listMyMemories',
+    600,
+    {
+      input: memories.listMyMemoriesInputSchema,
+      output: memories.listMyMemoriesOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'getMyMemorySummary',
+    60,
+    {
+      input: memories.getMyMemorySummaryInputSchema,
+      output: memories.getMyMemorySummaryOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'listBoxMemories',
+    600,
+    {
+      input: memories.listBoxMemoriesInputSchema,
+      output: memories.listBoxMemoriesOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'getBoxMemorySummary',
+    60,
+    {
+      input: memories.getBoxMemorySummaryInputSchema,
+      output: memories.getBoxMemorySummaryOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'listRoomMemories',
+    600,
+    {
+      input: memories.listRoomMemoriesInputSchema,
+      output: memories.listRoomMemoriesOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'getRoomMemorySummary',
+    60,
+    {
+      input: memories.getRoomMemorySummaryInputSchema,
+      output: memories.getRoomMemorySummaryOutputSchema,
     },
     ['not-found'],
   ),

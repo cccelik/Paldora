@@ -1,0 +1,236 @@
+{
+  "callable": "updateMyRoom",
+  "request": {
+    "valid": [
+      {
+        "themePreset": "cream_paper",
+        "expectedUpdatedAt": 1790000000000
+      },
+      {
+        "visibility": "hidden",
+        "accent": null,
+        "font": null,
+        "decorationPack": null,
+        "sparkles": false,
+        "location": null,
+        "currently": "Synthetic",
+        "expectedUpdatedAt": null
+      },
+      {
+        "music": {
+          "url": "https://music.example.com/track",
+          "title": "Song"
+        },
+        "expectedUpdatedAt": 5
+      },
+      {
+        "music": null,
+        "bannerMediaId": null,
+        "expectedUpdatedAt": 5
+      },
+      {
+        "bannerMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+        "layout": "single",
+        "expectedUpdatedAt": 5
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "expectedUpdatedAt": null
+      },
+      {
+        "sparkles": true
+      },
+      {
+        "themePreset": "nope",
+        "expectedUpdatedAt": null
+      },
+      {
+        "music": {
+          "url": "http://music.example.com/track"
+        },
+        "expectedUpdatedAt": null
+      },
+      {
+        "music": {
+          "url": "https://localhost/x"
+        },
+        "expectedUpdatedAt": null
+      },
+      {
+        "location": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expectedUpdatedAt": null
+      },
+      {
+        "css": "body{}",
+        "sparkles": true,
+        "expectedUpdatedAt": null
+      },
+      {
+        "sparkles": true,
+        "expectedUpdatedAt": "2026-10-27T00:00:00.000Z"
+      },
+      {
+        "sparkles": true,
+        "expectedUpdatedAt": -1
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "owner": {
+          "uid": "uid_synthetic_0001",
+          "username": "synthetic_user",
+          "displayName": "Synthetic User",
+          "bio": "Synthetic bio.",
+          "avatarMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
+        },
+        "relationship": "owner",
+        "style": {
+          "themePreset": "obsidian_gold",
+          "layout": "two_column",
+          "accent": null,
+          "font": null,
+          "decorationPack": "stars",
+          "sparkles": true
+        },
+        "location": "Synthetic City",
+        "currently": "Testing",
+        "music": {
+          "url": "https://music.example.com/track",
+          "title": "Synthetic Song",
+          "artist": null
+        },
+        "bannerMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+        "widgets": [
+          {
+            "type": "currently",
+            "placement": "main",
+            "position": 0,
+            "enabled": true
+          },
+          {
+            "type": "music",
+            "placement": "sidebar",
+            "position": 1,
+            "enabled": true
+          },
+          {
+            "type": "top_friends",
+            "placement": "sidebar",
+            "position": 2,
+            "enabled": true
+          },
+          {
+            "type": "photos",
+            "placement": "main",
+            "position": 3,
+            "enabled": true
+          },
+          {
+            "type": "life_updates",
+            "placement": "main",
+            "position": 4,
+            "enabled": true
+          },
+          {
+            "type": "posts",
+            "placement": "main",
+            "position": 5,
+            "enabled": true
+          },
+          {
+            "type": "memories",
+            "placement": "sidebar",
+            "position": 6,
+            "enabled": true
+          }
+        ],
+        "topFriends": {
+          "size": 4,
+          "visibility": "friends",
+          "items": [
+            {
+              "uid": "uid_synthetic_0002",
+              "username": "synthetic_friend",
+              "displayName": "Synthetic Friend",
+              "avatarMediaId": null
+            }
+          ]
+        },
+        "visibility": "friends",
+        "updatedAt": 1790000000000,
+        "configurationVersion": 1
+      },
+      {
+        "owner": {
+          "uid": "uid_synthetic_0001",
+          "username": "synthetic_user",
+          "displayName": "Synthetic User",
+          "bio": null,
+          "avatarMediaId": null
+        },
+        "relationship": "friend",
+        "style": {
+          "themePreset": "obsidian_gold",
+          "layout": "two_column",
+          "accent": "lavender",
+          "font": "editorial",
+          "decorationPack": null,
+          "sparkles": false
+        },
+        "location": null,
+        "currently": null,
+        "music": null,
+        "bannerMediaId": null,
+        "widgets": [
+          {
+            "type": "currently",
+            "placement": "main",
+            "position": 0,
+            "enabled": true
+          },
+          {
+            "type": "music",
+            "placement": "sidebar",
+            "position": 1,
+            "enabled": true
+          },
+          {
+            "type": "top_friends",
+            "placement": "sidebar",
+            "position": 2,
+            "enabled": true
+          }
+        ],
+        "topFriends": {
+          "size": null,
+          "visibility": null,
+          "items": null
+        },
+        "visibility": null,
+        "updatedAt": null,
+        "configurationVersion": 1
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "failed-precondition"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

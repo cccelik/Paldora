@@ -97,6 +97,8 @@ public enum ErrorReason: String, CaseIterable, Hashable, Sendable {
     case sessionEnded = "SESSION_ENDED"
     case invalidInput = "INVALID_INPUT"
     case rateLimited = "RATE_LIMITED"
+    /// A save named an `expectedUpdatedAt` that is no longer current; reload and retry.
+    case staleWrite = "STALE_WRITE"
 }
 
 /// What a typed call throws when the callable failed.

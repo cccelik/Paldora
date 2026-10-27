@@ -52,6 +52,18 @@ public enum Contracts {
     public enum CreateMediaUpload: CallableContract { public typealias Request = CreateMediaUploadRequest; public typealias Response = CreateMediaUploadResponse; public static let name = CallableName.createMediaUpload }
     public enum CompleteMediaUpload: CallableContract { public typealias Request = MediaAssetReference; public typealias Response = MediaAsset; public static let name = CallableName.completeMediaUpload }
     public enum GetMediaAsset: CallableContract { public typealias Request = MediaAssetReference; public typealias Response = MediaAssetDetails; public static let name = CallableName.getMediaAsset }
+    public enum GetMyRoom: CallableContract { public typealias Request = EmptyRequest; public typealias Response = Room; public static let name = CallableName.getMyRoom }
+    public enum GetRoom: CallableContract { public typealias Request = RoomReference; public typealias Response = Room; public static let name = CallableName.getRoom }
+    public enum UpdateMyRoom: CallableContract { public typealias Request = UpdateMyRoomRequest; public typealias Response = Room; public static let name = CallableName.updateMyRoom }
+    public enum UpdateMyRoomWidgets: CallableContract { public typealias Request = UpdateMyRoomWidgetsRequest; public typealias Response = Room; public static let name = CallableName.updateMyRoomWidgets }
+    public enum UpdateMyRoomTopFriends: CallableContract { public typealias Request = UpdateMyRoomTopFriendsRequest; public typealias Response = Room; public static let name = CallableName.updateMyRoomTopFriends }
+    public enum ListRoomPhotos: CallableContract { public typealias Request = RoomReference; public typealias Response = Page<RoomPhoto>; public static let name = CallableName.listRoomPhotos }
+    public enum ListMyMemories: CallableContract { public typealias Request = ListMyMemoriesRequest; public typealias Response = Page<MemoryItem>; public static let name = CallableName.listMyMemories }
+    public enum GetMyMemorySummary: CallableContract { public typealias Request = MyMemorySummaryRequest; public typealias Response = MemorySummary; public static let name = CallableName.getMyMemorySummary }
+    public enum ListBoxMemories: CallableContract { public typealias Request = ListBoxMemoriesRequest; public typealias Response = Page<MemoryItem>; public static let name = CallableName.listBoxMemories }
+    public enum GetBoxMemorySummary: CallableContract { public typealias Request = BoxMemorySummaryRequest; public typealias Response = MemorySummary; public static let name = CallableName.getBoxMemorySummary }
+    public enum ListRoomMemories: CallableContract { public typealias Request = ListRoomMemoriesRequest; public typealias Response = Page<MemoryItem>; public static let name = CallableName.listRoomMemories }
+    public enum GetRoomMemorySummary: CallableContract { public typealias Request = RoomMemorySummaryRequest; public typealias Response = MemorySummary; public static let name = CallableName.getRoomMemorySummary }
 
     public static let all: [any CallableContract.Type] = [
         BeginBoxDeletion.self,
@@ -104,5 +116,17 @@ public enum Contracts {
         CreateMediaUpload.self,
         CompleteMediaUpload.self,
         GetMediaAsset.self,
+        GetMyRoom.self,
+        GetRoom.self,
+        UpdateMyRoom.self,
+        UpdateMyRoomWidgets.self,
+        UpdateMyRoomTopFriends.self,
+        ListRoomPhotos.self,
+        ListMyMemories.self,
+        GetMyMemorySummary.self,
+        ListBoxMemories.self,
+        GetBoxMemorySummary.self,
+        ListRoomMemories.self,
+        GetRoomMemorySummary.self,
     ]
 }

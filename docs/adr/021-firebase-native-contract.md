@@ -117,7 +117,7 @@ Two options, neither chosen:
    dependency:** no avatar, signed URL or object key is returned. Media fields
    are opaque media asset ids only (`mediaAssetIds`, camera-reaction
    `realPreview[].mediaAssetId`), and `getMyProfile` has no avatar until the
-   Storage design lands. Still open: media, Rooms, Memories, export/deletion,
+   Storage design lands. Media, Rooms and Memories followed (see the decisions below). Still open: export/deletion,
    password/session.
 9. **Hosted deployment.** Callables, App Check and new buckets need Blaze;
    `paldora-dev` stays on Spark without an owner instruction.
@@ -171,6 +171,38 @@ Two options, neither chosen:
   custom authenticated loader. Revisit with a CDN or signed-cookie design only
   after measuring cost on a hosted (Blaze) project. Declared in
   `contracts/native` (`http` in `callables.schema.json`, README).
+- **#8 Rooms and Memories (decided and implemented locally, 2026-10-27), 12
+  callables:** `getMyRoom`, `getRoom(username)`, `updateMyRoom`,
+  `updateMyRoomWidgets`, `updateMyRoomTopFriends`, `listRoomPhotos(username)`,
+  `listMyMemories`, `getMyMemorySummary`, `listBoxMemories`,
+  `getBoxMemorySummary`, `listRoomMemories(username)` and
+  `getRoomMemorySummary(username)`. Each wraps `NativeRooms` or `NativeMemories`
+  exactly as the web adapter does, so Room visibility (`friends`, `members`,
+  `hidden`), blocks, live Box membership, Top Friends eligibility and per-item
+  Memory authorization are unchanged; a missing, blocked, hidden or inaccessible
+  Room is the same `not-found`. Wire choices: theme, layout, accent, font,
+  decoration, visibility and widget type are the registry id strings (no CSS or
+  URL); the music link must be a public `https://` URL and is a link card only;
+  the banner is an opaque `bannerMediaId` (a ready, owned `room_banner` asset
+  from `createMediaUpload`, retired when replaced) rendered with `mediaRead`,
+  which rechecks Room visibility per read; timestamps are epoch ms, so
+  `expectedUpdatedAt` is epoch ms (or `null` for a never-saved Room) and the
+  callable converts it to the trusted ISO version. **New reason `STALE_WRITE`**
+  (`failed-precondition`) answers a stale `expectedUpdatedAt`; only the Room's
+  owner can reach it, so absence and denial stay identical. Ineligible Top
+  Friends and an unusable banner are `failed-precondition` with no reason.
+  **Cursors:** the trusted Memory cursor is a several-hundred-character
+  base64url document, over the 128-character contract limit, so the callables
+  send a packed cursor (version, scope/filter digest, per-source done flag and
+  raw position bytes, about 60 characters). It carries no authority: it expands
+  back to the exact trusted cursor, a cursor for another scope, year, month or
+  type is `invalid-argument`, and every item is still re-authorized. Memories
+  accept an optional `year` for every scope (a superset of the web, which
+  requires one for personal and Box pages); a `month` needs a `year`. The three
+  summaries are exact scans (the web does not call them live), so they are
+  limited to 60 an hour; lists to 600, `listRoomPhotos` to 300, Room writes to 60. `listRoomPhotos` returns at most six ready photos (opaque ids, size and
+  source), like the web Room preview. **Not exposed:** Phase 8 personalization
+  (custom CSS and sandboxed widgets) is web-only for now.
 - **Still open:** #3 App Check, #4 Sign in with Apple, #9 hosted deployment
   (App Check and hosted deployment depend on Blaze; hosted staging is skipped
   for now). The ADR stays Proposed until these are decided.

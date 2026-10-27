@@ -1,0 +1,199 @@
+{
+  "callable": "listBoxMemories",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 2026
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 2026,
+        "month": 3,
+        "type": "life_updates"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "type": "posts",
+        "limit": 50,
+        "cursor": "AQECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v"
+      }
+    ],
+    "invalid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "month": 3
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 1969
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 10000
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 2026,
+        "month": 13
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 2026,
+        "month": 0
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "type": "everything"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "limit": 0
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "limit": 51
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": ""
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "cursor": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "year": 2026.5
+      },
+      {},
+      {
+        "boxId": ""
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "items": [],
+        "nextCursor": null
+      },
+      {
+        "items": [
+          {
+            "kind": "post",
+            "occurredAt": 1790000000000,
+            "id": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "authorUid": "uid_synthetic_0001",
+            "authorName": "Synthetic User",
+            "authorAvatarMediaId": null,
+            "mediaAssetIds": ["9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"],
+            "createdAt": 1790000000000,
+            "interactions": {
+              "commentCount": 2,
+              "reactions": [
+                {
+                  "kind": "❤️",
+                  "count": 1
+                }
+              ],
+              "reactionCount": 1,
+              "realCount": 0,
+              "realPreview": [],
+              "viewerReaction": null,
+              "canInteract": true
+            },
+            "text": "Synthetic post.",
+            "edited": false,
+            "canEdit": true
+          },
+          {
+            "kind": "life_update",
+            "occurredAt": 1789000000000,
+            "id": "1a2b3c4d-5e6f-4071-8283-94a5b6c7d8e0",
+            "authorUid": "uid_synthetic_0001",
+            "authorName": "Synthetic User",
+            "authorAvatarMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+            "audience": "boxes",
+            "sections": [
+              {
+                "key": "travel",
+                "content": "Synthetic trip."
+              }
+            ],
+            "mediaAssetIds": [],
+            "createdAt": 1789000000000,
+            "updatedAt": 1789000100000,
+            "canEdit": false,
+            "contexts": [
+              {
+                "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+                "boxName": "Synthetic Box",
+                "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+                "interactions": {
+                  "commentCount": 2,
+                  "reactions": [
+                    {
+                      "kind": "❤️",
+                      "count": 1
+                    }
+                  ],
+                  "reactionCount": 1,
+                  "realCount": 0,
+                  "realPreview": [],
+                  "viewerReaction": null,
+                  "canInteract": true
+                }
+              }
+            ]
+          },
+          {
+            "kind": "life_update",
+            "occurredAt": 1789000000000,
+            "id": "1a2b3c4d-5e6f-4071-8283-94a5b6c7d8e0",
+            "authorUid": "uid_synthetic_0001",
+            "authorName": "Synthetic User",
+            "authorAvatarMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+            "audience": "only_me",
+            "sections": [
+              {
+                "key": "travel",
+                "content": "Synthetic trip."
+              }
+            ],
+            "mediaAssetIds": [],
+            "createdAt": 1789000000000,
+            "updatedAt": 1789000100000,
+            "canEdit": true,
+            "contexts": []
+          }
+        ],
+        "nextCursor": "AQECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v"
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

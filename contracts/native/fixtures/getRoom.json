@@ -1,0 +1,175 @@
+{
+  "callable": "getRoom",
+  "request": {
+    "valid": [
+      {
+        "username": "synthetic_friend"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "username": ""
+      },
+      {
+        "username": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      {
+        "username": 7
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "owner": {
+          "uid": "uid_synthetic_0001",
+          "username": "synthetic_user",
+          "displayName": "Synthetic User",
+          "bio": "Synthetic bio.",
+          "avatarMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
+        },
+        "relationship": "owner",
+        "style": {
+          "themePreset": "obsidian_gold",
+          "layout": "two_column",
+          "accent": null,
+          "font": null,
+          "decorationPack": "stars",
+          "sparkles": true
+        },
+        "location": "Synthetic City",
+        "currently": "Testing",
+        "music": {
+          "url": "https://music.example.com/track",
+          "title": "Synthetic Song",
+          "artist": null
+        },
+        "bannerMediaId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+        "widgets": [
+          {
+            "type": "currently",
+            "placement": "main",
+            "position": 0,
+            "enabled": true
+          },
+          {
+            "type": "music",
+            "placement": "sidebar",
+            "position": 1,
+            "enabled": true
+          },
+          {
+            "type": "top_friends",
+            "placement": "sidebar",
+            "position": 2,
+            "enabled": true
+          },
+          {
+            "type": "photos",
+            "placement": "main",
+            "position": 3,
+            "enabled": true
+          },
+          {
+            "type": "life_updates",
+            "placement": "main",
+            "position": 4,
+            "enabled": true
+          },
+          {
+            "type": "posts",
+            "placement": "main",
+            "position": 5,
+            "enabled": true
+          },
+          {
+            "type": "memories",
+            "placement": "sidebar",
+            "position": 6,
+            "enabled": true
+          }
+        ],
+        "topFriends": {
+          "size": 4,
+          "visibility": "friends",
+          "items": [
+            {
+              "uid": "uid_synthetic_0002",
+              "username": "synthetic_friend",
+              "displayName": "Synthetic Friend",
+              "avatarMediaId": null
+            }
+          ]
+        },
+        "visibility": "friends",
+        "updatedAt": 1790000000000,
+        "configurationVersion": 1
+      },
+      {
+        "owner": {
+          "uid": "uid_synthetic_0001",
+          "username": "synthetic_user",
+          "displayName": "Synthetic User",
+          "bio": null,
+          "avatarMediaId": null
+        },
+        "relationship": "friend",
+        "style": {
+          "themePreset": "obsidian_gold",
+          "layout": "two_column",
+          "accent": "lavender",
+          "font": "editorial",
+          "decorationPack": null,
+          "sparkles": false
+        },
+        "location": null,
+        "currently": null,
+        "music": null,
+        "bannerMediaId": null,
+        "widgets": [
+          {
+            "type": "currently",
+            "placement": "main",
+            "position": 0,
+            "enabled": true
+          },
+          {
+            "type": "music",
+            "placement": "sidebar",
+            "position": 1,
+            "enabled": true
+          },
+          {
+            "type": "top_friends",
+            "placement": "sidebar",
+            "position": 2,
+            "enabled": true
+          }
+        ],
+        "topFriends": {
+          "size": null,
+          "visibility": null,
+          "items": null
+        },
+        "visibility": null,
+        "updatedAt": null,
+        "configurationVersion": 1
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

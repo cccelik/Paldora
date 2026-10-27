@@ -42,7 +42,8 @@
     "SIGN_IN_REQUIRED",
     "SESSION_ENDED",
     "INVALID_INPUT",
-    "RATE_LIMITED"
+    "RATE_LIMITED",
+    "STALE_WRITE"
   ],
   "callables": {
     "beginBoxDeletion": {
@@ -2668,6 +2669,2825 @@
         "unauthenticated"
       ],
       "limit": { "scope": "getMediaAsset", "perHour": 1200 }
+    },
+    "getMyRoom": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "username": { "type": "string" },
+              "displayName": { "type": "string" },
+              "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              }
+            },
+            "required": [
+              "uid",
+              "username",
+              "displayName",
+              "bio",
+              "avatarMediaId"
+            ],
+            "additionalProperties": false
+          },
+          "relationship": {
+            "type": "string",
+            "enum": ["owner", "friend", "member"]
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "themePreset": {
+                "type": "string",
+                "enum": [
+                  "obsidian_gold",
+                  "cream_paper",
+                  "lavender_dream",
+                  "ocean_glow",
+                  "daisy_day",
+                  "neon_night",
+                  "y2k_glitter",
+                  "dark_academia",
+                  "frutiger_aero",
+                  "tumblr_2014",
+                  "retro_windows",
+                  "cyberpunk",
+                  "minimal_editorial",
+                  "polaroid_scrapbook"
+                ]
+              },
+              "layout": { "type": "string", "enum": ["single", "two_column"] },
+              "accent": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "gold",
+                      "lavender",
+                      "ocean",
+                      "daisy",
+                      "pink",
+                      "emerald",
+                      "cyan",
+                      "crimson"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "font": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "editorial",
+                      "modern",
+                      "rounded",
+                      "mono",
+                      "handwritten"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "decorationPack": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "stars",
+                      "flowers",
+                      "stickers",
+                      "tape",
+                      "pixels"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "sparkles": { "type": "boolean" }
+            },
+            "required": [
+              "themePreset",
+              "layout",
+              "accent",
+              "font",
+              "decorationPack",
+              "sparkles"
+            ],
+            "additionalProperties": false
+          },
+          "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "currently": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "music": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string" },
+                  "title": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "artist": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  }
+                },
+                "required": ["url", "title", "artist"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "bannerMediaId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "currently",
+                    "music",
+                    "top_friends",
+                    "photos",
+                    "life_updates",
+                    "posts",
+                    "memories"
+                  ]
+                },
+                "placement": { "type": "string", "enum": ["main", "sidebar"] },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "enabled": { "type": "boolean" }
+              },
+              "required": ["type", "placement", "position", "enabled"],
+              "additionalProperties": false
+            }
+          },
+          "topFriends": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      { "type": "number", "const": 4 },
+                      { "type": "number", "const": 8 },
+                      { "type": "number", "const": 12 }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["visible", "friends", "hidden"]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "items": {
+                "anyOf": [
+                  {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "uid": { "type": "string" },
+                        "username": { "type": "string" },
+                        "displayName": { "type": "string" },
+                        "avatarMediaId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        }
+                      },
+                      "required": ["uid", "username", "displayName"],
+                      "additionalProperties": false
+                    }
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["size", "visibility", "items"],
+            "additionalProperties": false
+          },
+          "visibility": {
+            "anyOf": [
+              { "type": "string", "enum": ["friends", "members", "hidden"] },
+              { "type": "null" }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          },
+          "configurationVersion": { "type": "number", "const": 1 }
+        },
+        "required": [
+          "owner",
+          "relationship",
+          "style",
+          "location",
+          "currently",
+          "music",
+          "bannerMediaId",
+          "widgets",
+          "topFriends",
+          "visibility",
+          "updatedAt",
+          "configurationVersion"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getMyRoom", "perHour": 600 }
+    },
+    "getRoom": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 1, "maxLength": 100 }
+        },
+        "required": ["username"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "username": { "type": "string" },
+              "displayName": { "type": "string" },
+              "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              }
+            },
+            "required": [
+              "uid",
+              "username",
+              "displayName",
+              "bio",
+              "avatarMediaId"
+            ],
+            "additionalProperties": false
+          },
+          "relationship": {
+            "type": "string",
+            "enum": ["owner", "friend", "member"]
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "themePreset": {
+                "type": "string",
+                "enum": [
+                  "obsidian_gold",
+                  "cream_paper",
+                  "lavender_dream",
+                  "ocean_glow",
+                  "daisy_day",
+                  "neon_night",
+                  "y2k_glitter",
+                  "dark_academia",
+                  "frutiger_aero",
+                  "tumblr_2014",
+                  "retro_windows",
+                  "cyberpunk",
+                  "minimal_editorial",
+                  "polaroid_scrapbook"
+                ]
+              },
+              "layout": { "type": "string", "enum": ["single", "two_column"] },
+              "accent": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "gold",
+                      "lavender",
+                      "ocean",
+                      "daisy",
+                      "pink",
+                      "emerald",
+                      "cyan",
+                      "crimson"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "font": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "editorial",
+                      "modern",
+                      "rounded",
+                      "mono",
+                      "handwritten"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "decorationPack": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "stars",
+                      "flowers",
+                      "stickers",
+                      "tape",
+                      "pixels"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "sparkles": { "type": "boolean" }
+            },
+            "required": [
+              "themePreset",
+              "layout",
+              "accent",
+              "font",
+              "decorationPack",
+              "sparkles"
+            ],
+            "additionalProperties": false
+          },
+          "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "currently": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "music": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string" },
+                  "title": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "artist": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  }
+                },
+                "required": ["url", "title", "artist"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "bannerMediaId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "currently",
+                    "music",
+                    "top_friends",
+                    "photos",
+                    "life_updates",
+                    "posts",
+                    "memories"
+                  ]
+                },
+                "placement": { "type": "string", "enum": ["main", "sidebar"] },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "enabled": { "type": "boolean" }
+              },
+              "required": ["type", "placement", "position", "enabled"],
+              "additionalProperties": false
+            }
+          },
+          "topFriends": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      { "type": "number", "const": 4 },
+                      { "type": "number", "const": 8 },
+                      { "type": "number", "const": 12 }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["visible", "friends", "hidden"]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "items": {
+                "anyOf": [
+                  {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "uid": { "type": "string" },
+                        "username": { "type": "string" },
+                        "displayName": { "type": "string" },
+                        "avatarMediaId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        }
+                      },
+                      "required": ["uid", "username", "displayName"],
+                      "additionalProperties": false
+                    }
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["size", "visibility", "items"],
+            "additionalProperties": false
+          },
+          "visibility": {
+            "anyOf": [
+              { "type": "string", "enum": ["friends", "members", "hidden"] },
+              { "type": "null" }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          },
+          "configurationVersion": { "type": "number", "const": 1 }
+        },
+        "required": [
+          "owner",
+          "relationship",
+          "style",
+          "location",
+          "currently",
+          "music",
+          "bannerMediaId",
+          "widgets",
+          "topFriends",
+          "visibility",
+          "updatedAt",
+          "configurationVersion"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getRoom", "perHour": 600 }
+    },
+    "updateMyRoom": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "visibility": {
+            "type": "string",
+            "enum": ["friends", "members", "hidden"]
+          },
+          "themePreset": {
+            "type": "string",
+            "enum": [
+              "obsidian_gold",
+              "cream_paper",
+              "lavender_dream",
+              "ocean_glow",
+              "daisy_day",
+              "neon_night",
+              "y2k_glitter",
+              "dark_academia",
+              "frutiger_aero",
+              "tumblr_2014",
+              "retro_windows",
+              "cyberpunk",
+              "minimal_editorial",
+              "polaroid_scrapbook"
+            ]
+          },
+          "layout": { "type": "string", "enum": ["single", "two_column"] },
+          "accent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "gold",
+                  "lavender",
+                  "ocean",
+                  "daisy",
+                  "pink",
+                  "emerald",
+                  "cyan",
+                  "crimson"
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "font": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "editorial",
+                  "modern",
+                  "rounded",
+                  "mono",
+                  "handwritten"
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "decorationPack": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "stars",
+                  "flowers",
+                  "stickers",
+                  "tape",
+                  "pixels"
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "sparkles": { "type": "boolean" },
+          "location": {
+            "anyOf": [
+              { "type": "string", "maxLength": 120 },
+              { "type": "null" }
+            ]
+          },
+          "currently": {
+            "anyOf": [
+              { "type": "string", "maxLength": 240 },
+              { "type": "null" }
+            ]
+          },
+          "music": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string", "maxLength": 2048 },
+                  "title": {
+                    "anyOf": [
+                      { "type": "string", "maxLength": 120 },
+                      { "type": "null" }
+                    ]
+                  },
+                  "artist": {
+                    "anyOf": [
+                      { "type": "string", "maxLength": 120 },
+                      { "type": "null" }
+                    ]
+                  }
+                },
+                "required": ["url"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "bannerMediaId": {
+            "anyOf": [
+              { "type": "string", "minLength": 1, "maxLength": 64 },
+              { "type": "null" }
+            ]
+          },
+          "expectedUpdatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["expectedUpdatedAt"],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "username": { "type": "string" },
+              "displayName": { "type": "string" },
+              "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              }
+            },
+            "required": [
+              "uid",
+              "username",
+              "displayName",
+              "bio",
+              "avatarMediaId"
+            ],
+            "additionalProperties": false
+          },
+          "relationship": {
+            "type": "string",
+            "enum": ["owner", "friend", "member"]
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "themePreset": {
+                "type": "string",
+                "enum": [
+                  "obsidian_gold",
+                  "cream_paper",
+                  "lavender_dream",
+                  "ocean_glow",
+                  "daisy_day",
+                  "neon_night",
+                  "y2k_glitter",
+                  "dark_academia",
+                  "frutiger_aero",
+                  "tumblr_2014",
+                  "retro_windows",
+                  "cyberpunk",
+                  "minimal_editorial",
+                  "polaroid_scrapbook"
+                ]
+              },
+              "layout": { "type": "string", "enum": ["single", "two_column"] },
+              "accent": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "gold",
+                      "lavender",
+                      "ocean",
+                      "daisy",
+                      "pink",
+                      "emerald",
+                      "cyan",
+                      "crimson"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "font": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "editorial",
+                      "modern",
+                      "rounded",
+                      "mono",
+                      "handwritten"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "decorationPack": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "stars",
+                      "flowers",
+                      "stickers",
+                      "tape",
+                      "pixels"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "sparkles": { "type": "boolean" }
+            },
+            "required": [
+              "themePreset",
+              "layout",
+              "accent",
+              "font",
+              "decorationPack",
+              "sparkles"
+            ],
+            "additionalProperties": false
+          },
+          "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "currently": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "music": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string" },
+                  "title": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "artist": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  }
+                },
+                "required": ["url", "title", "artist"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "bannerMediaId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "currently",
+                    "music",
+                    "top_friends",
+                    "photos",
+                    "life_updates",
+                    "posts",
+                    "memories"
+                  ]
+                },
+                "placement": { "type": "string", "enum": ["main", "sidebar"] },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "enabled": { "type": "boolean" }
+              },
+              "required": ["type", "placement", "position", "enabled"],
+              "additionalProperties": false
+            }
+          },
+          "topFriends": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      { "type": "number", "const": 4 },
+                      { "type": "number", "const": 8 },
+                      { "type": "number", "const": 12 }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["visible", "friends", "hidden"]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "items": {
+                "anyOf": [
+                  {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "uid": { "type": "string" },
+                        "username": { "type": "string" },
+                        "displayName": { "type": "string" },
+                        "avatarMediaId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        }
+                      },
+                      "required": ["uid", "username", "displayName"],
+                      "additionalProperties": false
+                    }
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["size", "visibility", "items"],
+            "additionalProperties": false
+          },
+          "visibility": {
+            "anyOf": [
+              { "type": "string", "enum": ["friends", "members", "hidden"] },
+              { "type": "null" }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          },
+          "configurationVersion": { "type": "number", "const": 1 }
+        },
+        "required": [
+          "owner",
+          "relationship",
+          "style",
+          "location",
+          "currently",
+          "music",
+          "bannerMediaId",
+          "widgets",
+          "topFriends",
+          "visibility",
+          "updatedAt",
+          "configurationVersion"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "updateMyRoom", "perHour": 60 }
+    },
+    "updateMyRoomWidgets": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "widgets": {
+            "minItems": 7,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "currently",
+                    "music",
+                    "top_friends",
+                    "photos",
+                    "life_updates",
+                    "posts",
+                    "memories"
+                  ]
+                },
+                "placement": { "type": "string", "enum": ["main", "sidebar"] },
+                "position": { "type": "integer", "minimum": 0, "maximum": 6 },
+                "enabled": { "type": "boolean" }
+              },
+              "required": ["type", "placement", "position", "enabled"],
+              "additionalProperties": false
+            }
+          },
+          "expectedUpdatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["widgets", "expectedUpdatedAt"],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "username": { "type": "string" },
+              "displayName": { "type": "string" },
+              "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              }
+            },
+            "required": [
+              "uid",
+              "username",
+              "displayName",
+              "bio",
+              "avatarMediaId"
+            ],
+            "additionalProperties": false
+          },
+          "relationship": {
+            "type": "string",
+            "enum": ["owner", "friend", "member"]
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "themePreset": {
+                "type": "string",
+                "enum": [
+                  "obsidian_gold",
+                  "cream_paper",
+                  "lavender_dream",
+                  "ocean_glow",
+                  "daisy_day",
+                  "neon_night",
+                  "y2k_glitter",
+                  "dark_academia",
+                  "frutiger_aero",
+                  "tumblr_2014",
+                  "retro_windows",
+                  "cyberpunk",
+                  "minimal_editorial",
+                  "polaroid_scrapbook"
+                ]
+              },
+              "layout": { "type": "string", "enum": ["single", "two_column"] },
+              "accent": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "gold",
+                      "lavender",
+                      "ocean",
+                      "daisy",
+                      "pink",
+                      "emerald",
+                      "cyan",
+                      "crimson"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "font": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "editorial",
+                      "modern",
+                      "rounded",
+                      "mono",
+                      "handwritten"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "decorationPack": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "stars",
+                      "flowers",
+                      "stickers",
+                      "tape",
+                      "pixels"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "sparkles": { "type": "boolean" }
+            },
+            "required": [
+              "themePreset",
+              "layout",
+              "accent",
+              "font",
+              "decorationPack",
+              "sparkles"
+            ],
+            "additionalProperties": false
+          },
+          "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "currently": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "music": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string" },
+                  "title": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "artist": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  }
+                },
+                "required": ["url", "title", "artist"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "bannerMediaId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "currently",
+                    "music",
+                    "top_friends",
+                    "photos",
+                    "life_updates",
+                    "posts",
+                    "memories"
+                  ]
+                },
+                "placement": { "type": "string", "enum": ["main", "sidebar"] },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "enabled": { "type": "boolean" }
+              },
+              "required": ["type", "placement", "position", "enabled"],
+              "additionalProperties": false
+            }
+          },
+          "topFriends": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      { "type": "number", "const": 4 },
+                      { "type": "number", "const": 8 },
+                      { "type": "number", "const": 12 }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["visible", "friends", "hidden"]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "items": {
+                "anyOf": [
+                  {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "uid": { "type": "string" },
+                        "username": { "type": "string" },
+                        "displayName": { "type": "string" },
+                        "avatarMediaId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        }
+                      },
+                      "required": ["uid", "username", "displayName"],
+                      "additionalProperties": false
+                    }
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["size", "visibility", "items"],
+            "additionalProperties": false
+          },
+          "visibility": {
+            "anyOf": [
+              { "type": "string", "enum": ["friends", "members", "hidden"] },
+              { "type": "null" }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          },
+          "configurationVersion": { "type": "number", "const": 1 }
+        },
+        "required": [
+          "owner",
+          "relationship",
+          "style",
+          "location",
+          "currently",
+          "music",
+          "bannerMediaId",
+          "widgets",
+          "topFriends",
+          "visibility",
+          "updatedAt",
+          "configurationVersion"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "updateMyRoomWidgets", "perHour": 60 }
+    },
+    "updateMyRoomTopFriends": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "userIds": {
+            "maxItems": 12,
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+          },
+          "size": {
+            "anyOf": [
+              { "type": "number", "const": 4 },
+              { "type": "number", "const": 8 },
+              { "type": "number", "const": 12 }
+            ]
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["visible", "friends", "hidden"]
+          },
+          "expectedUpdatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["userIds", "size", "visibility", "expectedUpdatedAt"],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "username": { "type": "string" },
+              "displayName": { "type": "string" },
+              "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "avatarMediaId": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              }
+            },
+            "required": [
+              "uid",
+              "username",
+              "displayName",
+              "bio",
+              "avatarMediaId"
+            ],
+            "additionalProperties": false
+          },
+          "relationship": {
+            "type": "string",
+            "enum": ["owner", "friend", "member"]
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "themePreset": {
+                "type": "string",
+                "enum": [
+                  "obsidian_gold",
+                  "cream_paper",
+                  "lavender_dream",
+                  "ocean_glow",
+                  "daisy_day",
+                  "neon_night",
+                  "y2k_glitter",
+                  "dark_academia",
+                  "frutiger_aero",
+                  "tumblr_2014",
+                  "retro_windows",
+                  "cyberpunk",
+                  "minimal_editorial",
+                  "polaroid_scrapbook"
+                ]
+              },
+              "layout": { "type": "string", "enum": ["single", "two_column"] },
+              "accent": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "gold",
+                      "lavender",
+                      "ocean",
+                      "daisy",
+                      "pink",
+                      "emerald",
+                      "cyan",
+                      "crimson"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "font": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "editorial",
+                      "modern",
+                      "rounded",
+                      "mono",
+                      "handwritten"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "decorationPack": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "stars",
+                      "flowers",
+                      "stickers",
+                      "tape",
+                      "pixels"
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "sparkles": { "type": "boolean" }
+            },
+            "required": [
+              "themePreset",
+              "layout",
+              "accent",
+              "font",
+              "decorationPack",
+              "sparkles"
+            ],
+            "additionalProperties": false
+          },
+          "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "currently": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "music": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string" },
+                  "title": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "artist": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  }
+                },
+                "required": ["url", "title", "artist"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "bannerMediaId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "currently",
+                    "music",
+                    "top_friends",
+                    "photos",
+                    "life_updates",
+                    "posts",
+                    "memories"
+                  ]
+                },
+                "placement": { "type": "string", "enum": ["main", "sidebar"] },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "enabled": { "type": "boolean" }
+              },
+              "required": ["type", "placement", "position", "enabled"],
+              "additionalProperties": false
+            }
+          },
+          "topFriends": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      { "type": "number", "const": 4 },
+                      { "type": "number", "const": 8 },
+                      { "type": "number", "const": 12 }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["visible", "friends", "hidden"]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "items": {
+                "anyOf": [
+                  {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "uid": { "type": "string" },
+                        "username": { "type": "string" },
+                        "displayName": { "type": "string" },
+                        "avatarMediaId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        }
+                      },
+                      "required": ["uid", "username", "displayName"],
+                      "additionalProperties": false
+                    }
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["size", "visibility", "items"],
+            "additionalProperties": false
+          },
+          "visibility": {
+            "anyOf": [
+              { "type": "string", "enum": ["friends", "members", "hidden"] },
+              { "type": "null" }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+              { "type": "null" }
+            ]
+          },
+          "configurationVersion": { "type": "number", "const": 1 }
+        },
+        "required": [
+          "owner",
+          "relationship",
+          "style",
+          "location",
+          "currently",
+          "music",
+          "bannerMediaId",
+          "widgets",
+          "topFriends",
+          "visibility",
+          "updatedAt",
+          "configurationVersion"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "updateMyRoomTopFriends", "perHour": 60 }
+    },
+    "listRoomPhotos": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 1, "maxLength": 100 }
+        },
+        "required": ["username"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "mediaAssetId": { "type": "string" },
+                "width": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "height": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "source": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": { "type": "string", "const": "post" },
+                        "postId": { "type": "string" }
+                      },
+                      "required": ["kind", "postId"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": { "type": "string", "const": "life_update" },
+                        "lifeUpdateId": { "type": "string" },
+                        "boxId": { "type": "string" }
+                      },
+                      "required": ["kind", "lifeUpdateId", "boxId"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "occurredAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "mediaAssetId",
+                "width",
+                "height",
+                "source",
+                "occurredAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listRoomPhotos", "perHour": 300 }
+    },
+    "listMyMemories": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer", "minimum": 1970, "maximum": 9999 },
+          "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "type": {
+            "type": "string",
+            "enum": ["all", "posts", "life_updates"]
+          },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 50 }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "post" },
+                    "id": { "type": "string" },
+                    "boxId": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "interactions": {
+                      "type": "object",
+                      "properties": {
+                        "commentCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "reactions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": { "type": "string" },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": ["kind", "count"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "reactionCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realPreview": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "user": {
+                                "type": "object",
+                                "properties": {
+                                  "uid": { "type": "string" },
+                                  "username": { "type": "string" },
+                                  "displayName": { "type": "string" },
+                                  "avatarMediaId": {
+                                    "anyOf": [
+                                      { "type": "string" },
+                                      { "type": "null" }
+                                    ]
+                                  }
+                                },
+                                "required": ["uid", "username", "displayName"],
+                                "additionalProperties": false
+                              },
+                              "mediaAssetId": { "type": "string" }
+                            },
+                            "required": ["user", "mediaAssetId"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "viewerReaction": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": { "type": "string" },
+                                "mediaAssetId": { "type": "string" }
+                              },
+                              "required": ["kind"],
+                              "additionalProperties": false
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "canInteract": { "type": "boolean" }
+                      },
+                      "required": [
+                        "commentCount",
+                        "reactions",
+                        "reactionCount",
+                        "realCount",
+                        "realPreview",
+                        "viewerReaction",
+                        "canInteract"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "text": { "type": "string" },
+                    "edited": { "type": "boolean" },
+                    "canEdit": { "type": "boolean" },
+                    "occurredAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "boxId",
+                    "authorUid",
+                    "authorName",
+                    "authorAvatarMediaId",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "interactions",
+                    "text",
+                    "edited",
+                    "canEdit",
+                    "occurredAt"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "life_update" },
+                    "occurredAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "id": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "audience": {
+                      "type": "string",
+                      "enum": ["only_me", "boxes"]
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "lifeLately",
+                              "workOrUniversity",
+                              "travel",
+                              "currentlyInto",
+                              "listeningTo",
+                              "watching",
+                              "reading",
+                              "excitedAbout",
+                              "whatsNext"
+                            ]
+                          },
+                          "content": { "type": "string" }
+                        },
+                        "required": ["key", "content"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "updatedAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "canEdit": { "type": "boolean" },
+                    "contexts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "boxId": { "type": "string" },
+                          "boxName": { "type": "string" },
+                          "postId": { "type": "string" },
+                          "interactions": {
+                            "type": "object",
+                            "properties": {
+                              "commentCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "reactions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": { "type": "string" },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": ["kind", "count"],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "reactionCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "realCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "realPreview": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "user": {
+                                      "type": "object",
+                                      "properties": {
+                                        "uid": { "type": "string" },
+                                        "username": { "type": "string" },
+                                        "displayName": { "type": "string" },
+                                        "avatarMediaId": {
+                                          "anyOf": [
+                                            { "type": "string" },
+                                            { "type": "null" }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "uid",
+                                        "username",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "mediaAssetId": { "type": "string" }
+                                  },
+                                  "required": ["user", "mediaAssetId"],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "viewerReaction": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": { "type": "string" },
+                                      "mediaAssetId": { "type": "string" }
+                                    },
+                                    "required": ["kind"],
+                                    "additionalProperties": false
+                                  },
+                                  { "type": "null" }
+                                ]
+                              },
+                              "canInteract": { "type": "boolean" }
+                            },
+                            "required": [
+                              "commentCount",
+                              "reactions",
+                              "reactionCount",
+                              "realCount",
+                              "realPreview",
+                              "viewerReaction",
+                              "canInteract"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "boxId",
+                          "boxName",
+                          "postId",
+                          "interactions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "occurredAt",
+                    "id",
+                    "authorUid",
+                    "authorName",
+                    "authorAvatarMediaId",
+                    "audience",
+                    "sections",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "updatedAt",
+                    "canEdit",
+                    "contexts"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyMemories", "perHour": 600 }
+    },
+    "getMyMemorySummary": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer", "minimum": 1970, "maximum": 9999 }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "year": { "type": "integer", "minimum": 1970, "maximum": 9999 },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["year", "count"],
+              "additionalProperties": false
+            }
+          },
+          "year": {
+            "anyOf": [
+              { "type": "integer", "minimum": 1970, "maximum": 9999 },
+              { "type": "null" }
+            ]
+          },
+          "months": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["month", "count"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["years", "year", "months"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getMyMemorySummary", "perHour": 60 }
+    },
+    "listBoxMemories": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "year": { "type": "integer", "minimum": 1970, "maximum": 9999 },
+          "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "type": {
+            "type": "string",
+            "enum": ["all", "posts", "life_updates"]
+          },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 50 }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "post" },
+                    "id": { "type": "string" },
+                    "boxId": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "interactions": {
+                      "type": "object",
+                      "properties": {
+                        "commentCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "reactions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": { "type": "string" },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": ["kind", "count"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "reactionCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realPreview": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "user": {
+                                "type": "object",
+                                "properties": {
+                                  "uid": { "type": "string" },
+                                  "username": { "type": "string" },
+                                  "displayName": { "type": "string" },
+                                  "avatarMediaId": {
+                                    "anyOf": [
+                                      { "type": "string" },
+                                      { "type": "null" }
+                                    ]
+                                  }
+                                },
+                                "required": ["uid", "username", "displayName"],
+                                "additionalProperties": false
+                              },
+                              "mediaAssetId": { "type": "string" }
+                            },
+                            "required": ["user", "mediaAssetId"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "viewerReaction": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": { "type": "string" },
+                                "mediaAssetId": { "type": "string" }
+                              },
+                              "required": ["kind"],
+                              "additionalProperties": false
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "canInteract": { "type": "boolean" }
+                      },
+                      "required": [
+                        "commentCount",
+                        "reactions",
+                        "reactionCount",
+                        "realCount",
+                        "realPreview",
+                        "viewerReaction",
+                        "canInteract"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "text": { "type": "string" },
+                    "edited": { "type": "boolean" },
+                    "canEdit": { "type": "boolean" },
+                    "occurredAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "boxId",
+                    "authorUid",
+                    "authorName",
+                    "authorAvatarMediaId",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "interactions",
+                    "text",
+                    "edited",
+                    "canEdit",
+                    "occurredAt"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "life_update" },
+                    "occurredAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "id": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "audience": {
+                      "type": "string",
+                      "enum": ["only_me", "boxes"]
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "lifeLately",
+                              "workOrUniversity",
+                              "travel",
+                              "currentlyInto",
+                              "listeningTo",
+                              "watching",
+                              "reading",
+                              "excitedAbout",
+                              "whatsNext"
+                            ]
+                          },
+                          "content": { "type": "string" }
+                        },
+                        "required": ["key", "content"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "updatedAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "canEdit": { "type": "boolean" },
+                    "contexts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "boxId": { "type": "string" },
+                          "boxName": { "type": "string" },
+                          "postId": { "type": "string" },
+                          "interactions": {
+                            "type": "object",
+                            "properties": {
+                              "commentCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "reactions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": { "type": "string" },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": ["kind", "count"],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "reactionCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "realCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "realPreview": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "user": {
+                                      "type": "object",
+                                      "properties": {
+                                        "uid": { "type": "string" },
+                                        "username": { "type": "string" },
+                                        "displayName": { "type": "string" },
+                                        "avatarMediaId": {
+                                          "anyOf": [
+                                            { "type": "string" },
+                                            { "type": "null" }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "uid",
+                                        "username",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "mediaAssetId": { "type": "string" }
+                                  },
+                                  "required": ["user", "mediaAssetId"],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "viewerReaction": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": { "type": "string" },
+                                      "mediaAssetId": { "type": "string" }
+                                    },
+                                    "required": ["kind"],
+                                    "additionalProperties": false
+                                  },
+                                  { "type": "null" }
+                                ]
+                              },
+                              "canInteract": { "type": "boolean" }
+                            },
+                            "required": [
+                              "commentCount",
+                              "reactions",
+                              "reactionCount",
+                              "realCount",
+                              "realPreview",
+                              "viewerReaction",
+                              "canInteract"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "boxId",
+                          "boxName",
+                          "postId",
+                          "interactions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "occurredAt",
+                    "id",
+                    "authorUid",
+                    "authorName",
+                    "authorAvatarMediaId",
+                    "audience",
+                    "sections",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "updatedAt",
+                    "canEdit",
+                    "contexts"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxMemories", "perHour": 600 }
+    },
+    "getBoxMemorySummary": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "year": { "type": "integer", "minimum": 1970, "maximum": 9999 }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "year": { "type": "integer", "minimum": 1970, "maximum": 9999 },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["year", "count"],
+              "additionalProperties": false
+            }
+          },
+          "year": {
+            "anyOf": [
+              { "type": "integer", "minimum": 1970, "maximum": 9999 },
+              { "type": "null" }
+            ]
+          },
+          "months": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["month", "count"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["years", "year", "months"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getBoxMemorySummary", "perHour": 60 }
+    },
+    "listRoomMemories": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "year": { "type": "integer", "minimum": 1970, "maximum": 9999 },
+          "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "type": {
+            "type": "string",
+            "enum": ["all", "posts", "life_updates"]
+          },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 50 }
+        },
+        "required": ["username"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "post" },
+                    "id": { "type": "string" },
+                    "boxId": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "interactions": {
+                      "type": "object",
+                      "properties": {
+                        "commentCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "reactions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": { "type": "string" },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": ["kind", "count"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "reactionCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realPreview": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "user": {
+                                "type": "object",
+                                "properties": {
+                                  "uid": { "type": "string" },
+                                  "username": { "type": "string" },
+                                  "displayName": { "type": "string" },
+                                  "avatarMediaId": {
+                                    "anyOf": [
+                                      { "type": "string" },
+                                      { "type": "null" }
+                                    ]
+                                  }
+                                },
+                                "required": ["uid", "username", "displayName"],
+                                "additionalProperties": false
+                              },
+                              "mediaAssetId": { "type": "string" }
+                            },
+                            "required": ["user", "mediaAssetId"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "viewerReaction": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": { "type": "string" },
+                                "mediaAssetId": { "type": "string" }
+                              },
+                              "required": ["kind"],
+                              "additionalProperties": false
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "canInteract": { "type": "boolean" }
+                      },
+                      "required": [
+                        "commentCount",
+                        "reactions",
+                        "reactionCount",
+                        "realCount",
+                        "realPreview",
+                        "viewerReaction",
+                        "canInteract"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "text": { "type": "string" },
+                    "edited": { "type": "boolean" },
+                    "canEdit": { "type": "boolean" },
+                    "occurredAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "boxId",
+                    "authorUid",
+                    "authorName",
+                    "authorAvatarMediaId",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "interactions",
+                    "text",
+                    "edited",
+                    "canEdit",
+                    "occurredAt"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "life_update" },
+                    "occurredAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "id": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "authorAvatarMediaId": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "audience": {
+                      "type": "string",
+                      "enum": ["only_me", "boxes"]
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "lifeLately",
+                              "workOrUniversity",
+                              "travel",
+                              "currentlyInto",
+                              "listeningTo",
+                              "watching",
+                              "reading",
+                              "excitedAbout",
+                              "whatsNext"
+                            ]
+                          },
+                          "content": { "type": "string" }
+                        },
+                        "required": ["key", "content"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "updatedAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "canEdit": { "type": "boolean" },
+                    "contexts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "boxId": { "type": "string" },
+                          "boxName": { "type": "string" },
+                          "postId": { "type": "string" },
+                          "interactions": {
+                            "type": "object",
+                            "properties": {
+                              "commentCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "reactions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": { "type": "string" },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": ["kind", "count"],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "reactionCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "realCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "realPreview": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "user": {
+                                      "type": "object",
+                                      "properties": {
+                                        "uid": { "type": "string" },
+                                        "username": { "type": "string" },
+                                        "displayName": { "type": "string" },
+                                        "avatarMediaId": {
+                                          "anyOf": [
+                                            { "type": "string" },
+                                            { "type": "null" }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "uid",
+                                        "username",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "mediaAssetId": { "type": "string" }
+                                  },
+                                  "required": ["user", "mediaAssetId"],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "viewerReaction": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": { "type": "string" },
+                                      "mediaAssetId": { "type": "string" }
+                                    },
+                                    "required": ["kind"],
+                                    "additionalProperties": false
+                                  },
+                                  { "type": "null" }
+                                ]
+                              },
+                              "canInteract": { "type": "boolean" }
+                            },
+                            "required": [
+                              "commentCount",
+                              "reactions",
+                              "reactionCount",
+                              "realCount",
+                              "realPreview",
+                              "viewerReaction",
+                              "canInteract"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "boxId",
+                          "boxName",
+                          "postId",
+                          "interactions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "occurredAt",
+                    "id",
+                    "authorUid",
+                    "authorName",
+                    "authorAvatarMediaId",
+                    "audience",
+                    "sections",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "updatedAt",
+                    "canEdit",
+                    "contexts"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listRoomMemories", "perHour": 600 }
+    },
+    "getRoomMemorySummary": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "year": { "type": "integer", "minimum": 1970, "maximum": 9999 }
+        },
+        "required": ["username"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "year": { "type": "integer", "minimum": 1970, "maximum": 9999 },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["year", "count"],
+              "additionalProperties": false
+            }
+          },
+          "year": {
+            "anyOf": [
+              { "type": "integer", "minimum": 1970, "maximum": 9999 },
+              { "type": "null" }
+            ]
+          },
+          "months": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["month", "count"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["years", "year", "months"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getRoomMemorySummary", "perHour": 60 }
     }
   },
   "http": {

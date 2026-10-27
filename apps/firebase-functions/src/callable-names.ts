@@ -55,6 +55,18 @@ export const callableNames = [
   'createMediaUpload',
   'completeMediaUpload',
   'getMediaAsset',
+  'getMyRoom',
+  'getRoom',
+  'updateMyRoom',
+  'updateMyRoomWidgets',
+  'updateMyRoomTopFriends',
+  'listRoomPhotos',
+  'listMyMemories',
+  'getMyMemorySummary',
+  'listBoxMemories',
+  'getBoxMemorySummary',
+  'listRoomMemories',
+  'getRoomMemorySummary',
 ] as const;
 
 export type CallableName = (typeof callableNames)[number];

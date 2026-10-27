@@ -1393,6 +1393,514 @@ describe('native private media over callables and authenticated HTTP', () => {
     expect((await get(photo, 'display', stale)).status).toBe(401);
     expect((await put(photo, stale, png)).status).toBe(401);
   }, 60_000);
+
+  it('serves Rooms and Memories with live privacy, stale-write detection and opaque cursors', async () => {
+    const call = <Response = Record<string, unknown>>(
+      user: Client,
+      name: string,
+    ) => httpsCallable<Record<string, unknown>, Response>(user.functions, name);
+    type Page<T> = { items: T[]; nextCursor: string | null };
+    type Room = {
+      owner: { uid: string; username: string; avatarMediaId: string | null };
+      relationship: string;
+      style: { themePreset: string };
+      location: string | null;
+      music: { url: string } | null;
+      bannerMediaId: string | null;
+      widgets: { type: string; position: number; enabled: boolean }[];
+      topFriends: {
+        size: number | null;
+        items: { uid: string }[] | null;
+      };
+      visibility: string | null;
+      updatedAt: number | null;
+    };
+    type Memory = { kind: string; id: string; authorUid: string };
+    const names = {
+      alice: `alice_${randomUUID().slice(0, 8)}`,
+      bob: `bob_${randomUUID().slice(0, 8)}`,
+      carol: `carol_${randomUUID().slice(0, 8)}`,
+    };
+    const alice = await client(names.alice);
+    const bob = await client(names.bob);
+    const carol = await client(names.carol);
+    const dave = await client(`dave_${randomUUID().slice(0, 8)}`);
+    const boxId = (
+      await call<{ id: string }>(alice, 'createBox')({ name: 'Rooms Crew' })
+    ).data.id;
+    for (const [user, name] of [
+      [bob, names.bob],
+      [carol, names.carol],
+    ] as const) {
+      const invite = await call<{ invitationId: string }>(
+        alice,
+        'inviteBox',
+      )({ boxId, username: name });
+      await call(
+        user,
+        'acceptBoxInvitation',
+      )({
+        invitationId: invite.data.invitationId,
+      });
+    }
+    const request = await call<{ requestId: string }>(
+      alice,
+      'sendFriendRequest',
+    )({ username: names.bob });
+    await call(
+      bob,
+      'acceptFriendRequest',
+    )({
+      requestId: request.data.requestId,
+    });
+
+    const myRoom = (user: Client) => call<Room>(user, 'getMyRoom')({});
+    const roomOf = (user: Client, username: string) =>
+      call<Room>(user, 'getRoom')({ username });
+    const update = (user: Client, changes: Record<string, unknown>) =>
+      call<Room>(user, 'updateMyRoom')(changes);
+
+    // A never-saved Room: defaults, owner-only fields, no banner.
+    const fresh = (await myRoom(alice)).data;
+    expect(fresh).toMatchObject({
+      relationship: 'owner',
+      bannerMediaId: null,
+      updatedAt: null,
+      topFriends: { items: [] },
+    });
+    expect(fresh.widgets).toHaveLength(7);
+
+    // Writes: validation, then optimistic concurrency with a reasoned error.
+    for (const bad of [
+      { sparkles: true },
+      { sparkles: true, expectedUpdatedAt: '2026-10-27T00:00:00.000Z' },
+      { sparkles: true, expectedUpdatedAt: -1 },
+      { css: 'body{}', sparkles: true, expectedUpdatedAt: null },
+      { expectedUpdatedAt: null },
+      {
+        music: { url: 'http://music.example.com/x' },
+        expectedUpdatedAt: null,
+      },
+      { themePreset: 'not_a_theme', expectedUpdatedAt: null },
+    ])
+      await expect(update(alice, bad)).rejects.toMatchObject({
+        code: 'functions/invalid-argument',
+        details: { reason: 'INVALID_INPUT' },
+      });
+    const first = (
+      await update(alice, {
+        themePreset: 'polaroid_scrapbook',
+        location: 'Lisbon',
+        music: { url: 'https://music.example.com/track', title: 'Song' },
+        expectedUpdatedAt: null,
+      })
+    ).data;
+    expect(first).toMatchObject({
+      style: { themePreset: 'polaroid_scrapbook' },
+      location: 'Lisbon',
+      music: { url: 'https://music.example.com/track' },
+    });
+    expect(first.updatedAt).toEqual(expect.any(Number));
+    await expect(
+      update(alice, { location: 'Porto', expectedUpdatedAt: null }),
+    ).rejects.toMatchObject({
+      code: 'functions/failed-precondition',
+      details: { reason: 'STALE_WRITE' },
+    });
+    const second = (
+      await update(alice, {
+        location: 'Porto',
+        expectedUpdatedAt: first.updatedAt,
+      })
+    ).data;
+    expect(second.location).toBe('Porto');
+    expect(second.updatedAt).toBeGreaterThan(first.updatedAt!);
+    // A visitor cannot write someone else's Room: the callable only has "mine".
+    expect((await myRoom(bob)).data.owner.uid).toBe(bob.uid);
+
+    // Widgets replace the full order.
+    const reordered = second.widgets
+      .map((widget, at) => ({
+        ...widget,
+        position: (at + 1) % 7,
+        enabled: widget.type !== 'memories',
+      }))
+      .sort((a, b) => a.position - b.position);
+    await expect(
+      call(
+        alice,
+        'updateMyRoomWidgets',
+      )({
+        widgets: reordered.slice(1),
+        expectedUpdatedAt: second.updatedAt,
+      }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    const widgets = (
+      await call<Room>(
+        alice,
+        'updateMyRoomWidgets',
+      )({ widgets: reordered, expectedUpdatedAt: second.updatedAt })
+    ).data;
+    expect(widgets.widgets.find((w) => w.type === 'memories')?.enabled).toBe(
+      false,
+    );
+    await expect(
+      call(
+        alice,
+        'updateMyRoomWidgets',
+      )({
+        widgets: reordered.map((widget) => ({ ...widget, enabled: true })),
+        expectedUpdatedAt: second.updatedAt,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'STALE_WRITE' } });
+    // Repeating the exact saved state is idempotent, not stale.
+    await call(
+      alice,
+      'updateMyRoomWidgets',
+    )({ widgets: reordered, expectedUpdatedAt: second.updatedAt });
+
+    // Banner: an owned, ready room_banner asset, served only to permitted viewers.
+    const banner = await readyAsset(alice, {
+      purpose: 'room_banner',
+      contentType: 'image/png',
+      contentLength: png.length,
+    });
+    const withBanner = (
+      await update(alice, {
+        bannerMediaId: banner,
+        expectedUpdatedAt: widgets.updatedAt,
+      })
+    ).data;
+    expect(withBanner.bannerMediaId).toBe(banner);
+    await expect(
+      update(alice, {
+        bannerMediaId: randomUUID(),
+        expectedUpdatedAt: withBanner.updatedAt,
+      }),
+    ).rejects.toMatchObject({ code: 'functions/failed-precondition' });
+    expect((await get(banner, 'display', await tokenOf(alice))).status).toBe(
+      200,
+    );
+    expect((await get(banner, 'display', await tokenOf(bob))).status).toBe(200);
+    expect((await get(banner, 'display', await tokenOf(dave))).status).toBe(
+      404,
+    );
+
+    // Visibility: friends only by default. Absence, strangers and guesses are one answer.
+    const bobView = (await roomOf(bob, names.alice)).data;
+    expect(bobView).toMatchObject({
+      relationship: 'friend',
+      visibility: null,
+      updatedAt: null,
+      bannerMediaId: banner,
+    });
+    expect(bobView.topFriends.size).toBeNull();
+    const notFound = { code: 'functions/not-found' };
+    for (const username of [names.alice, 'nobody_here_zz', 'x'.repeat(100)])
+      await expect(roomOf(dave, username)).rejects.toMatchObject(notFound);
+    await expect(roomOf(carol, names.alice)).rejects.toMatchObject(notFound);
+    await expect(roomOf(bob, 'nobody_here_zz')).rejects.toMatchObject(notFound);
+    await expect(call(bob, 'getRoom')({ username: '' })).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+    });
+    const members = (
+      await update(alice, {
+        visibility: 'members',
+        expectedUpdatedAt: withBanner.updatedAt,
+      })
+    ).data;
+    expect((await roomOf(carol, names.alice)).data.relationship).toBe('member');
+    await expect(roomOf(dave, names.alice)).rejects.toMatchObject(notFound);
+
+    // Top Friends: accepted friends only, shown per the owner's audience.
+    for (const ineligible of [carol.uid, dave.uid, randomUUID()])
+      await expect(
+        call(
+          alice,
+          'updateMyRoomTopFriends',
+        )({
+          userIds: [ineligible],
+          size: 4,
+          visibility: 'visible',
+          expectedUpdatedAt: members.updatedAt,
+        }),
+      ).rejects.toMatchObject({ code: 'functions/failed-precondition' });
+    await expect(
+      call(
+        alice,
+        'updateMyRoomTopFriends',
+      )({
+        userIds: [bob.uid, bob.uid],
+        size: 4,
+        visibility: 'visible',
+        expectedUpdatedAt: members.updatedAt,
+      }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    const tops = (
+      await call<Room>(
+        alice,
+        'updateMyRoomTopFriends',
+      )({
+        userIds: [bob.uid],
+        size: 4,
+        visibility: 'visible',
+        expectedUpdatedAt: members.updatedAt,
+      })
+    ).data;
+    expect(tops.topFriends).toMatchObject({
+      size: 4,
+      items: [{ uid: bob.uid }],
+    });
+    await expect(
+      call(
+        alice,
+        'updateMyRoomTopFriends',
+      )({
+        userIds: [],
+        size: 4,
+        visibility: 'hidden',
+        expectedUpdatedAt: members.updatedAt,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'STALE_WRITE' } });
+    expect(
+      (await roomOf(carol, names.alice)).data.topFriends.items?.map(
+        (friend) => friend.uid,
+      ),
+    ).toEqual([bob.uid]);
+
+    // Photos and Memories come from live Box content, re-authorized per viewer.
+    const photo = await readyAsset(alice, {
+      purpose: 'post_image',
+      boxId,
+      contentType: 'image/png',
+      contentLength: png.length,
+    });
+    const post = await call<{ postId: string }>(
+      alice,
+      'createBoxPost',
+    )({ boxId, text: 'Room memory', mediaAssetIds: [photo] });
+    await call(alice, 'createBoxPost')({ boxId, text: 'Second' });
+    await call(alice, 'createBoxPost')({ boxId, text: 'Third' });
+    await call(bob, 'createBoxPost')({ boxId, text: 'From Bob' });
+    await call(
+      alice,
+      'createLifeUpdate',
+    )({
+      audience: { type: 'boxes', boxIds: [boxId] },
+      sections: { travel: 'Shared trip' },
+    });
+    await call(
+      alice,
+      'createLifeUpdate',
+    )({
+      audience: { type: 'only_me' },
+      sections: { reading: 'Private' },
+    });
+    const photos = (username: string, user: Client) =>
+      call<
+        Page<{
+          mediaAssetId: string;
+          source: { kind: string; postId?: string };
+        }>
+      >(
+        user,
+        'listRoomPhotos',
+      )({ username });
+    for (const viewer of [alice, bob, carol])
+      expect((await photos(names.alice, viewer)).data).toMatchObject({
+        items: [
+          {
+            mediaAssetId: photo,
+            width: 1,
+            height: 1,
+            source: { kind: 'post', postId: post.data.postId },
+          },
+        ],
+        nextCursor: null,
+      });
+    await expect(photos(names.alice, dave)).rejects.toMatchObject(notFound);
+
+    const year = new Date().getUTCFullYear();
+    const mine = (filter: Record<string, unknown> = {}) =>
+      call<Page<Memory>>(alice, 'listMyMemories')(filter);
+    const all = (await mine()).data;
+    expect(all.items.map((item) => item.kind).sort()).toEqual([
+      'life_update',
+      'life_update',
+      'post',
+      'post',
+      'post',
+      'post',
+    ]);
+    expect(
+      (await mine({ year, type: 'life_updates' })).data.items.map(
+        (item) => item.kind,
+      ),
+    ).toEqual(['life_update', 'life_update']);
+    expect((await mine({ year: year - 1 })).data.items).toEqual([]);
+    for (const bad of [
+      { month: 3 },
+      { year: 1969 },
+      { year, month: 13 },
+      { type: 'everything' },
+      { limit: 0 },
+      { cursor: 'garbage' },
+    ])
+      await expect(mine(bad)).rejects.toMatchObject({
+        code: 'functions/invalid-argument',
+        details: { reason: 'INVALID_INPUT' },
+      });
+
+    // Cursors are compact, opaque and bound to the same scope and filter.
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    let pages = 0;
+    do {
+      const page: Page<Memory> = (
+        await mine({ limit: 2, ...(cursor ? { cursor } : {}) })
+      ).data;
+      seen.push(...page.items.map((item) => `${item.kind}:${item.id}`));
+      if (page.nextCursor)
+        expect(page.nextCursor.length).toBeLessThanOrEqual(128);
+      cursor = page.nextCursor;
+      pages += 1;
+    } while (cursor && pages < 10);
+    expect(seen).toHaveLength(6);
+    expect(new Set(seen).size).toBe(6);
+    const paged = (await mine({ limit: 2 })).data.nextCursor!;
+    await expect(mine({ limit: 2, year, cursor: paged })).rejects.toMatchObject(
+      {
+        details: { reason: 'INVALID_INPUT' },
+      },
+    );
+    await expect(
+      call(alice, 'listBoxMemories')({ boxId, limit: 2, cursor: paged }),
+    ).rejects.toMatchObject({ details: { reason: 'INVALID_INPUT' } });
+
+    // Box scope: members only, guessed ids look like any other absence.
+    const boxMemories = (user: Client, id = boxId) =>
+      call<Page<Memory>>(user, 'listBoxMemories')({ boxId: id });
+    expect((await boxMemories(bob)).data.items).toHaveLength(5);
+    await expect(boxMemories(dave)).rejects.toMatchObject(notFound);
+    await expect(boxMemories(bob, randomUUID())).rejects.toMatchObject(
+      notFound,
+    );
+    expect(
+      (await boxMemories(alice)).data.items.some(
+        (item) => item.kind === 'life_update',
+      ),
+    ).toBe(true);
+
+    // Room scope: the owner's own content only, under the Room's visibility.
+    const roomMemories = (user: Client, username = names.alice) =>
+      call<Page<Memory>>(user, 'listRoomMemories')({ username });
+    const forBob = (await roomMemories(bob)).data.items;
+    expect(forBob.length).toBeGreaterThan(0);
+    expect(forBob.every((item) => item.authorUid === alice.uid)).toBe(true);
+    expect(forBob.some((item) => item.id === post.data.postId)).toBe(true);
+    await expect(roomMemories(dave)).rejects.toMatchObject(notFound);
+    await expect(roomMemories(bob, 'nobody_here_zz')).rejects.toMatchObject(
+      notFound,
+    );
+
+    // Summaries count what the viewer can see, with the same scope rules.
+    const summary = await call<{
+      years: { year: number; count: number }[];
+      year: number | null;
+      months: { month: number; count: number }[];
+    }>(
+      alice,
+      'getMyMemorySummary',
+    )({});
+    expect(summary.data.years[0]).toEqual({ year, count: 6 });
+    expect(summary.data.year).toBe(year);
+    await expect(
+      call(alice, 'getMyMemorySummary')({ year: 1969 }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    expect(
+      (
+        await call<{ years: { count: number }[] }>(
+          bob,
+          'getBoxMemorySummary',
+        )({ boxId })
+      ).data.years[0]?.count,
+    ).toBe(5);
+    await expect(
+      call(dave, 'getBoxMemorySummary')({ boxId }),
+    ).rejects.toMatchObject(notFound);
+    expect(
+      (
+        await call<{ years: { count: number }[] }>(
+          carol,
+          'getRoomMemorySummary',
+        )({ username: names.alice })
+      ).data.years[0]?.count,
+    ).toBe(4);
+    await expect(
+      call(dave, 'getRoomMemorySummary')({ username: names.alice }),
+    ).rejects.toMatchObject(notFound);
+
+    // Hiding the Room closes every Room read for visitors, not for the owner.
+    const hidden = (
+      await update(alice, {
+        visibility: 'hidden',
+        expectedUpdatedAt: tops.updatedAt,
+      })
+    ).data;
+    for (const viewer of [bob, carol]) {
+      await expect(roomOf(viewer, names.alice)).rejects.toMatchObject(notFound);
+      await expect(photos(names.alice, viewer)).rejects.toMatchObject(notFound);
+      await expect(roomMemories(viewer)).rejects.toMatchObject(notFound);
+    }
+    expect((await get(banner, 'display', await tokenOf(bob))).status).toBe(404);
+    expect((await roomOf(alice, names.alice)).data.visibility).toBe('hidden');
+    const shown = (
+      await update(alice, {
+        visibility: 'friends',
+        expectedUpdatedAt: hidden.updatedAt,
+      })
+    ).data;
+
+    // A block hides the blocked author both ways and the Room from the blocked.
+    await call(bob, 'setUserBlock')({ targetUid: alice.uid, blocked: true });
+    await expect(roomOf(bob, names.alice)).rejects.toMatchObject(notFound);
+    await expect(roomOf(alice, names.bob)).rejects.toMatchObject(notFound);
+    await expect(roomMemories(bob)).rejects.toMatchObject(notFound);
+    expect(
+      (await boxMemories(bob)).data.items.filter(
+        (item) => item.authorUid === alice.uid,
+      ),
+    ).toEqual([]);
+    expect(
+      (await boxMemories(alice)).data.items.filter(
+        (item) => item.authorUid === bob.uid,
+      ),
+    ).toEqual([]);
+    expect(
+      (await myRoom(alice)).data.topFriends.items?.map((friend) => friend.uid),
+    ).toEqual([]);
+    await expect(
+      call(
+        alice,
+        'updateMyRoomTopFriends',
+      )({
+        userIds: [bob.uid],
+        size: 4,
+        visibility: 'visible',
+        expectedUpdatedAt: shown.updatedAt,
+      }),
+    ).rejects.toMatchObject({ code: 'functions/failed-precondition' });
+
+    // Replacing the banner retires the old asset's bytes.
+    await update(alice, {
+      bannerMediaId: null,
+      expectedUpdatedAt: shown.updatedAt,
+    });
+    expect((await myRoom(alice)).data.bannerMediaId).toBeNull();
+    expect((await get(banner, 'display', await tokenOf(alice))).status).toBe(
+      404,
+    );
+  }, 120_000);
 });
 
 describe('native contract coverage of this flow', () => {

@@ -51,6 +51,23 @@ struct PrimitivesTests {
         #expect(try sort.encode(UpdateMyProfileRequest(bio: .some("hi"))) == json(#"{"bio":"hi"}"#))
     }
 
+    @Test func roomSavesAlwaysSendTheLoadedVersionAndClearWithNull() throws {
+        let sort = JSONEncoder()
+        sort.outputFormatting = .sortedKeys
+        #expect(
+            try sort.encode(UpdateMyRoomRequest(expectedUpdatedAt: nil, sparkles: true))
+                == json(#"{"expectedUpdatedAt":null,"sparkles":true}"#))
+        #expect(
+            try sort.encode(
+                UpdateMyRoomRequest(
+                    expectedUpdatedAt: EpochMillis(5), accent: .some(nil), music: .some(nil), bannerMediaId: .some("m")))
+                == json(#"{"accent":null,"bannerMediaId":"m","expectedUpdatedAt":5,"music":null}"#))
+        #expect(
+            try sort.encode(UpdateMyRoomTopFriendsRequest(userIds: [], size: 4, visibility: "hidden", expectedUpdatedAt: nil))
+                == json(#"{"expectedUpdatedAt":null,"size":4,"userIds":[],"visibility":"hidden"}"#))
+        #expect(RoomCatalog.themePresets.count == 14)
+    }
+
     @Test func clearingAReactionSendsExplicitNull() throws {
         let body = try JSONEncoder().encode(SetBoxReactionRequest(boxId: "b", postId: "p", kind: nil))
         let object = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
@@ -87,6 +104,9 @@ struct ErrorTests {
         let known = PaldoraFailure(TransportError(code: "resource-exhausted", reason: "RATE_LIMITED"))
         #expect(known.error == .resourceExhausted)
         #expect(known.reason == .rateLimited)
+        let stale = PaldoraFailure(TransportError(code: "failed-precondition", reason: "STALE_WRITE"))
+        #expect(stale.error == .failedPrecondition)
+        #expect(stale.reason == .staleWrite)
         #expect(PaldoraFailure(TransportError(code: "unauthenticated")).reason == nil)
         #expect(PaldoraFailure(TransportError(code: "unauthenticated", reason: "FUTURE_REASON")).reason == nil)
         for reason in ErrorReason.allCases {
