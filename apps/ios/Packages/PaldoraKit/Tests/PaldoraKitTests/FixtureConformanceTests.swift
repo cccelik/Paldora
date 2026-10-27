@@ -5,7 +5,7 @@ import Testing
 /// Callables that exist in `contracts/native/fixtures` but have no typed Swift
 /// handling yet. Adding a callable to the contract without covering it here (or
 /// listing it with a reason) fails `everyFixtureCallableIsHandledOrAllowlisted`.
-/// Empty today: all 72 callables are typed.
+/// Empty today: all 82 callables are typed.
 private let notYetCovered: [String: String] = [:]
 
 private let repoRoot: URL = {

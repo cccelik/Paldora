@@ -717,4 +717,94 @@ export const nativeCallableRegistry: readonly NativeCallable[] = [
     },
     ['not-found'],
   ),
+  callable(
+    'updateBox',
+    60,
+    {
+      input: boxes.updateBoxInputSchema,
+      output: boxes.updateBoxOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'setBoxMemberRole',
+    120,
+    {
+      input: boxes.setBoxMemberRoleInputSchema,
+      output: boxes.setBoxMemberRoleOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'removeBoxMember',
+    120,
+    {
+      input: boxes.removeBoxMemberInputSchema,
+      output: boxes.removeBoxMemberOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'leaveBox',
+    30,
+    {
+      input: boxes.leaveBoxInputSchema,
+      output: boxes.leaveBoxOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'transferBoxOwnership',
+    10,
+    {
+      input: boxes.transferBoxOwnershipInputSchema,
+      output: boxes.transferBoxOwnershipOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'cancelFriendRequest',
+    120,
+    {
+      input: friendships.cancelFriendRequestInputSchema,
+      output: friendships.cancelFriendRequestOutputSchema,
+    },
+    friendshipErrors,
+  ),
+  callable(
+    'listBoxCommentThreads',
+    600,
+    {
+      input: comments.listBoxCommentThreadsInputSchema,
+      output: comments.listBoxCommentThreadsOutputSchema,
+    },
+    contentErrors,
+  ),
+  callable(
+    'listBoxCommentReplies',
+    600,
+    {
+      input: comments.listBoxCommentRepliesInputSchema,
+      output: comments.listBoxCommentRepliesOutputSchema,
+    },
+    contentErrors,
+  ),
+  callable(
+    'getBoxCommentThread',
+    600,
+    {
+      input: comments.getBoxCommentThreadInputSchema,
+      output: comments.getBoxCommentThreadOutputSchema,
+    },
+    contentErrors,
+  ),
+  callable(
+    'deleteAvatar',
+    30,
+    {
+      input: profile.deleteAvatarInputSchema,
+      output: profile.deleteAvatarOutputSchema,
+    },
+    ['not-found'],
+  ),
 ];

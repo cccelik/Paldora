@@ -70,3 +70,41 @@ public struct BoxMember: Codable, Sendable, Equatable {
     public let role: BoxRole
     public let joinedAt: EpochMillis
 }
+
+/// Owner only. At least one of `name` and `status`; absent keys are omitted.
+public struct UpdateBoxRequest: Codable, Sendable, Equatable {
+    public var boxId: String
+    public var name: String?
+    public var status: BoxStatus?
+    public init(boxId: String, name: String? = nil, status: BoxStatus? = nil) {
+        self.boxId = boxId
+        self.name = name
+        self.status = status
+    }
+}
+
+/// A role the owner or an admin can hand out (never `owner`; use a transfer).
+public enum AssignableBoxRole: String, Codable, Sendable, Equatable {
+    case admin, member
+}
+
+public struct SetBoxMemberRoleRequest: Codable, Sendable, Equatable {
+    public var boxId: String
+    public var memberUid: String
+    public var role: AssignableBoxRole
+    public init(boxId: String, memberUid: String, role: AssignableBoxRole) {
+        self.boxId = boxId
+        self.memberUid = memberUid
+        self.role = role
+    }
+}
+
+/// Input of `removeBoxMember` and `transferBoxOwnership`.
+public struct BoxMemberReference: Codable, Sendable, Equatable {
+    public var boxId: String
+    public var memberUid: String
+    public init(boxId: String, memberUid: String) {
+        self.boxId = boxId
+        self.memberUid = memberUid
+    }
+}

@@ -23,6 +23,10 @@ public enum CallableName: String, CaseIterable, Hashable, Sendable {
     case requestAccountExport, getAccountExport
     case getAccountDeletion, requestAccountDeletion, cancelAccountDeletion
     case reportBoxComment, listMyReports, listMyModerationNotices
+    case updateBox, setBoxMemberRole, removeBoxMember, leaveBox, transferBoxOwnership
+    case cancelFriendRequest
+    case listBoxCommentThreads, listBoxCommentReplies, getBoxCommentThread
+    case deleteAvatar
 }
 
 /// JSON in, JSON out. The app target implements this with Firebase Functions
@@ -83,6 +87,10 @@ extension PaldoraAPI {
     public func updateMyProfile(_ request: UpdateMyProfileRequest) async throws -> MyProfile {
         try await perform(Contracts.UpdateMyProfile.self, request)
     }
+    /// Removes the avatar and any pending avatar upload.
+    public func deleteAvatar() async throws -> OkResponse {
+        try await perform(Contracts.DeleteAvatar.self, EmptyRequest())
+    }
     public func updateMyPreferences(_ request: UpdateMyPreferencesRequest) async throws -> Preferences {
         try await perform(Contracts.UpdateMyPreferences.self, request)
     }
@@ -113,6 +121,23 @@ extension PaldoraAPI {
     }
     public func boxDeletionStatus(boxId: String) async throws -> BoxDeletionProgress {
         try await perform(Contracts.BoxDeletionStatus.self, BoxReference(boxId: boxId))
+    }
+    /// Owner only: rename, archive or restore.
+    public func updateBox(_ request: UpdateBoxRequest) async throws -> Box {
+        try await perform(Contracts.UpdateBox.self, request)
+    }
+    public func setBoxMemberRole(_ request: SetBoxMemberRoleRequest) async throws -> OkResponse {
+        try await perform(Contracts.SetBoxMemberRole.self, request)
+    }
+    public func removeBoxMember(_ request: BoxMemberReference) async throws -> OkResponse {
+        try await perform(Contracts.RemoveBoxMember.self, request)
+    }
+    /// The owner must transfer ownership first.
+    public func leaveBox(boxId: String) async throws -> OkResponse {
+        try await perform(Contracts.LeaveBox.self, BoxReference(boxId: boxId))
+    }
+    public func transferBoxOwnership(_ request: BoxMemberReference) async throws -> OkResponse {
+        try await perform(Contracts.TransferBoxOwnership.self, request)
     }
 
     // Notifications
@@ -158,6 +183,15 @@ extension PaldoraAPI {
     public func listBoxComments(_ request: ListBoxCommentsRequest) async throws -> Page<BoxComment> {
         try await perform(Contracts.ListBoxComments.self, request)
     }
+    public func listBoxCommentThreads(_ request: ListBoxCommentsRequest) async throws -> Page<CommentThread> {
+        try await perform(Contracts.ListBoxCommentThreads.self, request)
+    }
+    public func listBoxCommentReplies(_ request: ListBoxCommentRepliesRequest) async throws -> Page<CommentItem> {
+        try await perform(Contracts.ListBoxCommentReplies.self, request)
+    }
+    public func getBoxCommentThread(_ request: GetBoxCommentThreadRequest) async throws -> CommentThread {
+        try await perform(Contracts.GetBoxCommentThread.self, request)
+    }
     public func editBoxComment(_ request: EditBoxCommentRequest) async throws -> OkResponse {
         try await perform(Contracts.EditBoxComment.self, request)
     }
@@ -182,6 +216,10 @@ extension PaldoraAPI {
     }
     public func closeFriendship(requestId: String) async throws -> OkResponse {
         try await perform(Contracts.CloseFriendship.self, FriendRequestReference(requestId: requestId))
+    }
+    /// Withdraws your own pending request (deletes it; `closeFriendship` declines).
+    public func cancelFriendRequest(requestId: String) async throws -> OkResponse {
+        try await perform(Contracts.CancelFriendRequest.self, FriendRequestReference(requestId: requestId))
     }
     public func listMyFriendships(_ request: ListMyFriendshipsRequest) async throws -> Page<Friendship> {
         try await perform(Contracts.ListMyFriendships.self, request)

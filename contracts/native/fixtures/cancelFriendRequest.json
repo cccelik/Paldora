@@ -1,0 +1,46 @@
+{
+  "callable": "cancelFriendRequest",
+  "request": {
+    "valid": [
+      {
+        "requestId": "req_synthetic_0001"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "requestId": ""
+      },
+      {
+        "requestId": "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "ok": true
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "already-exists"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "permission-denied"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

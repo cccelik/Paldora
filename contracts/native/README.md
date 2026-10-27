@@ -125,6 +125,42 @@ code (ADR 021 decision 8). Source: `packages/validation/src/native/account.ts`,
   `createdAt`); `listMyModerationNotices` lists your content that moderation
   hid and that is still hidden. Staff callables are unchanged.
 
+## Box management, threads and small gaps
+
+Ten callables close the web-parity gaps (ADR 021 decision 8). Source:
+`boxes.ts`, `friendships.ts`, `comments.ts` and `profile.ts` under
+`packages/validation/src/native`.
+
+- **Boxes:** `updateBox` (`boxId`, `name?` or `status?` `active`/`archived`;
+  owner only; returns the Box; 60 an hour), `setBoxMemberRole` (`memberUid`,
+  `role` `admin`/`member`; the owner sets any member, an admin only promotes a
+  plain member; 120), `removeBoxMember` (`memberUid`; owner or admin, never the
+  owner; 120), `leaveBox` (any non-owner; an owner must `transferBoxOwnership`
+  first; 30), `transferBoxOwnership` (`memberUid`; owner only; the previous owner
+  becomes an admin atomically; 10). Plain members, outsiders, removed members,
+  guessed ids and every disallowed role change are the same `not-found`;
+  malformed input (blank name, neither field, self target, role `owner`) is
+  `invalid-argument`. Box writes have no client version, so there is no
+  `STALE_WRITE` here. Deletion is `beginBoxDeletion` with the exact Box name
+  (the second confirmation is client side) and `boxDeletionStatus` until
+  `complete`.
+- **Friend requests:** `cancelFriendRequest` (`requestId`) deletes your own
+  pending request (120). `closeFriendship` on a pending request declines it
+  instead and is not the same thing.
+- **Comment threads:** `listBoxCommentThreads` (`boxId`, `postId`, `cursor?`)
+  returns roots newest first, 20 a page, each as `{ root, rootId, replies,
+replyCount }` with at most three replies oldest first. An item is `{ kind:
+"comment", comment }` or `{ kind: "deleted" | "hidden", id, createdAt }`
+  (a deleted root that still has replies, or an author you blocked or who
+  blocked you; no text, no author). `listBoxCommentReplies` (`rootId`,
+  `cursor?`) pages one root's replies, 20 a page. `getBoxCommentThread`
+  (`commentId`) returns the thread containing a linked comment, appending the
+  linked reply when it is outside the preview. 600 an hour each; `listBoxComments`
+  stays for compatibility. Cursors are comment ids; a stranger's id is
+  `not-found`, a malformed one `invalid-argument`.
+- **Avatar:** `deleteAvatar` (`{}`) clears the avatar and any pending upload,
+  idempotently (30).
+
 ## Rules
 
 - **Versioning:** undecided (V1 function suffix versus `contractVersion`

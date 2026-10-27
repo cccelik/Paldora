@@ -66,6 +66,11 @@ import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import type { CallableName } from './callable-names.js';
 import { observedJob } from './observed.js';
 import { boxView, NativeViews } from './native-views.js';
+import {
+  commentItemView,
+  commentThreadView,
+  pinnedCommentThread,
+} from './native-comment-views.js';
 import { handleMediaRead, handleMediaUpload } from './media-http.js';
 import { isoVersion, roomPhotos, roomView } from './native-room-views.js';
 import { native } from '@paldora/validation';
@@ -1528,6 +1533,141 @@ export const listMyModerationNotices = onCall(options, async (request) => {
   }));
 });
 
+function uuidCursor(data: unknown): string | undefined {
+  const cursor =
+    data && typeof data === 'object'
+      ? (data as Record<string, unknown>).cursor
+      : undefined;
+  if (
+    cursor !== undefined &&
+    (typeof cursor !== 'string' || !/^[a-f0-9-]{36}$/.test(cursor))
+  )
+    throw reasoned('invalid-argument', 'Invalid cursor.', 'INVALID_INPUT');
+  return cursor;
+}
+
+/** Owner only. Same trusted write as the web rename, archive and restore. */
+export const updateBox = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  const data = request.data as Record<string, unknown>;
+  const name = data.name === undefined ? undefined : field(data, 'name', 80);
+  const status = data.status;
+  if (status !== undefined && status !== 'active' && status !== 'archived')
+    throw reasoned('invalid-argument', 'Invalid Box status.', 'INVALID_INPUT');
+  if (name === undefined && status === undefined)
+    throw reasoned('invalid-argument', 'Invalid Box update.', 'INVALID_INPUT');
+  return limited(uid, 'updateBox', 60, async () =>
+    boxView(
+      await boxes.update(boxId, uid, {
+        ...(name === undefined ? {} : { name }),
+        ...(status === undefined ? {} : { status }),
+      }),
+    ),
+  );
+});
+
+export const setBoxMemberRole = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  const memberUid = field(request.data, 'memberUid');
+  const role = (request.data as Record<string, unknown>).role;
+  if (role !== 'admin' && role !== 'member')
+    throw reasoned('invalid-argument', 'Invalid role.', 'INVALID_INPUT');
+  return limited(uid, 'setBoxMemberRole', 120, async () => {
+    await boxes.changeRole(boxId, uid, memberUid, role);
+    return { ok: true };
+  });
+});
+
+export const removeBoxMember = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  const memberUid = field(request.data, 'memberUid');
+  return limited(uid, 'removeBoxMember', 120, async () => {
+    await boxes.removeMember(boxId, uid, memberUid);
+    return { ok: true };
+  });
+});
+
+/** The web "Leave Box" is `removeMember` on yourself; the owner must transfer first. */
+export const leaveBox = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  return limited(uid, 'leaveBox', 30, async () => {
+    await boxes.removeMember(boxId, uid, uid);
+    return { ok: true };
+  });
+});
+
+export const transferBoxOwnership = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  const memberUid = field(request.data, 'memberUid');
+  return limited(uid, 'transferBoxOwnership', 10, async () => {
+    await boxes.transfer(boxId, uid, memberUid);
+    return { ok: true };
+  });
+});
+
+/** Requester only and pending only; unlike `closeFriendship` the request is deleted. */
+export const cancelFriendRequest = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const requestId = field(request.data, 'requestId', 64);
+  return limited(uid, 'cancelFriendRequest', 120, async () => {
+    await friendships.cancel(requestId, uid);
+    return { ok: true };
+  });
+});
+
+export const listBoxCommentThreads = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  const postId = field(request.data, 'postId', 64);
+  const cursor = uuidCursor(request.data);
+  return limited(uid, 'listBoxCommentThreads', 600, async () => {
+    const page = await posts.commentThreadsPage(boxId, postId, uid, cursor);
+    return { ...page, items: page.items.map(commentThreadView) };
+  });
+});
+
+export const listBoxCommentReplies = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  const postId = field(request.data, 'postId', 64);
+  const rootId = field(request.data, 'rootId', 64);
+  const cursor = uuidCursor(request.data);
+  return limited(uid, 'listBoxCommentReplies', 600, async () => {
+    const page = await posts.listCommentReplies(
+      boxId,
+      postId,
+      rootId,
+      uid,
+      cursor,
+    );
+    return { ...page, items: page.items.map(commentItemView) };
+  });
+});
+
+export const getBoxCommentThread = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  const postId = field(request.data, 'postId', 64);
+  const commentId = field(request.data, 'commentId', 64);
+  return limited(uid, 'getBoxCommentThread', 600, () =>
+    pinnedCommentThread(posts, boxId, postId, commentId, uid),
+  );
+});
+
+/** Clears the avatar and a pending avatar upload, retiring both assets. */
+export const deleteAvatar = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'deleteAvatar', 30, async () => {
+    await media.removeAvatar(uid);
+    return { ok: true };
+  });
+});
+
 const mediaHttp = {
   verifyIdToken: async (token: string) => {
     const decoded = await getAuth().verifyIdToken(token);
@@ -1655,4 +1795,14 @@ void ({
   reportBoxComment,
   listMyReports,
   listMyModerationNotices,
+  updateBox,
+  setBoxMemberRole,
+  removeBoxMember,
+  leaveBox,
+  transferBoxOwnership,
+  cancelFriendRequest,
+  listBoxCommentThreads,
+  listBoxCommentReplies,
+  getBoxCommentThread,
+  deleteAvatar,
 } satisfies Record<CallableName, unknown>);

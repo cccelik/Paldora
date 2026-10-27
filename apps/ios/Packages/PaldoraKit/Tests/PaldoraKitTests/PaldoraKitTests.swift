@@ -220,3 +220,38 @@ struct AccountSafetyTests {
         #expect(calls == [.getAccountExport, .getAccountDeletion, .signOutEverywhere])
     }
 }
+
+@Suite("Box management and comment threads")
+struct BoxManagementTests {
+    @Test func updateBoxOmitsAbsentKeys() throws {
+        let sort = JSONEncoder()
+        sort.outputFormatting = .sortedKeys
+        #expect(try sort.encode(UpdateBoxRequest(boxId: "b", name: "N")) == json(#"{"boxId":"b","name":"N"}"#))
+        #expect(try sort.encode(UpdateBoxRequest(boxId: "b", status: .archived)) == json(#"{"boxId":"b","status":"archived"}"#))
+    }
+
+    @Test func memberCallsUseTheirCallables() async throws {
+        let transport = FakeTransport { _ in json(#"{"ok":true}"#) }
+        let api = PaldoraAPI(transport: transport)
+        _ = try await api.setBoxMemberRole(SetBoxMemberRoleRequest(boxId: "b", memberUid: "u", role: .admin))
+        _ = try await api.removeBoxMember(BoxMemberReference(boxId: "b", memberUid: "u"))
+        _ = try await api.transferBoxOwnership(BoxMemberReference(boxId: "b", memberUid: "u"))
+        _ = try await api.leaveBox(boxId: "b")
+        _ = try await api.cancelFriendRequest(requestId: "r")
+        _ = try await api.deleteAvatar()
+        let calls = await transport.recorder.calls.map(\.0)
+        #expect(calls == [.setBoxMemberRole, .removeBoxMember, .transferBoxOwnership, .leaveBox, .cancelFriendRequest, .deleteAvatar])
+    }
+
+    @Test func threadItemsDecodePlaceholdersAndUnknownKinds() throws {
+        let thread = try JSONDecoder().decode(
+            CommentThread.self,
+            from: json(#"""
+            {"root":{"kind":"deleted","id":"c1","createdAt":1},"rootId":"c1",
+             "replies":[{"kind":"hidden","id":"c2","createdAt":2},{"kind":"sticker","id":"c3"}],"replyCount":2}
+            """#))
+        #expect(thread.root == .deleted(id: "c1", createdAt: EpochMillis(1)))
+        #expect(thread.replies == [.hidden(id: "c2", createdAt: EpochMillis(2)), .unsupported(kind: "sticker")])
+        #expect(thread.replyCount == 2)
+    }
+}

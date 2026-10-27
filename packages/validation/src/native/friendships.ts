@@ -22,6 +22,10 @@ export const acceptFriendRequestOutputSchema = nativeOkSchema;
 export const closeFriendshipInputSchema = acceptFriendRequestInputSchema;
 export const closeFriendshipOutputSchema = nativeOkSchema;
 
+/** Requester only, still pending: the request is deleted (unlike `closeFriendship`, which declines). */
+export const cancelFriendRequestInputSchema = acceptFriendRequestInputSchema;
+export const cancelFriendRequestOutputSchema = nativeOkSchema;
+
 export const FRIENDSHIP_LISTINGS = ['pending', 'sent', 'accepted'] as const;
 
 export const listMyFriendshipsInputSchema = z.object({

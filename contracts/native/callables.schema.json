@@ -5958,6 +5958,604 @@
         "unauthenticated"
       ],
       "limit": { "scope": "listMyModerationNotices", "perHour": 120 }
+    },
+    "updateBox": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "status": { "type": "string", "enum": ["active", "archived"] }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "archived"] },
+          "currentUserRole": {
+            "type": "string",
+            "enum": ["owner", "admin", "member"]
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "currentUserRole",
+          "memberCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "updateBox", "perHour": 60 }
+    },
+    "setBoxMemberRole": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "memberUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "role": { "type": "string", "enum": ["admin", "member"] }
+        },
+        "required": ["boxId", "memberUid", "role"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "setBoxMemberRole", "perHour": 120 }
+    },
+    "removeBoxMember": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "memberUid": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["boxId", "memberUid"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "removeBoxMember", "perHour": 120 }
+    },
+    "leaveBox": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "leaveBox", "perHour": 30 }
+    },
+    "transferBoxOwnership": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "memberUid": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["boxId", "memberUid"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "transferBoxOwnership", "perHour": 10 }
+    },
+    "cancelFriendRequest": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "requestId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["requestId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "invalid-argument",
+        "not-found",
+        "permission-denied",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "cancelFriendRequest", "perHour": 120 }
+    },
+    "listBoxCommentThreads": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "cursor": { "type": "string", "pattern": "^[a-f0-9-]{36}$" }
+        },
+        "required": ["boxId", "postId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "root": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": { "type": "string", "const": "comment" },
+                        "comment": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "string" },
+                            "postId": { "type": "string" },
+                            "authorUid": { "type": "string" },
+                            "parentId": {
+                              "anyOf": [
+                                { "type": "string" },
+                                { "type": "null" }
+                              ]
+                            },
+                            "text": { "type": "string" },
+                            "createdAt": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "updatedAt": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "postId",
+                            "authorUid",
+                            "parentId",
+                            "text",
+                            "createdAt",
+                            "updatedAt"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": ["kind", "comment"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": ["deleted", "hidden"]
+                        },
+                        "id": { "type": "string" },
+                        "createdAt": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": ["kind", "id", "createdAt"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "rootId": { "type": "string" },
+                "replies": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": { "type": "string", "const": "comment" },
+                          "comment": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "postId": { "type": "string" },
+                              "authorUid": { "type": "string" },
+                              "parentId": {
+                                "anyOf": [
+                                  { "type": "string" },
+                                  { "type": "null" }
+                                ]
+                              },
+                              "text": { "type": "string" },
+                              "createdAt": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "updatedAt": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "postId",
+                              "authorUid",
+                              "parentId",
+                              "text",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": ["kind", "comment"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": ["deleted", "hidden"]
+                          },
+                          "id": { "type": "string" },
+                          "createdAt": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": ["kind", "id", "createdAt"],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "replyCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["root", "rootId", "replies", "replyCount"],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxCommentThreads", "perHour": 600 }
+    },
+    "listBoxCommentReplies": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "rootId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "cursor": { "type": "string", "pattern": "^[a-f0-9-]{36}$" }
+        },
+        "required": ["boxId", "postId", "rootId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "comment" },
+                    "comment": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "postId": { "type": "string" },
+                        "authorUid": { "type": "string" },
+                        "parentId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        },
+                        "text": { "type": "string" },
+                        "createdAt": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "updatedAt": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "postId",
+                        "authorUid",
+                        "parentId",
+                        "text",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["kind", "comment"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "enum": ["deleted", "hidden"] },
+                    "id": { "type": "string" },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["kind", "id", "createdAt"],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listBoxCommentReplies", "perHour": 600 }
+    },
+    "getBoxCommentThread": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "postId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "commentId": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["boxId", "postId", "commentId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": { "type": "string", "const": "comment" },
+                  "comment": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "postId": { "type": "string" },
+                      "authorUid": { "type": "string" },
+                      "parentId": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "text": { "type": "string" },
+                      "createdAt": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "updatedAt": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "postId",
+                      "authorUid",
+                      "parentId",
+                      "text",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["kind", "comment"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": { "type": "string", "enum": ["deleted", "hidden"] },
+                  "id": { "type": "string" },
+                  "createdAt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": ["kind", "id", "createdAt"],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "rootId": { "type": "string" },
+          "replies": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "comment" },
+                    "comment": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "postId": { "type": "string" },
+                        "authorUid": { "type": "string" },
+                        "parentId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        },
+                        "text": { "type": "string" },
+                        "createdAt": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "updatedAt": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "postId",
+                        "authorUid",
+                        "parentId",
+                        "text",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["kind", "comment"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "enum": ["deleted", "hidden"] },
+                    "id": { "type": "string" },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["kind", "id", "createdAt"],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "replyCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["root", "rootId", "replies", "replyCount"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getBoxCommentThread", "perHour": 600 }
+    },
+    "deleteAvatar": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "deleteAvatar", "perHour": 30 }
     }
   },
   "http": {

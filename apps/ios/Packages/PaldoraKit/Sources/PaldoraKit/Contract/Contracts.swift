@@ -74,6 +74,16 @@ public enum Contracts {
     public enum ReportBoxComment: CallableContract { public typealias Request = ReportBoxCommentRequest; public typealias Response = ReportBoxCommentResponse; public static let name = CallableName.reportBoxComment }
     public enum ListMyReports: CallableContract { public typealias Request = CursorRequest; public typealias Response = Page<ReportReceipt>; public static let name = CallableName.listMyReports }
     public enum ListMyModerationNotices: CallableContract { public typealias Request = EmptyRequest; public typealias Response = ModerationNoticesResponse; public static let name = CallableName.listMyModerationNotices }
+    public enum UpdateBox: CallableContract { public typealias Request = UpdateBoxRequest; public typealias Response = Box; public static let name = CallableName.updateBox }
+    public enum SetBoxMemberRole: CallableContract { public typealias Request = SetBoxMemberRoleRequest; public typealias Response = OkResponse; public static let name = CallableName.setBoxMemberRole }
+    public enum RemoveBoxMember: CallableContract { public typealias Request = BoxMemberReference; public typealias Response = OkResponse; public static let name = CallableName.removeBoxMember }
+    public enum LeaveBox: CallableContract { public typealias Request = BoxReference; public typealias Response = OkResponse; public static let name = CallableName.leaveBox }
+    public enum TransferBoxOwnership: CallableContract { public typealias Request = BoxMemberReference; public typealias Response = OkResponse; public static let name = CallableName.transferBoxOwnership }
+    public enum CancelFriendRequest: CallableContract { public typealias Request = FriendRequestReference; public typealias Response = OkResponse; public static let name = CallableName.cancelFriendRequest }
+    public enum ListBoxCommentThreads: CallableContract { public typealias Request = ListBoxCommentsRequest; public typealias Response = Page<CommentThread>; public static let name = CallableName.listBoxCommentThreads }
+    public enum ListBoxCommentReplies: CallableContract { public typealias Request = ListBoxCommentRepliesRequest; public typealias Response = Page<CommentItem>; public static let name = CallableName.listBoxCommentReplies }
+    public enum GetBoxCommentThread: CallableContract { public typealias Request = GetBoxCommentThreadRequest; public typealias Response = CommentThread; public static let name = CallableName.getBoxCommentThread }
+    public enum DeleteAvatar: CallableContract { public typealias Request = EmptyRequest; public typealias Response = OkResponse; public static let name = CallableName.deleteAvatar }
 
     public static let all: [any CallableContract.Type] = [
         BeginBoxDeletion.self,
@@ -148,5 +158,15 @@ public enum Contracts {
         ReportBoxComment.self,
         ListMyReports.self,
         ListMyModerationNotices.self,
+        UpdateBox.self,
+        SetBoxMemberRole.self,
+        RemoveBoxMember.self,
+        LeaveBox.self,
+        TransferBoxOwnership.self,
+        CancelFriendRequest.self,
+        ListBoxCommentThreads.self,
+        ListBoxCommentReplies.self,
+        GetBoxCommentThread.self,
+        DeleteAvatar.self,
     ]
 }

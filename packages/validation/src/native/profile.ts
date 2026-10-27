@@ -4,7 +4,12 @@ import {
   REACTION_PRESET_COUNT,
 } from '@paldora/domain';
 import { z } from 'zod';
-import { nativeString, nativeTimestampSchema } from './primitives.js';
+import {
+  nativeEmptyInputSchema,
+  nativeOkSchema,
+  nativeString,
+  nativeTimestampSchema,
+} from './primitives.js';
 
 /**
  * The signed-in member's own profile. No avatar field yet: avatars are served
@@ -58,3 +63,7 @@ export const updateMyPreferencesInputSchema = z
   })
   .refine((value) => Object.keys(value).length > 0);
 export const updateMyPreferencesOutputSchema = nativePreferencesSchema;
+
+/** Clears the avatar and any pending avatar upload; the assets are retired. */
+export const deleteAvatarInputSchema = nativeEmptyInputSchema;
+export const deleteAvatarOutputSchema = nativeOkSchema;

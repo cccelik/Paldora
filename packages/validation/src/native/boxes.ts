@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   nativeCursorSchema,
   nativeIdSchema,
+  nativeOkSchema,
   nativePageSchema,
   nativeString,
   nativeTimestampSchema,
@@ -72,3 +73,41 @@ export const createBoxOutputSchema = nativeBoxSchema;
 
 export const getBoxInputSchema = z.object({ boxId: nativeIdSchema });
 export const getBoxOutputSchema = nativeBoxSchema;
+
+/** Owner only. At least one of `name` and `status`; blank names are `invalid-argument`. */
+export const updateBoxInputSchema = z
+  .object({
+    boxId: nativeIdSchema,
+    name: nativeString(80).optional(),
+    status: z.enum(['active', 'archived']).optional(),
+  })
+  .refine(({ name, status }) => name !== undefined || status !== undefined, {
+    message: 'Send a name or a status.',
+  });
+export const updateBoxOutputSchema = nativeBoxSchema;
+
+/** Owner promotes or demotes; an admin may promote a plain member to admin. */
+export const setBoxMemberRoleInputSchema = z.object({
+  boxId: nativeIdSchema,
+  memberUid: nativeIdSchema,
+  role: z.enum(['admin', 'member']),
+});
+export const setBoxMemberRoleOutputSchema = nativeOkSchema;
+
+/** Owner or admin; never the owner. */
+export const removeBoxMemberInputSchema = z.object({
+  boxId: nativeIdSchema,
+  memberUid: nativeIdSchema,
+});
+export const removeBoxMemberOutputSchema = nativeOkSchema;
+
+/** Any non-owner member. The owner must transfer ownership first. */
+export const leaveBoxInputSchema = z.object({ boxId: nativeIdSchema });
+export const leaveBoxOutputSchema = nativeOkSchema;
+
+/** Owner only; the previous owner becomes an admin in the same transaction. */
+export const transferBoxOwnershipInputSchema = z.object({
+  boxId: nativeIdSchema,
+  memberUid: nativeIdSchema,
+});
+export const transferBoxOwnershipOutputSchema = nativeOkSchema;

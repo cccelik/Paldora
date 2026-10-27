@@ -186,7 +186,12 @@ byte download, `getAccountDeletion`/`requestAccountDeletion`/
 `cancelAccountDeletion` (password reauth, owned Boxes first, seven-day grace),
 and the user-facing `reportBoxComment`, `listMyReports` and
 `listMyModerationNotices`. They wrap `NativeWebSessions`,
-`NativeAccountLifecycle` and `NativeModeration`. Callables compare the ID token's session epoch
+`NativeAccountLifecycle` and `NativeModeration`. Box management (`updateBox`, `setBoxMemberRole`,
+`removeBoxMember`, `leaveBox`, `transferBoxOwnership`), `cancelFriendRequest`,
+`deleteAvatar` and threaded comments (`listBoxCommentThreads`,
+`listBoxCommentReplies`, `getBoxCommentThread`) are native too and call the same
+trusted methods as the web adapter; every refusal is one `not-found` (ADR 021
+decision 8). Callables compare the ID token's session epoch
 with the account's (a rotated epoch answers `unauthenticated`, ADR 021
 decision 5). The proposed registry, fixtures, rules and open owner decisions are in
 [ADR 021](../adr/021-firebase-native-contract.md) and

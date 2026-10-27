@@ -1,0 +1,72 @@
+{
+  "callable": "updateBox",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "name": "Renamed Box"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "status": "archived"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "name": "Renamed Box",
+        "status": "active"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+      },
+      {
+        "name": "x"
+      },
+      {
+        "boxId": "",
+        "name": "x"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "name": ""
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "status": "deleted"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "name": "Synthetic Box",
+        "status": "active",
+        "currentUserRole": "owner",
+        "memberCount": 3,
+        "createdAt": 1790000000000,
+        "updatedAt": 1790000100000
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

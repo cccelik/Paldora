@@ -1,0 +1,40 @@
+{
+  "callable": "leaveBox",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "boxId": ""
+      },
+      {
+        "boxId": 7
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "ok": true
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "callable": "listBoxCommentThreads",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "cursor": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+        "cursor": "bad"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "items": [],
+        "nextCursor": null
+      },
+      {
+        "items": [
+          {
+            "root": {
+              "kind": "comment",
+              "comment": {
+                "id": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8",
+                "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+                "authorUid": "uid_synthetic_0001",
+                "parentId": null,
+                "text": "Synthetic comment.",
+                "createdAt": 1790000000000,
+                "updatedAt": 1790000000000
+              }
+            },
+            "rootId": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8",
+            "replies": [
+              {
+                "kind": "comment",
+                "comment": {
+                  "id": "6a7b8c9d-0e1f-4a20-b304-c5d6e7f8091a",
+                  "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+                  "authorUid": "uid_synthetic_0001",
+                  "parentId": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8",
+                  "text": "Synthetic comment.",
+                  "createdAt": 1790000000000,
+                  "updatedAt": 1790000000000
+                }
+              },
+              {
+                "kind": "hidden",
+                "id": "9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+                "createdAt": 1790000000000
+              }
+            ],
+            "replyCount": 2
+          },
+          {
+            "root": {
+              "kind": "deleted",
+              "id": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8",
+              "createdAt": 1790000000000
+            },
+            "rootId": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8",
+            "replies": [
+              {
+                "kind": "comment",
+                "comment": {
+                  "id": "6a7b8c9d-0e1f-4a20-b304-c5d6e7f8091a",
+                  "postId": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+                  "authorUid": "uid_synthetic_0001",
+                  "parentId": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8",
+                  "text": "Synthetic comment.",
+                  "createdAt": 1790000000000,
+                  "updatedAt": 1790000000000
+                }
+              }
+            ],
+            "replyCount": 1
+          }
+        ],
+        "nextCursor": "3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8"
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

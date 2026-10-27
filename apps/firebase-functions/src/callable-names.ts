@@ -77,6 +77,16 @@ export const callableNames = [
   'reportBoxComment',
   'listMyReports',
   'listMyModerationNotices',
+  'updateBox',
+  'setBoxMemberRole',
+  'removeBoxMember',
+  'leaveBox',
+  'transferBoxOwnership',
+  'cancelFriendRequest',
+  'listBoxCommentThreads',
+  'listBoxCommentReplies',
+  'getBoxCommentThread',
+  'deleteAvatar',
 ] as const;
 
 export type CallableName = (typeof callableNames)[number];

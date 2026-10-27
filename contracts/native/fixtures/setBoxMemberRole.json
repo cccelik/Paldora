@@ -1,0 +1,59 @@
+{
+  "callable": "setBoxMemberRole",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "memberUid": "uid_synthetic_0002",
+        "role": "admin"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "memberUid": "uid_synthetic_0002",
+        "role": "member"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "memberUid": "uid_synthetic_0002"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "memberUid": "uid_synthetic_0002",
+        "role": "owner"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "role": "admin"
+      },
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "memberUid": "",
+        "role": "admin"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "ok": true
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

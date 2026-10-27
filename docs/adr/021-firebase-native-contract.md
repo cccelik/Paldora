@@ -232,6 +232,49 @@ Disposition: attachment`. `reportBoxComment` takes only `commentId` (as web);
   limited to 60 an hour; lists to 600, `listRoomPhotos` to 300, Room writes to 60. `listRoomPhotos` returns at most six ready photos (opaque ids, size and
   source), like the web Room preview. **Not exposed:** Phase 8 personalization
   (custom CSS and sandboxed widgets) is web-only for now.
+- **#8 Parity closure: Box management, comment threads, friend cancel, avatar
+  removal (decided and implemented locally, 2026-10-28), 10 callables:**
+  `updateBox` (60 an hour), `setBoxMemberRole` (120), `removeBoxMember` (120),
+  `leaveBox` (30), `transferBoxOwnership` (10), `cancelFriendRequest` (120),
+  `listBoxCommentThreads` (600), `listBoxCommentReplies` (600),
+  `getBoxCommentThread` (600) and `deleteAvatar` (30). Each calls the same
+  trusted method as the web adapter (`NativeBoxes.update/changeRole/
+removeMember/transfer`, `NativeFriendships.cancel`,
+  `NativeBoxPosts.commentThreadsPage/listCommentReplies/commentDetail/
+countCommentReplies`, `NativeMedia.removeAvatar`), so rules and errors are
+  the web's: Box rename, archive and restore are owner only; an owner may set
+  any member to admin or member, an admin may only promote a plain member; the
+  owner's role never changes; any non-owner may leave, an owner must transfer
+  first; an owner transfer needs an active member and the previous owner
+  becomes an admin in the same transaction. Every refusal (outsider, plain
+  member, removed member, guessed id, wrong role, last-owner leave) is the same
+  `not-found`; only malformed input (blank name, no field, self target, role
+  `owner`, bad cursor) is `invalid-argument` / `INVALID_INPUT`. **No new
+  reason:** the web has no client-supplied version on Box writes (`version` is
+  bumped server-side), so there is no `STALE_WRITE` for Boxes. `closeFriendship`
+  does **not** cover cancelling: on a pending request it marks the pair
+  `declined` and either party may call it, whereas the web's cancel deletes the
+  request and only the requester may, so `cancelFriendRequest` was added (an
+  accepted friendship is `not-found` for it). Threads: `listBoxCommentThreads`
+  pages roots newest first (20, cursor = last root id) with up to three replies
+  oldest first and the full `replyCount`; items are `comment` or the
+  placeholders `deleted` (kept because it still has replies) and `hidden`
+  (blocked or unavailable author, no text or author). `listBoxCommentReplies`
+  pages one root's replies oldest first (20); `getBoxCommentThread` returns the
+  thread of a linked comment (a deleted root becomes a `deleted` placeholder; a
+  linked reply outside the preview is appended). Deleted or hidden linked
+  comments are `not-found` (the web returns `null` there). Unlike the web
+  adapter, native comments carry no per-comment interaction summary (use
+  `listBoxReactions` with `commentId`); `listBoxComments` is unchanged.
+  `deleteAvatar` clears the avatar and any pending avatar upload and retires
+  the assets; it is idempotent. **Box deletion:** `beginBoxDeletion` takes the
+  exact `confirmName` and the trusted service compares it to the stored name
+  (mismatch is `invalid-argument`); the web's second confirmation is a checkbox
+  that exists only in the form, so native clients must show their own
+  acknowledgement, and the web's synchronous drain is replaced by polling
+  `boxDeletionStatus` (`phase` `complete`). The web's "delete and leave" Life
+  Update action is `deleteLifeUpdate` plus a redirect, so `deleteLifeUpdate`
+  suffices.
 - **Still open:** #3 App Check, #4 Sign in with Apple, #9 hosted deployment
   (App Check and hosted deployment depend on Blaze; hosted staging is skipped
   for now). The ADR stays Proposed until these are decided.

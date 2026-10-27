@@ -1345,6 +1345,25 @@ describe('native private media over callables and authenticated HTTP', () => {
       'getMyProfile',
     )({});
     expect(profile.data.profile.avatarMediaId).toBe(avatar);
+    // Removing the avatar clears the profile and retires the bytes.
+    const removeAvatar = httpsCallable<unknown, { ok: true }>(
+      owner.functions,
+      'deleteAvatar',
+    );
+    expect((await removeAvatar({})).data).toEqual({ ok: true });
+    const cleared = await httpsCallable<
+      unknown,
+      { profile: { avatarMediaId: string | null } }
+    >(
+      owner.functions,
+      'getMyProfile',
+    )({});
+    expect(cleared.data.profile.avatarMediaId).toBeNull();
+    expect((await get(avatar, 'thumbnail', await tokenOf(owner))).status).toBe(
+      404,
+    );
+    // Idempotent: nothing left to remove is still a success.
+    expect((await removeAvatar({})).data).toEqual({ ok: true });
     const photo = await readyAsset(owner, {
       purpose: 'life_update_image',
       contentType: 'image/png',
@@ -2303,6 +2322,606 @@ describe('native account safety: passwords, sessions, export, deletion, reports'
         .data.items,
     ).toEqual([]);
   }, 90_000);
+});
+
+describe('native Box management, friend cancel and comment threads', () => {
+  type Client = Awaited<ReturnType<typeof client>>;
+  const call = <Response = Record<string, unknown>>(
+    user: Client,
+    name: string,
+  ) => httpsCallable<Record<string, unknown>, Response>(user.functions, name);
+  const name = (prefix: string) => `${prefix}_${randomUUID().slice(0, 8)}`;
+  type BoxView = {
+    id: string;
+    name: string;
+    status: string;
+    currentUserRole: string;
+  };
+  type Member = { uid: string; role: string };
+
+  const boxOf = (user: Client, boxId: string) =>
+    call<BoxView>(user, 'getBox')({ boxId }).then((result) => result.data);
+  const membersOf = async (user: Client, boxId: string) =>
+    (await call<{ items: Member[] }>(user, 'listBoxMembers')({ boxId })).data
+      .items;
+  const roleOf = async (user: Client, boxId: string, uid: string) =>
+    (await membersOf(user, boxId)).find((member) => member.uid === uid)?.role;
+  async function join(
+    owner: Client,
+    box: string,
+    user: Client,
+    username: string,
+  ) {
+    const invite = await call<{ invitationId: string }>(
+      owner,
+      'inviteBox',
+    )({
+      boxId: box,
+      username,
+    });
+    await call(
+      user,
+      'acceptBoxInvitation',
+    )({
+      invitationId: invite.data.invitationId,
+    });
+  }
+  async function denied(work: Promise<unknown>, code = 'functions/not-found') {
+    const error = await work.then(
+      () => null,
+      (caught: unknown) => caught as { code: string; message: string },
+    );
+    expect(error, 'the call should have been refused').not.toBeNull();
+    expect(error).toMatchObject({ code });
+    return error!.message;
+  }
+
+  it('applies the web owner/admin/member rules to Box management', async () => {
+    const names = {
+      owner: name('mo'),
+      admin: name('ma'),
+      member: name('mm'),
+      other: name('mn'),
+    };
+    const owner = await client(names.owner);
+    const admin = await client(names.admin);
+    const member = await client(names.member);
+    const other = await client(names.other);
+    const outsider = await client(name('mx'));
+    const boxId = (
+      await call<{ id: string }>(owner, 'createBox')({ name: 'Mgmt Box' })
+    ).data.id;
+    await join(owner, boxId, admin, names.admin);
+    await join(owner, boxId, member, names.member);
+    await join(owner, boxId, other, names.other);
+
+    // updateBox: owner only, non-leaking, validated.
+    const guessed = randomUUID();
+    const messages = await Promise.all([
+      denied(call(member, 'updateBox')({ boxId, name: 'Hijack' })),
+      denied(call(outsider, 'updateBox')({ boxId, name: 'Hijack' })),
+      denied(call(owner, 'updateBox')({ boxId: guessed, name: 'Hijack' })),
+    ]);
+    expect(new Set(messages).size).toBe(1);
+    await denied(call(admin, 'updateBox')({ boxId, status: 'archived' }));
+    await expect(
+      call(owner, 'updateBox')({ boxId, name: '   ' }),
+    ).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+    });
+    await expect(call(owner, 'updateBox')({ boxId })).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+      details: { reason: 'INVALID_INPUT' },
+    });
+    await expect(
+      call(owner, 'updateBox')({ boxId, status: 'deleted' }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    const renamed = (
+      await call<BoxView>(owner, 'updateBox')({ boxId, name: '  Renamed Box ' })
+    ).data;
+    expect(renamed).toMatchObject({
+      id: boxId,
+      name: 'Renamed Box',
+      status: 'active',
+      currentUserRole: 'owner',
+    });
+    expect((await boxOf(member, boxId)).name).toBe('Renamed Box');
+    expect(
+      (await call<BoxView>(owner, 'updateBox')({ boxId, status: 'archived' }))
+        .data.status,
+    ).toBe('archived');
+    // An archived Box stays readable but rejects new posts.
+    expect((await boxOf(member, boxId)).status).toBe('archived');
+    await denied(call(member, 'createBoxPost')({ boxId, text: 'Too late' }));
+    // Archiving is not a lock-out: the owner can restore.
+    expect(
+      (
+        await call<BoxView>(
+          owner,
+          'updateBox',
+        )({
+          boxId,
+          status: 'active',
+          name: 'Mgmt Box',
+        })
+      ).data,
+    ).toMatchObject({ status: 'active', name: 'Mgmt Box' });
+
+    // setBoxMemberRole.
+    await denied(
+      call(
+        member,
+        'setBoxMemberRole',
+      )({
+        boxId,
+        memberUid: other.uid,
+        role: 'admin',
+      }),
+    );
+    await denied(
+      call(
+        outsider,
+        'setBoxMemberRole',
+      )({
+        boxId,
+        memberUid: other.uid,
+        role: 'admin',
+      }),
+    );
+    await expect(
+      call(
+        owner,
+        'setBoxMemberRole',
+      )({
+        boxId,
+        memberUid: other.uid,
+        role: 'owner',
+      }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    await expect(
+      call(
+        owner,
+        'setBoxMemberRole',
+      )({
+        boxId,
+        memberUid: owner.uid,
+        role: 'member',
+      }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    await call(
+      owner,
+      'setBoxMemberRole',
+    )({
+      boxId,
+      memberUid: admin.uid,
+      role: 'admin',
+    });
+    expect(await roleOf(owner, boxId, admin.uid)).toBe('admin');
+    // Setting the role someone already has is refused, as on the web.
+    await denied(
+      call(
+        owner,
+        'setBoxMemberRole',
+      )({
+        boxId,
+        memberUid: admin.uid,
+        role: 'admin',
+      }),
+    );
+    // The owner's role is never changeable.
+    await denied(
+      call(
+        admin,
+        'setBoxMemberRole',
+      )({
+        boxId,
+        memberUid: owner.uid,
+        role: 'member',
+      }),
+    );
+    // An admin may promote a member but not demote an admin.
+    await call(
+      admin,
+      'setBoxMemberRole',
+    )({
+      boxId,
+      memberUid: member.uid,
+      role: 'admin',
+    });
+    expect(await roleOf(owner, boxId, member.uid)).toBe('admin');
+    await denied(
+      call(
+        admin,
+        'setBoxMemberRole',
+      )({
+        boxId,
+        memberUid: member.uid,
+        role: 'member',
+      }),
+    );
+    await call(
+      owner,
+      'setBoxMemberRole',
+    )({
+      boxId,
+      memberUid: member.uid,
+      role: 'member',
+    });
+    expect(await roleOf(owner, boxId, member.uid)).toBe('member');
+
+    // removeBoxMember: owner or admin, never the owner.
+    await denied(
+      call(member, 'removeBoxMember')({ boxId, memberUid: other.uid }),
+    );
+    await denied(
+      call(outsider, 'removeBoxMember')({ boxId, memberUid: other.uid }),
+    );
+    await denied(
+      call(admin, 'removeBoxMember')({ boxId, memberUid: owner.uid }),
+    );
+    await denied(
+      call(owner, 'removeBoxMember')({ boxId, memberUid: outsider.uid }),
+    );
+    await call(admin, 'removeBoxMember')({ boxId, memberUid: other.uid });
+    expect(await roleOf(owner, boxId, other.uid)).toBeUndefined();
+    expect((await boxOf(owner, boxId)).id).toBe(boxId);
+    await denied(call(other, 'getBox')({ boxId }));
+    await denied(call(other, 'createBoxPost')({ boxId, text: 'Still here?' }));
+    expect(
+      (
+        await call<{ items: Array<{ id: string }> }>(other, 'listMyBoxes')({})
+      ).data.items.some((item) => item.id === boxId),
+    ).toBe(false);
+    await denied(
+      call(owner, 'removeBoxMember')({ boxId, memberUid: other.uid }),
+    );
+    // A removed member cannot leave, rename or re-add themselves.
+    await denied(call(other, 'leaveBox')({ boxId }));
+    await denied(call(other, 'updateBox')({ boxId, name: 'Back' }));
+
+    // transferBoxOwnership is owner only, atomic, and needs an active member.
+    await denied(
+      call(admin, 'transferBoxOwnership')({ boxId, memberUid: member.uid }),
+    );
+    await denied(
+      call(outsider, 'transferBoxOwnership')({ boxId, memberUid: member.uid }),
+    );
+    await expect(
+      call(owner, 'transferBoxOwnership')({ boxId, memberUid: owner.uid }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    await denied(
+      call(owner, 'transferBoxOwnership')({ boxId, memberUid: outsider.uid }),
+    );
+    await denied(
+      call(owner, 'transferBoxOwnership')({ boxId, memberUid: other.uid }),
+    );
+    await denied(
+      call(owner, 'transferBoxOwnership')({ boxId, memberUid: randomUUID() }),
+    );
+
+    // leaveBox: the owner must transfer first.
+    await denied(call(owner, 'leaveBox')({ boxId }));
+    await denied(call(outsider, 'leaveBox')({ boxId }));
+    await denied(call(owner, 'leaveBox')({ boxId: randomUUID() }));
+    expect(await roleOf(owner, boxId, owner.uid)).toBe('owner');
+
+    await call(owner, 'transferBoxOwnership')({ boxId, memberUid: admin.uid });
+    expect((await boxOf(admin, boxId)).currentUserRole).toBe('owner');
+    expect((await boxOf(owner, boxId)).currentUserRole).toBe('admin');
+    const roles = await membersOf(admin, boxId);
+    expect(roles.filter((entry) => entry.role === 'owner')).toEqual([
+      expect.objectContaining({ uid: admin.uid }),
+    ]);
+    expect(roles.find((entry) => entry.uid === owner.uid)?.role).toBe('admin');
+    // The former owner has lost owner-only actions at once.
+    await denied(call(owner, 'updateBox')({ boxId, name: 'Mine' }));
+    await denied(
+      call(owner, 'transferBoxOwnership')({ boxId, memberUid: member.uid }),
+    );
+    await denied(
+      call(owner, 'beginBoxDeletion')({ boxId, confirmName: 'Mgmt Box' }),
+    );
+    expect(
+      (await call<BoxView>(admin, 'updateBox')({ boxId, name: 'New Era' })).data
+        .name,
+    ).toBe('New Era');
+
+    // Anyone but the owner may leave, once.
+    await call(owner, 'leaveBox')({ boxId });
+    await denied(call(owner, 'getBox')({ boxId }));
+    await denied(call(owner, 'leaveBox')({ boxId }));
+    await call(member, 'leaveBox')({ boxId });
+    expect(await membersOf(admin, boxId)).toEqual([
+      expect.objectContaining({ uid: admin.uid, role: 'owner' }),
+    ]);
+    expect((await boxOf(admin, boxId)).id).toBe(boxId);
+  }, 120_000);
+
+  it('cancels only your own pending friend request', async () => {
+    const aliceName = name('fa');
+    const bobName = name('fb');
+    const alice = await client(aliceName);
+    const bob = await client(bobName);
+    const outsider = await client(name('fx'));
+    const list = (user: Client, status: string) =>
+      call<{ items: Array<{ id: string }> }>(
+        user,
+        'listMyFriendships',
+      )({
+        status,
+      }).then((result) => result.data.items.map((item) => item.id));
+    const sent = await call<{ requestId: string }>(
+      alice,
+      'sendFriendRequest',
+    )({
+      username: bobName,
+    });
+    const id = sent.data.requestId;
+    // The recipient, an outsider and a guessed id are indistinguishable.
+    const messages = await Promise.all([
+      denied(call(bob, 'cancelFriendRequest')({ requestId: id })),
+      denied(call(outsider, 'cancelFriendRequest')({ requestId: id })),
+      denied(call(alice, 'cancelFriendRequest')({ requestId: randomUUID() })),
+    ]);
+    expect(new Set(messages).size).toBe(1);
+    expect(await list(alice, 'sent')).toEqual([id]);
+    await call(alice, 'cancelFriendRequest')({ requestId: id });
+    expect(await list(alice, 'sent')).toEqual([]);
+    expect(await list(bob, 'pending')).toEqual([]);
+    await denied(call(alice, 'cancelFriendRequest')({ requestId: id }));
+    await denied(call(bob, 'acceptFriendRequest')({ requestId: id }));
+    // The request is gone, so a new one is allowed.
+    const again = await call<{ requestId: string }>(
+      alice,
+      'sendFriendRequest',
+    )({
+      username: bobName,
+    });
+    await call(bob, 'acceptFriendRequest')({ requestId: again.data.requestId });
+    // An accepted friendship is not a request: cancelling it is refused.
+    await denied(
+      call(alice, 'cancelFriendRequest')({ requestId: again.data.requestId }),
+    );
+    expect(await list(alice, 'accepted')).toEqual([again.data.requestId]);
+  }, 60_000);
+
+  it('serves comment threads, replies and a pinned thread with web hiding rules', async () => {
+    const ownerName = name('co');
+    const memberName = name('cm');
+    const blockedName = name('cb');
+    const gone = name('cg');
+    const owner = await client(ownerName);
+    const member = await client(memberName);
+    const blocked = await client(blockedName);
+    const removed = await client(gone);
+    const outsider = await client(name('cx'));
+    const boxId = (
+      await call<{ id: string }>(owner, 'createBox')({ name: 'Threads' })
+    ).data.id;
+    await join(owner, boxId, member, memberName);
+    await join(owner, boxId, blocked, blockedName);
+    await join(owner, boxId, removed, gone);
+    const postId = (
+      await call<{ postId: string }>(
+        owner,
+        'createBoxPost',
+      )({
+        boxId,
+        text: 'Thread post',
+      })
+    ).data.postId;
+    const otherPost = (
+      await call<{ postId: string }>(
+        owner,
+        'createBoxPost',
+      )({
+        boxId,
+        text: 'Other post',
+      })
+    ).data.postId;
+    const comment = async (
+      user: Client,
+      text: string,
+      parentId?: string,
+      post = postId,
+    ) =>
+      (
+        await call<{ commentId: string }>(
+          user,
+          'createBoxComment',
+        )({
+          boxId,
+          postId: post,
+          text,
+          ...(parentId ? { parentId } : {}),
+        })
+      ).data.commentId;
+    type Item =
+      | {
+          kind: 'comment';
+          comment: { id: string; text: string; authorUid: string };
+        }
+      | { kind: 'deleted' | 'hidden'; id: string };
+    type Thread = {
+      root: Item;
+      rootId: string;
+      replies: Item[];
+      replyCount: number;
+    };
+    const idOf = (item: Item) =>
+      item.kind === 'comment' ? item.comment.id : item.id;
+    const threads = (user: Client, cursor?: string, post = postId) =>
+      call<{ items: Thread[]; nextCursor: string | null }>(
+        user,
+        'listBoxCommentThreads',
+      )({ boxId, postId: post, ...(cursor ? { cursor } : {}) });
+    const replies = (user: Client, rootId: string, cursor?: string) =>
+      call<{ items: Item[]; nextCursor: string | null }>(
+        user,
+        'listBoxCommentReplies',
+      )({ boxId, postId, rootId, ...(cursor ? { cursor } : {}) });
+    const pinned = (user: Client, commentId: string, post = postId) =>
+      call<Thread>(
+        user,
+        'getBoxCommentThread',
+      )({ boxId, postId: post, commentId });
+
+    // root1 has five replies (one by the blocked member); root2 is by the
+    // blocked member; root3 was deleted but keeps a reply; root4 was deleted.
+    const root1 = await comment(member, 'Root one');
+    const r1 = await comment(owner, 'Reply 1', root1);
+    const r2 = await comment(blocked, 'Reply 2 (blocked)', root1);
+    const r3 = await comment(owner, 'Reply 3', root1);
+    const r4 = await comment(owner, 'Reply 4', root1);
+    const r5 = await comment(owner, 'Reply 5', root1);
+    const root2 = await comment(blocked, 'Root two (blocked)');
+    const root3 = await comment(member, 'Root three');
+    const r3a = await comment(owner, 'Reply to deleted', root3);
+    const root4 = await comment(member, 'Root four');
+    for (const id of [root3, root4])
+      await call(member, 'deleteBoxComment')({ boxId, postId, commentId: id });
+    const foreign = await comment(
+      owner,
+      'Other post root',
+      undefined,
+      otherPost,
+    );
+
+    // Owner view: newest root first, a three-reply preview and the full count.
+    const page = (await threads(owner)).data;
+    expect(page.nextCursor).toBeNull();
+    expect(page.items.map((thread) => thread.rootId)).toEqual([
+      root3,
+      root2,
+      root1,
+    ]);
+    const [t3, t2, t1] = page.items as [Thread, Thread, Thread];
+    expect(t3.root).toMatchObject({ kind: 'deleted', id: root3 });
+    expect(t3.replyCount).toBe(1);
+    expect(t3.replies.map(idOf)).toEqual([r3a]);
+    expect(t2.root).toMatchObject({ kind: 'comment' });
+    expect(t1.replyCount).toBe(5);
+    expect(t1.replies.map(idOf)).toEqual([r1, r2, r3]);
+    expect((await replies(owner, root1)).data.items.map(idOf)).toEqual([
+      r1,
+      r2,
+      r3,
+      r4,
+      r5,
+    ]);
+
+    // The member blocked the other: that author is a bare placeholder.
+    await call(
+      member,
+      'setUserBlock',
+    )({ targetUid: blocked.uid, blocked: true });
+    const memberView = (await threads(member)).data.items;
+    const m2 = memberView.find((thread) => thread.rootId === root2)!;
+    expect(m2).toMatchObject({
+      root: { kind: 'hidden', id: root2 },
+      replies: [],
+      replyCount: 0,
+    });
+    expect(JSON.stringify(m2)).not.toMatch(/Root two|authorUid|text/);
+    const m1 = memberView.find((thread) => thread.rootId === root1)!;
+    expect(m1.replies.map((item) => item.kind)).toEqual([
+      'comment',
+      'hidden',
+      'comment',
+    ]);
+    expect(m1.replyCount).toBe(5);
+    expect(JSON.stringify(m1)).not.toContain('Reply 2');
+    // The block hides both ways, so the blocked member sees the same.
+    const blockedView = (await threads(blocked)).data.items;
+    expect(blockedView.find((t) => t.rootId === root1)!.root.kind).toBe(
+      'hidden',
+    );
+    expect(
+      (await replies(member, root1)).data.items.map((item) => item.kind),
+    ).toEqual(['comment', 'hidden', 'comment', 'comment', 'comment']);
+    // A hidden root cannot be opened for replies or pinned.
+    await denied(replies(member, root2));
+    await denied(pinned(member, root2));
+    await denied(pinned(member, r2));
+
+    // Pinned thread: a reply beyond the preview is appended to it.
+    const deep = (await pinned(owner, r5)).data;
+    expect(deep.rootId).toBe(root1);
+    expect(deep.replyCount).toBe(5);
+    expect(deep.replies.map(idOf)).toEqual([r1, r2, r3, r5]);
+    expect((await pinned(owner, r1)).data.replies.map(idOf)).toEqual([
+      r1,
+      r2,
+      r3,
+    ]);
+    expect((await pinned(owner, root1)).data.replies.map(idOf)).toEqual([
+      r1,
+      r2,
+      r3,
+    ]);
+    // A reply under a deleted root keeps a deleted placeholder as the root.
+    const orphan = (await pinned(owner, r3a)).data;
+    expect(orphan.root).toMatchObject({ kind: 'deleted', id: root3 });
+    expect(orphan.replies.map(idOf)).toEqual([r3a]);
+    expect(orphan.replyCount).toBe(1);
+    // Deleted comments themselves, and other posts' ids, are not found.
+    await denied(pinned(owner, root3));
+    await denied(pinned(owner, root4));
+    await denied(pinned(owner, foreign));
+    // As on the web, a deleted root still lists its remaining replies.
+    expect((await replies(owner, root3)).data.items.map(idOf)).toEqual([r3a]);
+    expect((await replies(owner, root4)).data.items).toEqual([]);
+    await denied(replies(owner, r1));
+    await denied(replies(owner, foreign));
+
+    // Absence and denial are one answer for every thread callable.
+    const guessedId = randomUUID();
+    const refusals = await Promise.all([
+      denied(threads(outsider)),
+      denied(threads(owner, undefined, guessedId)),
+      denied(replies(outsider, root1)),
+      denied(replies(owner, guessedId)),
+      denied(pinned(outsider, r1)),
+      denied(pinned(owner, guessedId)),
+      denied(pinned(owner, r1, guessedId)),
+    ]);
+    expect(new Set(refusals).size).toBe(1);
+
+    // Cursors: malformed is rejected up front; a stranger's id is not found.
+    for (const bad of ['bad', 'x'.repeat(40)]) {
+      await expect(threads(owner, bad)).rejects.toMatchObject({
+        code: 'functions/invalid-argument',
+        details: { reason: 'INVALID_INPUT' },
+      });
+      await expect(replies(owner, root1, bad)).rejects.toMatchObject({
+        code: 'functions/invalid-argument',
+      });
+    }
+    await denied(threads(owner, guessedId));
+    await denied(threads(owner, r1));
+    await denied(replies(owner, root1, guessedId));
+    await denied(replies(owner, root1, root2));
+
+    // Roots page twenty at a time, newest first, without gaps.
+    const extra: string[] = [];
+    for (let at = 0; at < 20; at += 1)
+      extra.push(await comment(owner, `Bulk ${at}`));
+    const first = (await threads(owner)).data;
+    expect(first.items).toHaveLength(20);
+    expect(first.nextCursor).toBe(first.items[19]!.rootId);
+    const second = (await threads(owner, first.nextCursor!)).data;
+    const all = [...first.items, ...second.items].map((t) => t.rootId);
+    expect(new Set(all).size).toBe(all.length);
+    expect(all).toHaveLength(extra.length + 3);
+    expect(second.nextCursor).toBeNull();
+    expect(all.slice(0, 20)).toEqual([...extra].reverse().slice(0, 20));
+
+    // A removed member loses every thread read at once.
+    await call(owner, 'removeBoxMember')({ boxId, memberUid: removed.uid });
+    await denied(threads(removed));
+    await denied(replies(removed, root1));
+    await denied(pinned(removed, r1));
+  }, 180_000);
 });
 
 describe('native contract coverage of this flow', () => {

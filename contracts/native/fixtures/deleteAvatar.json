@@ -1,0 +1,28 @@
+{
+  "callable": "deleteAvatar",
+  "request": {
+    "valid": [{}],
+    "invalid": []
+  },
+  "response": {
+    "valid": [
+      {
+        "ok": true
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}
