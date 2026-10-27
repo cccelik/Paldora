@@ -9,5 +9,8 @@ export * from './comments.js';
 export * from './reactions.js';
 export * from './life-updates.js';
 export * from './moderation.js';
+export * from './profile.js';
+export * from './notifications.js';
+export * from './feed.js';
 export * from './firestore.js';
 export * from './registry.js';

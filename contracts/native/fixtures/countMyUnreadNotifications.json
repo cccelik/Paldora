@@ -1,0 +1,33 @@
+{
+  "callable": "countMyUnreadNotifications",
+  "request": {
+    "valid": [{}],
+    "invalid": []
+  },
+  "response": {
+    "valid": [
+      {
+        "count": 3,
+        "capped": false
+      },
+      {
+        "count": 100,
+        "capped": true
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

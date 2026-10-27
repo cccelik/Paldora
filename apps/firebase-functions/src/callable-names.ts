@@ -40,6 +40,17 @@ export const callableNames = [
   'reportBoxPost',
   'listModerationReports',
   'hideReportedPost',
+  'getMyProfile',
+  'updateMyProfile',
+  'updateMyPreferences',
+  'listMyBoxes',
+  'createBox',
+  'getBox',
+  'listMyNotifications',
+  'countMyUnreadNotifications',
+  'markNotificationRead',
+  'markAllNotificationsRead',
+  'getHomeFeed',
 ] as const;
 
 export type CallableName = (typeof callableNames)[number];

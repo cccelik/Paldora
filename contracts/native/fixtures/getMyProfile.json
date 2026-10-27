@@ -1,0 +1,50 @@
+{
+  "callable": "getMyProfile",
+  "request": {
+    "valid": [{}],
+    "invalid": []
+  },
+  "response": {
+    "valid": [
+      {
+        "user": {
+          "id": "uid_synthetic_0001",
+          "email": "synthetic@example.invalid",
+          "status": "active",
+          "createdAt": 1790000000000
+        },
+        "profile": {
+          "username": "synthetic_user",
+          "displayName": "Synthetic User",
+          "bio": null,
+          "onboardingState": "complete",
+          "updatedAt": 1790000000000
+        },
+        "preferences": {
+          "appearance": "system",
+          "reactionPresets": [
+            "\ud83d\udc4d",
+            "\u2764\ufe0f",
+            "\ud83d\ude02",
+            "\ud83d\ude2e",
+            "\ud83c\udf89"
+          ]
+        }
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "failed-precondition"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

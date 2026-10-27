@@ -1440,6 +1440,891 @@
         "unauthenticated"
       ],
       "limit": { "scope": "hideReportedPost", "perHour": 120 }
+    },
+    "getMyProfile": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "email": { "type": "string" },
+              "status": { "type": "string", "const": "active" },
+              "createdAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["id", "email", "status", "createdAt"],
+            "additionalProperties": false
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
+              "displayName": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
+              "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "onboardingState": {
+                "type": "string",
+                "enum": ["username", "profile", "avatar", "complete"]
+              },
+              "updatedAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "username",
+              "displayName",
+              "bio",
+              "onboardingState",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "appearance": {
+                "type": "string",
+                "enum": ["light", "dark", "system"]
+              },
+              "reactionPresets": {
+                "minItems": 5,
+                "maxItems": 5,
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["appearance", "reactionPresets"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["user", "profile", "preferences"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getMyProfile", "perHour": 600 }
+    },
+    "updateMyProfile": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 1, "maxLength": 30 },
+          "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "bio": {
+            "anyOf": [
+              { "type": "string", "maxLength": 500 },
+              { "type": "null" }
+            ]
+          },
+          "onboardingState": {
+            "type": "string",
+            "enum": ["username", "profile", "avatar", "complete"]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "email": { "type": "string" },
+              "status": { "type": "string", "const": "active" },
+              "createdAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["id", "email", "status", "createdAt"],
+            "additionalProperties": false
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
+              "displayName": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
+              "bio": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "onboardingState": {
+                "type": "string",
+                "enum": ["username", "profile", "avatar", "complete"]
+              },
+              "updatedAt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "username",
+              "displayName",
+              "bio",
+              "onboardingState",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "appearance": {
+                "type": "string",
+                "enum": ["light", "dark", "system"]
+              },
+              "reactionPresets": {
+                "minItems": 5,
+                "maxItems": 5,
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["appearance", "reactionPresets"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["user", "profile", "preferences"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "already-exists",
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "updateMyProfile", "perHour": 30 }
+    },
+    "updateMyPreferences": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "appearance": {
+            "type": "string",
+            "enum": ["light", "dark", "system"]
+          },
+          "reactionPresets": {
+            "minItems": 5,
+            "maxItems": 5,
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 32 }
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "appearance": {
+            "type": "string",
+            "enum": ["light", "dark", "system"]
+          },
+          "reactionPresets": {
+            "minItems": 5,
+            "maxItems": 5,
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["appearance", "reactionPresets"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "failed-precondition",
+        "invalid-argument",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "updateMyPreferences", "perHour": 60 }
+    },
+    "listMyBoxes": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "status": { "type": "string", "enum": ["active", "archived"] },
+                "currentUserRole": {
+                  "type": "string",
+                  "enum": ["owner", "admin", "member"]
+                },
+                "memberCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "updatedAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "status",
+                "currentUserRole",
+                "memberCount",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyBoxes", "perHour": 600 }
+    },
+    "createBox": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "required": ["name"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "archived"] },
+          "currentUserRole": {
+            "type": "string",
+            "enum": ["owner", "admin", "member"]
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "currentUserRole",
+          "memberCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "createBox", "perHour": 20 }
+    },
+    "getBox": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "boxId": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["boxId"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "archived"] },
+          "currentUserRole": {
+            "type": "string",
+            "enum": ["owner", "admin", "member"]
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "currentUserRole",
+          "memberCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getBox", "perHour": 1200 }
+    },
+    "listMyNotifications": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "post.comment",
+                    "comment.reply",
+                    "post.reaction",
+                    "comment.reaction"
+                  ]
+                },
+                "actor": {
+                  "type": "object",
+                  "properties": {
+                    "uid": { "type": "string" },
+                    "username": { "type": "string" },
+                    "displayName": { "type": "string" }
+                  },
+                  "required": ["uid", "username", "displayName"],
+                  "additionalProperties": false
+                },
+                "boxId": { "type": "string" },
+                "boxName": { "type": "string" },
+                "postId": { "type": "string" },
+                "lifeUpdateId": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "commentId": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "reaction": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": { "kind": { "type": "string" } },
+                      "required": ["kind"],
+                      "additionalProperties": false
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "read": { "type": "boolean" },
+                "createdAt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "actor",
+                "boxId",
+                "boxName",
+                "postId",
+                "lifeUpdateId",
+                "commentId",
+                "reaction",
+                "read",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "unreadCount": {
+            "type": "object",
+            "properties": {
+              "count": { "type": "integer", "minimum": 0, "maximum": 100 },
+              "capped": { "type": "boolean" }
+            },
+            "required": ["count", "capped"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["items", "nextCursor", "unreadCount"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "listMyNotifications", "perHour": 600 }
+    },
+    "countMyUnreadNotifications": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": {
+          "count": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "capped": { "type": "boolean" }
+        },
+        "required": ["count", "capped"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "countMyUnreadNotifications", "perHour": 1200 }
+    },
+    "markNotificationRead": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "required": ["id"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "post.comment",
+              "comment.reply",
+              "post.reaction",
+              "comment.reaction"
+            ]
+          },
+          "actor": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "username": { "type": "string" },
+              "displayName": { "type": "string" }
+            },
+            "required": ["uid", "username", "displayName"],
+            "additionalProperties": false
+          },
+          "boxId": { "type": "string" },
+          "boxName": { "type": "string" },
+          "postId": { "type": "string" },
+          "lifeUpdateId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "commentId": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "reaction": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": { "kind": { "type": "string" } },
+                "required": ["kind"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "read": { "type": "boolean" },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "actor",
+          "boxId",
+          "boxName",
+          "postId",
+          "lifeUpdateId",
+          "commentId",
+          "reaction",
+          "read",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "markNotificationRead", "perHour": 600 }
+    },
+    "markAllNotificationsRead": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "const": true } },
+        "required": ["ok"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "markAllNotificationsRead", "perHour": 60 }
+    },
+    "getHomeFeed": {
+      "input": {
+        "type": "object",
+        "properties": {
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 128 }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "post" },
+                    "id": { "type": "string" },
+                    "boxId": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "interactions": {
+                      "type": "object",
+                      "properties": {
+                        "commentCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "reactions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": { "type": "string" },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": ["kind", "count"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "reactionCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realPreview": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "user": {
+                                "type": "object",
+                                "properties": {
+                                  "uid": { "type": "string" },
+                                  "username": { "type": "string" },
+                                  "displayName": { "type": "string" }
+                                },
+                                "required": ["uid", "username", "displayName"],
+                                "additionalProperties": false
+                              },
+                              "mediaAssetId": { "type": "string" }
+                            },
+                            "required": ["user", "mediaAssetId"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "viewerReaction": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": { "type": "string" },
+                                "mediaAssetId": { "type": "string" }
+                              },
+                              "required": ["kind"],
+                              "additionalProperties": false
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "canInteract": { "type": "boolean" }
+                      },
+                      "required": [
+                        "commentCount",
+                        "reactions",
+                        "reactionCount",
+                        "realCount",
+                        "realPreview",
+                        "viewerReaction",
+                        "canInteract"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "text": { "type": "string" },
+                    "edited": { "type": "boolean" },
+                    "canEdit": { "type": "boolean" }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "boxId",
+                    "authorUid",
+                    "authorName",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "interactions",
+                    "text",
+                    "edited",
+                    "canEdit"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "const": "life_update" },
+                    "id": { "type": "string" },
+                    "postId": { "type": "string" },
+                    "boxId": { "type": "string" },
+                    "authorUid": { "type": "string" },
+                    "authorName": { "type": "string" },
+                    "mediaAssetIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "createdAt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "interactions": {
+                      "type": "object",
+                      "properties": {
+                        "commentCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "reactions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": { "type": "string" },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": ["kind", "count"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "reactionCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "realPreview": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "user": {
+                                "type": "object",
+                                "properties": {
+                                  "uid": { "type": "string" },
+                                  "username": { "type": "string" },
+                                  "displayName": { "type": "string" }
+                                },
+                                "required": ["uid", "username", "displayName"],
+                                "additionalProperties": false
+                              },
+                              "mediaAssetId": { "type": "string" }
+                            },
+                            "required": ["user", "mediaAssetId"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "viewerReaction": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": { "type": "string" },
+                                "mediaAssetId": { "type": "string" }
+                              },
+                              "required": ["kind"],
+                              "additionalProperties": false
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "canInteract": { "type": "boolean" }
+                      },
+                      "required": [
+                        "commentCount",
+                        "reactions",
+                        "reactionCount",
+                        "realCount",
+                        "realPreview",
+                        "viewerReaction",
+                        "canInteract"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "lifeLately",
+                              "workOrUniversity",
+                              "travel",
+                              "currentlyInto",
+                              "listeningTo",
+                              "watching",
+                              "reading",
+                              "excitedAbout",
+                              "whatsNext"
+                            ]
+                          },
+                          "content": { "type": "string" }
+                        },
+                        "required": ["key", "content"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "postId",
+                    "boxId",
+                    "authorUid",
+                    "authorName",
+                    "mediaAssetIds",
+                    "createdAt",
+                    "interactions",
+                    "sections"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        },
+        "required": ["items", "nextCursor"],
+        "additionalProperties": false
+      },
+      "errors": [
+        "invalid-argument",
+        "not-found",
+        "resource-exhausted",
+        "unauthenticated"
+      ],
+      "limit": { "scope": "getHomeFeed", "perHour": 600 }
     }
   },
   "firestore": {

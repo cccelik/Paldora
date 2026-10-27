@@ -1,0 +1,56 @@
+{
+  "callable": "updateMyPreferences",
+  "request": {
+    "valid": [
+      {
+        "appearance": "dark"
+      },
+      {
+        "reactionPresets": [
+          "\ud83d\udc4d",
+          "\u2764\ufe0f",
+          "\ud83d\ude02",
+          "\ud83d\ude2e",
+          "\ud83c\udf89"
+        ]
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "appearance": "neon"
+      },
+      {
+        "reactionPresets": ["\ud83d\udc4d"]
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "appearance": "system",
+        "reactionPresets": [
+          "\ud83d\udc4d",
+          "\u2764\ufe0f",
+          "\ud83d\ude02",
+          "\ud83d\ude2e",
+          "\ud83c\udf89"
+        ]
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "failed-precondition"
+    },
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

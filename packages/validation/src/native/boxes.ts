@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  nativeCursorSchema,
   nativeIdSchema,
   nativePageSchema,
   nativeString,
@@ -48,3 +49,24 @@ export const nativeBoxMemberSchema = z.object({
 export const listBoxMembersOutputSchema = nativePageSchema(
   nativeBoxMemberSchema,
 );
+
+export const nativeBoxSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.enum(['active', 'archived']),
+  currentUserRole: z.enum(['owner', 'admin', 'member']),
+  memberCount: z.number().int().nonnegative(),
+  createdAt: nativeTimestampSchema,
+  updatedAt: nativeTimestampSchema,
+});
+
+export const listMyBoxesInputSchema = z.object({
+  cursor: nativeCursorSchema.optional(),
+});
+export const listMyBoxesOutputSchema = nativePageSchema(nativeBoxSchema);
+
+export const createBoxInputSchema = z.object({ name: nativeString(80) });
+export const createBoxOutputSchema = nativeBoxSchema;
+
+export const getBoxInputSchema = z.object({ boxId: nativeIdSchema });
+export const getBoxOutputSchema = nativeBoxSchema;

@@ -1,0 +1,43 @@
+{
+  "callable": "getBox",
+  "request": {
+    "valid": [
+      {
+        "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8"
+      }
+    ],
+    "invalid": [
+      {},
+      {
+        "boxId": ""
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "id": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+        "name": "Synthetic Box",
+        "status": "active",
+        "currentUserRole": "owner",
+        "memberCount": 1,
+        "createdAt": 1790000000000,
+        "updatedAt": 1790000000000
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ]
+}

@@ -2,11 +2,14 @@ import type { z } from 'zod';
 import * as account from './account.js';
 import * as boxes from './boxes.js';
 import * as comments from './comments.js';
+import * as feed from './feed.js';
 import type { FunctionsErrorCode } from './errors.js';
 import * as friendships from './friendships.js';
 import * as invitations from './invitations.js';
 import * as lifeUpdates from './life-updates.js';
 import * as moderation from './moderation.js';
+import * as notifications from './notifications.js';
+import * as profile from './profile.js';
 import * as posts from './posts.js';
 import * as reactions from './reactions.js';
 
@@ -377,5 +380,104 @@ export const nativeCallableRegistry: readonly NativeCallable[] = [
       output: moderation.hideReportedPostOutputSchema,
     },
     moderationErrors,
+  ),
+  callable(
+    'getMyProfile',
+    600,
+    {
+      input: profile.getMyProfileInputSchema,
+      output: profile.getMyProfileOutputSchema,
+    },
+    ['failed-precondition'],
+  ),
+  callable(
+    'updateMyProfile',
+    30,
+    {
+      input: profile.updateMyProfileInputSchema,
+      output: profile.updateMyProfileOutputSchema,
+    },
+    ['already-exists', 'failed-precondition'],
+  ),
+  callable(
+    'updateMyPreferences',
+    60,
+    {
+      input: profile.updateMyPreferencesInputSchema,
+      output: profile.updateMyPreferencesOutputSchema,
+    },
+    ['failed-precondition'],
+  ),
+  callable(
+    'listMyBoxes',
+    600,
+    {
+      input: boxes.listMyBoxesInputSchema,
+      output: boxes.listMyBoxesOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'createBox',
+    20,
+    {
+      input: boxes.createBoxInputSchema,
+      output: boxes.createBoxOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'getBox',
+    1200,
+    {
+      input: boxes.getBoxInputSchema,
+      output: boxes.getBoxOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'listMyNotifications',
+    600,
+    {
+      input: notifications.listMyNotificationsInputSchema,
+      output: notifications.listMyNotificationsOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'countMyUnreadNotifications',
+    1200,
+    {
+      input: notifications.countMyUnreadNotificationsInputSchema,
+      output: notifications.countMyUnreadNotificationsOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'markNotificationRead',
+    600,
+    {
+      input: notifications.markNotificationReadInputSchema,
+      output: notifications.markNotificationReadOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'markAllNotificationsRead',
+    60,
+    {
+      input: notifications.markAllNotificationsReadInputSchema,
+      output: notifications.markAllNotificationsReadOutputSchema,
+    },
+    ['not-found'],
+  ),
+  callable(
+    'getHomeFeed',
+    600,
+    {
+      input: feed.getHomeFeedInputSchema,
+      output: feed.getHomeFeedOutputSchema,
+    },
+    ['not-found'],
   ),
 ];

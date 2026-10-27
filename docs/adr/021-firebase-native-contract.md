@@ -105,6 +105,20 @@ Two options, neither chosen:
    notifications, home feed, media, Rooms, Memories, export/deletion,
    password/session). Media needs a Storage design (Storage is deny-all) and
    likely Blaze.
+   **First slice implemented (2026-10-27), 11 callables:** `getMyProfile`,
+   `updateMyProfile`, `updateMyPreferences`, `listMyBoxes`, `createBox`,
+   `getBox`, `listMyNotifications`, `countMyUnreadNotifications`,
+   `markNotificationRead`, `markAllNotificationsRead`, `getHomeFeed`. Each wraps
+   the same trusted service as the web adapter (`NativeProfiles`, `NativeBoxes`,
+   `NativeNotifications`, `NativeHomeFeed`) with the same authorization and
+   live visibility rechecks; absence and denial share `not-found`. Home feed
+   items are posts and Life Update delivery posts (one item per backing post,
+   as on web), blocked authors are dropped by the trusted services. **Storage-design
+   dependency:** no avatar, signed URL or object key is returned. Media fields
+   are opaque media asset ids only (`mediaAssetIds`, camera-reaction
+   `realPreview[].mediaAssetId`), and `getMyProfile` has no avatar until the
+   Storage design lands. Still open: media, Rooms, Memories, export/deletion,
+   password/session.
 9. **Hosted deployment.** Callables, App Check and new buckets need Blaze;
    `paldora-dev` stays on Spark without an owner instruction.
 

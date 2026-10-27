@@ -1,0 +1,119 @@
+{
+  "callable": "getHomeFeed",
+  "request": {
+    "valid": [
+      {},
+      {
+        "cursor": "eyJhdCI6MTc5MDAwMDAwMDAwMCwiaWQiOiJwX3N5bnRoZXRpYyJ9"
+      }
+    ],
+    "invalid": [
+      {
+        "cursor": ""
+      },
+      {
+        "cursor": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "response": {
+    "valid": [
+      {
+        "items": [],
+        "nextCursor": null
+      },
+      {
+        "items": [
+          {
+            "kind": "post",
+            "id": "0a1b2c3d-4e5f-4061-9273-84a5b6c7d8e9",
+            "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "authorUid": "uid_synthetic_0001",
+            "authorName": "Synthetic User",
+            "mediaAssetIds": [],
+            "createdAt": 1790000000000,
+            "interactions": {
+              "commentCount": 2,
+              "reactions": [
+                {
+                  "kind": "\u2764\ufe0f",
+                  "count": 1
+                }
+              ],
+              "reactionCount": 1,
+              "realCount": 1,
+              "realPreview": [
+                {
+                  "user": {
+                    "uid": "uid_synthetic_0002",
+                    "username": "synthetic_friend",
+                    "displayName": "Synthetic Friend"
+                  },
+                  "mediaAssetId": "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
+                }
+              ],
+              "viewerReaction": {
+                "kind": "\u2764\ufe0f"
+              },
+              "canInteract": true
+            },
+            "text": "Synthetic post.",
+            "edited": false,
+            "canEdit": true
+          },
+          {
+            "kind": "life_update",
+            "id": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809",
+            "postId": "1b2c3d4e-5f60-4172-8384-95a6b7c8d9e0",
+            "boxId": "7b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8",
+            "authorUid": "uid_synthetic_0001",
+            "authorName": "Synthetic User",
+            "mediaAssetIds": ["9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"],
+            "createdAt": 1790000000000,
+            "interactions": {
+              "commentCount": 2,
+              "reactions": [
+                {
+                  "kind": "\u2764\ufe0f",
+                  "count": 1
+                }
+              ],
+              "reactionCount": 1,
+              "realCount": 0,
+              "realPreview": [],
+              "viewerReaction": null,
+              "canInteract": true
+            },
+            "sections": [
+              {
+                "key": "travel",
+                "content": "Synthetic trip."
+              }
+            ]
+          }
+        ],
+        "nextCursor": "eyJhdCI6MTc5MDAwMDAwMDAwMCwiaWQiOiJwX3N5bnRoZXRpYyJ9"
+      }
+    ]
+  },
+  "errors": [
+    {
+      "code": "invalid-argument"
+    },
+    {
+      "code": "not-found"
+    },
+    {
+      "code": "resource-exhausted"
+    },
+    {
+      "code": "unauthenticated"
+    }
+  ],
+  "cursorPage": {
+    "itemsKey": "items",
+    "nextCursorKey": "nextCursor",
+    "nextCursorNullable": true,
+    "pageSize": 20
+  }
+}

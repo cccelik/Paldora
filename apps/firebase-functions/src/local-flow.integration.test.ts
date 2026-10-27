@@ -840,6 +840,218 @@ describe('local Firebase Box vertical flow', () => {
     ).rejects.toMatchObject({ code: 'functions/not-found' });
     await expect(getBox(revokee.db, boxId)).rejects.toThrow();
   }, 45_000);
+
+  it('serves profile, Boxes, notifications and Home feed to a native client', async () => {
+    type Fn = Functions;
+    const call = <Response = Record<string, unknown>>(
+      functions: Fn,
+      name: string,
+    ) => httpsCallable<Record<string, unknown>, Response>(functions, name);
+    type Page<T> = { items: T[]; nextCursor: string | null };
+    const alice = await client(`alice_${randomUUID().slice(0, 8)}`);
+    const bobName = `bob_${randomUUID().slice(0, 8)}`;
+    const bob = await client(bobName);
+    const eve = await client(`eve_${randomUUID().slice(0, 8)}`);
+
+    // Profile and preferences.
+    const me = await call<{
+      user: { id: string };
+      profile: { displayName: string | null; bio: string | null };
+      preferences: { appearance: string; reactionPresets: string[] };
+    }>(
+      alice.functions,
+      'getMyProfile',
+    )({});
+    expect(me.data.user.id).toBe(alice.uid);
+    expect(me.data.preferences.reactionPresets).toHaveLength(5);
+    const updated = await call<{
+      profile: { displayName: string; bio: string };
+    }>(
+      alice.functions,
+      'updateMyProfile',
+    )({ displayName: 'Alice A', bio: 'Hello' });
+    expect(updated.data.profile).toMatchObject({
+      displayName: 'Alice A',
+      bio: 'Hello',
+    });
+    await expect(
+      call(alice.functions, 'updateMyProfile')({ displayName: '' }),
+    ).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+      details: { reason: 'INVALID_INPUT' },
+    });
+    await expect(
+      call(alice.functions, 'updateMyProfile')({}),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    const prefs = await call<{ appearance: string }>(
+      alice.functions,
+      'updateMyPreferences',
+    )({ appearance: 'dark' });
+    expect(prefs.data.appearance).toBe('dark');
+    await expect(
+      call(alice.functions, 'updateMyPreferences')({ reactionPresets: ['x'] }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    expect(
+      (
+        await call<{ profile: { displayName: string | null } }>(
+          bob.functions,
+          'getMyProfile',
+        )({})
+      ).data.profile.displayName,
+    ).not.toBe('Alice A');
+
+    // Boxes: owner-scoped listing, guessed ids are not-found.
+    const created = await call<{ id: string; currentUserRole: string }>(
+      alice.functions,
+      'createBox',
+    )({ name: 'Native Crew' });
+    expect(created.data.currentUserRole).toBe('owner');
+    const boxId = created.data.id;
+    await expect(
+      call(alice.functions, 'createBox')({ name: '   ' }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+    const listBoxes = (f: Fn) =>
+      call<Page<{ id: string }>>(f, 'listMyBoxes')({});
+    expect(
+      (await listBoxes(alice.functions)).data.items.map((b) => b.id),
+    ).toEqual([boxId]);
+    expect((await listBoxes(eve.functions)).data.items).toEqual([]);
+    await expect(
+      call(alice.functions, 'listMyBoxes')({ cursor: 'not-a-box' }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    for (const outsider of [eve, bob])
+      await expect(
+        call(outsider.functions, 'getBox')({ boxId }),
+      ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await expect(
+      call(alice.functions, 'getBox')({ boxId: randomUUID() }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+
+    const invited = await call<{ invitationId: string }>(
+      alice.functions,
+      'inviteBox',
+    )({ boxId, username: bobName });
+    await call(
+      bob.functions,
+      'acceptBoxInvitation',
+    )({
+      invitationId: invited.data.invitationId,
+    });
+    expect(
+      (await call<{ memberCount: number }>(bob.functions, 'getBox')({ boxId }))
+        .data.memberCount,
+    ).toBe(2);
+
+    // Home feed: members only, with interaction summaries and Life Updates.
+    const post = await call<{ postId: string }>(
+      bob.functions,
+      'createBoxPost',
+    )({ boxId, text: 'From Bob' });
+    await call(
+      bob.functions,
+      'createLifeUpdate',
+    )({
+      audience: { type: 'boxes', boxIds: [boxId] },
+      sections: { travel: 'Bob went somewhere' },
+    });
+    type FeedItem = {
+      kind: string;
+      id: string;
+      authorUid: string;
+      interactions: { commentCount: number; canInteract: boolean };
+      sections?: { key: string }[];
+      text?: string;
+    };
+    const feed = (f: Fn, cursor?: string) =>
+      call<Page<FeedItem>>(f, 'getHomeFeed')(cursor ? { cursor } : {});
+    const aliceFeed = (await feed(alice.functions)).data;
+    expect(aliceFeed.items.map((item) => item.kind).sort()).toEqual([
+      'life_update',
+      'post',
+    ]);
+    expect(aliceFeed.items.find((i) => i.kind === 'post')).toMatchObject({
+      id: post.data.postId,
+      authorUid: bob.uid,
+      text: 'From Bob',
+      canEdit: false,
+      interactions: { commentCount: 0, canInteract: true },
+    });
+    expect(
+      aliceFeed.items.find((i) => i.kind === 'life_update')?.sections,
+    ).toEqual([{ key: 'travel', content: 'Bob went somewhere' }]);
+    expect((await feed(eve.functions)).data).toEqual({
+      items: [],
+      nextCursor: null,
+    });
+    await expect(feed(alice.functions, 'garbage')).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+    });
+
+    // Notifications: pointers only; every read rechecks live visibility.
+    const commentOn = (f: Fn, text: string) =>
+      call(f, 'createBoxComment')({ boxId, postId: post.data.postId, text });
+    await commentOn(alice.functions, 'Nice one');
+    type Note = {
+      id: string;
+      actor: { uid: string };
+      boxName: string;
+      read: boolean;
+    };
+    const notes = (f: Fn) =>
+      call<Page<Note> & { unreadCount: { count: number } }>(
+        f,
+        'listMyNotifications',
+      )({});
+    const unread = (f: Fn) =>
+      call<{ count: number }>(f, 'countMyUnreadNotifications')({});
+    const bobNotes = (await notes(bob.functions)).data;
+    expect(bobNotes.items).toMatchObject([
+      { actor: { uid: alice.uid }, boxName: 'Native Crew', read: false },
+    ]);
+    expect(bobNotes.unreadCount.count).toBe(1);
+    expect((await unread(bob.functions)).data.count).toBe(1);
+    const noteId = bobNotes.items[0]!.id;
+    for (const outsider of [eve, alice])
+      await expect(
+        call(outsider.functions, 'markNotificationRead')({ id: noteId }),
+      ).rejects.toMatchObject({ code: 'functions/not-found' });
+    expect((await notes(eve.functions)).data.items).toEqual([]);
+    expect((await unread(eve.functions)).data.count).toBe(0);
+    expect(
+      (await call<Note>(bob.functions, 'markNotificationRead')({ id: noteId }))
+        .data.read,
+    ).toBe(true);
+    expect((await unread(bob.functions)).data.count).toBe(0);
+    await commentOn(alice.functions, 'Another');
+    expect((await unread(bob.functions)).data.count).toBe(1);
+    await call(bob.functions, 'markAllNotificationsRead')({});
+    expect((await unread(bob.functions)).data.count).toBe(0);
+    await expect(
+      call(bob.functions, 'listMyNotifications')({ cursor: 'missing' }),
+    ).rejects.toMatchObject({ code: 'functions/invalid-argument' });
+
+    // A block hides the blocked author's notifications and feed items.
+    await commentOn(alice.functions, 'Third');
+    expect((await unread(bob.functions)).data.count).toBe(1);
+    await call(
+      bob.functions,
+      'setUserBlock',
+    )({
+      targetUid: alice.uid,
+      blocked: true,
+    });
+    expect((await unread(bob.functions)).data.count).toBe(0);
+    expect((await notes(bob.functions)).data.items).toEqual([]);
+    await expect(
+      call(bob.functions, 'markNotificationRead')({ id: noteId }),
+    ).rejects.toMatchObject({ code: 'functions/not-found' });
+    await call(alice.functions, 'createBoxPost')({ boxId, text: 'From Alice' });
+    expect(
+      (await feed(bob.functions)).data.items.filter(
+        (item) => item.authorUid === alice.uid,
+      ),
+    ).toEqual([]);
+  }, 60_000);
 });
 
 describe('native contract coverage of this flow', () => {

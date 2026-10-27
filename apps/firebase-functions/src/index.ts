@@ -1,5 +1,11 @@
 import {
   NativeBoxInvitations,
+  NativeBoxes,
+  NativeBoxError,
+  NativeProfiles,
+  NativeProfileError,
+  NativeNotificationError,
+  NativeHomeFeedError,
   NativeCallableSessionError,
   NativeCallableSessions,
   NativeInvitationError,
@@ -41,6 +47,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import type { CallableName } from './callable-names.js';
 import { observedJob } from './observed.js';
+import { boxView, NativeViews } from './native-views.js';
 import type { native } from '@paldora/validation';
 
 if (getApps().length === 0) initializeApp();
@@ -87,6 +94,8 @@ const boxDeletion = new NativeBoxDeletion(
 );
 const lifeUpdates = new NativeLifeUpdates(db);
 const homeFeed = new NativeHomeFeed(db);
+const boxes = new NativeBoxes(db);
+const profiles = new NativeProfiles(db, getAuth());
 const interactionIndex = new NativeInteractionIndex(db);
 const media = new NativeMedia(
   db,
@@ -347,6 +356,36 @@ function usernameError(error: NativeUsernameError): HttpsError {
     : new HttpsError('failed-precondition', 'Username unavailable.');
 }
 
+function profileError(error: NativeProfileError): HttpsError {
+  if (error.code === 'INVALID')
+    return reasoned('invalid-argument', 'Invalid profile.', 'INVALID_INPUT');
+  if (error.code === 'TAKEN')
+    return new HttpsError('already-exists', 'Username unavailable.');
+  return new HttpsError('failed-precondition', 'Account unavailable.');
+}
+
+/** Absence and denial share one code; only malformed input is told apart. */
+function readError(
+  error: NativeBoxError | NativeNotificationError | NativeHomeFeedError,
+): HttpsError {
+  if (error.code === 'INVALID')
+    return reasoned('invalid-argument', 'Invalid request.', 'INVALID_INPUT');
+  return new HttpsError('not-found', 'Unavailable.');
+}
+
+function accountReadError(error: unknown): HttpsError | null {
+  if (error instanceof NativeProfileError) return profileError(error);
+  if (error instanceof NativeAccountError)
+    return new HttpsError('failed-precondition', 'Account unavailable.');
+  if (
+    error instanceof NativeBoxError ||
+    error instanceof NativeNotificationError ||
+    error instanceof NativeHomeFeedError
+  )
+    return readError(error);
+  return null;
+}
+
 async function invoke<T>(work: () => Promise<T>): Promise<T> {
   try {
     return await work();
@@ -371,14 +410,14 @@ async function invoke<T>(work: () => Promise<T>): Promise<T> {
     if (error instanceof NativeRateLimitError)
       throw reasoned('resource-exhausted', 'Try again later.', 'RATE_LIMITED');
     if (error instanceof NativeModerationError) throw moderationError(error);
-    if (error instanceof NativeAccountError)
-      throw new HttpsError('failed-precondition', 'Account unavailable.');
     if (error instanceof NativeFriendshipError) throw friendshipError(error);
     if (
       error instanceof NativeBoxMemberError ||
       error instanceof NativeBoxDeletionError
     )
       throw boxError(error);
+    const mapped = accountReadError(error);
+    if (mapped) throw mapped;
     logEvent('ERROR', { event: 'callable.failed' }, error);
     throw error;
   }
@@ -826,6 +865,170 @@ export const hideReportedPost = onCall(options, async (request) => {
   });
 });
 
+function optionalCursor(data: unknown): string | undefined {
+  const raw =
+    data && typeof data === 'object'
+      ? (data as Record<string, unknown>).cursor
+      : undefined;
+  if (raw === undefined) return undefined;
+  return field({ cursor: raw }, 'cursor');
+}
+
+function profileView(current: Awaited<ReturnType<NativeProfiles['current']>>) {
+  return {
+    user: {
+      id: current.user.id,
+      email: current.user.email,
+      status: current.user.status,
+      createdAt: Date.parse(current.user.createdAt),
+    },
+    profile: {
+      username: current.profile.username,
+      displayName: current.profile.displayName,
+      bio: current.profile.bio,
+      onboardingState: current.profile.onboardingState,
+      updatedAt: Date.parse(current.profile.updatedAt),
+    },
+    preferences: current.preferences,
+  };
+}
+
+function pick(data: unknown, keys: readonly string[]): Record<string, unknown> {
+  const source =
+    data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
+  return Object.fromEntries(
+    keys
+      .filter((key) => source[key] !== undefined)
+      .map((key) => [key, source[key]]),
+  );
+}
+
+export const getMyProfile = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'getMyProfile', 600, async () =>
+    profileView(await profiles.current(uid)),
+  );
+});
+
+export const updateMyProfile = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const changes = pick(request.data, [
+    'username',
+    'displayName',
+    'bio',
+    'onboardingState',
+  ]);
+  return limited(uid, 'updateMyProfile', 30, async () =>
+    profileView(await profiles.update(uid, changes)),
+  );
+});
+
+export const updateMyPreferences = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const changes = pick(request.data, ['appearance', 'reactionPresets']);
+  if (Object.keys(changes).length === 0)
+    throw reasoned('invalid-argument', 'Invalid preferences.', 'INVALID_INPUT');
+  return limited(uid, 'updateMyPreferences', 60, async () => {
+    if (changes.appearance !== undefined)
+      await profiles.updatePreferences(uid, {
+        appearance: changes.appearance as 'light' | 'dark' | 'system',
+      });
+    if (changes.reactionPresets !== undefined)
+      await profiles.setReactionPresets(
+        uid,
+        changes.reactionPresets as string[],
+      );
+    return (await profiles.current(uid)).preferences;
+  });
+});
+
+export const listMyBoxes = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const cursor = optionalCursor(request.data);
+  return limited(uid, 'listMyBoxes', 600, async () => {
+    const page = await boxes.list(uid, cursor);
+    return { items: page.items.map(boxView), nextCursor: page.nextCursor };
+  });
+});
+
+export const createBox = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const name = field(request.data, 'name', 80);
+  return limited(uid, 'createBox', 20, async () =>
+    boxView(await boxes.create(uid, name)),
+  );
+});
+
+export const getBox = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const boxId = field(request.data, 'boxId');
+  return limited(uid, 'getBox', 1200, async () =>
+    boxView(await boxes.get(boxId, uid)),
+  );
+});
+
+export const listMyNotifications = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const cursor = optionalCursor(request.data);
+  return limited(uid, 'listMyNotifications', 600, async () => {
+    const views = new NativeViews(db, boxes, posts, lifeUpdates);
+    await notifications.processPending();
+    const page = await notifications.list(uid, cursor);
+    return {
+      items: await Promise.all(
+        page.items.map((item) => views.notification(uid, item)),
+      ),
+      nextCursor: page.nextCursor,
+      unreadCount: await notifications.unreadCount(uid),
+    };
+  });
+});
+
+export const countMyUnreadNotifications = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'countMyUnreadNotifications', 1200, async () => {
+    await notifications.processPending();
+    return notifications.unreadCount(uid);
+  });
+});
+
+export const markNotificationRead = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const id = field(request.data, 'id');
+  return limited(uid, 'markNotificationRead', 600, async () => {
+    const item = await notifications.markRead(uid, id);
+    return new NativeViews(db, boxes, posts, lifeUpdates).notification(uid, {
+      ...item,
+      read: true,
+    });
+  });
+});
+
+export const markAllNotificationsRead = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  return limited(uid, 'markAllNotificationsRead', 60, async () => {
+    await notifications.markAllRead(uid);
+    return { ok: true };
+  });
+});
+
+export const getHomeFeed = onCall(options, async (request) => {
+  const uid = await requireSession(request.auth);
+  const cursor = optionalCursor(request.data);
+  return limited(uid, 'getHomeFeed', 600, async () => {
+    // Repair a bounded amount of durable fan-out work, as the web adapter does.
+    await homeFeed.processPending();
+    const page = await homeFeed.page(uid, cursor);
+    return {
+      items: await new NativeViews(db, boxes, posts, lifeUpdates).feedItems(
+        uid,
+        page.items,
+      ),
+      nextCursor: page.nextCursor,
+    };
+  });
+});
+
 /** Compile-time proof that the exports above and `callableNames` agree. */
 void ({
   beginBoxDeletion,
@@ -863,4 +1066,15 @@ void ({
   reportBoxPost,
   listModerationReports,
   hideReportedPost,
+  getMyProfile,
+  updateMyProfile,
+  updateMyPreferences,
+  listMyBoxes,
+  createBox,
+  getBox,
+  listMyNotifications,
+  countMyUnreadNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  getHomeFeed,
 } satisfies Record<CallableName, unknown>);
