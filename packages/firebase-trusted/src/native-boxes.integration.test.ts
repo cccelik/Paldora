@@ -240,3 +240,46 @@ describe('trusted Box lifecycle', () => {
     }
   });
 });
+
+describe('idempotent Box creation', () => {
+  it('returns the original Box for a retried or concurrent key', async () => {
+    const owner = await admittedUser();
+    const other = await admittedUser();
+    const key = randomUUID();
+    const results = await Promise.all(
+      [1, 2, 3].map(() =>
+        boxes.create(owner, 'Once', undefined, Date.now(), key),
+      ),
+    );
+    expect(new Set(results.map((box) => box.id)).size).toBe(1);
+    const retry = await boxes.create(
+      owner,
+      'Different name',
+      undefined,
+      Date.now(),
+      key,
+    );
+    expect(retry.id).toBe(results[0]!.id);
+    expect(retry.name).toBe('Once');
+    expect((await boxes.list(owner)).items).toHaveLength(1);
+    const marker = await db
+      .collection('nativeIdempotency')
+      .doc(`box_create_${owner}_${key}`)
+      .get();
+    expect(marker.get('uid')).toBe(owner);
+    expect(marker.get('expiresAt') as number).toBeGreaterThan(Date.now());
+    // Scoped by uid: the same key for another user creates another Box.
+    const theirs = await boxes.create(
+      other,
+      'Once',
+      undefined,
+      Date.now(),
+      key,
+    );
+    expect(theirs.id).not.toBe(results[0]!.id);
+    // An expired marker is ignored and replaced.
+    await marker.ref.update({ expiresAt: Date.now() - 1 });
+    const fresh = await boxes.create(owner, 'Once', undefined, Date.now(), key);
+    expect(fresh.id).not.toBe(results[0]!.id);
+  });
+});

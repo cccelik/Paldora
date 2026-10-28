@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   nativeCursorSchema,
+  nativeIdempotencyKeySchema,
   nativeIdSchema,
   nativeOkSchema,
   nativePageSchema,
@@ -68,7 +69,11 @@ export const listMyBoxesInputSchema = z.object({
 });
 export const listMyBoxesOutputSchema = nativePageSchema(nativeBoxSchema);
 
-export const createBoxInputSchema = z.object({ name: nativeString(80) });
+export const createBoxInputSchema = z.object({
+  name: nativeString(80),
+  /** A retry with the same key returns the original Box. */
+  idempotencyKey: nativeIdempotencyKeySchema.optional(),
+});
 export const createBoxOutputSchema = nativeBoxSchema;
 
 export const getBoxInputSchema = z.object({ boxId: nativeIdSchema });

@@ -2922,6 +2922,148 @@ describe('native Box management, friend cancel and comment threads', () => {
     await denied(replies(removed, root1));
     await denied(pinned(removed, r1));
   }, 180_000);
+
+  it('makes retried creates idempotent per caller and key', async () => {
+    const alice = await client(name('ia'));
+    const bob = await client(name('ib'));
+    const key = randomUUID();
+
+    // createBox: a lost response is retried with the same key.
+    const [first, second, third] = await Promise.all([
+      call<{ id: string }>(
+        alice,
+        'createBox',
+      )({ name: 'Idem Box', idempotencyKey: key }),
+      call<{ id: string }>(
+        alice,
+        'createBox',
+      )({ name: 'Idem Box', idempotencyKey: key }),
+      call<{ id: string }>(
+        alice,
+        'createBox',
+      )({ name: 'Idem Box', idempotencyKey: key }),
+    ]);
+    expect(new Set([first.data.id, second.data.id, third.data.id]).size).toBe(
+      1,
+    );
+    const retried = await call<{ id: string }>(
+      alice,
+      'createBox',
+    )({
+      name: 'Idem Box',
+      idempotencyKey: key,
+    });
+    expect(retried.data.id).toBe(first.data.id);
+    const mine = await call<{ items: Array<{ id: string }> }>(
+      alice,
+      'listMyBoxes',
+    )({});
+    expect(
+      mine.data.items.filter((box) => box.id === first.data.id),
+    ).toHaveLength(1);
+    expect(mine.data.items).toHaveLength(1);
+    // Keys are scoped by uid: Bob's identical key creates Bob's own Box.
+    const bobs = await call<{ id: string }>(
+      bob,
+      'createBox',
+    )({
+      name: 'Idem Box',
+      idempotencyKey: key,
+    });
+    expect(bobs.data.id).not.toBe(first.data.id);
+    // Without a key every call creates a new Box (web behavior is unchanged).
+    const plainA = await call<{ id: string }>(
+      alice,
+      'createBox',
+    )({ name: 'Plain' });
+    const plainB = await call<{ id: string }>(
+      alice,
+      'createBox',
+    )({ name: 'Plain' });
+    expect(plainA.data.id).not.toBe(plainB.data.id);
+    await expect(
+      call(alice, 'createBox')({ name: 'Bad', idempotencyKey: 'not-a-uuid' }),
+    ).rejects.toMatchObject({
+      code: 'functions/invalid-argument',
+      details: { reason: 'INVALID_INPUT' },
+    });
+
+    // createBoxPost
+    const boxId = first.data.id;
+    const postKey = randomUUID();
+    const posts = await Promise.all(
+      [1, 2, 3].map(() =>
+        call<{ postId: string }>(
+          alice,
+          'createBoxPost',
+        )({
+          boxId,
+          text: 'Once',
+          idempotencyKey: postKey,
+        }),
+      ),
+    );
+    const postId = posts[0]!.data.postId;
+    expect(posts.every((post) => post.data.postId === postId)).toBe(true);
+    const listed = await call<{ items: Array<{ id: string }> }>(
+      alice,
+      'listBoxPosts',
+    )({ boxId });
+    expect(listed.data.items.map((post) => post.id)).toEqual([postId]);
+
+    // createBoxComment
+    const commentKey = randomUUID();
+    const comments = await Promise.all(
+      [1, 2, 3].map(() =>
+        call<{ commentId: string }>(
+          alice,
+          'createBoxComment',
+        )({
+          boxId,
+          postId,
+          text: 'Once too',
+          idempotencyKey: commentKey,
+        }),
+      ),
+    );
+    const commentId = comments[0]!.data.commentId;
+    expect(comments.every((c) => c.data.commentId === commentId)).toBe(true);
+    const thread = await call<{ items: Array<{ id: string }> }>(
+      alice,
+      'listBoxComments',
+    )({ boxId, postId });
+    expect(thread.data.items.map((comment) => comment.id)).toEqual([commentId]);
+
+    // An outsider cannot replay Alice's key into her Box (membership first).
+    await denied(
+      call(bob, 'createBoxPost')({ boxId, text: 'x', idempotencyKey: postKey }),
+    );
+  }, 120_000);
+
+  it('refuses a suspended account on callables', async () => {
+    const user = await client(name('sx'));
+    await call(user, 'listMyBoxes')({});
+    await adminDb
+      .collection('nativeAccounts')
+      .doc(user.uid)
+      .update({ status: 'suspended' });
+    // The session cache lives 10 seconds per instance; after it, the
+    // session layer itself (not a service) refuses with SESSION_ENDED.
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 11_000);
+    });
+    const refused = await call(
+      user,
+      'listMyBoxes',
+    )({}).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(refused).toMatchObject({
+      code: 'functions/unauthenticated',
+      details: { reason: 'SESSION_ENDED' },
+    });
+  }, 60_000);
 });
 
 describe('native contract coverage of this flow', () => {

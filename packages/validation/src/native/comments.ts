@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  nativeIdempotencyKeySchema,
   nativeIdSchema,
   nativeOkSchema,
   nativePageSchema,
@@ -14,6 +15,8 @@ export const createBoxCommentInputSchema = z.object({
   text: nativeString(2_000),
   /** Absent or null for a top-level comment. */
   parentId: nativeUuidCursorSchema.nullable().optional(),
+  /** A retry with the same key returns the original `commentId`. */
+  idempotencyKey: nativeIdempotencyKeySchema.optional(),
 });
 export const createBoxCommentOutputSchema = z.object({ commentId: z.string() });
 

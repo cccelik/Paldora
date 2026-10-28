@@ -45,8 +45,20 @@ token>`, the reserved `Content-Type` and exactly the reserved byte count.
    invalid or its session epoch ended.
 
 Both functions apply the callables' session-epoch check and a per-user hourly
-limit (`mediaUpload` 480, `mediaRead` 6000). `createMediaUpload` is limited to
+limit (`mediaUpload` 480, `mediaRead` 20000). `createMediaUpload` is limited to
 480 an hour, plus 120 an hour for `reaction_image`.
+
+## Retrying creates
+
+`createBox`, `createBoxPost`, `createBoxComment` and `createLifeUpdate` accept
+an optional `idempotencyKey` (a UUID the client generates once per user intent
+and reuses on a retry after a lost response). Within 24 hours the same caller
+and key returns the original result (`id` / `postId` / `commentId`) and creates
+nothing new, including for concurrent duplicates. The key is scoped by the
+authenticated user and the payload is not compared, so a retry must send the
+same intent. Omit it and every call creates (web does not send keys). Other
+creates are already safe: `sendFriendRequest`, `inviteBox` and reports use
+deterministic IDs, and an unused `createMediaUpload` reservation expires.
 
 ## Avatars
 

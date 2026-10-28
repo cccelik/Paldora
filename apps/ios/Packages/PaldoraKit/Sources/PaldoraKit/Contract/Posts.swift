@@ -24,10 +24,18 @@ public struct CreateBoxPostRequest: Codable, Sendable, Equatable {
     public var boxId: String
     public var text: String
     public var mediaAssetIds: [String]?
-    public init(boxId: String, text: String, mediaAssetIds: [String]? = nil) {
+    /// A UUID; a retry with the same key returns the original `postId`.
+    public var idempotencyKey: String?
+    public init(
+        boxId: String,
+        text: String,
+        mediaAssetIds: [String]? = nil,
+        idempotencyKey: String? = nil
+    ) {
         self.boxId = boxId
         self.text = text
         self.mediaAssetIds = mediaAssetIds
+        self.idempotencyKey = idempotencyKey
     }
 }
 

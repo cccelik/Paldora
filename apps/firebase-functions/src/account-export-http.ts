@@ -37,6 +37,7 @@ export type ExportHttpResponse = MediaHttpResponse &
 export interface ExportHttpDeps {
   verifyIdToken(
     token: string,
+    checkRevoked: boolean,
   ): Promise<{ uid: string; paldoraSessionEpoch?: unknown }>;
   sessions: Pick<NativeCallableSessions, 'require'>;
   rateLimits: Pick<NativeRateLimits, 'consume'>;

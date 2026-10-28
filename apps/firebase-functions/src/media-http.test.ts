@@ -87,6 +87,20 @@ describe('media HTTP functions', () => {
     expect(out.code).toBe(401);
   });
 
+  it('verifies the token with revocation checking and refuses a disabled user', async () => {
+    const verifyIdToken = vi.fn(
+      async (_token: string, checkRevoked: boolean) => {
+        if (checkRevoked) throw new Error('auth/user-disabled');
+        return { uid: 'u1' };
+      },
+    );
+    const { res, out } = response();
+    await handleMediaRead(request(), res, deps({ verifyIdToken }));
+    expect(verifyIdToken).toHaveBeenCalledWith('token', true);
+    expect(out.code).toBe(401);
+    expect(String(out.body)).toBe('{"error":{"code":"unauthenticated"}}');
+  });
+
   it('answers absence and denial with the same 404 and private headers', async () => {
     const bodies: unknown[] = [];
     for (const path of [

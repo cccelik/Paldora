@@ -5,7 +5,9 @@ import {
   NativeCallableSessions,
 } from './native-callable-session.js';
 
-function fakeDb(read: () => Promise<{ get: (k: string) => unknown }>) {
+function fakeDb(
+  read: () => Promise<{ exists?: boolean; get: (k: string) => unknown }>,
+) {
   const get = vi.fn(read);
   const db = {
     collection: () => ({ doc: () => ({ get }) }),
@@ -13,7 +15,12 @@ function fakeDb(read: () => Promise<{ get: (k: string) => unknown }>) {
   return { db, get };
 }
 
-const epoch = (value: unknown) => async () => ({ get: () => value });
+const epoch =
+  (value: unknown, status: unknown = 'active') =>
+  async () => ({
+    exists: true,
+    get: (key: string) => (key === 'status' ? status : value),
+  });
 
 describe('NativeCallableSessions', () => {
   it('accepts equal epochs and two absent epochs', async () => {
@@ -39,7 +46,10 @@ describe('NativeCallableSessions', () => {
   it('caches per uid until the ttl, then sees the rotation', async () => {
     let value = 'a';
     let clock = 1_000;
-    const { db, get } = fakeDb(async () => ({ get: () => value }));
+    const { db, get } = fakeDb(async () => ({
+      exists: true,
+      get: (key: string) => (key === 'status' ? 'active' : value),
+    }));
     const sessions = new NativeCallableSessions(db, () => clock);
     await sessions.require('u', 'a');
     await sessions.require('u', 'a');
@@ -62,5 +72,23 @@ describe('NativeCallableSessions', () => {
     await expect(sessions.require('u', undefined)).rejects.toBeInstanceOf(
       NativeCallableSessionError,
     );
+  });
+
+  it('refuses a suspended or non-active account with the same error', async () => {
+    for (const status of ['suspended', 'deleting', 7]) {
+      const sessions = new NativeCallableSessions(
+        fakeDb(epoch('a', status)).db,
+      );
+      await expect(sessions.require('u', 'a')).rejects.toBeInstanceOf(
+        NativeCallableSessionError,
+      );
+    }
+  });
+
+  it('does not refuse an account document that does not exist yet', async () => {
+    const sessions = new NativeCallableSessions(
+      fakeDb(async () => ({ exists: false, get: () => undefined })).db,
+    );
+    await expect(sessions.require('u', undefined)).resolves.toBeUndefined();
   });
 });

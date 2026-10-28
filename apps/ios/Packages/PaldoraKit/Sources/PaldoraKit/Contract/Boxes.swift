@@ -20,7 +20,12 @@ public struct Box: Codable, Sendable, Equatable {
 
 public struct CreateBoxRequest: Codable, Sendable, Equatable {
     public var name: String
-    public init(name: String) { self.name = name }
+    /// A UUID; a retry with the same key returns the original Box.
+    public var idempotencyKey: String?
+    public init(name: String, idempotencyKey: String? = nil) {
+        self.name = name
+        self.idempotencyKey = idempotencyKey
+    }
 }
 
 public struct BoxReference: Codable, Sendable, Equatable {

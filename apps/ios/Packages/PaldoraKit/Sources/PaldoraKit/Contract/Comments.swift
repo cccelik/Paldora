@@ -16,11 +16,20 @@ public struct CreateBoxCommentRequest: Codable, Sendable, Equatable {
     public var text: String
     /// `nil` for a top-level comment (the key is omitted).
     public var parentId: String?
-    public init(boxId: String, postId: String, text: String, parentId: String? = nil) {
+    /// A UUID; a retry with the same key returns the original `commentId`.
+    public var idempotencyKey: String?
+    public init(
+        boxId: String,
+        postId: String,
+        text: String,
+        parentId: String? = nil,
+        idempotencyKey: String? = nil
+    ) {
         self.boxId = boxId
         self.postId = postId
         self.text = text
         self.parentId = parentId
+        self.idempotencyKey = idempotencyKey
     }
 }
 

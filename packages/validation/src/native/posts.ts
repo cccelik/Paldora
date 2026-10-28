@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  nativeIdempotencyKeySchema,
   nativeIdSchema,
   nativeOkSchema,
   nativePageSchema,
@@ -20,6 +21,8 @@ export const createBoxPostInputSchema = z
     boxId: nativeIdSchema,
     text: z.string().max(5_000),
     mediaAssetIds: z.array(nativeString(64)).max(4).optional(),
+    /** A retry with the same key returns the original `postId`. */
+    idempotencyKey: nativeIdempotencyKeySchema.optional(),
   })
   .refine(
     ({ text, mediaAssetIds }) =>

@@ -36,6 +36,7 @@ export interface MediaHttpResponse {
 export interface MediaHttpDeps {
   verifyIdToken(
     token: string,
+    checkRevoked: boolean,
   ): Promise<{ uid: string; paldoraSessionEpoch?: unknown }>;
   sessions: Pick<NativeCallableSessions, 'require'>;
   rateLimits: Pick<NativeRateLimits, 'consume'>;
@@ -91,7 +92,7 @@ export function headerValue(
 
 export class Unauthenticated extends Error {}
 
-/** Same gate as a callable: valid ID token, then the session-epoch check. */
+/** Same gate as a callable: valid, unrevoked ID token, then the session-epoch check. */
 export async function authenticate(
   request: MediaHttpRequest,
   deps: Pick<MediaHttpDeps, 'verifyIdToken' | 'sessions'>,
@@ -102,7 +103,8 @@ export async function authenticate(
   if (!match?.[1]) throw new Unauthenticated();
   let decoded;
   try {
-    decoded = await deps.verifyIdToken(match[1]);
+    // checkRevoked: a disabled or revoked user is refused at once, not at expiry.
+    decoded = await deps.verifyIdToken(match[1], true);
   } catch {
     throw new Unauthenticated();
   }

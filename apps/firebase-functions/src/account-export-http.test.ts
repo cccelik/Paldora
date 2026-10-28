@@ -168,4 +168,21 @@ describe('account export HTTP function', () => {
     );
     expect(post.out.code).toBe(405);
   });
+
+  it('verifies the token with revocation checking and refuses a disabled user', async () => {
+    const verifyIdToken = vi.fn(
+      async (_token: string, checkRevoked: boolean) => {
+        if (checkRevoked) throw new Error('auth/user-disabled');
+        return { uid: 'u1' };
+      },
+    );
+    const disabled = response();
+    await handleAccountExportDownload(
+      request(),
+      disabled.res,
+      deps({ verifyIdToken }),
+    );
+    expect(verifyIdToken).toHaveBeenCalledWith('token', true);
+    expect(disabled.out.code).toBe(401);
+  });
 });

@@ -134,6 +134,11 @@ Two options, neither chosen:
   `NativeCallableSessions`, a per-instance cache with a 10 second TTL that fails
   closed. A rotated epoch answers `unauthenticated`, already in the contract, so
   no new wire error. The revocation window is therefore seconds, not an hour.
+  The same already-read account document carries `status`: a non-`active`
+  (suspended) account is refused with the same `SESSION_ENDED`, at no extra
+  read. The HTTP Functions (`mediaUpload`, `mediaRead`, `accountExportDownload`)
+  verify the ID token with `checkRevoked`, so a disabled or revoked user gets
+  the same `401` immediately, then the epoch and status check.
   Covered by unit tests and a local flow test; a password change or
   sign-out-everywhere forces native clients to sign in again because refresh
   tokens are revoked too.

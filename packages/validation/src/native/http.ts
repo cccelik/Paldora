@@ -67,7 +67,7 @@ export const nativeHttpEndpoints: readonly NativeHttpEndpoint[] = [
     method: 'GET',
     path: '/{assetId}/{variant}',
     auth: 'Bearer Firebase ID token',
-    limit: { scope: 'mediaRead', perHour: 6000 },
+    limit: { scope: 'mediaRead', perHour: 20000 },
     variants: NATIVE_MEDIA_VARIANTS,
     requestHeaders: { Authorization: 'Bearer <Firebase ID token>' },
     responseHeaders: {

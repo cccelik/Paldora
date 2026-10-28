@@ -4,6 +4,10 @@
     "valid": [
       {
         "name": "Synthetic Box"
+      },
+      {
+        "name": "Synthetic Box",
+        "idempotencyKey": "5e6f7a8b-9c0d-4e1f-a203-b4c5d6e7f809"
       }
     ],
     "invalid": [
@@ -13,6 +17,10 @@
       },
       {
         "name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+      },
+      {
+        "name": "Synthetic Box",
+        "idempotencyKey": "not-a-uuid"
       }
     ]
   },

@@ -927,6 +927,11 @@
             "maxItems": 4,
             "type": "array",
             "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
         "required": ["boxId", "text"]
@@ -1188,6 +1193,11 @@
               { "type": "string", "pattern": "^[a-f0-9-]{36}$" },
               { "type": "null" }
             ]
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
         "required": ["boxId", "postId", "text"]
@@ -1781,7 +1791,12 @@
       "input": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "minLength": 1, "maxLength": 80 }
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "idempotencyKey": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
         },
         "required": ["name"]
       },
@@ -6588,7 +6603,7 @@
       "method": "GET",
       "path": "/{assetId}/{variant}",
       "auth": "Bearer Firebase ID token",
-      "limit": { "scope": "mediaRead", "perHour": 6000 },
+      "limit": { "scope": "mediaRead", "perHour": 20000 },
       "variants": ["display", "thumbnail"],
       "requestHeaders": { "Authorization": "Bearer <Firebase ID token>" },
       "responseHeaders": {

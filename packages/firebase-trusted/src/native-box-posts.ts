@@ -19,6 +19,11 @@ import {
   planIndexWrite,
   type InteractionIndex,
 } from './native-interaction-index.js';
+import {
+  idempotencyRef,
+  priorResult,
+  writeMarker,
+} from './native-idempotency.js';
 import { logEvent } from './log.js';
 
 /** Retries for transactions that write the shared post document. */
@@ -319,12 +324,18 @@ export class NativeBoxPosts {
     );
   }
 
+  /**
+   * `idempotencyKey` (a client UUID, scoped by author) makes a retried create
+   * return the original post ID and write nothing new for 24 hours.
+   */
+  // eslint-disable-next-line max-params -- Positional signature is shared by the web adapter and tests; the key is the only addition.
   public async create(
     boxId: string,
     authorUid: string,
     text: string,
     now = Date.now(),
     mediaAssetIds: string[] = [],
+    idempotencyKey?: string,
   ): Promise<string> {
     const body = text.trim();
     if (
@@ -334,9 +345,20 @@ export class NativeBoxPosts {
       new Set(mediaAssetIds).size !== mediaAssetIds.length
     )
       throw new NativePostError('INVALID');
-    const postId = randomUUID();
+    let postId: string = randomUUID();
+    const keyRef = idempotencyKey
+      ? idempotencyRef(this.db, 'box_post', authorUid, idempotencyKey)
+      : null;
     await this.db.runTransaction(async (tx) => {
+      postId = randomUUID();
       await this.access(tx, boxId, authorUid, true);
+      const prior = keyRef
+        ? await priorResult(tx, keyRef, 'postId', now)
+        : null;
+      if (prior) {
+        postId = prior;
+        return;
+      }
       const assets = await Promise.all(
         mediaAssetIds.map((id) =>
           tx.get(this.db.collection('nativeMediaAssets').doc(id)),
@@ -354,6 +376,14 @@ export class NativeBoxPosts {
         )
       )
         throw new NativePostError('INVALID');
+      if (keyRef)
+        writeMarker(tx, keyRef, {
+          uid: authorUid,
+          kind: 'box_post',
+          field: 'postId',
+          resultId: postId,
+          now,
+        });
       for (const asset of assets)
         tx.update(asset.ref, {
           attachedPostId: postId,
@@ -645,24 +675,38 @@ export class NativeBoxPosts {
     return this.db.runTransaction(update, { maxAttempts: HOT_POST_ATTEMPTS });
   }
 
+  /** `idempotencyKey` behaves as in {@link create}: a retry returns the original comment ID. */
+  // eslint-disable-next-line max-params -- Positional signature is shared by the web adapter; the key is the only addition.
   public async createComment(
     boxId: string,
     postId: string,
     authorUid: string,
     text: string,
     parentId: string | null = null,
+    idempotencyKey?: string,
   ): Promise<string> {
     const now = Date.now();
     const body = text.trim();
     if (!body || body.length > 2_000) throw new NativePostError('INVALID');
-    const commentId = randomUUID();
+    let commentId: string = randomUUID();
     const activityId = randomUUID();
+    const keyRef = idempotencyKey
+      ? idempotencyRef(this.db, 'box_comment', authorUid, idempotencyKey)
+      : null;
     // eslint-disable-next-line complexity -- Existing reply visibility and ancestry checks share one transaction.
     await this.hotPostTransaction(async (tx) => {
+      commentId = randomUUID();
       await this.access(tx, boxId, authorUid, true);
       const post = await tx.get(this.postRef(boxId, postId));
       if (!(await this.visible(tx, boxId, authorUid, post)))
         throw new NativePostError('UNAVAILABLE');
+      const prior = keyRef
+        ? await priorResult(tx, keyRef, 'commentId', now)
+        : null;
+      if (prior) {
+        commentId = prior;
+        return;
+      }
       let rootId = parentId;
       if (parentId) {
         const parent = await tx.get(this.commentRef(boxId, postId, parentId));
@@ -724,6 +768,14 @@ export class NativeBoxPosts {
             'authorUid',
           ) as string)
         : (post.get('authorUid') as string);
+      if (keyRef)
+        writeMarker(tx, keyRef, {
+          uid: authorUid,
+          kind: 'box_comment',
+          field: 'commentId',
+          resultId: commentId,
+          now,
+        });
       tx.create(this.commentRef(boxId, postId, commentId), {
         postId,
         authorUid,

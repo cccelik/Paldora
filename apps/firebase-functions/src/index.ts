@@ -328,6 +328,21 @@ function field(data: unknown, key: string, maxLength = 128): string {
   return value;
 }
 
+/** Optional client UUID that makes a create safe to retry (scoped by uid). */
+function optionalIdempotencyKey(data: unknown): string | undefined {
+  const value =
+    data && typeof data === 'object'
+      ? (data as Record<string, unknown>).idempotencyKey
+      : undefined;
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || !uuidKeyPattern.test(value))
+    throw reasoned('invalid-argument', 'Invalid key.', 'INVALID_INPUT');
+  return value;
+}
+
+const uuidKeyPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
 function optionalIds(value: unknown, max: number): string[] {
   if (value === undefined) return [];
   if (
@@ -738,8 +753,16 @@ export const createBoxPost = onCall(options, async (request) => {
   // Empty text is allowed only with photos; the service enforces the rule.
   const text = typeof data.text === 'string' ? data.text : '';
   const mediaAssetIds = optionalIds(data.mediaAssetIds, 4);
+  const idempotencyKey = optionalIdempotencyKey(data);
   return limited(uid, 'createBoxPost', 120, async () => ({
-    postId: await posts.create(boxId, uid, text, Date.now(), mediaAssetIds),
+    postId: await posts.create(
+      boxId,
+      uid,
+      text,
+      Date.now(),
+      mediaAssetIds,
+      idempotencyKey,
+    ),
   }));
 });
 
@@ -837,6 +860,7 @@ export const createBoxComment = onCall(options, async (request) => {
     (typeof parentId !== 'string' || !/^[a-f0-9-]{36}$/.test(parentId))
   )
     throw reasoned('invalid-argument', 'Invalid parent.', 'INVALID_INPUT');
+  const idempotencyKey = optionalIdempotencyKey(request.data);
   return limited(uid, 'createBoxComment', 240, async () => ({
     commentId: await posts.createComment(
       boxId,
@@ -844,6 +868,7 @@ export const createBoxComment = onCall(options, async (request) => {
       uid,
       text,
       parentId ?? null,
+      idempotencyKey,
     ),
   }));
 });
@@ -1068,8 +1093,11 @@ export const listMyBoxes = onCall(options, async (request) => {
 export const createBox = onCall(options, async (request) => {
   const uid = await requireSession(request.auth);
   const name = field(request.data, 'name', 80);
+  const idempotencyKey = optionalIdempotencyKey(request.data);
   return limited(uid, 'createBox', 20, async () =>
-    boxView(await boxes.create(uid, name)),
+    boxView(
+      await boxes.create(uid, name, undefined, Date.now(), idempotencyKey),
+    ),
   );
 });
 
@@ -1669,8 +1697,8 @@ export const deleteAvatar = onCall(options, async (request) => {
 });
 
 const mediaHttp = {
-  verifyIdToken: async (token: string) => {
-    const decoded = await getAuth().verifyIdToken(token);
+  verifyIdToken: async (token: string, checkRevoked: boolean) => {
+    const decoded = await getAuth().verifyIdToken(token, checkRevoked);
     return {
       uid: decoded.uid,
       paldoraSessionEpoch: decoded.paldoraSessionEpoch,

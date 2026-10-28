@@ -36,7 +36,7 @@ emulator) with the reserved `Content-Type`, the exact length and
 same processing job; `getMediaAsset` reports `status`, `available`, `width` and
 `height`. Read display or thumbnail WebP from `mediaRead/{assetId}/{variant}`
 with the bearer. Both functions check the session epoch like a callable, apply
-rate limits (`mediaUpload` 480, `mediaRead` 6000 an hour), and run
+rate limits (`mediaUpload` 480, `mediaRead` 20000 an hour), and run
 `NativeMedia.upload` and `NativeMedia.read`, so Box membership, blocks, content
 state and the post-download recheck behave exactly as on web. Every refusal for
 an asset the caller may not see is the same `404`; `401` is only for a missing,

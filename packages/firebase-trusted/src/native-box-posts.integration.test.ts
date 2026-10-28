@@ -350,3 +350,46 @@ describe('trusted Box post pages', () => {
     expect(summary.realPreview.map((p) => p.user.id)).toEqual([good]);
   });
 });
+
+describe('idempotent post and comment creation', () => {
+  it('creates one post and one comment per (author, key)', async () => {
+    const owner = await admittedUser();
+    const outsider = await admittedUser();
+    const box = await boxes.create(owner, 'Idempotent');
+    const key = randomUUID();
+    const ids = await Promise.all(
+      [1, 2, 3].map(() =>
+        posts.create(box.id, owner, 'Once', Date.now(), [], key),
+      ),
+    );
+    expect(new Set(ids).size).toBe(1);
+    // A different payload under the same key returns the original (as Life Updates do).
+    expect(
+      await posts.create(box.id, owner, 'Other text', Date.now(), [], key),
+    ).toBe(ids[0]);
+    expect((await posts.list(box.id, owner)).items).toHaveLength(1);
+    // A non-member cannot replay or probe a key.
+    await expect(
+      posts.create(box.id, outsider, 'Once', Date.now(), [], key),
+    ).rejects.toBeInstanceOf(Error);
+    // No key: every call creates.
+    const a = await posts.create(box.id, owner, 'Plain');
+    const b = await posts.create(box.id, owner, 'Plain');
+    expect(a).not.toBe(b);
+
+    const ckey = randomUUID();
+    const comments = await Promise.all(
+      [1, 2, 3].map(() =>
+        posts.createComment(box.id, ids[0]!, owner, 'Hi', null, ckey),
+      ),
+    );
+    expect(new Set(comments).size).toBe(1);
+    const roots = await posts.listCommentRoots(box.id, ids[0]!, owner);
+    expect(roots.items).toHaveLength(1);
+    const marker = await db
+      .collection('nativeIdempotency')
+      .doc(`box_comment_${owner}_${ckey}`)
+      .get();
+    expect(marker.get('commentId')).toBe(comments[0]);
+  });
+});

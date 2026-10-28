@@ -5,6 +5,11 @@ import {
   type DocumentSnapshot,
   type Firestore,
 } from 'firebase-admin/firestore';
+import {
+  idempotencyRef,
+  priorResult,
+  writeMarker,
+} from './native-idempotency.js';
 
 export class NativeBoxError extends Error {
   public constructor(public readonly code: 'UNAVAILABLE' | 'INVALID') {
@@ -65,16 +70,23 @@ export class NativeBoxes {
     name: string,
     boxId = randomUUID(),
     now = Date.now(),
+    idempotencyKey?: string,
   ): Promise<TrustedBox> {
     const cleanName = name.trim();
     if (!cleanName || cleanName.length > 80)
       throw new NativeBoxError('INVALID');
+    const keyRef = idempotencyKey
+      ? idempotencyRef(this.db, 'box_create', uid, idempotencyKey)
+      : null;
     const boxRef = this.box(boxId);
     const accountRef = this.db.collection('nativeAccounts').doc(uid);
+    const outcome: { replayed: string | null } = { replayed: null };
     await this.db.runTransaction(async (tx) => {
-      const [account, deletion] = await Promise.all([
+      outcome.replayed = null;
+      const [account, deletion, prior] = await Promise.all([
         tx.get(accountRef),
         tx.get(this.db.collection('nativeDeletionRequests').doc(uid)),
+        keyRef ? priorResult(tx, keyRef, 'boxId', now) : null,
       ]);
       if (
         !active(account) ||
@@ -84,6 +96,19 @@ export class NativeBoxes {
           ))
       )
         throw new NativeBoxError('UNAVAILABLE');
+      // A retry returns the original Box and creates nothing new.
+      if (prior) {
+        outcome.replayed = prior;
+        return;
+      }
+      if (keyRef)
+        writeMarker(tx, keyRef, {
+          uid,
+          kind: 'box_create',
+          field: 'boxId',
+          resultId: boxId,
+          now,
+        });
       tx.create(boxRef, {
         id: boxId,
         name: cleanName,
@@ -102,6 +127,7 @@ export class NativeBoxes {
       });
       tx.create(accountRef.collection('boxRefs').doc(boxId), { boxId });
     });
+    if (outcome.replayed) return this.get(outcome.replayed, uid);
     return {
       id: boxId,
       name: cleanName,

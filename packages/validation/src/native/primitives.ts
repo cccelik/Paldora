@@ -37,3 +37,10 @@ export const nativeOkSchema = z.object({ ok: z.literal(true) });
 export const nativeEmptyInputSchema = z.object({});
 
 export type NativePage<Item> = { items: Item[]; nextCursor: string | null };
+
+/**
+ * Optional client-generated UUID that makes a create safe to retry: the same
+ * (caller, key) within 24 hours returns the original result and creates
+ * nothing new. Scoped by the authenticated uid; the payload is not compared.
+ */
+export const nativeIdempotencyKeySchema = z.uuid();
