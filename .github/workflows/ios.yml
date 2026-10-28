@@ -1,0 +1,51 @@
+name: iOS
+
+on:
+  pull_request:
+    paths:
+      [
+        'apps/ios/**',
+        'contracts/native/**',
+        'packages/tokens/**',
+        '.github/workflows/ios.yml',
+      ]
+  push:
+    branches: [main]
+    paths:
+      [
+        'apps/ios/**',
+        'contracts/native/**',
+        'packages/tokens/**',
+        '.github/workflows/ios.yml',
+      ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kit:
+    name: PaldoraKit tests and app build
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: PaldoraKit fixture conformance tests
+        working-directory: apps/ios/Packages/PaldoraKit
+        run: swift test
+      - name: Generate the Xcode project
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build the app for the simulator (debug, no signing)
+        working-directory: apps/ios
+        run: |
+          xcodebuild build \
+            -project Paldora.xcodeproj -scheme Paldora \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO
