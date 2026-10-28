@@ -13,7 +13,7 @@ The API, worker, PostgreSQL, Redis, S3/MinIO, and Supabase packages described
 later in this file are historical design/reference notes, not current runtime
 instructions. Follow [docs/development.md](docs/development.md) for local
 commands and [docs/firebase/implementation.md](docs/firebase/implementation.md)
-for migration status. `legacy/` remains frozen.
+for migration status. `legacy/` remains frozen. The native iOS app (`apps/ios`, SwiftUI, outside the pnpm graph) runs locally against the same emulators through the callable contract in `contracts/native/`; see [apps/ios/README.md](apps/ios/README.md). Hosted deployment is not done; web host is Firebase App Hosting ([ADR 023](docs/adr/023-web-hosting-app-hosting.md)).
 
 **Repository state.** The root is the **greenfield rebuild**. Phase 0
 (foundation) is delivered. The execution plan, milestones, status, and open

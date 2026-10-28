@@ -426,18 +426,20 @@ before it is designed.
    Then implement the slice and report the exact gate results.
 4. Update this file's status table below when a phase exits.
 
-| Phase | Status                                                                                                        |
-| ----- | ------------------------------------------------------------------------------------------------------------- |
-| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed; CI green 2026-10-21                                              |
-| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending                                       |
-| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                                                        |
-| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green                                              |
-| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open                                            |
-| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications                                      |
-| 6     | Delivered 2026-10-20 (local gates green); Life Updates and derived Memories                                   |
-| 7     | Delivered 2026-10-20 (local gates green); Rooms and customizer; K4 sign-off pending                           |
-| 8     | Implementation authorized; constrained typography and opaque static widgets; release verification in progress |
-| 9–12  | Not started                                                                                                   |
+| Phase | Status                                                                                                                                                                                                                                           |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0     | Delivered 2026-10-18; D3/D4/D6/D7 confirmed; CI green 2026-10-21                                                                                                                                                                                 |
+| 1     | Delivered 2026-10-19 (local gates green); hosted Supabase smoke pending                                                                                                                                                                          |
+| 2     | Delivered 2026-10-19 (local gates green); D1 confirmed                                                                                                                                                                                           |
+| 3     | Delivered 2026-10-19 (posts, feeds, realtime); local gates green                                                                                                                                                                                 |
+| 4     | Delivered 2026-10-19 (local gates green); D5 hosting decision open                                                                                                                                                                               |
+| 5     | Delivered 2026-10-20 (local gates green); interactions and notifications                                                                                                                                                                         |
+| 6     | Delivered 2026-10-20 (local gates green); Life Updates and derived Memories                                                                                                                                                                      |
+| 7     | Delivered 2026-10-20 (local gates green); Rooms and customizer; K4 sign-off pending                                                                                                                                                              |
+| 8     | Implementation authorized; constrained typography and opaque static widgets; release verification in progress                                                                                                                                    |
+| 9     | Local gates green; hosted gates (IAM, timing, restore drill, abuse, email) remain; signup stays closed                                                                                                                                           |
+| 10    | iOS app built locally against the emulators (2026-10-28): 82-callable contract, sign-in, feeds, Boxes, posts, photos, Life Updates, Rooms, Memories, friends, settings, account lifecycle; TestFlight, App Check, push and hosted checks pending |
+| 11–12 | Not started                                                                                                                                                                                                                                      |
 
 ## Cleanup and Phase 8 review checkpoint (2026-10-21)
 
