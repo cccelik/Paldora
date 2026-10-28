@@ -104,11 +104,12 @@ final class Ref<Value>: @unchecked Sendable {
 struct PostDetailTests {
     private func harness(reactions: [[String: Any]] = [], failReaction: String? = nil) async -> FeatureHarness {
         let reactionsData = JSON.page(reactions)
+        let threadsData = JSON.page([JSON.thread("c1", replies: [JSON.comment("c2", parent: "c1")]), JSON.thread("c3")])
         return await FeatureHarness { name, _ in
             switch name {
             case .getBoxPost: return JSON.data(JSON.post())
             case .listBoxReactions: return reactionsData
-            case .listBoxComments: return JSON.page([JSON.comment("c1"), JSON.comment("c2", parent: "c1"), JSON.comment("c3")])
+            case .listBoxCommentThreads: return threadsData
             case .listBoxMembers: return JSON.page([["uid": "u2", "username": "kai", "displayName": "Kai", "role": "member", "joinedAt": 1]])
             case .setBoxReaction:
                 if let failReaction { throw failure(failReaction, failReaction == "resource-exhausted" ? "RATE_LIMITED" : nil) }
@@ -125,8 +126,8 @@ struct PostDetailTests {
         #expect(model.post?.text == "Hello")
         #expect(model.viewerKind == "👍")
         #expect(model.reactionCounts.map(\.count) == [2, 1])
-        #expect(model.comments.threads.count == 2)
-        #expect(model.comments.threads.first?.replies.count == 1)
+        #expect(model.comments.visibleThreads.count == 2)
+        #expect(model.comments.visibleThreads.first?.replies.count == 1)
         #expect(model.authorName("u2") == "Kai")
         #expect(model.authorName("u1") == "You")
     }
@@ -178,19 +179,20 @@ struct PostDetailTests {
 
 @MainActor
 struct CommentsTests {
-    @Test func replyToReplyTargetsTheParentAndSendCarriesParentId() async {
+    @Test func replyTargetsTheRootAndSendCarriesParentId() async {
         let sent = Ref<[String: Any]>([:])
+        let threads = JSON.page([JSON.thread("c1", replies: [JSON.comment("c2", parent: "c1")])])
         let h = await FeatureHarness { name, data in
             switch name {
-            case .listBoxComments: return JSON.page([JSON.comment("c1"), JSON.comment("c2", parent: "c1")])
+            case .listBoxCommentThreads: return threads
             case .createBoxComment: sent.value = JSON.body(data); return JSON.data(["commentId": "c9"])
             default: return JSON.data(["ok": true])
             }
         }
         let comments = CommentsViewModel(env: h.env, route: PostRoute(boxId: "b1", postId: "p1"))
-        await comments.list.refresh()
-        let reply = comments.list.items[1]
-        comments.reply(to: reply)
+        await comments.threads.refresh()
+        guard case .comment(let root) = comments.threads.items[0].root else { Issue.record("no root"); return }
+        comments.reply(to: root)
         #expect(comments.replyTarget?.id == "c1")
         comments.draft = "  thanks  "
         await comments.send()
@@ -207,9 +209,10 @@ struct CommentsTests {
     }
 
     @Test func onlyOwnCommentsAreEditable() async {
-        let h = await FeatureHarness { _, _ in JSON.page([JSON.comment("c1", author: "u1"), JSON.comment("c2")]) }
+        let h = await FeatureHarness { _, _ in JSON.page([]) }
         let comments = CommentsViewModel(env: h.env, route: PostRoute(boxId: "b1", postId: "p1"))
-        await comments.list.refresh()
-        #expect(comments.isOwn(comments.list.items[0]) && !comments.isOwn(comments.list.items[1]))
+        let mine = try? JSONDecoder().decode(BoxComment.self, from: JSON.data(JSON.comment("c1", author: "u1")))
+        let theirs = try? JSONDecoder().decode(BoxComment.self, from: JSON.data(JSON.comment("c2")))
+        #expect(mine.map(comments.isOwn) == true && theirs.map(comments.isOwn) == false)
     }
 }

@@ -18,7 +18,7 @@ struct NotificationsTests {
         await model.list.refresh()
         #expect(h.env.badge.count == 1)
         let route = await model.open(model.list.items[0])
-        #expect(route == PostRoute(boxId: "b1", postId: "p1"))
+        #expect(route == PostRoute(boxId: "b1", postId: "p1", commentId: "c1"))
         #expect(model.list.items[0].read)
         #expect(h.env.badge.count == 0)
         #expect(h.transport.calls.contains(.markNotificationRead))

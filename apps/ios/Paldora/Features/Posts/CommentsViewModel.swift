@@ -2,48 +2,102 @@ import Foundation
 import Observation
 import PaldoraKit
 
+/// Threaded comments: roots newest first (20 a page), a short reply preview, and
+/// "View N more replies". A linked comment's thread is pinned at the top.
 @MainActor
 @Observable
 final class CommentsViewModel {
     static let textLimit = 2_000
 
-    let list: PagedList<BoxComment>
+    struct ReplyState: Equatable {
+        var items: [CommentItem]
+        var next: String?
+        var isLoading = false
+        var error: String?
+    }
+
+    let threads: PagedList<CommentThread>
+    private(set) var pinned: CommentThread?
+    private(set) var expanded: [String: ReplyState] = [:]
     var draft = ""
     private(set) var replyTarget: BoxComment?
     private(set) var editing: BoxComment?
     private(set) var error: String?
     private(set) var isSending = false
 
-    private let env: FeatureEnvironment
+    let env: FeatureEnvironment
     private let route: PostRoute
 
     init(env: FeatureEnvironment, route: PostRoute) {
         self.env = env
         self.route = route
         let api = env.api
-        list = PagedList(env: env) { cursor in
-            let page = try await api.listBoxComments(
-                ListBoxCommentsRequest(boxId: route.boxId, postId: route.postId, cursor: cursor)
-            )
+        threads = PagedList(env: env) { cursor in
+            let page = try await api.listBoxCommentThreads(
+                ListBoxCommentsRequest(boxId: route.boxId, postId: route.postId, cursor: cursor))
             return (page.items, page.nextCursor)
         }
     }
 
-    /// Roots in contract order; replies grouped under their parent. A reply
-    /// whose parent is not loaded is shown as a root so nothing disappears.
-    var threads: [(root: BoxComment, replies: [BoxComment])] {
-        let loaded = Set(list.items.map(\.id))
-        var replies: [String: [BoxComment]] = [:]
-        var roots: [BoxComment] = []
-        for comment in list.items {
-            if let parent = comment.parentId, loaded.contains(parent) {
-                replies[parent, default: []].append(comment)
-            } else {
-                roots.append(comment)
-            }
-        }
-        return roots.map { ($0, replies[$0.id] ?? []) }
+    /// Everything shown: the pinned thread first, then the paged roots without a duplicate.
+    var visibleThreads: [CommentThread] {
+        let pinnedId = pinned?.rootId
+        return (pinned.map { [$0] } ?? []) + threads.items.filter { $0.rootId != pinnedId }
     }
+
+    func isPinned(_ thread: CommentThread) -> Bool { thread.rootId == pinned?.rootId }
+
+    func refresh() async {
+        expanded = [:]
+        async let list: Void = threads.refresh()
+        async let linked: Void = loadPinned()
+        _ = await (list, linked)
+    }
+
+    private func loadPinned() async {
+        guard let commentId = route.commentId else { return }
+        pinned = try? await env.api.getBoxCommentThread(
+            GetBoxCommentThreadRequest(boxId: route.boxId, postId: route.postId, commentId: commentId))
+    }
+
+    // MARK: Replies
+
+    func replies(of thread: CommentThread) -> [CommentItem] { expanded[thread.rootId]?.items ?? thread.replies }
+
+    func remainingReplies(of thread: CommentThread) -> Int {
+        let state = expanded[thread.rootId]
+        if let state, state.next == nil, !state.items.isEmpty { return 0 }
+        return max(0, thread.replyCount - replies(of: thread).count)
+    }
+
+    func isLoadingReplies(_ thread: CommentThread) -> Bool { expanded[thread.rootId]?.isLoading ?? false }
+    func repliesError(_ thread: CommentThread) -> String? { expanded[thread.rootId]?.error }
+
+    /// Loads the next page of one root's replies (the first page replaces the preview).
+    func loadMoreReplies(_ thread: CommentThread) async {
+        var state = expanded[thread.rootId] ?? ReplyState(items: [], next: nil)
+        guard !state.isLoading else { return }
+        let first = expanded[thread.rootId] == nil
+        state.isLoading = true
+        state.error = nil
+        expanded[thread.rootId] = state
+        do {
+            let page = try await env.api.listBoxCommentReplies(ListBoxCommentRepliesRequest(
+                boxId: route.boxId, postId: route.postId, rootId: thread.rootId, cursor: first ? nil : state.next))
+            var merged = first ? [] : state.items
+            let known = Set(merged.map(Self.id))
+            merged.append(contentsOf: page.items.filter { !known.contains(Self.id($0)) })
+            expanded[thread.rootId] = ReplyState(items: merged, next: page.nextCursor)
+        } catch {
+            state.isLoading = false
+            state.error = env.message(for: error)
+            expanded[thread.rootId] = state
+        }
+    }
+
+    nonisolated static func id(_ item: CommentItem) -> String { item.stableId }
+
+    // MARK: Composer
 
     var canSend: Bool {
         let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -52,10 +106,10 @@ final class CommentsViewModel {
 
     func isOwn(_ comment: BoxComment) -> Bool { comment.authorUid == env.currentUserID }
 
-    /// One reply level: replying to a reply targets its parent.
-    func reply(to comment: BoxComment) {
+    /// One reply level: you reply to a thread's root.
+    func reply(to root: BoxComment) {
         editing = nil
-        replyTarget = comment.parentId.flatMap { id in list.items.first { $0.id == id } } ?? comment
+        replyTarget = root
     }
 
     func edit(_ comment: BoxComment) {
@@ -86,8 +140,7 @@ final class CommentsViewModel {
                     boxId: route.boxId, postId: route.postId, text: text, parentId: replyTarget?.id))
             }
             cancelComposer()
-            await list.refresh()
-            await list.loadAll()
+            await refresh()
         } catch {
             self.error = env.message(for: error)
         }
@@ -99,10 +152,20 @@ final class CommentsViewModel {
             _ = try await env.api.deleteBoxComment(DeleteBoxCommentRequest(
                 boxId: route.boxId, postId: route.postId, commentId: comment.id))
             if editing?.id == comment.id || replyTarget?.id == comment.id { cancelComposer() }
-            await list.refresh()
-            await list.loadAll()
+            await refresh()
         } catch {
             self.error = env.message(for: error)
+        }
+    }
+}
+
+extension CommentItem {
+    /// A stable identity for lists (comments, placeholders and unknown kinds never collide).
+    var stableId: String {
+        switch self {
+        case .comment(let comment): comment.id
+        case .deleted(let id, _), .hidden(let id, _): id
+        case .unsupported(let kind): "unsupported:\(kind)"
         }
     }
 }

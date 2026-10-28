@@ -65,6 +65,20 @@ final class FeaturesFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts[commentText].waitForExistence(timeout: 20),
                       "Comment did not appear")
 
+        // Camera reaction through the DEBUG test camera (the simulator has none).
+        let camera = app.buttons["camera-reaction"]
+        app.scrollToReveal(camera)
+        XCTAssertTrue(camera.waitForExistence(timeout: 10), "Camera reaction entry missing")
+        camera.tap()
+        let take = app.buttons["take-photo"]
+        XCTAssertTrue(take.waitForExistence(timeout: 20))
+        take.tap()
+        let sendCamera = app.buttons["send-camera-reaction"]
+        XCTAssertTrue(sendCamera.waitForExistence(timeout: 10))
+        sendCamera.tap()
+        XCTAssertTrue(app.element("camera-sent").waitForExistence(timeout: 90), "Camera reaction was not sent")
+        app.buttons["Close"].tap()
+
         // Notifications tab opens (own activity does not notify you).
         app.navigationBars.buttons.firstMatch.tap()
         app.tabBars.buttons["Notifications"].tap()

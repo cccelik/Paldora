@@ -9,6 +9,7 @@ struct BoxesView: View {
     let env: FeatureEnvironment
     @State private var model: BoxesViewModel
     @State private var showCreate = false
+    @State private var seenVersion = 0
 
     init(env: FeatureEnvironment) {
         self.env = env
@@ -31,11 +32,18 @@ struct BoxesView: View {
                     }
                 }
                 .navigationDestination(for: BoxRoute.self) { BoxDetailView(env: env, route: $0) }
+                .navigationDestination(for: BoxManageRoute.self) { BoxManageView(env: env, box: $0.box) }
                 .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
                 .roomRoutes(env: env)
                 .sheet(isPresented: $showCreate) { CreateBoxSheet(model: model) }
         }
-        .task { await model.load() }
+        .task { await model.load(); seenVersion = env.contentVersion }
+        .onAppear {
+            // Boxes may have been renamed, archived, deleted or left from a detail screen.
+            guard seenVersion != env.contentVersion else { return }
+            seenVersion = env.contentVersion
+            Task { await model.refresh() }
+        }
     }
 
     @ViewBuilder private var content: some View {

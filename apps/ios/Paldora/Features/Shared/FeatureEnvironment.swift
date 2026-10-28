@@ -14,6 +14,7 @@ final class FeatureEnvironment {
     let badge: UnreadBadge
     let media: any MediaClient
     let images: ImageLoader
+    let camera: any CameraProvider
     private let failureHandler: @MainActor (any Error) -> String
     private let signOutHandler: @MainActor (String) -> Void
     private let presets: @MainActor () -> [String]
@@ -21,6 +22,7 @@ final class FeatureEnvironment {
     init(
         api: PaldoraAPI,
         media: any MediaClient,
+        camera: any CameraProvider = UnavailableCamera(),
         currentUserID: String,
         reactionPresets: @escaping @MainActor () -> [String],
         handleFailure: @escaping @MainActor (any Error) -> String,
@@ -28,6 +30,7 @@ final class FeatureEnvironment {
     ) {
         self.api = api
         self.media = media
+        self.camera = camera
         images = ImageLoader(client: media)
         self.currentUserID = currentUserID
         self.presets = reactionPresets
@@ -43,6 +46,12 @@ final class FeatureEnvironment {
     /// Bumped when this user changes content (create, edit, delete), so other
     /// tabs know to reload when they next appear.
     private(set) var contentVersion = 0
+
+    /// Camera-reaction thumbnails seen in feeds, by post id (post detail has no summary).
+    private(set) var realPreviews: [String: [RealReactionPreview]] = [:]
+    func remember(realPreviews previews: [RealReactionPreview], postId: String) {
+        if !previews.isEmpty { realPreviews[postId] = previews }
+    }
 
     func contentChanged() { contentVersion += 1 }
 

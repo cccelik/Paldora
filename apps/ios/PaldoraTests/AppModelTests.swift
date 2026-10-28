@@ -74,12 +74,13 @@ struct AppModelTests {
         #expect(model.state == .accountNotReady)
     }
 
-    @Test func incompleteOnboardingIsNotReady() async {
+    @Test func unfinishedAccountGoesToOnboardingNotTheDeadEnd() async {
         let (model, _) = model(auth: FakeAuth(hasSession: true)) { _, _ in
             Fixtures.profileJSON(onboarding: "profile")
         }
         await model.start()
-        #expect(model.state == .accountNotReady)
+        guard case .onboarding(let profile) = model.state else { Issue.record("expected onboarding"); return }
+        #expect(profile.profile.onboardingState == .profile)
     }
 
     @Test func transientLoadFailureOffersRetry() async {

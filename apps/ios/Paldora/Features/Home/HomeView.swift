@@ -14,6 +14,7 @@ struct HomeView: View {
         let api = env.api
         _feed = State(initialValue: PagedList(env: env) { cursor in
             let page = try await api.getHomeFeed(cursor: cursor)
+            for case .post(let post) in page.items { env.remember(realPreviews: post.interactions.realPreview, postId: post.id) }
             return (page.items, page.nextCursor)
         })
     }

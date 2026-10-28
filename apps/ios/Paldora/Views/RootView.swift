@@ -16,10 +16,12 @@ struct RootView: View {
                 SignInView(model: model)
             case .signedIn(let profile):
                 MainTabView(model: model, profile: profile)
+            case .onboarding(let profile):
+                OnboardingView(model: model, profile: profile)
             case .accountNotReady:
                 StatusScreen(
                     title: "Your account isn't ready yet",
-                    message: "Paldora accounts are set up by invitation, and this one isn't finished. Finish setting it up on the web, or sign out and try another account.",
+                    message: "Paldora accounts are set up by invitation, and this one isn't ready yet. Sign out and try another account, or ask the person who invited you.",
                     actionTitle: nil, action: nil, model: model
                 )
             case .profileUnavailable(let message):

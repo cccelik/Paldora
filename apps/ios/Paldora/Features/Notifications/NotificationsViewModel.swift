@@ -27,7 +27,7 @@ final class NotificationsViewModel {
 
     /// Marks one notification read (optimistic) and returns where it points.
     func open(_ notification: PaldoraNotification) async -> PostRoute {
-        let route = PostRoute(boxId: notification.boxId, postId: notification.postId)
+        let route = PostRoute(boxId: notification.boxId, postId: notification.postId, commentId: notification.commentId)
         guard !notification.read else { return route }
         list.update(id: notification.id) { $0.markedRead() }
         env.badge.decrement()

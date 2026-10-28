@@ -1,3 +1,4 @@
+import AVFoundation
 import FirebaseAuth
 import FirebaseFunctions
 import PaldoraKit
@@ -46,7 +47,12 @@ struct PaldoraApp: App {
             let media = AppConfiguration.functionsBaseURL(for: setup).map {
                 URLSessionMediaClient(baseURL: $0, tokens: FirebaseTokenProvider())
             }
-            return AppModel(auth: auth, api: api, media: media)
+            var camera: any CameraProvider = AVCameraProvider()
+            #if DEBUG
+            // UI tests have no camera: a generated image stands in, DEBUG only.
+            if ProcessInfo.processInfo.environment["PALDORA_UI_TEST_IMAGE"] == "1" { camera = DebugCamera() }
+            #endif
+            return AppModel(auth: auth, api: api, media: media, camera: camera)
         }
     }
 }

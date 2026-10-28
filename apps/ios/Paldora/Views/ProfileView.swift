@@ -12,7 +12,7 @@ struct ProfileView: View {
                 VStack(alignment: .leading, spacing: Theme.space8) {
                     header
                     ProfileLinks()
-                    AvatarSection(model: model, env: env)
+                    AvatarSection(model: model, env: env, hasAvatar: profile.profile.avatarMediaId != nil)
                     ProfileEditor(model: model, profile: profile)
                     PreferencesSection(model: model)
                     Button("Sign out") { model.signOut() }

@@ -82,3 +82,16 @@ extension JSON {
                                   ["boxId": "b1", "boxName": "alpha", "postId": "p1", "canInteract": true]]]
     }
 }
+
+extension JSON {
+    /// A thread as `listBoxCommentThreads` returns it.
+    static func thread(_ id: String, replies: [[String: Any]] = [], replyItems: [[String: Any]]? = nil, replyCount: Int? = nil, root: [String: Any]? = nil) -> [String: Any] {
+        ["root": root ?? ["kind": "comment", "comment": comment(id, author: "u2")], "rootId": id,
+         "replies": replyItems ?? replies.map { ["kind": "comment", "comment": $0] },
+         "replyCount": replyCount ?? replyItems?.count ?? replies.count]
+    }
+
+    static func placeholder(_ kind: String, _ id: String) -> [String: Any] { ["kind": kind, "id": id, "createdAt": 1_700_000_000_000] }
+
+    static func replyItem(_ id: String, parent: String) -> [String: Any] { ["kind": "comment", "comment": comment(id, parent: parent)] }
+}

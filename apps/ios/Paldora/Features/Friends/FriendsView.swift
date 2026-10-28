@@ -74,7 +74,7 @@ struct FriendsView: View {
             }
             ForEach(model.sent.items) { request in
                 PersonRowView(name: request.displayName, username: request.username, note: "Waiting for a reply") {
-                    Button("Withdraw") { Task { await model.close(request, success: "Request withdrawn.") } }
+                    Button("Withdraw") { Task { await model.cancel(request) } }
                         .buttonStyle(QuietButtonStyle())
                 }
             }

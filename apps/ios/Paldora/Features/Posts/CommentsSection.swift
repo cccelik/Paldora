@@ -12,9 +12,9 @@ struct CommentsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
             Text("Comments").font(Typography.headline).foregroundStyle(Theme.text)
-            switch comments.list.phase {
+            switch comments.threads.phase {
             case .idle, .loading: LoadingBlock(label: "Loading comments")
-            case .failed(let message): ErrorBlock(message: message) { await comments.list.refresh() }
+            case .failed(let message): ErrorBlock(message: message) { await comments.refresh() }
             case .unavailable: UnavailableBlock()
             case .loaded: loaded
             }
@@ -36,15 +36,57 @@ struct CommentsSection: View {
     }
 
     @ViewBuilder private var loaded: some View {
-        if comments.list.items.isEmpty {
+        if comments.visibleThreads.isEmpty {
             Text("No comments yet").font(Typography.callout).foregroundStyle(Theme.textMuted)
         }
-        ForEach(comments.threads, id: \.root.id) { thread in
-            row(thread.root, indented: false)
-            ForEach(thread.replies) { row($0, indented: true) }
+        ForEach(comments.visibleThreads) { thread in thread_(thread) }
+        LoadMoreFooter(isLoading: comments.threads.isLoadingMore, error: comments.threads.inlineError,
+                       hasMore: comments.threads.hasMore, loadMore: { await comments.threads.loadMore() })
+    }
+
+    private func thread_(_ thread: CommentThread) -> some View {
+        VStack(alignment: .leading, spacing: Theme.space2) {
+            if comments.isPinned(thread) {
+                Label("Linked comment", systemImage: "pin").font(Typography.caption).foregroundStyle(Theme.goldText)
+                    .accessibilityIdentifier("pinned-thread")
+            }
+            item(thread.root, indented: false)
+            ForEach(comments.replies(of: thread), id: \.stableId) { item($0, indented: true) }
+            let remaining = comments.remainingReplies(of: thread)
+            if remaining > 0 || comments.isLoadingReplies(thread) {
+                Button {
+                    Task { await comments.loadMoreReplies(thread) }
+                } label: {
+                    if comments.isLoadingReplies(thread) { ProgressView() }
+                    else { Text("View \(remaining) more \(remaining == 1 ? "reply" : "replies")") }
+                }
+                .buttonStyle(QuietButtonStyle()).padding(.leading, Theme.space6)
+                .accessibilityIdentifier("more-replies")
+            }
+            if let error = comments.repliesError(thread) { InlineMessage(text: error).padding(.leading, Theme.space6) }
         }
-        LoadMoreFooter(isLoading: comments.list.isLoadingMore, error: comments.list.inlineError,
-                       hasMore: comments.list.hasMore, loadMore: { await comments.list.loadMore() })
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private func item(_ item: CommentItem, indented: Bool) -> some View {
+        switch item {
+        case .comment(let comment): row(comment, indented: indented)
+        case .deleted(_, let at): placeholder("This comment was deleted.", at, indented)
+        case .hidden(_, let at): placeholder("This comment is hidden.", at, indented)
+        case .unsupported:
+            Text("This kind of comment isn't supported in this version of Paldora.")
+                .font(Typography.callout).foregroundStyle(Theme.textMuted).padding(.leading, indented ? Theme.space6 : 0)
+        }
+    }
+
+    private func placeholder(_ text: String, _ at: EpochMillis, _ indented: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(text).font(Typography.callout).italic().foregroundStyle(Theme.textMuted)
+            Text(Formatting.relativeTime(at)).font(Typography.caption).foregroundStyle(Theme.textMuted)
+        }
+        .padding(.leading, indented ? Theme.space6 : 0)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("comment-placeholder")
     }
 
     private func row(_ comment: BoxComment, indented: Bool) -> some View {
@@ -56,7 +98,7 @@ struct CommentsSection: View {
             Text(comment.text).font(Typography.body).foregroundStyle(Theme.text)
             HStack(spacing: 0) {
                 Text(Formatting.relativeTime(comment.createdAt)
-                     + (comment.updatedAt > comment.createdAt ? " · edited" : ""))
+                     + (comment.updatedAt > comment.createdAt ? " \u{00B7} edited" : ""))
                     .font(Typography.caption).foregroundStyle(Theme.textMuted)
                 Spacer()
                 Button("React") { reacting = comment }.buttonStyle(QuietButtonStyle())

@@ -131,8 +131,43 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     posts are reported from the post menu with `reportBoxPost`. A revoked
     session (for example after a password change elsewhere) signs out
     neutrally from any call.
-  - Not in the app yet: camera reactions, reports of comments, Boxes or people,
-    Phase 8 Room personalization (web-only), staff screens. Reports: web can report posts and comments
+  - **Box management** (Box detail, gear icon, role-aware exactly as the web via
+    `BoxRules`, which mirrors `packages/domain`): owners rename and archive or
+    restore; owners and admins invite by username and see and revoke pending
+    invitations (only while the Box is active); the Members screen offers Make
+    admin or Make member, Make owner (confirmed, you become an admin) and
+    Remove per the role matrix; non-owners can leave; an owner is told to
+    transfer first. Delete needs the exact Box name plus your own
+    acknowledgement and a confirmation, then polls `boxDeletionStatus` until
+    complete. Failures are one neutral line. Friends: Withdraw uses
+    `cancelFriendRequest` (distinct from Decline).
+  - **Threaded comments:** post detail uses `listBoxCommentThreads` (roots
+    newest first, a reply preview, "View N more replies" through
+    `listBoxCommentReplies`), keeps deleted and hidden placeholders, and a
+    notification opens the post with the linked comment's thread pinned
+    (`getBoxCommentThread`). Per-comment reaction counts are in the React sheet
+    (`listBoxReactions` with `commentId`) rather than loaded for every row.
+  - **Onboarding:** an unfinished account is walked through username
+    (`reserveUsername`, shown back normalized, neutral taken or unavailable
+    errors), profile (display name and bio) and an optional avatar, each saved
+    before the next so the app resumes at the right step. `accountNotReady`
+    remains only for unprovisioned or unavailable accounts.
+  - **Avatar and banner:** Profile has Remove photo (`deleteAvatar`); the Room
+    editor uploads and removes the banner (`room_banner`) through the media layer.
+  - **Forgot password** on the sign-in screen uses the Firebase Auth client
+    (`sendPasswordReset`). The confirmation is identical whether or not the
+    email has an account; only an empty address or an unreachable service
+    differ. The Auth emulator accepts it and sends nothing.
+  - **Camera reactions:** the React section offers "React with a photo" when the
+    device has a front camera. An AVFoundation sheet (front camera, permission
+    prompt, a clear denied state with a Settings link, no photo-library
+    picker) captures one JPEG, uploads it as `reaction_image`, then sends
+    `setBoxReaction` with `kind: real` and the `mediaAssetId`. It needs
+    `NSCameraUsageDescription` (set in `project.yml`). Camera thumbnails seen in
+    the feed show under the reactions. The simulator has no camera, so with
+    `PALDORA_UI_TEST_IMAGE=1` a DEBUG-only provider returns a generated image
+    (compiled out of Release).
+  - Not in the app yet: reports of Boxes or people, Phase 8 Room personalization (web-only), staff screens. Reports: web can report posts and comments
     (`createReport`), native has only `reportBoxPost`, so only posts are
     reportable on iOS; there is no web report for Boxes or people. Deleted comments are simply absent because the
     contract returns no placeholder for them.
@@ -214,7 +249,9 @@ sign-in, profile edit and sign-out, a friend request to a second seeded
 account, an Only Me Life Update (create, edit, delete), My Room (change theme, save,
 reopen to see it), Memories, a password change and sign-in with the new
 password (then restored), a data export reaching ready and opening the share
-sheet, reporting a peer's comment (the script seeds a Box the peer owns with a
+sheet, onboarding of a fresh unfinished account (a third seeded user), Box
+rename, invite, revoke and the owner-cannot-leave explanation, forgot password,
+a camera reaction through the DEBUG test camera, reporting a peer's comment (the script seeds a Box the peer owns with a
 post and comment) and its receipt, and creating a Box, posting, opening the
 post with a generated photo, opening it from Home and the photo viewer,
 reacting and commenting. Override with

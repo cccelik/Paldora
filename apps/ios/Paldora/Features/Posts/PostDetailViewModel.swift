@@ -61,6 +61,25 @@ final class PostDetailViewModel {
         return env.people.name(for: uid, in: route.boxId) ?? "A member"
     }
 
+    // MARK: Camera reactions
+
+    var cameraAvailable: Bool { env.camera.isAvailable && post != nil }
+
+    /// Camera-reaction thumbnails seen for this post, plus the one just sent.
+    var cameraPreviews: [RealReactionPreview] { env.realPreviews[route.postId] ?? [] }
+
+    func cameraModel() -> CameraReactionViewModel {
+        CameraReactionViewModel(env: env, route: route, camera: env.camera)
+    }
+
+    func cameraReactionSent(assetId: String) async {
+        await loadReactions()
+        if let me = RealReactionPreview.make(uid: env.currentUserID, name: "You", mediaAssetId: assetId) {
+            let others = cameraPreviews.filter { $0.user.uid != env.currentUserID }
+            env.remember(realPreviews: [me] + others, postId: route.postId)
+        }
+    }
+
     func reactions(for comment: BoxComment) -> CommentReactionsViewModel {
         CommentReactionsViewModel(env: env, route: route, commentId: comment.id)
     }
@@ -79,7 +98,7 @@ final class PostDetailViewModel {
         }
         async let people: Void = env.people.load(boxId: route.boxId)
         await loadReactions()
-        await comments.list.refresh()
+        await comments.refresh()
         await people
     }
 
@@ -161,5 +180,15 @@ extension BoxReaction {
     static func make(uid: String, kind: String) -> BoxReaction? {
         let json = try? JSONSerialization.data(withJSONObject: ["uid": uid, "kind": kind])
         return json.flatMap { try? JSONDecoder().decode(BoxReaction.self, from: $0) }
+    }
+}
+
+extension RealReactionPreview {
+    /// The DTO has no public initializer; build it through its Codable form.
+    static func make(uid: String, name: String, mediaAssetId: String) -> RealReactionPreview? {
+        let json = try? JSONSerialization.data(withJSONObject: [
+            "user": ["uid": uid, "username": uid, "displayName": name], "mediaAssetId": mediaAssetId,
+        ])
+        return json.flatMap { try? JSONDecoder().decode(RealReactionPreview.self, from: $0) }
     }
 }

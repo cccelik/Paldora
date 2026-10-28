@@ -5,6 +5,7 @@ struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @FocusState private var focus: Field?
+    @State private var showReset = false
 
     private enum Field { case email, password }
 
@@ -49,6 +50,8 @@ struct SignInView: View {
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(model.isSigningIn)
                 .accessibilityIdentifier("sign-in-button")
+                Button("Forgot password?") { showReset = true }
+                    .buttonStyle(QuietButtonStyle()).accessibilityIdentifier("forgot-password")
                 Text("Paldora accounts are created by invitation.")
                     .font(Typography.caption)
                     .foregroundStyle(Theme.textMuted)
@@ -59,6 +62,7 @@ struct SignInView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background(Theme.canvas)
+        .sheet(isPresented: $showReset) { PasswordResetSheet(model: model, initialEmail: email) }
     }
 
     private func submit() {

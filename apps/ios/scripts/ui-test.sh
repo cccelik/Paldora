@@ -4,6 +4,7 @@
 #   apps/ios/scripts/ui-test.sh            (from anywhere; resolves the repo root)
 #
 # Emulator project demo-paldora only. No hosted Firebase, no .env.
+# UI_TEST_ONLY narrows the run, e.g. UI_TEST_ONLY=PaldoraUITests/ParityFlowUITests/testForgotPasswordIsNeutral.
 # Env overrides: IOS_SIM_NAME (default "iPhone 16e"), IOS_SIM_OS (default "18.3.1").
 set -euo pipefail
 
@@ -38,6 +39,14 @@ if [[ "${1:-}" == "--inner" ]]; then
   PEER_UID="$(echo "$PEER_OUT" | grep -oE '[0-9a-f]{8}-[0-9a-f-]{27}' | head -1)"
   echo "Seeded a second fixture account (peer)."
 
+  # A provisioned account that has not finished onboarding (no username or profile).
+  FRESH_EMAIL="ios-ui-fresh-${suffix}@example.invalid"
+  FRESH_PASSWORD="LocalFresh-$(openssl rand -hex 8)"
+  PALDORA_FIXTURE_EMAIL="$FRESH_EMAIL" PALDORA_FIXTURE_PASSWORD="$FRESH_PASSWORD" \
+    PALDORA_FIXTURE_USERNAME="" PALDORA_FIXTURE_DISPLAY_NAME="" \
+    node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs" >/dev/null
+  echo "Seeded an unfinished fixture account (onboarding)."
+
   # A Box the peer owns, shared with the fixture, holding a peer post and comment
   # (the comment is what the UI test reports).
   PALDORA_FIXTURE_OWNER_UID="$PEER_UID" PALDORA_FIXTURE_MEMBER_UID="$FIXTURE_UID" \
@@ -47,12 +56,14 @@ if [[ "${1:-}" == "--inner" ]]; then
   export TEST_RUNNER_PALDORA_UI_EMAIL="$PALDORA_FIXTURE_EMAIL"
   export TEST_RUNNER_PALDORA_UI_PASSWORD="$PALDORA_FIXTURE_PASSWORD"
   export TEST_RUNNER_PALDORA_UI_PEER_USERNAME="$PEER_USERNAME"
+  export TEST_RUNNER_PALDORA_UI_FRESH_EMAIL="$FRESH_EMAIL"
+  export TEST_RUNNER_PALDORA_UI_FRESH_PASSWORD="$FRESH_PASSWORD"
 
   cd "$IOS_DIR"
   xcodegen generate
   xcodebuild test \
     -project Paldora.xcodeproj -scheme Paldora \
-    -only-testing:PaldoraUITests \
+    -only-testing:"${UI_TEST_ONLY:-PaldoraUITests}" \
     -destination "platform=iOS Simulator,name=${SIM_NAME},OS=${SIM_OS}" \
     -derivedDataPath "$DERIVED_DATA" \
     -resultBundlePath "$DERIVED_DATA/ui-test-$(date +%s).xcresult" \

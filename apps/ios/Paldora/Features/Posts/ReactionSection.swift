@@ -3,6 +3,7 @@ import SwiftUI
 struct ReactionSection: View {
     let model: PostDetailViewModel
     @State private var custom = ""
+    @State private var showCamera = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
@@ -29,12 +30,41 @@ struct ReactionSection: View {
                 .buttonStyle(QuietButtonStyle())
                 .disabled(!EmojiValidation.isSingleEmoji(custom))
             }
+            if model.cameraAvailable {
+                Button { showCamera = true } label: { Label("React with a photo", systemImage: "camera") }
+                    .buttonStyle(QuietButtonStyle()).accessibilityIdentifier("camera-reaction")
+            }
+            previews
             if model.viewerKind != nil {
                 Button("Remove my reaction") { Task { await model.react(nil) } }
                     .buttonStyle(QuietButtonStyle(destructive: true))
                     .accessibilityIdentifier("clear-reaction")
             }
             if let error = model.reactionError { InlineMessage(text: error) }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraReactionSheet(model: model.cameraModel()) { id in
+                Task { await model.cameraReactionSent(assetId: id) }
+            }
+        }
+    }
+
+    @ViewBuilder private var previews: some View {
+        if !model.cameraPreviews.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Theme.space2) {
+                    ForEach(model.cameraPreviews, id: \.mediaAssetId) { preview in
+                        VStack(spacing: 2) {
+                            RemoteImage(assetId: preview.mediaAssetId, variant: .thumbnail).frame(width: 64, height: 64)
+                                .clipShape(RoundedRectangle(cornerRadius: Theme.radius))
+                            Text(preview.user.displayName).font(Typography.caption).foregroundStyle(Theme.textMuted).lineLimit(1)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Camera reaction from \(preview.user.displayName)")
+                    }
+                }
+            }
+            .accessibilityIdentifier("camera-previews")
         }
     }
 

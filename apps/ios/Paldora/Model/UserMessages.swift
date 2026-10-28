@@ -15,3 +15,8 @@ extension UserMessages {
     static let signedOutEverywhere = "You were signed out everywhere. Sign in again."
     static let wrongPassword = "That password didn't match."
 }
+
+extension UserMessages {
+    static let resetSent = "If that email has a Paldora account, a link to reset your password is on its way."
+    static let resetNeedsEmail = "Enter the email you signed up with."
+}

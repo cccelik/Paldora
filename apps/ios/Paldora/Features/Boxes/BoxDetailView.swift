@@ -5,6 +5,8 @@ struct BoxDetailView: View {
     let env: FeatureEnvironment
     let route: BoxRoute
     @State private var model: BoxDetailViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var seenVersion = 0
 
     init(env: FeatureEnvironment, route: BoxRoute) {
         self.env = env
@@ -17,7 +19,27 @@ struct BoxDetailView: View {
             .background(Theme.canvas)
             .navigationTitle(model.box?.name ?? "Box")
             .navigationBarTitleDisplayMode(.inline)
-            .task { await model.load() }
+            .task { await model.load(); seenVersion = env.contentVersion }
+            .onAppear {
+                // Returning from Manage: pick up renames and archive changes, and leave a Box that is gone.
+                guard seenVersion != env.contentVersion else { return }
+                seenVersion = env.contentVersion
+                Task {
+                    await model.load()
+                    if model.phase == .unavailable { dismiss() }
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if let box = model.box {
+                        NavigationLink(value: BoxManageRoute(box: box)) {
+                            Image(systemName: "gearshape").frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
+                        }
+                        .accessibilityLabel("Manage Box")
+                        .accessibilityIdentifier("manage-box")
+                    }
+                }
+            }
     }
 
     @ViewBuilder private var content: some View {
@@ -33,7 +55,7 @@ struct BoxDetailView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Theme.space3) {
                 NavigationLink {
-                    MembersView(env: env, boxId: box.id)
+                    MembersView(env: env, box: box)
                 } label: {
                     Label(Formatting.countLabel(box.memberCount, singular: "member", plural: "members"),
                           systemImage: "person.2")
@@ -140,62 +162,5 @@ struct PostComposer: View {
             .disabled(!model.canSubmit)
             .accessibilityIdentifier("publish-post")
         }
-    }
-}
-
-struct MembersView: View {
-    let env: FeatureEnvironment
-    @State private var members: PagedList<BoxMember>
-
-    init(env: FeatureEnvironment, boxId: String) {
-        self.env = env
-        let api = env.api
-        _members = State(initialValue: PagedList(env: env) { cursor in
-            let page = try await api.listBoxMembers(ListBoxMembersRequest(boxId: boxId, cursor: cursor))
-            return (page.items, page.nextCursor)
-        })
-    }
-
-    var body: some View {
-        Group {
-            switch members.phase {
-            case .idle, .loading: LoadingBlock(label: "Loading members")
-            case .failed(let message): ErrorBlock(message: message) { await members.refresh() }
-            case .unavailable: UnavailableBlock()
-            case .loaded:
-                List {
-                    ForEach(members.items) { member in
-                        memberRow(member).listRowBackground(Theme.surface)
-                    }
-                    LoadMoreFooter(isLoading: members.isLoadingMore, error: members.inlineError,
-                                   hasMore: members.hasMore, loadMore: { await members.loadMore() })
-                        .listRowBackground(Theme.canvas)
-                }
-                .scrollContentBackground(.hidden)
-                .refreshable { await members.refresh() }
-            }
-        }
-        .background(Theme.canvas)
-        .navigationTitle("Members")
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await members.loadFirst() }
-    }
-}
-
-extension MembersView {
-    @ViewBuilder func memberRow(_ member: BoxMember) -> some View {
-        let name = member.displayName ?? member.username ?? "Member"
-        let content = HStack(spacing: Theme.space3) {
-            AvatarView(mediaId: member.avatarMediaId, name: name)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(Typography.headline)
-                Text(member.role.rawValue.capitalized).font(Typography.caption).foregroundStyle(Theme.textMuted)
-            }
-        }
-        .frame(minHeight: Theme.touchTarget, alignment: .leading)
-        if let username = member.username {
-            NavigationLink(value: RoomRoute(username: username)) { content }
-                .accessibilityHint("Opens their Room")
-        } else { content }
     }
 }

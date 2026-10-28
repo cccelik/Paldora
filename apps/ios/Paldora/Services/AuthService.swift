@@ -17,6 +17,8 @@ protocol AuthService: AnyObject {
     var hasSession: Bool { get }
     func signIn(email: String, password: String) async throws
     func signOut() throws
+    /// Sends a reset link. Never reveals whether the address has an account.
+    func sendPasswordReset(email: String) async throws
 }
 
 @MainActor
@@ -39,6 +41,14 @@ final class FirebaseAuthService: AuthService {
 
     func signOut() throws {
         try auth.signOut()
+    }
+
+    func sendPasswordReset(email: String) async throws {
+        do {
+            try await auth.sendPasswordReset(withEmail: email)
+        } catch {
+            throw Self.map(error)
+        }
     }
 
     /// Collapses account-existence signals (wrong password, unknown email,

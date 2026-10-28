@@ -7,12 +7,19 @@ final class FakeAuth: AuthService {
     var hasSession: Bool
     var signInResult: Result<Void, AuthFailure> = .success(())
     private(set) var signOutCount = 0
+    var resetResult: Result<Void, AuthFailure> = .success(())
+    private(set) var resetEmails: [String] = []
 
     init(hasSession: Bool = false) { self.hasSession = hasSession }
 
     func signIn(email: String, password: String) async throws {
         try signInResult.get()
         hasSession = true
+    }
+
+    func sendPasswordReset(email: String) async throws {
+        resetEmails.append(email)
+        try resetResult.get()
     }
 
     func signOut() throws {

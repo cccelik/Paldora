@@ -52,6 +52,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: Paldora uses the front camera only when you choose to react to a post with a photo. Photos are never saved to your library.
         PaldoraHostedProjectID: $(PALDORA_HOSTED_PROJECT_ID)
         PaldoraHostedAPIKey: $(PALDORA_HOSTED_API_KEY)
         PaldoraHostedAppID: $(PALDORA_HOSTED_APP_ID)

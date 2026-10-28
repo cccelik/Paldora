@@ -11,6 +11,8 @@ final class AppModel {
         case loading
         case signedOut
         case signedIn(MyProfile)
+        /// Provisioned but unfinished: username, profile or avatar step still to do.
+        case onboarding(MyProfile)
         /// Signed in with Firebase, but the Paldora account is unavailable
         /// (not provisioned, suspended, or onboarding not finished).
         case accountNotReady
@@ -29,16 +31,19 @@ final class AppModel {
     private let auth: (any AuthService)?
     private let api: PaldoraAPI?
     private let media: (any MediaClient)?
+    private let camera: (any CameraProvider)?
 
     init(
         auth: (any AuthService)?,
         api: PaldoraAPI?,
         media: (any MediaClient)? = nil,
+        camera: (any CameraProvider)? = nil,
         configurationIssue: ConfigurationIssue? = nil
     ) {
         self.auth = auth
         self.api = api
         self.media = media
+        self.camera = camera
         if let configurationIssue { state = .notConfigured(configurationIssue) }
     }
 
@@ -83,6 +88,24 @@ final class AppModel {
         endSession(notice: nil)
     }
 
+    /// Asks for a reset link. The answer is the same whether or not the email has an
+    /// account, so nothing about account existence leaks. Only a malformed address
+    /// or an unreachable service is reported.
+    func requestPasswordReset(email: String) async -> String {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let auth, trimmed.contains("@"), trimmed.count >= 3 else { return UserMessages.resetNeedsEmail }
+        do {
+            try await auth.sendPasswordReset(email: trimmed)
+        } catch let failure as AuthFailure where failure == .networkUnavailable {
+            return UserMessages.unavailable
+        } catch let failure as AuthFailure where failure == .tooManyAttempts {
+            return UserMessages.signInTooMany
+        } catch {
+            // Unknown account, disabled account and other refusals look like success.
+        }
+        return UserMessages.resetSent
+    }
+
     func loadProfile() async {
         guard let api else { return }
         do {
@@ -99,12 +122,16 @@ final class AppModel {
         return FeatureEnvironment(
             api: api,
             media: media ?? UnavailableMediaClient(),
+            camera: camera ?? UnavailableCamera(),
             currentUserID: userID,
             reactionPresets: { [weak self] in self?.preferences?.reactionPresets ?? [] },
             handleFailure: { [weak self] error in self?.failureMessage(error) ?? UserMessages.generic },
             signOut: { [weak self] notice in self?.endSession(notice: notice) }
         )
     }
+
+    /// Takes a newer profile from an onboarding step.
+    func adopt(_ profile: MyProfile) { apply(profile) }
 
     // MARK: Profile and preferences
 
@@ -141,7 +168,7 @@ final class AppModel {
 
     private func apply(_ profile: MyProfile) {
         preferences = profile.preferences
-        state = profile.profile.onboardingState == .complete ? .signedIn(profile) : .accountNotReady
+        state = profile.profile.onboardingState == .complete ? .signedIn(profile) : .onboarding(profile)
     }
 
     private func handleLoadFailure(_ error: any Error) {

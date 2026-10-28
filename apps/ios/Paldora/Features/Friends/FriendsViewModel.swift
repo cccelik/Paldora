@@ -78,7 +78,12 @@ final class FriendsViewModel {
         await act(success: "You're now friends.") { _ = try await $0.acceptFriendRequest(requestId: request.id) }
     }
 
-    /// Decline, withdraw and remove are all `closeFriendship`.
+    /// Withdraw your own pending request. Distinct from declining someone else's.
+    func cancel(_ request: Friendship) async {
+        await act(success: "Request withdrawn.") { _ = try await $0.cancelFriendRequest(requestId: request.id) }
+    }
+
+    /// Decline and remove are `closeFriendship`.
     func close(_ friendship: Friendship, success: String) async {
         await act(success: success) { _ = try await $0.closeFriendship(requestId: friendship.id) }
     }

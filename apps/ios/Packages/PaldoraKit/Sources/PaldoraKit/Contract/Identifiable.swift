@@ -52,3 +52,9 @@ extension ReportReceipt: Identifiable {}
 extension ModerationNotice: Identifiable {
     public var id: String { "\(targetKind):\(targetId)" }
 }
+
+extension BoxInvitation: Identifiable {}
+
+extension CommentThread: Identifiable {
+    public var id: String { rootId }
+}
