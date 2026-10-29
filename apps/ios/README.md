@@ -296,7 +296,7 @@ callables are typed today.
 
 `.github/workflows/ios.yml` runs on changes under `apps/ios`, `contracts/native`
 or `packages/tokens`: `swift test` for PaldoraKit, then an unsigned simulator
-build. It is **not yet verified on a GitHub macOS runner** (Xcode and simulator
-versions there may differ from the local Xcode 27.1). The unit and UI tests need
+build. It has passed on a GitHub `macos-latest` runner (2026-10-28); Xcode and simulator
+versions there may differ from the local Xcode 27.1. The unit and UI tests need
 the Firebase emulators and a booted simulator, so they run locally through
 `scripts/ui-test.sh` and are not part of this job yet.
