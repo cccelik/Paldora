@@ -34,6 +34,8 @@ struct RootView: View {
                 )
             case .notConfigured(let issue):
                 NotConfiguredView(issue: issue)
+            case .signOutFailed:
+                SignOutFailedView(model: model)
             }
         }
         .tint(Theme.goldText)

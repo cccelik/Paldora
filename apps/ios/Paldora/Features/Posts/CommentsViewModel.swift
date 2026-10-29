@@ -27,6 +27,7 @@ final class CommentsViewModel {
 
     let env: FeatureEnvironment
     private let route: PostRoute
+    private var draftKey = DraftKey()
 
     init(env: FeatureEnvironment, route: PostRoute) {
         self.env = env
@@ -119,6 +120,7 @@ final class CommentsViewModel {
     }
 
     func cancelComposer() {
+        draftKey.rotate()
         replyTarget = nil
         editing = nil
         draft = ""
@@ -137,7 +139,9 @@ final class CommentsViewModel {
                     boxId: route.boxId, postId: route.postId, commentId: editing.id, text: text))
             } else {
                 _ = try await env.api.createBoxComment(CreateBoxCommentRequest(
-                    boxId: route.boxId, postId: route.postId, text: text, parentId: replyTarget?.id))
+                    boxId: route.boxId, postId: route.postId, text: text, parentId: replyTarget?.id,
+                    idempotencyKey: draftKey.key(for: "\(replyTarget?.id ?? "")\u{1F}\(text)")))
+                draftKey.rotate()
             }
             cancelComposer()
             await refresh()

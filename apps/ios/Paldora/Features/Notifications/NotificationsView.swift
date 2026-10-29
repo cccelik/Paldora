@@ -17,14 +17,6 @@ struct NotificationsView: View {
                 .background(Theme.canvas)
                 .navigationTitle("Notifications")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Mark all read") { Task { await model.markAllRead() } }
-                            .disabled(env.badge.count == 0)
-                            .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                            .accessibilityIdentifier("mark-all-read")
-                    }
-                }
                 .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
                 .roomRoutes(env: env)
         }
@@ -50,6 +42,9 @@ struct NotificationsView: View {
 
     private var list: some View {
         List {
+            Button("Mark all read") { Task { await model.markAllRead() } }
+                .buttonStyle(QuietButtonStyle()).listRowBackground(Theme.canvas)
+                .accessibilityIdentifier("mark-all-read")
             if let error = model.actionError {
                 InlineMessage(text: error).listRowBackground(Theme.canvas)
             }

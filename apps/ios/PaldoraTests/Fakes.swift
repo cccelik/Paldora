@@ -22,7 +22,10 @@ final class FakeAuth: AuthService {
         try resetResult.get()
     }
 
+    var signOutFailures = 0
+
     func signOut() throws {
+        if signOutFailures > 0 { signOutFailures -= 1; throw AuthFailure.other }
         signOutCount += 1
         hasSession = false
     }

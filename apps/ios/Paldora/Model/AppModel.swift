@@ -19,6 +19,8 @@ final class AppModel {
         /// The profile could not be loaded for a transient reason.
         case profileUnavailable(String)
         case notConfigured(ConfigurationIssue)
+        /// Local sign-out failed twice: the session may still be on this device. Never pretend otherwise.
+        case signOutFailed
     }
 
     private(set) var state: State = .loading
@@ -32,18 +34,23 @@ final class AppModel {
     private let api: PaldoraAPI?
     private let media: (any MediaClient)?
     private let camera: (any CameraProvider)?
+    private let signOutStore: any PendingSignOutStore
+    private weak var activeEnvironment: FeatureEnvironment?
+    private var pendingNotice: String?
 
     init(
         auth: (any AuthService)?,
         api: PaldoraAPI?,
         media: (any MediaClient)? = nil,
         camera: (any CameraProvider)? = nil,
+        signOutStore: any PendingSignOutStore = UserDefaultsPendingSignOut(),
         configurationIssue: ConfigurationIssue? = nil
     ) {
         self.auth = auth
         self.api = api
         self.media = media
         self.camera = camera
+        self.signOutStore = signOutStore
         if let configurationIssue { state = .notConfigured(configurationIssue) }
     }
 
@@ -57,6 +64,11 @@ final class AppModel {
     func start() async {
         guard case .loading = state else { return }
         guard let auth else { state = .notConfigured(.startupFailed); return }
+        // A sign-out that failed last time must finish before any session is restored.
+        if signOutStore.isPending {
+            state = performLocalSignOut() ? .signedOut : .signOutFailed
+            return
+        }
         if auth.hasSession { await loadProfile() } else { state = .signedOut }
     }
 
@@ -119,7 +131,7 @@ final class AppModel {
     /// Wires the feature layer for the signed-in user. Nil without an API.
     func makeFeatureEnvironment(userID: String) -> FeatureEnvironment? {
         guard let api else { return nil }
-        return FeatureEnvironment(
+        let environment = FeatureEnvironment(
             api: api,
             media: media ?? UnavailableMediaClient(),
             camera: camera ?? UnavailableCamera(),
@@ -128,6 +140,8 @@ final class AppModel {
             handleFailure: { [weak self] error in self?.failureMessage(error) ?? UserMessages.generic },
             signOut: { [weak self] notice in self?.endSession(notice: notice) }
         )
+        activeEnvironment = environment
+        return environment
     }
 
     /// Takes a newer profile from an onboarding step.
@@ -200,12 +214,44 @@ final class AppModel {
         return Self.message(for: failure)
     }
 
+    /// Ends the session everywhere on this device: drop private state, then sign out
+    /// locally. A failure is retried once; if it still fails the app says so, and the
+    /// pending flag keeps a Keychain session from being restored at the next launch.
     private func endSession(notice: String?) {
-        try? auth?.signOut()
+        activeEnvironment?.invalidate()
+        ExportFiles.sweep()
         preferences = nil
         signInError = nil
-        self.notice = notice
-        state = .signedOut
+        pendingNotice = notice
+        if performLocalSignOut() {
+            self.notice = notice
+            state = .signedOut
+        } else {
+            state = .signOutFailed
+        }
+    }
+
+    /// Retry from the "couldn't sign out" screen.
+    func retrySignOut() {
+        if performLocalSignOut() {
+            notice = pendingNotice
+            state = .signedOut
+        }
+    }
+
+    private func performLocalSignOut() -> Bool {
+        guard let auth else { return true }
+        signOutStore.isPending = true
+        for _ in 0..<2 {
+            do {
+                try auth.signOut()
+                signOutStore.isPending = false
+                return true
+            } catch {
+                continue
+            }
+        }
+        return false
     }
 
     private static func endsSession(_ failure: PaldoraFailure) -> Bool {

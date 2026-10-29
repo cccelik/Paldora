@@ -66,7 +66,8 @@ struct RoomEditorView: View {
                     RoomDecoration(appearance: look)
                 }
                 Text("A box for your people.").font(look.font(.body)).foregroundStyle(look.muted)
-                Text("Accent").font(look.font(.footnote, weight: .semibold)).foregroundStyle(look.accentColor)
+                RoundedRectangle(cornerRadius: 2).fill(look.accentColor).frame(width: 48, height: 4)
+                    .accessibilityLabel("Accent color sample")
             }
             .padding(Theme.space4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,20 +98,20 @@ struct RoomEditorView: View {
     private var about: some View {
         section("About") {
             FieldContainer(title: "Location") {
-                TextField("Where are you?", text: $model.location).accessibilityIdentifier("room-location")
+                TextField("Where are you?", text: $model.location, prompt: Text("Where are you?").foregroundStyle(Theme.textMuted)).accessibilityIdentifier("room-location")
             }
             FieldContainer(title: "Currently") {
-                TextField("What are you up to?", text: $model.currently, axis: .vertical).lineLimit(1...4)
+                TextField("What are you up to?", text: $model.currently, prompt: Text("What are you up to?").foregroundStyle(Theme.textMuted), axis: .vertical).lineLimit(1...4)
                     .padding(.vertical, Theme.space2).accessibilityIdentifier("room-currently")
             }
             FieldContainer(title: "Music link (https)") {
-                TextField("https://", text: $model.musicURL).keyboardType(.URL)
+                TextField("https://", text: $model.musicURL, prompt: Text("https://").foregroundStyle(Theme.textMuted)).keyboardType(.URL)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                     .accessibilityIdentifier("room-music-url")
             }
             if !model.musicIsValid { InlineMessage(text: "Use a public https:// link.") }
-            FieldContainer(title: "Song title") { TextField("Optional", text: $model.musicTitle) }
-            FieldContainer(title: "Artist") { TextField("Optional", text: $model.musicArtist) }
+            FieldContainer(title: "Song title") { TextField("Optional", text: $model.musicTitle, prompt: Text("Optional").foregroundStyle(Theme.textMuted)) }
+            FieldContainer(title: "Artist") { TextField("Optional", text: $model.musicArtist, prompt: Text("Optional").foregroundStyle(Theme.textMuted)) }
             Text("Music appears as a link card. It never plays on its own.").font(Typography.caption).foregroundStyle(Theme.textMuted)
         }
     }

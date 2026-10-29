@@ -57,7 +57,7 @@ struct RoomCanvas: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: Theme.space3) {
+        AdaptiveStack(alignment: .top) {
             AvatarView(mediaId: room.owner.avatarMediaId, name: room.owner.displayName, size: 64)
             VStack(alignment: .leading, spacing: 4) {
                 Text(room.owner.displayName).font(look.font(.title2, weight: .semibold)).foregroundStyle(look.text)

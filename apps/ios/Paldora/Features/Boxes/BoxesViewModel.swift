@@ -12,6 +12,7 @@ final class BoxesViewModel {
     private(set) var actionError: String?
     private(set) var busyInvitation: String?
     private let env: FeatureEnvironment
+    private var draftKey = DraftKey()
 
     init(env: FeatureEnvironment) {
         self.env = env
@@ -45,7 +46,8 @@ final class BoxesViewModel {
     func createBox(name: String) async -> String? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
-            let box = try await env.api.createBox(name: trimmed)
+            let box = try await env.api.createBox(name: trimmed, idempotencyKey: draftKey.key(for: trimmed))
+            draftKey.rotate()
             env.boxes.remember(box)
             env.contentChanged()
             await boxes.refresh()

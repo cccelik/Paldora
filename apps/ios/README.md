@@ -167,6 +167,35 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     the feed show under the reactions. The simulator has no camera, so with
     `PALDORA_UI_TEST_IMAGE=1` a DEBUG-only provider returns a generated image
     (compiled out of Release).
+  - **Hardening** (security review): every create that can be retried (Box, Box
+    post, comment, Life Update) sends a per-draft idempotency key that is
+    reused across retries of the same draft and rotated after success, a
+    cancel or an edit (`DraftKey`). The image loader sends a 401 that a token
+    refresh cannot rescue to the session-ended path (sign out, neutral notice),
+    and backs off a 429 for 45 seconds with a retry affordance. Signing out
+    (or any session end) calls `FeatureEnvironment.invalidate()`: cached
+    images are cleared, polling and uploads in flight stop, export archives
+    (`paldora-data-*.json`) are deleted, and leftovers are swept at launch.
+    Local sign-out is retried once; if it still fails the app shows "We
+    couldn't sign you out", keeps a pending flag, and finishes the sign-out
+    before restoring any session at the next launch. An opaque Paldora cover
+    sits over the whole window (sheets and share sheets included) whenever the
+    app is not active, so the app switcher never shows private content. The
+    export downloads straight to a protected file (`URLSession.download`, with
+    the token-refresh retry) instead of into memory. Versions come from
+    `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`.
+  - **Accessibility:** icon-only controls carry labels, targets are at least
+    44 pt, rows of actions wrap (`FlowLayout`, `AdaptiveStack`) so nothing clips
+    at accessibility text sizes, section headers and placeholders use AA
+    colors, disabled buttons stay AA (outlined surface, muted text), and the
+    unselected tab tint is a token color. `ContrastTests` computes the WCAG ratio
+    from `PaldoraTokens` for every text pair in the app (light and dark) and
+    every Room theme (4.5:1 for text; Room accents are graphics, 3:1).
+    `AccessibilityAuditUITests` runs Xcode's `performAccessibilityAudit` over the
+    sign-in screen and every tab plus Friends and Settings, at the default size
+    and at accessibility3. It ignores only content scrolled under the
+    translucent tab bar, the audit's own "nearly passed" band, and
+    navigation-bar chrome it cannot attribute to an element.
   - Not in the app yet: reports of Boxes or people, Phase 8 Room personalization (web-only), staff screens. Reports: web can report posts and comments
     (`createReport`), native has only `reportBoxPost`, so only posts are
     reportable on iOS; there is no web report for Boxes or people. Deleted comments are simply absent because the

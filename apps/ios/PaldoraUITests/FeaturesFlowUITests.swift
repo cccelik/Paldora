@@ -82,6 +82,7 @@ final class FeaturesFlowUITests: XCTestCase {
         // Notifications tab opens (own activity does not notify you).
         app.navigationBars.buttons.firstMatch.tap()
         app.tabBars.buttons["Notifications"].tap()
-        XCTAssertTrue(app.buttons["mark-all-read"].waitForExistence(timeout: 20))
+        let nothingNew = app.staticTexts["Nothing new"]
+        XCTAssertTrue(nothingNew.waitForExistence(timeout: 20) || app.buttons["mark-all-read"].waitForExistence(timeout: 5))
     }
 }

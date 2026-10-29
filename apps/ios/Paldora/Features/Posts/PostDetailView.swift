@@ -69,7 +69,7 @@ struct PostDetailView: View {
     /// Author header; opens their Room when their username is known.
     @ViewBuilder private func authorLink(_ post: BoxPost) -> some View {
         let name = model.authorName(post.authorUid)
-        let header = HStack(spacing: Theme.space3) {
+        let header = AdaptiveStack {
             AvatarView(mediaId: model.authorAvatar(post.authorUid), name: name)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name).font(Typography.headline).foregroundStyle(Theme.text)

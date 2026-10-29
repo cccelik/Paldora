@@ -10,6 +10,7 @@ final class UnreadBadge {
     private(set) var count = 0
     private(set) var capped = false
     private let api: PaldoraAPI
+    private var isStopped = false
     private let handleFailure: @MainActor (any Error) -> String
 
     init(api: PaldoraAPI, handleFailure: @escaping @MainActor (any Error) -> String) {
@@ -17,7 +18,11 @@ final class UnreadBadge {
         self.handleFailure = handleFailure
     }
 
+    /// Stops polling for good (sign-out).
+    func stop() { isStopped = true; count = 0; capped = false }
+
     func refresh() async {
+        guard !isStopped else { return }
         do {
             apply(try await api.countMyUnreadNotifications())
         } catch {
@@ -42,7 +47,7 @@ final class UnreadBadge {
 
     /// Polls until cancelled. Call from a task tied to the foreground state.
     func poll(every interval: Duration = .seconds(30)) async {
-        while !Task.isCancelled {
+        while !Task.isCancelled && !isStopped {
             await refresh()
             try? await Task.sleep(for: interval)
         }

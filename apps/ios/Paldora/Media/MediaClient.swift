@@ -29,8 +29,10 @@ protocol MediaClient: Sendable {
         progress: @escaping @Sendable (Double) -> Void
     ) async throws
     func fetch(assetId: String, variant: MediaVariant) async throws -> Data
-    /// The caller's latest ready account export (`accountExportDownload`). 404 is `unavailable`.
-    func fetchExport(id: String) async throws -> Data
+    /// Streams the caller's latest ready account export (`accountExportDownload`) to
+    /// `destination` on disk (complete file protection) without holding it in memory.
+    /// 404 is `unavailable`.
+    func downloadExport(id: String, to destination: URL) async throws
 }
 
 struct URLSessionMediaClient: MediaClient {
@@ -92,28 +94,32 @@ struct URLSessionMediaClient: MediaClient {
         return data
     }
 
-    func fetchExport(id: String) async throws -> Data {
+    func downloadExport(id: String, to destination: URL) async throws {
         guard Self.isSafeSegment(id),
               let url = Self.url(base: baseURL, function: "accountExportDownload", path: "/\(id)")
         else { throw MediaError.unavailable }
-        let (data, response) = try await send(forceRefresh: false) { token in
+        let (file, response) = try await send(forceRefresh: false) { token in
             var request = URLRequest(url: url)
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.cachePolicy = .reloadIgnoringLocalCacheData
-            return try await session.data(for: request)
+            return try await session.download(for: request)
         }
+        // The system's download file is ours to move; never leave it behind on failure.
+        defer { try? FileManager.default.removeItem(at: file) }
         guard response.statusCode == 200 else { throw Self.error(for: response.statusCode) }
-        return data
+        try? FileManager.default.removeItem(at: destination)
+        try FileManager.default.moveItem(at: file, to: destination)
+        try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: destination.path)
     }
 
     /// Sends with the current token; on 401 refreshes the token once and retries.
-    private func send(
+    private func send<Body>(
         forceRefresh: Bool,
-        _ perform: (String) async throws -> (Data, URLResponse)
-    ) async throws -> (Data, HTTPURLResponse) {
+        _ perform: (String) async throws -> (Body, URLResponse)
+    ) async throws -> (Body, HTTPURLResponse) {
         let token: String
         do { token = try await tokens.idToken(forceRefresh: forceRefresh) } catch { throw MediaError.unauthenticated }
-        let data: Data
+        let data: Body
         let response: URLResponse
         do {
             (data, response) = try await perform(token)
@@ -172,5 +178,5 @@ struct UnavailableMediaClient: MediaClient {
     func upload(_ reservation: CreateMediaUploadResponse, data: Data,
                 progress: @escaping @Sendable (Double) -> Void) async throws { throw MediaError.transient }
     func fetch(assetId: String, variant: MediaVariant) async throws -> Data { throw MediaError.unavailable }
-    func fetchExport(id: String) async throws -> Data { throw MediaError.unavailable }
+    func downloadExport(id: String, to destination: URL) async throws { throw MediaError.unavailable }
 }

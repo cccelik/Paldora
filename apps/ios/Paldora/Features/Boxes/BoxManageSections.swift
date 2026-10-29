@@ -36,7 +36,7 @@ struct InviteSection: View {
 
     @ViewBuilder private var form: some View {
         FieldContainer(title: "Their username") {
-            TextField("username", text: $model.inviteUsername).textInputAutocapitalization(.never)
+            TextField("username", text: $model.inviteUsername, prompt: Text("username").foregroundStyle(Theme.textMuted)).textInputAutocapitalization(.never)
                 .autocorrectionDisabled().accessibilityIdentifier("invite-username")
         }
         Button("Send invitation") { Task { await model.invite() } }
@@ -55,7 +55,7 @@ struct InvitationRow: View {
     let invitation: BoxInvitation
 
     var body: some View {
-        HStack {
+        AdaptiveStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(invitation.inviteeDisplayName ?? invitation.inviteeUsername ?? "Member").font(Typography.headline)
                 if let username = invitation.inviteeUsername {
@@ -76,7 +76,7 @@ struct RenameSection: View {
     var body: some View {
         manageSection("Name and status") {
             FieldContainer(title: "Box name") {
-                TextField("Box name", text: $model.renameText).accessibilityIdentifier("rename-field")
+                TextField("Box name", text: $model.renameText, prompt: Text("Box name").foregroundStyle(Theme.textMuted)).accessibilityIdentifier("rename-field")
             }
             Button("Rename") { Task { await model.rename() } }
                 .buttonStyle(PrimaryButtonStyle()).disabled(!model.canRename).accessibilityIdentifier("rename-submit")
@@ -118,7 +118,7 @@ struct DeleteSection: View {
     var body: some View {
         manageSection("Delete this Box", "Permanently removes the Box for everyone.") {
             FieldContainer(title: "Type \u{201C}\(model.box.name)\u{201D} to confirm") {
-                TextField("Box name", text: $model.typedName).autocorrectionDisabled().textInputAutocapitalization(.never)
+                TextField("Box name", text: $model.typedName, prompt: Text("Box name").foregroundStyle(Theme.textMuted)).autocorrectionDisabled().textInputAutocapitalization(.never)
                     .accessibilityIdentifier("delete-name")
             }
             Toggle("I understand this can't be undone and everyone loses access.", isOn: $model.acknowledged)

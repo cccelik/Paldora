@@ -21,7 +21,7 @@ struct ReportCommentSheet: View {
                     }
                     .pickerStyle(.menu).frame(minHeight: Theme.touchTarget).accessibilityIdentifier("report-category")
                     FieldContainer(title: "More information (optional)") {
-                        TextField("What happened?", text: $model.detail, axis: .vertical).lineLimit(3...8)
+                        TextField("What happened?", text: $model.detail, prompt: Text("What happened?").foregroundStyle(Theme.textMuted), axis: .vertical).lineLimit(3...8)
                             .padding(.vertical, Theme.space2).accessibilityIdentifier("report-detail")
                     }
                     Text("\(model.detail.count) of \(ReportCommentViewModel.detailLimit)").font(Typography.caption)

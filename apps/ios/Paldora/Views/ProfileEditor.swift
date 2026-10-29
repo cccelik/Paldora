@@ -17,12 +17,12 @@ struct ProfileEditor: View {
         VStack(alignment: .leading, spacing: Theme.space4) {
             Text("Edit profile").font(Typography.title).foregroundStyle(Theme.text)
             FieldContainer(title: "Display name") {
-                TextField("Display name", text: $displayName)
+                TextField("Display name", text: $displayName, prompt: Text("Display name").foregroundStyle(Theme.textMuted))
                     .textContentType(.name)
                     .accessibilityIdentifier("display-name-field")
             }
             FieldContainer(title: "Bio") {
-                TextField("A line about you", text: $bio, axis: .vertical)
+                TextField("A line about you", text: $bio, prompt: Text("A line about you").foregroundStyle(Theme.textMuted), axis: .vertical)
                     .lineLimit(3...6)
                     .padding(.vertical, Theme.space2)
                     .accessibilityIdentifier("bio-field")

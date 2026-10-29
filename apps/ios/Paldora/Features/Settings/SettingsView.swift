@@ -11,11 +11,11 @@ struct SettingsView: View {
                 link("Security", "lock", id: "settings-security") { SecurityView(env: env) }
                 link("Your data", "square.and.arrow.down", id: "settings-export") { ExportView(env: env) }
                 link("Delete account", "trash", id: "settings-deletion") { DeletionView(env: env) }
-            } header: { Text("Account").font(Typography.label) }
+            } header: { SectionHeader("Account") }
             Section {
                 link("Your reports", "flag", id: "settings-reports") { MyReportsView(env: env) }
                 link("Content notices", "exclamationmark.bubble", id: "settings-notices") { NoticesView(env: env) }
-            } header: { Text("Safety").font(Typography.label) }
+            } header: { SectionHeader("Safety") }
         }
         .scrollContentBackground(.hidden)
         .background(Theme.canvas)

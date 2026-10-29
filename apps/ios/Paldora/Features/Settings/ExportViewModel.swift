@@ -23,6 +23,7 @@ final class ExportViewModel {
     private let directory: URL
     private let maxPolls: Int
     private let pollInterval: Duration
+    private var cleanupToken: UUID?
 
     init(env: FeatureEnvironment, directory: URL = FileManager.default.temporaryDirectory,
          maxPolls: Int = 20, pollInterval: Duration = .seconds(3)) {
@@ -30,7 +31,10 @@ final class ExportViewModel {
         self.directory = directory
         self.maxPolls = maxPolls
         self.pollInterval = pollInterval
+        // A session that ends mid-poll or mid-share must not leave an archive behind.
+        cleanupToken = env.register { [weak self] in self?.finishSharing() }
     }
+
 
     var export: AccountExport? {
         if case .ready(let export) = phase { export } else { nil }
@@ -61,7 +65,7 @@ final class ExportViewModel {
     private func waitUntilSettled() async {
         for _ in 0..<maxPolls where status == "pending" {
             try? await Task.sleep(for: pollInterval)
-            if Task.isCancelled { return }
+            if Task.isCancelled || env.isInvalidated { return }
             if let latest = try? await env.api.getAccountExport() { phase = .ready(latest) }
         }
     }
@@ -85,10 +89,10 @@ final class ExportViewModel {
         isWorking = true
         error = nil
         defer { isWorking = false }
+        let url = directory.appendingPathComponent("\(ExportFiles.prefix)\(UUID().uuidString).json")
         do {
-            let data = try await env.media.fetchExport(id: id)
-            let url = directory.appendingPathComponent("paldora-data-\(UUID().uuidString).json")
-            try data.write(to: url, options: [.completeFileProtection, .atomic])
+            try await env.media.downloadExport(id: id, to: url)
+            if env.isInvalidated { try? FileManager.default.removeItem(at: url); return }
             preparedFile = url
         } catch MediaError.unavailable {
             // Unknown, expired, replaced and not-ready archives are the same answer.
@@ -107,5 +111,18 @@ final class ExportViewModel {
     func finishSharing() {
         if let file = preparedFile { try? FileManager.default.removeItem(at: file) }
         preparedFile = nil
+    }
+}
+
+/// Temporary export archives live only while the share sheet is open.
+enum ExportFiles {
+    static let prefix = "paldora-data-"
+
+    /// Deletes any leftover archive in `directory` (default: the app's temp directory).
+    static func sweep(in directory: URL = FileManager.default.temporaryDirectory) {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        for name in names where name.hasPrefix(prefix) && name.hasSuffix(".json") {
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
+        }
     }
 }

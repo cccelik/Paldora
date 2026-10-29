@@ -20,9 +20,9 @@ struct RoomTopFriendsEditor: View {
             .pickerStyle(.menu).frame(minHeight: Theme.touchTarget)
             Text("\(model.selectedTopFriends.count) of \(model.maxTopFriends) chosen").font(Typography.caption).foregroundStyle(Theme.textMuted)
             ForEach(Array(model.selectedTopFriends.enumerated()), id: \.element) { index, uid in
-                HStack {
+                AdaptiveStack {
                     Text("\(index + 1). \(model.friendName(uid))").font(Typography.body).foregroundStyle(Theme.text)
-                    Spacer()
+                    FlowLayout {
                     Button { model.moveTopFriend(uid, by: -1) } label: { Image(systemName: "arrow.up") }
                         .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget).disabled(index == 0)
                         .accessibilityLabel("Move \(model.friendName(uid)) up")
@@ -33,6 +33,7 @@ struct RoomTopFriendsEditor: View {
                     Button { model.toggleTopFriend(uid) } label: { Image(systemName: "xmark.circle") }
                         .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
                         .accessibilityLabel("Remove \(model.friendName(uid))")
+                    }
                 }
             }
             Text("Your friends").font(Typography.label).foregroundStyle(Theme.textMuted)

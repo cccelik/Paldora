@@ -74,7 +74,7 @@ struct BoxesView: View {
                                hasMore: model.boxes.hasMore, loadMore: { await model.boxes.loadMore() })
                     .listRowBackground(Theme.canvas)
             } header: {
-                Text("Your Boxes").font(Typography.label)
+                SectionHeader("Your Boxes")
             }
         }
         .scrollContentBackground(.hidden)
@@ -103,7 +103,7 @@ struct InvitationsSection: View {
                     Text(invitation.boxName).font(Typography.headline).foregroundStyle(Theme.text)
                     Text("From \(invitation.inviterDisplayName)").font(Typography.caption)
                         .foregroundStyle(Theme.textMuted)
-                    HStack {
+                    FlowLayout {
                         Button("Accept") { Task { await model.accept(invitation) } }
                             .buttonStyle(QuietButtonStyle())
                             .accessibilityIdentifier("accept-invitation")
@@ -116,7 +116,7 @@ struct InvitationsSection: View {
                 .listRowBackground(Theme.surface)
             }
         } header: {
-            Text("Invitations").font(Typography.label)
+            SectionHeader("Invitations")
         }
     }
 }
@@ -132,7 +132,7 @@ struct CreateBoxSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: Theme.space4) {
                 FieldContainer(title: "Box name") {
-                    TextField("Name your Box", text: $name)
+                    TextField("Name your Box", text: $name, prompt: Text("Name your Box").foregroundStyle(Theme.textMuted))
                         .accessibilityIdentifier("box-name-field")
                 }
                 Text("\(name.count) of \(BoxesViewModel.nameLimit)").font(Typography.caption)

@@ -17,7 +17,7 @@ struct TextEntrySheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: Theme.space4) {
                 FieldContainer(title: prompt) {
-                    TextField(prompt, text: $text, axis: .vertical)
+                    TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Theme.textMuted), axis: .vertical)
                         .lineLimit(4...10)
                         .padding(.vertical, Theme.space2)
                         .accessibilityIdentifier("sheet-text-field")

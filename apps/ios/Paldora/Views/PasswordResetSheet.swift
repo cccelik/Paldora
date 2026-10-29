@@ -18,7 +18,7 @@ struct PasswordResetSheet: View {
                 Text("Enter your email and we'll send a link to reset your password.")
                     .font(Typography.callout).foregroundStyle(Theme.textMuted)
                 FieldContainer(title: "Email") {
-                    TextField("you@example.com", text: $email).keyboardType(.emailAddress)
+                    TextField("Email", text: $email, prompt: Text("Your email address").foregroundStyle(Theme.textMuted)).keyboardType(.emailAddress)
                         .textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled()
                         .accessibilityIdentifier("reset-email")
                 }

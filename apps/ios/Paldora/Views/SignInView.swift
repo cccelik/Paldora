@@ -23,8 +23,8 @@ struct SignInView: View {
                         .accessibilityIdentifier("sign-in-notice")
                 }
                 FieldContainer(title: "Email") {
-                    TextField("you@example.com", text: $email)
-                        .textContentType(.username)
+                    TextField("Email", text: $email, prompt: Text("Your email address").foregroundStyle(Theme.textMuted))
+                        .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -34,7 +34,7 @@ struct SignInView: View {
                         .accessibilityIdentifier("email-field")
                 }
                 FieldContainer(title: "Password") {
-                    SecureField("Password", text: $password)
+                    SecureField("Password", text: $password, prompt: Text("Password").foregroundStyle(Theme.textMuted))
                         .textContentType(.password)
                         .submitLabel(.go)
                         .focused($focus, equals: .password)

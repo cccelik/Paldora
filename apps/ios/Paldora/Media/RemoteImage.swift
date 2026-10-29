@@ -22,7 +22,7 @@ struct RemoteImage: View {
     @Environment(\.imageLoader) private var loader
     @State private var phase: Phase = .loading
 
-    private enum Phase { case loading, image(UIImage), unavailable }
+    private enum Phase { case loading, image(UIImage), unavailable, retry, blank }
 
     var body: some View {
         Group {
@@ -32,6 +32,20 @@ struct RemoteImage: View {
             case .image(let image):
                 Image(uiImage: image).resizable()
                     .aspectRatio(contentMode: fill ? .fill : .fit)
+            case .blank:
+                // The session ended: nothing misleading is shown while the app signs out.
+                Theme.highlight
+            case .retry:
+                Button { retry() } label: {
+                    Theme.highlight.overlay(
+                        VStack(spacing: 2) {
+                            Image(systemName: "arrow.clockwise").font(.title3)
+                            Text("Couldn't load. Tap to retry").font(Typography.caption).multilineTextAlignment(.center)
+                        }.foregroundStyle(Theme.textMuted)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Photo couldn't load. Retry")
             case .unavailable:
                 Theme.highlight.overlay(
                     VStack(spacing: 2) {
@@ -50,8 +64,15 @@ struct RemoteImage: View {
         phase = .loading
         switch await loader.image(assetId, variant) {
         case .image(let image): phase = .image(image)
-        case .unavailable, .failed, .sessionEnded: if !Task.isCancelled { phase = .unavailable }
+        case .unavailable: if !Task.isCancelled { phase = .unavailable }
+        case .rateLimited, .failed: if !Task.isCancelled { phase = .retry }
+        case .sessionEnded: if !Task.isCancelled { phase = .blank }
         }
+    }
+
+    private func retry() {
+        loader?.retry(assetId, variant)
+        Task { await load() }
     }
 }
 
@@ -63,6 +84,7 @@ struct AvatarView: View {
     var size: CGFloat = 40
     @Environment(\.imageLoader) private var loader
     @State private var image: UIImage?
+    @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
     var body: some View {
         ZStack {
@@ -70,14 +92,18 @@ struct AvatarView: View {
             if let image {
                 Image(uiImage: image).resizable().scaledToFill()
             } else {
-                Text(Self.initials(name)).font(.system(size: size * 0.4, weight: .semibold, design: .serif))
-                    .foregroundStyle(Theme.text)
+                Text(Self.initials(name)).font(.system(.footnote, design: .serif).weight(.semibold))
+                    .minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(Theme.text)
             }
         }
-        .frame(width: size, height: size)
+        .frame(width: size * scale, height: size * scale)
         .clipShape(Circle())
         .overlay(Circle().stroke(Theme.gold.opacity(0.6), lineWidth: 1))
-        .accessibilityHidden(true)
+        // Exposed (not hidden) so the initials are not "inaccessible text"; kept short because
+        // the name is always read next to it.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Profile photo")
+        .accessibilityAddTraits(.isImage)
         .task(id: mediaId) { await load() }
     }
 

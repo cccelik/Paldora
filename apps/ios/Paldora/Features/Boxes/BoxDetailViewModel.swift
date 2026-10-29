@@ -22,6 +22,7 @@ final class BoxDetailViewModel {
     let boxId: String
     let attachments: PhotoAttachments
     private let env: FeatureEnvironment
+    private var draftKey = DraftKey()
 
     init(env: FeatureEnvironment, boxId: String) {
         self.env = env
@@ -73,9 +74,12 @@ final class BoxDetailViewModel {
         composeError = nil
         defer { isPosting = false }
         do {
+            let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+            let photos = attachments.readyAssetIds
             _ = try await env.api.createBoxPost(CreateBoxPostRequest(
-                boxId: boxId, text: draft.trimmingCharacters(in: .whitespacesAndNewlines),
-                mediaAssetIds: attachments.readyAssetIds.isEmpty ? nil : attachments.readyAssetIds))
+                boxId: boxId, text: text, mediaAssetIds: photos.isEmpty ? nil : photos,
+                idempotencyKey: draftKey.key(for: ([text] + photos).joined(separator: "\u{1F}"))))
+            draftKey.rotate()
             draft = ""
             attachments.clear()
             env.contentChanged()

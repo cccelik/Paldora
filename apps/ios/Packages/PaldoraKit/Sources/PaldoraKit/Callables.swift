@@ -107,8 +107,9 @@ extension PaldoraAPI {
     public func listMyBoxes(cursor: String? = nil) async throws -> Page<Box> {
         try await perform(Contracts.ListMyBoxes.self, CursorRequest(cursor: cursor))
     }
-    public func createBox(name: String) async throws -> Box {
-        try await perform(Contracts.CreateBox.self, CreateBoxRequest(name: name))
+    /// A retry with the same `idempotencyKey` returns the original Box.
+    public func createBox(name: String, idempotencyKey: String? = nil) async throws -> Box {
+        try await perform(Contracts.CreateBox.self, CreateBoxRequest(name: name, idempotencyKey: idempotencyKey))
     }
     public func getBox(boxId: String) async throws -> Box {
         try await perform(Contracts.GetBox.self, BoxReference(boxId: boxId))

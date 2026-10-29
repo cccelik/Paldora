@@ -7,15 +7,23 @@ import SwiftUI
 @main
 struct PaldoraApp: App {
     @State private var model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var cover = PrivacyCoverState()
 
     @MainActor
     init() {
+        // The system's default unselected gray is below AA on the canvas.
+        UITabBar.appearance().unselectedItemTintColor = UIColor(Theme.textMuted)
         _model = State(initialValue: Self.makeModel())
     }
 
     var body: some Scene {
         WindowGroup {
             RootView(model: model)
+                .onChange(of: scenePhase) {
+                    cover.apply(scenePhase)
+                    PrivacyShield.shared.set(covered: cover.isCovered)
+                }
         }
     }
 
@@ -23,6 +31,8 @@ struct PaldoraApp: App {
     /// project (or with an emulator/demo project) never start Firebase.
     @MainActor
     private static func makeModel() -> AppModel {
+        // Archives never outlive a session; sweep leftovers from a crash or a force quit.
+        ExportFiles.sweep()
         // The unit-test host must not start Firebase; tests build their own models.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             return AppModel(auth: nil, api: nil, configurationIssue: .startupFailed)

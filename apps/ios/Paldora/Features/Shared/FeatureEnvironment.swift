@@ -17,6 +17,9 @@ final class FeatureEnvironment {
     let camera: any CameraProvider
     private let failureHandler: @MainActor (any Error) -> String
     private let signOutHandler: @MainActor (String) -> Void
+    private var cleanups: [UUID: @MainActor () -> Void] = [:]
+    /// True once the session ended: nothing started by this environment may continue.
+    private(set) var isInvalidated = false
     private let presets: @MainActor () -> [String]
 
     init(
@@ -39,6 +42,10 @@ final class FeatureEnvironment {
         boxes = BoxDirectory(api: api)
         people = PeopleDirectory(api: api)
         badge = UnreadBadge(api: api, handleFailure: handleFailure)
+        // A 401 the token refresh could not rescue is a session end, like any callable.
+        images.onSessionEnded = { [weak self] in
+            self?.signOutHandler(UserMessages.sessionEnded)
+        }
     }
 
     var reactionPresets: [String] { presets() }
@@ -54,6 +61,28 @@ final class FeatureEnvironment {
     }
 
     func contentChanged() { contentVersion += 1 }
+
+    /// Registers work to cancel or delete when the session ends. Returns a token for `unregister`.
+    func register(cleanup: @escaping @MainActor () -> Void) -> UUID {
+        let id = UUID()
+        if isInvalidated { cleanup() } else { cleanups[id] = cleanup }
+        return id
+    }
+
+    func unregister(_ id: UUID) { cleanups[id] = nil }
+
+    /// Drops everything private this environment holds: cached images, polling,
+    /// uploads in flight, export files. Idempotent.
+    func invalidate() {
+        guard !isInvalidated else { return }
+        isInvalidated = true
+        images.clear()
+        badge.stop()
+        let pending = cleanups.values
+        cleanups.removeAll()
+        pending.forEach { $0() }
+        ExportFiles.sweep()
+    }
 
     /// Ends the local session and shows `notice` on the sign-in screen.
     func signOut(notice: String) { signOutHandler(notice) }

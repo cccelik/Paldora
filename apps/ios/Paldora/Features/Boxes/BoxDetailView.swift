@@ -115,7 +115,7 @@ struct BoxPostRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
-            HStack(spacing: Theme.space3) {
+            AdaptiveStack {
                 AvatarView(mediaId: avatar, name: author)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(author).font(Typography.headline).foregroundStyle(Theme.text)
@@ -139,7 +139,7 @@ struct PostComposer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
             FieldContainer(title: "Post to this Box") {
-                TextField("What's on your mind?", text: $model.draft, axis: .vertical)
+                TextField("What's on your mind?", text: $model.draft, prompt: Text("What's on your mind?").foregroundStyle(Theme.textMuted), axis: .vertical)
                     .lineLimit(2...8)
                     .padding(.vertical, Theme.space2)
                     .focused($focused)

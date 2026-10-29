@@ -49,7 +49,7 @@ struct SecurityView: View {
 
     private func field(_ title: String, text: Binding<String>, id: String, type: UITextContentType) -> some View {
         FieldContainer(title: title) {
-            SecureField(title, text: text).textContentType(type).accessibilityIdentifier(id)
+            SecureField(title, text: text, prompt: Text(title).foregroundStyle(Theme.textMuted)).textContentType(type).accessibilityIdentifier(id)
         }
     }
 }

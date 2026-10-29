@@ -45,7 +45,7 @@ struct DeletionView: View {
             InlineMessage(text: DeletionViewModel.blockedMessage).accessibilityIdentifier("deletion-blocked")
         }
         FieldContainer(title: "Confirm your password") {
-            SecureField("Password", text: $model.password).textContentType(.password)
+            SecureField("Password", text: $model.password, prompt: Text("Password").foregroundStyle(Theme.textMuted)).textContentType(.password)
                 .accessibilityIdentifier("deletion-password")
         }
         if let error = model.error, !model.isBlockedState { InlineMessage(text: error) }

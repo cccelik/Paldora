@@ -50,6 +50,8 @@ struct ProfileView: View {
                     Text("@\(username)").font(Typography.callout).foregroundStyle(Theme.textMuted)
                 }
                 Text(profile.user.email).font(Typography.caption).foregroundStyle(Theme.textMuted)
+                    .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel("Signed in as \(profile.user.email)")
             }
         }
     }

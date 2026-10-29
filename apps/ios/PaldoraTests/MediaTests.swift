@@ -90,13 +90,16 @@ struct URLSessionMediaClientTests {
 
     @Test func exportDownloadUsesBearerAndMapsNotFound() async throws {
         StubURLProtocol.handler = { _ in (200, Data("{}".utf8)) }
-        #expect(try await client().fetchExport(id: "e-1") == Data("{}".utf8))
+        let target = FileManager.default.temporaryDirectory.appendingPathComponent("paldora-data-test-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: target) }
+        try await client().downloadExport(id: "e-1", to: target)
+        #expect(try Data(contentsOf: target) == Data("{}".utf8))
         let request = try #require(StubURLProtocol.seen.first)
         #expect(request.url?.absoluteString == "http://127.0.0.1:5001/demo-paldora/europe-west4/accountExportDownload/e-1")
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer stale")
         StubURLProtocol.handler = { _ in (404, Data()) }
-        await #expect(throws: MediaError.unavailable) { try await client().fetchExport(id: "e-1") }
-        await #expect(throws: MediaError.unavailable) { try await client().fetchExport(id: "../x") }
+        await #expect(throws: MediaError.unavailable) { try await client().downloadExport(id: "e-1", to: target) }
+        await #expect(throws: MediaError.unavailable) { try await client().downloadExport(id: "../x", to: target) }
     }
 
     @Test func unsafePathsAreRefused() {

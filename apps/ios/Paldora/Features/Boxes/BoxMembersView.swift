@@ -74,7 +74,7 @@ struct MembersView: View {
 
     private func actions(_ member: BoxMember) -> some View {
         let name = member.displayName ?? member.username ?? "this member"
-        return HStack {
+        return FlowLayout {
             if model.canChangeRole(member) {
                 Button(BoxRules.nextRole(for: member.role) == .admin ? "Make admin" : "Make member") {
                     Task { await model.changeRole(member) }

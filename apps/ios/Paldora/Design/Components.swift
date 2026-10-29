@@ -30,17 +30,48 @@ struct BrandMark: View {
     }
 }
 
+/// Enabled: ink fill. Disabled: a quiet outlined surface with muted text, which keeps
+/// AA contrast (a faded ink fill with ivory text does not).
 struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Typography.headline)
-            .foregroundStyle(Theme.onInk)
+            .foregroundStyle(isEnabled ? Theme.onInk : Theme.textMuted)
             .frame(maxWidth: .infinity, minHeight: Theme.touchTarget)
             .padding(.horizontal, Theme.space4)
-            .background(Theme.ink.opacity(isEnabled ? 1 : 0.4), in: RoundedRectangle(cornerRadius: Theme.radius))
+            .background(isEnabled ? Theme.ink : Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
+            .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.hairline, lineWidth: isEnabled ? 0 : 1))
             .opacity(configuration.isPressed ? 0.85 : 1)
+    }
+}
+
+/// A list or form section heading with AA contrast (the system default is too faint).
+struct SectionHeader: View {
+    let text: String
+
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text).font(Typography.label).foregroundStyle(Theme.textMuted).textCase(nil)
+    }
+}
+
+/// Lays children out in a row, or stacked once text is at an accessibility size, so
+/// nothing clips or truncates at the largest Dynamic Type sizes.
+struct AdaptiveStack<Content: View>: View {
+    var spacing: CGFloat = Theme.space3
+    var alignment: VerticalAlignment = .center
+    @ViewBuilder var content: Content
+    @Environment(\.dynamicTypeSize) private var size
+
+    var body: some View {
+        if size.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: spacing) { content }
+        } else {
+            HStack(alignment: alignment, spacing: spacing) { content }
+        }
     }
 }
 
@@ -68,8 +99,9 @@ struct FieldContainer<Content: View>: View {
             content
                 .font(Typography.body)
                 .foregroundStyle(Theme.text)
-                .padding(.horizontal, Theme.space3)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(minHeight: Theme.touchTarget)
+                .padding(.horizontal, Theme.space3)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
                 .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.hairline, lineWidth: 1))
         }
@@ -88,5 +120,37 @@ struct InlineMessage: View {
             .foregroundStyle(kind == .error ? Theme.danger : Theme.success)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
+    }
+}
+
+/// Lays children left to right and wraps to new rows, so action buttons never clip
+/// or truncate at accessibility text sizes.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = Theme.space2
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrange(proposal.width ?? .infinity, subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = arrange(bounds.width, subviews)
+        for (index, frame) in result.frames.enumerated() {
+            subviews[index].place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                                  proposal: ProposedViewSize(frame.size))
+        }
+    }
+
+    private func arrange(_ width: CGFloat, _ subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
+        var frames: [CGRect] = []
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, maxX: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width { x = 0; y += rowHeight + spacing; rowHeight = 0 }
+            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            maxX = max(maxX, x - spacing)
+        }
+        return (CGSize(width: min(maxX, width), height: y + rowHeight), frames)
     }
 }

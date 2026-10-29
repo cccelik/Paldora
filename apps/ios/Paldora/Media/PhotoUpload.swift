@@ -63,6 +63,7 @@ final class PhotoUpload: Identifiable {
     private var reservation: CreateMediaUploadResponse?
     private var assetId: String?
     private var task: Task<Void, Never>?
+    private var cleanupToken: UUID?
 
     init(data: Data, purpose: UploadPurpose, env: FeatureEnvironment, timing: UploadTiming = UploadTiming()) {
         original = data
@@ -85,9 +86,11 @@ final class PhotoUpload: Identifiable {
 
     func start() {
         guard task == nil else { return }
+        cleanupToken = env.register { [weak self] in self?.cancel() }
         task = Task { [weak self] in
             await self?.run()
             self?.task = nil
+            if let token = self?.cleanupToken { self?.env.unregister(token) }
         }
     }
 
@@ -100,21 +103,29 @@ final class PhotoUpload: Identifiable {
     func cancel() {
         task?.cancel()
         task = nil
+        // A cancelled upload is settled, never "in flight" forever.
+        if isInFlight { state = .failed("Cancelled.") }
     }
 
     /// Runs from the current stage to the end, or to the first failure.
     func run() async {
         do {
+            try Self.ensureActive(env)
             if stage == .prepare { try prepare() }
-            if stage == .reserve { try await reserve() }
-            if stage == .upload { try await upload() }
-            if stage == .complete { try await complete() }
+            if stage == .reserve { try await reserve(); try Self.ensureActive(env) }
+            if stage == .upload { try await upload(); try Self.ensureActive(env) }
+            if stage == .complete { try await complete(); try Self.ensureActive(env) }
             if stage == .poll { try await waitUntilReady() }
         } catch is CancellationError {
             return
         } catch {
             state = .failed(message(for: error))
         }
+    }
+
+    /// A session that ended stops every stage.
+    private static func ensureActive(_ env: FeatureEnvironment) throws {
+        if env.isInvalidated || Task.isCancelled { throw CancellationError() }
     }
 
     private func prepare() throws {
@@ -179,6 +190,7 @@ final class PhotoUpload: Identifiable {
                 prepared = nil
                 throw UploadFailure("That photo couldn't be processed. Choose it again.")
             }
+            try Self.ensureActive(env)
             if attempt < timing.maxPolls - 1 { try await Task.sleep(for: timing.pollInterval) }
         }
         throw UploadFailure("Still processing. Try again in a moment.")

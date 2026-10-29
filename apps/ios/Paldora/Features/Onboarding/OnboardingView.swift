@@ -59,7 +59,7 @@ private struct OnboardingSteps: View {
             Text("People find you and invite you by username. Letters, numbers and underscores, 3 to 30 characters.")
                 .font(Typography.callout).foregroundStyle(Theme.textMuted)
             FieldContainer(title: "Username") {
-                TextField("username", text: $flow.username).textInputAutocapitalization(.never).autocorrectionDisabled()
+                TextField("username", text: $flow.username, prompt: Text("username").foregroundStyle(Theme.textMuted)).textInputAutocapitalization(.never).autocorrectionDisabled()
                     .accessibilityIdentifier("onboarding-username")
             }
             if let hint = flow.usernameHint { InlineMessage(text: hint) }
@@ -77,10 +77,10 @@ private struct OnboardingSteps: View {
                 Text("Your username is @\(reserved).").font(Typography.callout).foregroundStyle(Theme.textMuted)
             }
             FieldContainer(title: "Display name") {
-                TextField("Display name", text: $flow.displayName).accessibilityIdentifier("onboarding-display-name")
+                TextField("Display name", text: $flow.displayName, prompt: Text("Display name").foregroundStyle(Theme.textMuted)).accessibilityIdentifier("onboarding-display-name")
             }
             FieldContainer(title: "Bio (optional)") {
-                TextField("A line about you", text: $flow.bio, axis: .vertical).lineLimit(2...5).padding(.vertical, Theme.space2)
+                TextField("A line about you", text: $flow.bio, prompt: Text("A line about you").foregroundStyle(Theme.textMuted), axis: .vertical).lineLimit(2...5).padding(.vertical, Theme.space2)
                     .accessibilityIdentifier("onboarding-bio")
             }
             primary("Continue", enabled: flow.canSaveProfile, id: "onboarding-profile-next") { await flow.saveProfile() }

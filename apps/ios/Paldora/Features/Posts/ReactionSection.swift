@@ -13,7 +13,7 @@ struct ReactionSection: View {
                 ForEach(model.presets, id: \.self) { kind in preset(kind) }
             }
             HStack(spacing: Theme.space2) {
-                TextField("Any emoji", text: $custom)
+                TextField("Any emoji", text: $custom, prompt: Text("Any emoji").foregroundStyle(Theme.textMuted))
                     .font(Typography.body)
                     .padding(.horizontal, Theme.space3)
                     .frame(minHeight: Theme.touchTarget)
@@ -79,7 +79,9 @@ struct ReactionSection: View {
                             .font(Typography.label)
                             .padding(.horizontal, Theme.space3)
                             .frame(minHeight: 32)
-                            .background(Theme.highlight, in: Capsule())
+                            .foregroundStyle(Theme.text)
+                            .foregroundStyle(Theme.text)
+                        .background(Theme.highlight, in: Capsule())
                             .accessibilityLabel("\(entry.count) \(Self.display(entry.kind)) reactions")
                     }
                 }

@@ -31,9 +31,10 @@ final class FakeMediaClient: MediaClient, @unchecked Sendable {
         return try await fetchHandler(assetId, variant)
     }
 
-    func fetchExport(id: String) async throws -> Data {
+    func downloadExport(id: String, to destination: URL) async throws {
         lock.withLock { _fetches.append("export/\(id)") }
-        return try await exportHandler(id)
+        let data = try await exportHandler(id)
+        try data.write(to: destination)
     }
 
     var exportHandler: @Sendable (String) async throws -> Data = { _ in Data("{\"archive\":true}".utf8) }

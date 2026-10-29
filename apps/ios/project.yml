@@ -39,6 +39,8 @@ targets:
       path: Paldora/Info.plist
       properties:
         CFBundleDisplayName: Paldora
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false

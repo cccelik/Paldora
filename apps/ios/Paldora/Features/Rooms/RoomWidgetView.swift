@@ -10,9 +10,14 @@ struct RoomWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
-            Text(RoomRegistry.label(RoomRegistry.widgetLabels, widget.type))
-                .font(look.font(.headline, weight: .semibold)).foregroundStyle(look.accentColor)
-                .accessibilityAddTraits(.isHeader)
+            // Heading text uses the theme's text color (AA on every theme); the accent
+            // is a graphic marker only, where 3:1 is the requirement.
+            HStack(spacing: Theme.space2) {
+                RoundedRectangle(cornerRadius: 2).fill(look.accentColor).frame(width: 4, height: 18).accessibilityHidden(true)
+                Text(RoomRegistry.label(RoomRegistry.widgetLabels, widget.type))
+                    .font(look.font(.headline, weight: .semibold)).foregroundStyle(look.text)
+                    .accessibilityAddTraits(.isHeader)
+            }
             inner
         }
         .padding(Theme.space3)
@@ -109,8 +114,10 @@ struct RoomWidgetView: View {
 
     @ViewBuilder private var memories: some View {
         NavigationLink(value: MemoriesRoute(scope: .room(username: room.owner.username))) {
-            Label("Browse memories", systemImage: "clock.arrow.circlepath").font(look.font(.body))
-                .foregroundStyle(look.accentColor).frame(minHeight: Theme.touchTarget)
+            Label { Text("Browse memories").foregroundStyle(look.text) } icon: {
+                Image(systemName: "clock.arrow.circlepath").foregroundStyle(look.accentColor)
+            }
+            .font(look.font(.body)).frame(minHeight: Theme.touchTarget)
         }
     }
 

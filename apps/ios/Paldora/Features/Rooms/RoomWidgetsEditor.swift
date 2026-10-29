@@ -23,7 +23,7 @@ struct RoomWidgetsEditor: View {
             Toggle(name, isOn: Binding(get: { widget.enabled }, set: { model.setEnabled(widget.type, $0) }))
                 .frame(minHeight: Theme.touchTarget)
                 .accessibilityIdentifier("widget-toggle-\(widget.type)")
-            HStack {
+            FlowLayout {
                 Picker("Placement", selection: Binding(get: { widget.placement }, set: { model.setPlacement(widget.type, $0) })) {
                     Text("Main").tag("main")
                     Text("Sidebar").tag("sidebar")

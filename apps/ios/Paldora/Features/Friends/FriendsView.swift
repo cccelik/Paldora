@@ -47,7 +47,7 @@ struct FriendsView: View {
     private var addSection: some View {
         Section {
             FieldContainer(title: "Their username") {
-                TextField("username", text: $username)
+                TextField("username", text: $username, prompt: Text("username").foregroundStyle(Theme.textMuted))
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                     .submitLabel(.send).onSubmit(send)
                     .accessibilityIdentifier("friend-username-field")
@@ -58,7 +58,7 @@ struct FriendsView: View {
                 .disabled(model.isSending || username.trimmingCharacters(in: .whitespaces).isEmpty)
                 .listRowBackground(Theme.canvas)
                 .accessibilityIdentifier("send-friend-request")
-        } header: { Text("Add a friend").font(Typography.label) }
+        } header: { SectionHeader("Add a friend") }
     }
 
     private var requestsSection: some View {
@@ -78,7 +78,7 @@ struct FriendsView: View {
                         .buttonStyle(QuietButtonStyle())
                 }
             }
-        } header: { Text("Requests").font(Typography.label) }
+        } header: { SectionHeader("Requests") }
     }
 
     private var friendsSection: some View {
@@ -99,11 +99,13 @@ struct FriendsView: View {
             LoadMoreFooter(isLoading: model.friends.isLoadingMore, error: model.friends.inlineError,
                            hasMore: model.friends.hasMore, loadMore: { await model.friends.loadMore() })
                 .listRowBackground(Theme.canvas)
-        } header: { Text("Your friends").font(Typography.label) }
+        } header: { SectionHeader("Your friends") }
     }
 
     private var blockedSection: some View {
         Section {
+            Text("Blocking ends a friendship and withdraws requests and invitations between you. They aren't told.")
+                .font(Typography.caption).foregroundStyle(Theme.textMuted).listRowBackground(Theme.canvas)
             if model.blocked.items.isEmpty { empty("You haven't blocked anyone.") }
             ForEach(model.blocked.items) { user in
                 PersonRowView(name: user.displayName, username: user.username, note: nil) {
@@ -111,8 +113,7 @@ struct FriendsView: View {
                         .accessibilityIdentifier("unblock-user")
                 }
             }
-        } header: { Text("Blocked people").font(Typography.label) }
-        footer: { Text("Blocking ends a friendship and withdraws requests and invitations between you. They aren't told.").font(Typography.caption) }
+        } header: { SectionHeader("Blocked people") }
     }
 
     private func empty(_ text: String) -> some View {
@@ -142,7 +143,7 @@ struct PersonRowView<Actions: View>: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityHint("Opens their Room")
-            HStack { actions }
+            FlowLayout { actions }
         }
         .listRowBackground(Theme.surface)
         .accessibilityElement(children: .contain)

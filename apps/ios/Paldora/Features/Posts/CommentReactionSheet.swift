@@ -30,10 +30,11 @@ struct CommentReactionSheet: View {
         if model.counts.isEmpty {
             Text("No reactions yet").font(Typography.callout).foregroundStyle(Theme.textMuted)
         } else {
-            HStack {
+            FlowLayout {
                 ForEach(model.counts, id: \.kind) { entry in
                     Text("\(ReactionSection.display(entry.kind)) \(entry.count)").font(Typography.label)
                         .padding(.horizontal, Theme.space3).frame(minHeight: 32)
+                        .foregroundStyle(Theme.text)
                         .background(Theme.highlight, in: Capsule())
                         .accessibilityLabel("\(entry.count) \(ReactionSection.display(entry.kind)) reactions")
                 }
@@ -51,8 +52,8 @@ struct CommentReactionSheet: View {
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
-        HStack {
-            TextField("Any emoji", text: $custom)
+        AdaptiveStack {
+            TextField("Any emoji", text: $custom, prompt: Text("Any emoji").foregroundStyle(Theme.textMuted))
                 .padding(.horizontal, Theme.space3).frame(minHeight: Theme.touchTarget)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
                 .onChange(of: custom) { custom = custom.last.map(String.init) ?? "" }

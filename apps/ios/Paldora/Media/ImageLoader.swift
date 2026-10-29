@@ -7,7 +7,9 @@ enum LoadedImage {
     /// 404 (or an undecodable body): show the neutral placeholder.
     case unavailable
     case failed
-    /// The session ended; callers hand this to the app's session handling.
+    /// 429: backed off for a while; offer a retry rather than a permanent failure.
+    case rateLimited
+    /// The session ended. The loader has already told the app (`onSessionEnded`).
     case sessionEnded
 }
 
@@ -28,13 +30,20 @@ final class ImageLoader {
     private let cache = NSCache<NSString, UIImage>()
     private var flights: [Key: Flight] = [:]
     private var misses: [Key: Date] = [:]
+    private var backoffs: [Key: Date] = [:]
+    private var sessionHasEnded = false
     private let missTTL: TimeInterval
+    private let backoffTTL: TimeInterval
+    /// Called once when a token refresh could not rescue a 401.
+    var onSessionEnded: (@MainActor () -> Void)?
     private let now: () -> Date
     private(set) var fetchCount = 0
 
-    init(client: any MediaClient, missTTL: TimeInterval = 30, now: @escaping () -> Date = Date.init) {
+    init(client: any MediaClient, missTTL: TimeInterval = 30, backoffTTL: TimeInterval = 45,
+         now: @escaping () -> Date = Date.init) {
         self.client = client
         self.missTTL = missTTL
+        self.backoffTTL = backoffTTL
         self.now = now
         cache.countLimit = 200
         cache.totalCostLimit = 64 * 1024 * 1024
@@ -47,13 +56,23 @@ final class ImageLoader {
     func clear() {
         cache.removeAllObjects()
         misses.removeAll()
+        backoffs.removeAll()
         flights.values.forEach { $0.task.cancel() }
         flights.removeAll()
     }
 
+    /// A user-initiated retry: forget any remembered miss or backoff for this image.
+    func retry(_ id: String, _ variant: MediaVariant) {
+        let key = Key(id: id, variant: variant)
+        misses[key] = nil
+        backoffs[key] = nil
+    }
+
     func image(_ id: String, _ variant: MediaVariant) async -> LoadedImage {
         let key = Key(id: id, variant: variant)
+        if sessionHasEnded { return .sessionEnded }
         if let hit = cache.object(forKey: Self.name(key)) { return .image(hit) }
+        if let until = backoffs[key], until > now() { return .rateLimited }
         if let missedAt = misses[key], now().timeIntervalSince(missedAt) < missTTL { return .unavailable }
         let flight = flights[key] ?? start(key)
         flight.waiters += 1
@@ -63,6 +82,11 @@ final class ImageLoader {
             Task { @MainActor in self.release(key, flight) }
         }
         if !Task.isCancelled { release(key, flight, finished: true) }
+        if case .sessionEnded = result, !sessionHasEnded {
+            sessionHasEnded = true
+            clear()
+            onSessionEnded?()
+        }
         return result
     }
 
@@ -77,7 +101,14 @@ final class ImageLoader {
                 return .image(image)
             } catch let error as MediaError {
                 if error == .unavailable { self?.misses[key] = self?.now() }
-                return error == .unauthenticated ? .sessionEnded : (error == .unavailable ? .unavailable : .failed)
+                switch error {
+                case .unauthenticated: return .sessionEnded
+                case .unavailable: return .unavailable
+                case .rateLimited:
+                    self?.backoffs[key] = (self?.now() ?? Date()).addingTimeInterval(self?.backoffTTL ?? 45)
+                    return .rateLimited
+                default: return .failed
+                }
             } catch {
                 return .failed
             }

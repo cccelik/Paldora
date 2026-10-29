@@ -12,7 +12,7 @@ struct LifeUpdateFields: View {
                     FieldContainer(title: LifeUpdateForm.label(key)) {
                         TextField(LifeUpdateForm.label(key), text: Binding(
                             get: { form.text(key) }, set: { form.set(key, $0) }
-                        ), axis: .vertical)
+                        ), prompt: Text(LifeUpdateForm.label(key)).foregroundStyle(Theme.textMuted), axis: .vertical)
                             .lineLimit(1...6)
                             .padding(.vertical, Theme.space2)
                             .accessibilityIdentifier("section-\(key.rawValue)")

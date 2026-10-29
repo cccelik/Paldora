@@ -38,7 +38,7 @@ struct FeedItemCard: View {
         edited: Bool, tag: String? = nil, @ViewBuilder body: () -> Body
     ) -> some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
-            HStack(spacing: Theme.space3) {
+            AdaptiveStack {
                 AvatarView(mediaId: avatar, name: author)
                 VStack(alignment: .leading, spacing: 2) {
                 Text(author).font(Typography.headline).foregroundStyle(Theme.text)

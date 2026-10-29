@@ -96,11 +96,10 @@ struct CommentsSection: View {
                 Text(model.authorName(comment.authorUid)).font(Typography.label).foregroundStyle(Theme.text)
             }
             Text(comment.text).font(Typography.body).foregroundStyle(Theme.text)
-            HStack(spacing: 0) {
-                Text(Formatting.relativeTime(comment.createdAt)
-                     + (comment.updatedAt > comment.createdAt ? " \u{00B7} edited" : ""))
-                    .font(Typography.caption).foregroundStyle(Theme.textMuted)
-                Spacer()
+            Text(Formatting.relativeTime(comment.createdAt)
+                 + (comment.updatedAt > comment.createdAt ? " \u{00B7} edited" : ""))
+                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+            FlowLayout(spacing: 0) {
                 Button("React") { reacting = comment }.buttonStyle(QuietButtonStyle())
                     .accessibilityIdentifier("react-comment")
                 if !indented {
@@ -136,7 +135,7 @@ struct CommentComposer: View {
             }
             if let error = comments.error { InlineMessage(text: error) }
             HStack(alignment: .bottom, spacing: Theme.space2) {
-                TextField("Add a comment", text: $comments.draft, axis: .vertical)
+                TextField("Add a comment", text: $comments.draft, prompt: Text("Add a comment").foregroundStyle(Theme.textMuted), axis: .vertical)
                     .lineLimit(1...4)
                     .font(Typography.body)
                     .padding(.horizontal, Theme.space3).padding(.vertical, Theme.space2)
@@ -165,12 +164,11 @@ struct CommentComposer: View {
     }
 
     private func banner(_ title: String, detail: String?) -> some View {
-        HStack {
+        AdaptiveStack {
             VStack(alignment: .leading) {
                 Text(title).font(Typography.label).foregroundStyle(Theme.goldText)
                 if let detail { Text(detail).font(Typography.caption).foregroundStyle(Theme.textMuted).lineLimit(1) }
             }
-            Spacer()
             Button("Cancel") { comments.cancelComposer() }.buttonStyle(QuietButtonStyle())
         }
     }
