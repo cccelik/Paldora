@@ -176,6 +176,20 @@ describe('hosted config check', () => {
     ).toMatch(/\.firebaserc alias staging uses a demo-/);
   });
 
+  it('allows the public contact address variable and keeps it non-secret', () => {
+    const withContact = (extra: string) =>
+      failuresAfter('apps/web/apphosting.yaml', (t) =>
+        t.replace(
+          'env:\n',
+          `env:\n  - variable: NEXT_PUBLIC_CONTACT_EMAIL\n${extra}`,
+        ),
+      );
+    expect(withContact('    value: reports@paldora.example\n')).toBe('');
+    expect(withContact('    secret: some-secret\n')).toMatch(
+      /NEXT_PUBLIC_CONTACT_EMAIL must not be a secret/,
+    );
+  });
+
   it('rejects NEXT_PUBLIC_ variables outside the allowlist', () => {
     expect(
       failuresAfter('apps/web/apphosting.yaml', (t) =>

@@ -1,5 +1,6 @@
 import {
   PERMISSIONS_POLICY,
+  ROBOTS_TAG,
   securityHeaders,
 } from '@/lib/security/security-headers';
 import { describe, expect, it } from 'vitest';
@@ -22,6 +23,14 @@ describe('security headers', () => {
   it('send HSTS only when deployed', () => {
     expect(header(false, 'Strict-Transport-Security')).toBeUndefined();
     expect(header(true, 'Strict-Transport-Security')).toContain('max-age=');
+  });
+
+  it('tell crawlers not to index anything, in every environment', () => {
+    for (const deployed of [false, true]) {
+      expect(header(deployed, 'X-Robots-Tag')).toBe(ROBOTS_TAG);
+    }
+    expect(ROBOTS_TAG).toContain('noindex');
+    expect(ROBOTS_TAG).toContain('nofollow');
   });
 
   it('never set a second Content-Security-Policy', () => {

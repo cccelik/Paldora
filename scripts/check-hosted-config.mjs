@@ -5,7 +5,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const HOSTED_REGION = 'europe-west4';
-export const NEXT_PUBLIC_ALLOWLIST = ['NEXT_PUBLIC_WEB_URL'];
+export const NEXT_PUBLIC_ALLOWLIST = [
+  'NEXT_PUBLIC_WEB_URL',
+  'NEXT_PUBLIC_CONTACT_EMAIL',
+];
 const FORBIDDEN_HOSTED_TEXT = [
   [/\blocalhost\b/i, 'localhost'],
   [/\b127\.0\.0\.1\b/, '127.0.0.1'],

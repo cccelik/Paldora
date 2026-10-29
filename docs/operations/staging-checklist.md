@@ -210,6 +210,8 @@ Rules for using this list:
       `X-Frame-Options: DENY`, `Referrer-Policy`,
       `Cross-Origin-Opener-Policy`, and `Permissions-Policy` allowing camera for
       self only. Local reference: `security-headers.test.ts`.
+- [ ] `X-Robots-Tag: noindex, nofollow, noarchive` is present on every
+      response and `/robots.txt` disallows all crawlers (the site is private).
 - [ ] The host or CDN does not add a second CSP or strip these headers.
 - [ ] TLS is valid for the exact origin; HTTP redirects to HTTPS.
 - [ ] `pnpm scan:client-bundle` passes on the exact staging build, and a
@@ -317,8 +319,13 @@ Rules for using this list:
 
 - [ ] Owner creates and tests the external appeal/moderation email address
       (currently unset).
+- [ ] Owner sets `NEXT_PUBLIC_CONTACT_EMAIL` in the App Hosting overlay
+      (`apps/web/apphosting.<env>.yaml`, OWNER ACTION). Staging and production
+      refuse to start web requests without a valid plain address
+      (`assertHostedEnvironment`). `/contact` shows it as a `mailto:` link.
 - [ ] The address is shown only after it works; an unset address is not
-      presented as an appeal channel.
+      presented as an appeal channel (locally `/contact` says no address is
+      configured).
 - [ ] Response-time expectation and an owner for the inbox are defined.
 - [ ] Private beta: the invitation contact remains the review path until the
       approved address exists (`phase-9.md`).
@@ -377,8 +384,14 @@ owner makes a separate, explicit decision:
 - [ ] Cost under expected public load is measured and a budget with alerts
       is in place.
 - [ ] Legal and policy documents the owner requires (terms, privacy notice,
-      data processing and retention statements) are published. This repository
-      contains no such decision; the owner must define them.
+      data processing and retention statements) are published. Public pages
+      exist at `/privacy`, `/terms`, `/guidelines` and `/contact`, linked from
+      sign-in, the landing page and Settings. Privacy and terms are marked
+      "Draft pending owner and legal review" and describe only what the code
+      does. The owner must still obtain legal review, decide operator identity,
+      governing law, liability wording, age requirements, backup and log
+      retention statements, then remove the draft notice and bump
+      `LEGAL_LAST_UPDATED` in `apps/web/app/lib/legal.ts`.
 - [ ] A signup design exists (verification, abuse resistance, invitation or
       open) and has been security reviewed. None exists today.
 - [ ] Owner approval is recorded in `docs/rebuild-plan.md` or an ADR.

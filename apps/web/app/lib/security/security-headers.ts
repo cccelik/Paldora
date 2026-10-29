@@ -12,6 +12,12 @@
 export const PERMISSIONS_POLICY =
   'camera=(self), microphone=(), geolocation=(), browsing-topics=()';
 
+/**
+ * Paldora is invite-only and private: no page, file or error is for search
+ * engines. Sent on every response, including `/robots.txt` and the icons.
+ */
+export const ROBOTS_TAG = 'noindex, nofollow, noarchive';
+
 export interface SecurityHeader {
   readonly key: string;
   readonly value: string;
@@ -26,6 +32,7 @@ export function securityHeaders(options: {
     { key: 'X-Frame-Options', value: 'DENY' },
     { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
     { key: 'Permissions-Policy', value: PERMISSIONS_POLICY },
+    { key: 'X-Robots-Tag', value: ROBOTS_TAG },
     ...(options.deployed
       ? [
           {

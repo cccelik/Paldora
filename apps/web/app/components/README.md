@@ -7,6 +7,7 @@ services and same-origin route handlers.
 
 | Area                    | Active components                                                                           |
 | ----------------------- | ------------------------------------------------------------------------------------------- |
+| Public info pages       | `LegalPage`, `LegalSection`, `LegalLinks` (`components/legal`; routes in `app/(public)`)    |
 | Shell and feedback      | `AppShell`, `AppNav`, `ToastProvider`, `RealtimeBridge`                                     |
 | Boxes and social        | `MemberList`, `BoxSections`, friendship and invitation controls                             |
 | Posts and conversations | `FirebaseBoxFeed`, `FirebaseCommentThreads`, `FirebasePostReactions`, `PostComposer`        |

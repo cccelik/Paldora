@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
   description:
     'A private living scrapbook for your friendships, tiny moments, and the chapters you want to keep.',
-  robots: { index: true, follow: false },
+  robots: { index: false, follow: false, nocache: true },
 };
 
 export const viewport: Viewport = {

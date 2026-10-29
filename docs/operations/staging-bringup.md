@@ -74,9 +74,11 @@ paldora-firebase-web-api-key --project <STAGING>` (paste the Web API key
     and grant it only: Firestore access, Auth access for session verification,
     Storage object access, Secret Manager secret accessor on the one secret, and
     the App Hosting runtime role. Record the exact roles (**verify** role names).
-16. **OWNER ACTION.** Add the two per-environment values (real project id and
-    the backend's exact HTTPS origin) to `apps/web/apphosting.staging.yaml`
-    (`FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_WEB_URL`; `FIREBASE_STORAGE_BUCKET` only
+16. **OWNER ACTION.** Add the three per-environment values (real project id,
+    the backend's exact HTTPS origin and the contact mailbox) to `apps/web/apphosting.staging.yaml`
+    (`FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_WEB_URL`, and `NEXT_PUBLIC_CONTACT_EMAIL`,
+    the monitored reports and appeals mailbox shown on `/contact`, a plain
+    address that web requests fail closed without; `FIREBASE_STORAGE_BUCKET` only
     if the bucket is not the default), run `pnpm hosted:check`, commit, and roll
     out. Never set any `*_EMULATOR_HOST`.
 17. Confirm the rollout built with pnpm/Node 24 (**verify**) and the first

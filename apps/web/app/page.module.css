@@ -103,3 +103,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.footer {
+  max-width: var(--pal-size-content-max);
+  margin: 0 auto;
+  padding: 0 var(--pal-space-4)
+    calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-8));
+}

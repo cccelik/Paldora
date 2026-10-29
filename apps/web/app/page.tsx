@@ -1,3 +1,4 @@
+import { LegalLinks } from '@/components/legal/legal-links';
 import { buttonClassName, Wordmark } from '@/components/ui';
 import styles from '@/page.module.css';
 import Link from 'next/link';
@@ -55,6 +56,9 @@ export default function LandingPage() {
           </ul>
         </section>
       </main>
+      <footer className={styles.footer}>
+        <LegalLinks />
+      </footer>
     </>
   );
 }

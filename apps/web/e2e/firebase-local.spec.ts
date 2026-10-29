@@ -833,7 +833,7 @@ test('Firebase notifications, report receipts, staff takedown and SSE', async ({
       page.getByText('Report received. Thank you for letting us know.'),
     ).toBeVisible();
     await page.goto('/settings/reports');
-    await expect(page.getByText('privacy')).toBeVisible();
+    await expect(page.getByText('privacy', { exact: true })).toBeVisible();
 
     const staff = await staffContext.newPage();
     await signIn(staff, `phase6-staff-${suffix}@example.invalid`);

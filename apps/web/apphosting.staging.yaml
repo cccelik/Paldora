@@ -2,15 +2,19 @@
 # precedence against current official docs:
 # https://firebase.google.com/docs/app-hosting/configure).
 #
-# OWNER ACTION at bring-up (docs/operations/staging-bringup.md): add the two
-# entries below that are commented out, using the REAL project id and the
-# backend's exact HTTPS origin. They are intentionally absent from the
-# repository until those values exist; no placeholder ids are committed.
+# OWNER ACTION at bring-up (docs/operations/staging-bringup.md): add the three
+# entries below that are commented out, using the REAL project id, the
+# backend's exact HTTPS origin and a working, monitored contact mailbox. They
+# are intentionally absent from the repository until those values exist; no
+# placeholder ids or addresses are committed.
 #   - variable: FIREBASE_PROJECT_ID
 #     value: <real staging project id>
 #   - variable: NEXT_PUBLIC_WEB_URL
 #     value: https://<exact staging origin>
-# The web app fails closed at the first Firebase request if they are missing.
+#   - variable: NEXT_PUBLIC_CONTACT_EMAIL
+#     value: <monitored reports and appeals mailbox>
+# The web app fails closed at the first Firebase request if any is missing.
+# NEXT_PUBLIC_CONTACT_EMAIL is shown on /contact; it must be a plain address.
 env:
   - variable: PALDORA_ENV
     value: staging

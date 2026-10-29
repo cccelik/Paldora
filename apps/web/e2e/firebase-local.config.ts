@@ -16,6 +16,7 @@ export default defineConfig({
     '**/firebase-local.spec.ts',
     '**/web-hardening.spec.ts',
     '**/web-keyboard.spec.ts',
+    '**/public-pages.spec.ts',
   ],
   fullyParallel: false,
   workers: 1,

@@ -1,4 +1,5 @@
 import styles from '@/components/auth/auth-layout.module.css';
+import { LegalLinks } from '@/components/legal/legal-links';
 import { Wordmark } from '@/components/ui';
 import { type ReactNode } from 'react';
 /** The frame for signed-out pages: sign-in and password recovery. */
@@ -36,6 +37,7 @@ export function AuthLayout({
         <p className={styles.footnote}>
           Paldora is in private testing. Accounts are created by invitation.
         </p>
+        <LegalLinks />
       </main>
     </div>
   );
