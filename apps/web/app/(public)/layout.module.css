@@ -31,5 +31,5 @@
 
 .footer {
   padding-top: var(--pal-space-4);
-  border-top: var(--pal-border-width-hairline) solid var(--pal-text-muted);
+  border-top: var(--pal-border-width-hairline) solid var(--pal-text-secondary);
 }

@@ -1,0 +1,159 @@
+# UI overhaul: "Hearth & Brass" (Paldora v2 design kit)
+
+Status: in progress (started 2026-11-07). Step 0 (tokens and fonts) done 2026-11-07, see "Step 0 result". Owner instruction: implement the Figma
+kit across the product with reusable components. This plan supersedes the
+palette in `legacy/design/design-system.md` (Obsidian Ink / Antique Gold /
+Champagne / Warm Ivory / Soft Lavender) where they differ; CLAUDE.md §I is
+updated when the tokens land.
+
+Figma file: `RAZq5RS2gSwVa4xvxbk0gZ` ("Paldora · iOS prototypes").
+Read it with the Figma MCP (create a session first, then `get_design_context`
+per frame; load the `figma-design-to-code` guidance before the first call).
+
+| Page                           | Node id     | Content                                                                    |
+| ------------------------------ | ----------- | -------------------------------------------------------------------------- |
+| Start here                     | 30:4        | Build order, conventions                                                   |
+| 01 Foundations                 | 30:5        | Colour (Light/Dark), type, spacing/radius/elevation, icons, layout, motion |
+| 02 Components                  | 30:6        | Variant sets bound to colour variables                                     |
+| 03 Mobile flows · Light        | 30:7        | F1–F12, 83 screens, each with notes (Route, API, States, Components)       |
+| 04 Mobile flows · Dark         | 30:8        | Same positions and names, Dark mode                                        |
+| 05 / 06 Web · Light / Dark     | 19:3 / 30:9 | 1440 desktop layouts (sidebar 264 + content + right rail)                  |
+| 07 Room themes                 | 30:10       | 14 presets from one token-bound template                                   |
+| Prototype · Mobile key screens | 19:2        | Clickable 15-screen prototype                                              |
+
+## Conventions from the kit (binding)
+
+- Never hard-code hex. Dark is a variable mode, not separate colours.
+- `bg/inverse` (Life Updates, tab bar, toasts) stays dark in both modes; text
+  on it is `text/on-inverse`. `action/primary` flips (espresso to cream in Dark).
+- Room canvases use `room/*` tokens only. App chrome, navigation and privacy
+  controls stay on app tokens and are never themeable.
+- Privacy copy: never imply public reach, never claim "zero-knowledge";
+  blocked, hidden and missing look identical.
+- Accessibility: 44 pt targets, Dynamic Type / zoom to 200%, VoiceOver labels on
+  icon buttons, Reduce Motion respected.
+- Loading uses skeletons, never spinners (except inside buttons). Floating
+  solid tab bar, no glass. Never stack more than one overlay.
+- Screens are named like "3.4 · Box detail". Each carries a note listing Route,
+  API, States and Components: implement the listed states (loading, empty,
+  error, offline).
+- F11 (encrypted Boxes) is **planned**: do not build it (CLAUDE.md §D). F12
+  (search, collections, recap, Paldora+) is later scope: do not build.
+- Existing behavior, authorization and contract rules do not change: this is a
+  presentation overhaul on the same callables (iOS) and server actions (web).
+
+## Tokens ("Paldora · Color" variables; light / dark)
+
+bg: canvas `#F4EFE7`/`#14110E`, surface `#FBF8F3`/`#1D1915`, sunken
+`#EAE2D5`/`#27221D`, inverse `#2A2420`/`#2C2621`, inverse-raised
+`#3A322C`/`#3A332C`, paper `#FFFFFF`/`#F1EBE1`. text: primary `#1D1A17`/`#F2EBDF`,
+secondary `#4F473F`/`#C9BDAB`, muted `#8C8276`/`#908574`, on-inverse `#FBF8F3`
+both. border: hairline `#E2D9CB`/`#352E27`. accent: brass `#A9823F`/`#C39A52`,
+brass-text `#7A5B24`/`#D9B26A`, brass-soft `#F1E6CF`/`#3A2F1E`, ember
+`#B65A3C`/`#D67A5C`, ember-soft `#F6E1D6`/`#3D241B`, sage `#6F7D64`/`#9AAA8C`,
+sage-soft `#E4E8DC`/`#263022`. action: primary `#2A2420`/`#F2EBDF`, on-primary
+`#FBF8F3`/`#1D1A17`. focus ring `#8D6CD1`/`#C8B7E8`. status: danger
+`#A54B46`/`#E08A84`, success `#5B7255`/`#9DB596`. nav: active `#FBF8F3`/`#F2EBDF`,
+on-active `#1D1A17` both.
+
+Type: Fraunces (display, editorial), Geist (UI), Geist Mono (code, IDs). Styles
+(font · size/line): Display/XL Fraunces Light 76/78, Display/L 44/48,
+Display/M 34/38, Display/Accent Italic Fraunces Light Italic 34/38, Title/L
+Fraunces Regular 26/32, Title/M 22/28, Title/S 18/24, Body/L Geist 17/26,
+Body/M 15/21, Body/S 13/18, Label/M Geist Medium 15/20, Label/S 13/18,
+Label/XS 10/12, Eyebrow Geist Medium 11/14, Caption Geist 12/16.
+
+Spacing 4 8 12 16 20 24 32 40 48 64 80 (mobile gutters 20). Radius: sm 8,
+md 16 (inputs), lg 24 (cards), xl 28 (hero), sheet 30, pill 999. Elevation:
+Soft (cards), Lift (floating, inverse cards, tab bar). Motion: fast 120 ms,
+standard 200 ms, slow 320 ms, easing cubic-bezier(0.2, 0.8, 0.2, 1).
+Icons: 24 px grid, 1.6 px round stroke (1.8 active); SF Symbols equivalents on
+iOS where they exist, the Figma set is the source of truth for web.
+
+## Components (names map 1:1 to SwiftUI views and React components)
+
+Button (Primary, Secondary, Accent, Ghost, Danger × L 56 / M 48 / S 36 × Default,
+Disabled; pill), IconButton (Surface, Primary, Plain × 40/52), Chip (Default,
+Selected, Accent, Soft, Brass), TextField (Default, Focus brass 1.5, Error danger
+1.5 + message, Placeholder; label eyebrow + 54 input), Toggle (46×28, on brass),
+Radio (22), Checkbox (22, radius 7), Avatar (Photo/Initials Fraunces × S28 M40 L56
+XL104, brass ring for you), Banner (Info, Success, Warning, Danger), Toast
+(Action bottom inverse, Notification top surface), ListRow (Chevron, Toggle,
+Radio, Value, Danger; inside a surface group radius 22; height 54 / 62 with
+subtitle), SegmentedControl (2-4), PostCard (Photo, Text), LifeUpdateCard (Feed),
+BoxCard (cover 128, colour dot, member stack, "n new" chip), Comment (Root,
+Reply indented 44, Deleted), NotificationRow (Unread ember dot, Read), UploadTile
+(Done, Uploading, Processing, Failed, Add; max 4), NavBar (Back, Close, Action;
+40 px circular buttons, centered Label/M title), Skeleton (Post), Overlays
+(BottomSheet over 50% inverse scrim, Dialog), TabBar (iOS floating pill, five
+tabs: Home, Boxes, My Room, Notifications, Profile), Web Sidebar (264, seven
+items: Home, Boxes, My Room, Memories, Activity, Friends, Settings).
+
+## Build order
+
+0. **Done (2026-11-07).** Tokens and fonts, all platforms (single source
+   `design/tokens`; regenerate CSS, Swift, Kotlin; contrast tests). ADR 024.
+1. Component library: iOS SwiftUI first (`apps/ios/Paldora/DesignSystem`), then
+   the web equivalents (`apps/web/app/components/ui`, CSS Modules on the
+   generated `--pal-*` tokens).
+2. iOS screens by flow, F1 to F10 (F11, F12 excluded), Light and Dark, with
+   every state in the notes, replacing the current views in place.
+3. Web screens (10 desktop layouts, mobile via the same components under
+   1024 px).
+4. Room themes (14) and Room canvas.
+5. Verification: unit and UI tests updated, accessibility audits, screenshots
+   compared with the Figma frames, docs and CLAUDE.md palette note.
+
+Each step lands as its own verified commit (gates in CLAUDE.md §M and the
+iOS/web test scripts).
+
+## Step 0 result (2026-11-07)
+
+Verified against Figma `RAZq5RS2gSwVa4xvxbk0gZ` with `get_variable_defs` on
+42:8 (Light) and 42:127 (Dark), `get_design_context` on 42:246 (type),
+42:324 (spacing, radius, elevation) and 42:597 (layout, motion), and
+`get_variable_defs` on the 14 Room frames of page 07 (30:10).
+
+- **Colors:** every one of the 24 variables in both modes matches the values in
+  this plan exactly. No discrepancy. No `room/*` collection exists on the two
+  foundation frames; the Room values were read from the 14 preset frames.
+- **Extras the text list missed:** elevation Soft `0 6 24 0 rgba(61,43,26,0.07)`,
+  Lift `0 14 36 0 rgba(51,33,18,0.16)` (no Dark variant in Figma, same values
+  used); type tracking Display -2.5%, Title/L -1.5%, Title/M -1%, Eyebrow +14%
+  uppercase; focus border 1.5 px; layout constants (status bar 58, tab bar y
+  774, home indicator 34, web feed 660 + rail 388, column gap 40); Fraunces uses
+  SOFT 0, WONK 1.
+- **Room themes (page 07):** all 14 presets (canvas, surface, text, text-muted,
+  border) and each preset's default accent equal the current registry
+  (`room.preset.*`, `room.accent.*`). No value change. Structural note for
+  step 4: the template is a 402 by 874 frame with a theme label row (palette
+  icon + edit button), hero row (avatar + name), about card, music row (44 pt
+  disc + two lines), top-friends row of four 50 pt avatars, and a 115 pt photo
+  row; Room fonts remain system stacks (ADR 017).
+- **Contrast (AA, both modes):** all used pairs pass except Figma
+  `text/muted`: Light 3.29:1 on canvas, 3.56:1 on surface, 2.93:1 on sunken;
+  Dark 4.35:1 on sunken (passes 4.5 on canvas and surface in Dark). The value is
+  kept as designed and pinned as an exception. Existing small-text uses
+  (`--pal-text-muted` on web, `Theme.textMuted` on iOS) were repointed to
+  `text/secondary`. Decide in steps 1 to 3 whether Figma should darken
+  `text/muted` in Light; until then use it only for large text, icons and
+  decoration. Other pairs of note: focus ring 3.5 to 3.8:1 (meets the 3:1
+  non-text bar), brass on surface 3.33:1 (decorative only), ember 4.39:1 and
+  sage 4.14:1 on surface (not used for text).
+- **One addition not in Figma:** `accent/on-brass` `#1D1A17` (both modes), the
+  text on a brass fill, replaces the old `onAccent`.
+- **Aliases kept (web CSS only, `deprecated.*`):** `--pal-canvas`, `--pal-surface`,
+  `--pal-text`, `--pal-accent`, `--pal-accent-text`, `--pal-highlight`,
+  `--pal-success-text`, `--pal-warning-text`, `--pal-danger-text`,
+  `--pal-focus`, `--pal-on-accent`; `--pal-font-brand` and `--pal-font-editorial`
+  now point at Fraunces. Removed: `--pal-color-brand-*`, `--pal-color-text-dark-*`
+  (consumers migrated to `--pal-bg-inverse`, `--pal-text-on-inverse`,
+  `--pal-bg-paper`, `--pal-focus-ring`). iOS: `Theme.canvas/surface/text/...`
+  keep their names, mapped to v2; `PaldoraTokens.theme*`/`color*` flat names are
+  now `themeLightBg*` etc.
+- **Fonts:** Fraunces Light, Light Italic, Regular; Geist Regular, Medium,
+  SemiBold; Geist Mono Regular. Web uses variable woff2 through `next/font/local`
+  (Fraunces auto optical size); iOS uses static TTFs (Fraunces optical size is
+  fixed: 72 for Light, 24 for Regular, a choice, since Figma did not state one).
+- **Not done here:** components, screens, Room UI (steps 1 to 4). Kotlin output
+  is generated but still not compiled (no Android toolchain in CI yet).

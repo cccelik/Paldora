@@ -7,7 +7,7 @@
 
 .sectionDetail,
 .hint {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .invalid {

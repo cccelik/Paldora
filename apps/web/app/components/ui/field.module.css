@@ -9,7 +9,7 @@
 
 .optional {
   margin-inline-start: var(--pal-space-2);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
   font-weight: 400;
 }
@@ -56,7 +56,7 @@
 
 .prefix {
   padding-inline-start: var(--pal-space-4);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .prefix + input {
@@ -65,10 +65,10 @@
 
 .readOnly {
   background: var(--pal-surface);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .help {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
 }

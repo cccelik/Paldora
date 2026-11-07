@@ -9,7 +9,7 @@
       transparent
     );
   border-radius: var(--pal-radius-pill);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-caption);
   font-weight: 600;
   white-space: nowrap;

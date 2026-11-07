@@ -1,151 +1,453 @@
 {
-  "$description": "Paldora design tokens (W3C DTCG format). Single source for web CSS, Swift, and Kotlin. Primitives are copied verbatim from legacy/design/design-system.md. Edit here, then run `pnpm tokens:generate`.",
-  "color": {
-    "$type": "color",
-    "brand": {
-      "obsidian": { "$value": "#11100E" },
-      "softBlack": { "$value": "#191713" },
-      "gold": { "$value": "#C79A3B" },
-      "deepGold": { "$value": "#9C7424" },
-      "champagne": { "$value": "#F4E7C3" },
-      "ivory": { "$value": "#FAF7EF" },
-      "paper": { "$value": "#F4EFE5" },
-      "lavender": { "$value": "#C8B7E8" }
-    },
-    "text": {
-      "darkPrimary": { "$value": "#F8F1E0" },
-      "darkMuted": { "$value": "#B9AF9D" },
-      "lightPrimary": { "$value": "#171717" },
-      "lightMuted": { "$value": "#6E6250" }
-    },
-    "status": {
-      "success": { "$value": "#668060" },
-      "warning": { "$value": "#A96F2D" },
-      "danger": { "$value": "#A54B46" }
-    },
-    "accessible": {
-      "$description": "Approved 2026-10-18 (D7). Darkened text variants derived because deepGold (3.97:1), success (4.07:1), and warning (3.92:1) fail WCAG AA 4.5:1 as text on ivory/paper. Brand hues are preserved.",
-      "goldText": { "$value": "#88651F" },
-      "successText": { "$value": "#5B7255" },
-      "warningText": { "$value": "#936127" }
-    },
-    "focus": { "$value": "#8D6CD1" }
-  },
+  "$description": "Paldora design tokens (W3C DTCG format), Hearth & Brass v2 (ADR 024). Single source for web CSS, Swift, and Kotlin. Edit here, then run `pnpm tokens:generate`.",
   "theme": {
-    "$description": "Semantic tokens for the trusted application shell. Components use these, never brand primitives directly. Room themes are separate and scoped.",
+    "$description": "Hearth & Brass v2 semantic colors (ADR 024). Names mirror the Figma variables color/<group>/<name>; Light and Dark are modes with identical names. Components use these, never hex. `accent.onBrass` is the only value not in the Figma file (text on a brass fill, replaces the old onAccent). Room themes are separate and scoped.",
     "light": {
       "$type": "color",
-      "canvas": { "$value": "{color.brand.ivory}" },
-      "surface": { "$value": "{color.brand.paper}" },
-      "text": { "$value": "{color.text.lightPrimary}" },
-      "textMuted": { "$value": "{color.text.lightMuted}" },
-      "accent": { "$value": "{color.brand.gold}" },
-      "accentText": { "$value": "{color.accessible.goldText}" },
-      "highlight": { "$value": "{color.brand.champagne}" },
-      "emotional": { "$value": "{color.brand.lavender}" },
-      "successText": { "$value": "{color.accessible.successText}" },
-      "warningText": { "$value": "{color.accessible.warningText}" },
-      "dangerText": { "$value": "{color.status.danger}" },
-      "focus": { "$value": "{color.focus}" },
-      "onAccent": { "$value": "{color.brand.obsidian}" }
+      "bg": {
+        "canvas": {
+          "$value": "#F4EFE7"
+        },
+        "surface": {
+          "$value": "#FBF8F3"
+        },
+        "sunken": {
+          "$value": "#EAE2D5"
+        },
+        "inverse": {
+          "$value": "#2A2420"
+        },
+        "inverseRaised": {
+          "$value": "#3A322C"
+        },
+        "paper": {
+          "$value": "#FFFFFF"
+        }
+      },
+      "text": {
+        "primary": {
+          "$value": "#1D1A17"
+        },
+        "secondary": {
+          "$value": "#4F473F"
+        },
+        "muted": {
+          "$value": "#8C8276"
+        },
+        "onInverse": {
+          "$value": "#FBF8F3"
+        }
+      },
+      "border": {
+        "hairline": {
+          "$value": "#E2D9CB"
+        }
+      },
+      "accent": {
+        "brass": {
+          "$value": "#A9823F"
+        },
+        "brassText": {
+          "$value": "#7A5B24"
+        },
+        "brassSoft": {
+          "$value": "#F1E6CF"
+        },
+        "ember": {
+          "$value": "#B65A3C"
+        },
+        "emberSoft": {
+          "$value": "#F6E1D6"
+        },
+        "sage": {
+          "$value": "#6F7D64"
+        },
+        "sageSoft": {
+          "$value": "#E4E8DC"
+        },
+        "onBrass": {
+          "$value": "#1D1A17"
+        }
+      },
+      "action": {
+        "primary": {
+          "$value": "#2A2420"
+        },
+        "onPrimary": {
+          "$value": "#FBF8F3"
+        }
+      },
+      "focus": {
+        "ring": {
+          "$value": "#8D6CD1"
+        }
+      },
+      "status": {
+        "danger": {
+          "$value": "#A54B46"
+        },
+        "success": {
+          "$value": "#5B7255"
+        }
+      },
+      "nav": {
+        "active": {
+          "$value": "#FBF8F3"
+        },
+        "onActive": {
+          "$value": "#1D1A17"
+        }
+      }
     },
     "dark": {
       "$type": "color",
-      "canvas": { "$value": "{color.brand.obsidian}" },
-      "surface": { "$value": "{color.brand.softBlack}" },
-      "text": { "$value": "{color.text.darkPrimary}" },
-      "textMuted": { "$value": "{color.text.darkMuted}" },
-      "accent": { "$value": "{color.brand.gold}" },
-      "accentText": { "$value": "{color.brand.gold}" },
-      "highlight": { "$value": "{color.brand.champagne}" },
-      "emotional": { "$value": "{color.brand.lavender}" },
-      "successText": { "$value": "#9DB596" },
-      "warningText": { "$value": "#D9A066" },
-      "dangerText": { "$value": "#E08A84" },
-      "focus": { "$value": "{color.brand.lavender}" },
-      "onAccent": { "$value": "{color.brand.obsidian}" }
+      "bg": {
+        "canvas": {
+          "$value": "#14110E"
+        },
+        "surface": {
+          "$value": "#1D1915"
+        },
+        "sunken": {
+          "$value": "#27221D"
+        },
+        "inverse": {
+          "$value": "#2C2621"
+        },
+        "inverseRaised": {
+          "$value": "#3A332C"
+        },
+        "paper": {
+          "$value": "#F1EBE1"
+        }
+      },
+      "text": {
+        "primary": {
+          "$value": "#F2EBDF"
+        },
+        "secondary": {
+          "$value": "#C9BDAB"
+        },
+        "muted": {
+          "$value": "#908574"
+        },
+        "onInverse": {
+          "$value": "#FBF8F3"
+        }
+      },
+      "border": {
+        "hairline": {
+          "$value": "#352E27"
+        }
+      },
+      "accent": {
+        "brass": {
+          "$value": "#C39A52"
+        },
+        "brassText": {
+          "$value": "#D9B26A"
+        },
+        "brassSoft": {
+          "$value": "#3A2F1E"
+        },
+        "ember": {
+          "$value": "#D67A5C"
+        },
+        "emberSoft": {
+          "$value": "#3D241B"
+        },
+        "sage": {
+          "$value": "#9AAA8C"
+        },
+        "sageSoft": {
+          "$value": "#263022"
+        },
+        "onBrass": {
+          "$value": "#1D1A17"
+        }
+      },
+      "action": {
+        "primary": {
+          "$value": "#F2EBDF"
+        },
+        "onPrimary": {
+          "$value": "#1D1A17"
+        }
+      },
+      "focus": {
+        "ring": {
+          "$value": "#C8B7E8"
+        }
+      },
+      "status": {
+        "danger": {
+          "$value": "#E08A84"
+        },
+        "success": {
+          "$value": "#9DB596"
+        }
+      },
+      "nav": {
+        "active": {
+          "$value": "#F2EBDF"
+        },
+        "onActive": {
+          "$value": "#1D1A17"
+        }
+      }
+    }
+  },
+  "deprecated": {
+    "$description": "Deprecated pre-v2 web names (--pal-canvas, --pal-text, ...). Emitted into the same Light/Dark blocks as theme.*; not emitted to Swift or Kotlin. Migrate consumers to theme.* names, then delete.",
+    "light": {
+      "$type": "color",
+      "canvas": {
+        "$value": "{theme.light.bg.canvas}"
+      },
+      "surface": {
+        "$value": "{theme.light.bg.surface}"
+      },
+      "text": {
+        "$value": "{theme.light.text.primary}"
+      },
+      "accent": {
+        "$value": "{theme.light.accent.brass}"
+      },
+      "accentText": {
+        "$value": "{theme.light.accent.brassText}"
+      },
+      "highlight": {
+        "$value": "{theme.light.accent.brassSoft}"
+      },
+      "successText": {
+        "$value": "{theme.light.status.success}"
+      },
+      "warningText": {
+        "$value": "{theme.light.accent.brassText}"
+      },
+      "dangerText": {
+        "$value": "{theme.light.status.danger}"
+      },
+      "focus": {
+        "$value": "{theme.light.focus.ring}"
+      },
+      "onAccent": {
+        "$value": "{theme.light.accent.onBrass}"
+      }
+    },
+    "dark": {
+      "$type": "color",
+      "canvas": {
+        "$value": "{theme.dark.bg.canvas}"
+      },
+      "surface": {
+        "$value": "{theme.dark.bg.surface}"
+      },
+      "text": {
+        "$value": "{theme.dark.text.primary}"
+      },
+      "accent": {
+        "$value": "{theme.dark.accent.brass}"
+      },
+      "accentText": {
+        "$value": "{theme.dark.accent.brassText}"
+      },
+      "highlight": {
+        "$value": "{theme.dark.accent.brassSoft}"
+      },
+      "successText": {
+        "$value": "{theme.dark.status.success}"
+      },
+      "warningText": {
+        "$value": "{theme.dark.accent.brassText}"
+      },
+      "dangerText": {
+        "$value": "{theme.dark.status.danger}"
+      },
+      "focus": {
+        "$value": "{theme.dark.focus.ring}"
+      },
+      "onAccent": {
+        "$value": "{theme.dark.accent.onBrass}"
+      }
     }
   },
   "space": {
     "$type": "dimension",
-    "1": { "$value": "4px" },
-    "2": { "$value": "8px" },
-    "3": { "$value": "12px" },
-    "4": { "$value": "16px" },
-    "5": { "$value": "20px" },
-    "6": { "$value": "24px" },
-    "8": { "$value": "32px" },
-    "10": { "$value": "40px" },
-    "12": { "$value": "48px" },
-    "16": { "$value": "64px" },
-    "20": { "$value": "80px" }
+    "1": {
+      "$value": "4px"
+    },
+    "2": {
+      "$value": "8px"
+    },
+    "3": {
+      "$value": "12px"
+    },
+    "4": {
+      "$value": "16px"
+    },
+    "5": {
+      "$value": "20px"
+    },
+    "6": {
+      "$value": "24px"
+    },
+    "8": {
+      "$value": "32px"
+    },
+    "10": {
+      "$value": "40px"
+    },
+    "12": {
+      "$value": "48px"
+    },
+    "16": {
+      "$value": "64px"
+    },
+    "20": {
+      "$value": "80px"
+    },
+    "$description": "Mobile gutters 20, gaps 16-22; web page padding 48, column gap 40."
   },
   "radius": {
     "$type": "dimension",
-    "sm": { "$value": "8px" },
-    "md": { "$value": "14px" },
-    "lg": { "$value": "20px" },
-    "xl": { "$value": "28px" },
-    "pill": { "$value": "999px" }
+    "sm": {
+      "$value": "8px"
+    },
+    "md": {
+      "$value": "16px"
+    },
+    "lg": {
+      "$value": "24px"
+    },
+    "xl": {
+      "$value": "28px"
+    },
+    "sheet": {
+      "$value": "30px"
+    },
+    "pill": {
+      "$value": "999px"
+    }
   },
   "size": {
     "$type": "dimension",
-    "touchTarget": { "$value": "44px" },
-    "focusRing": { "$value": "3px" },
-    "readingColumn": { "$value": "620px" },
-    "contentMax": { "$value": "1280px" }
+    "touchTarget": {
+      "$value": "44px"
+    },
+    "focusRing": {
+      "$value": "3px"
+    },
+    "readingColumn": {
+      "$value": "620px"
+    },
+    "contentMax": {
+      "$value": "1280px"
+    }
   },
   "breakpoint": {
     "$type": "dimension",
-    "sm": { "$value": "390px" },
-    "md": { "$value": "768px" },
-    "lg": { "$value": "1024px" },
-    "xl": { "$value": "1280px" },
-    "xxl": { "$value": "1440px" }
+    "sm": {
+      "$value": "390px"
+    },
+    "md": {
+      "$value": "768px"
+    },
+    "lg": {
+      "$value": "1024px"
+    },
+    "xl": {
+      "$value": "1280px"
+    },
+    "xxl": {
+      "$value": "1440px"
+    }
   },
   "duration": {
     "$type": "duration",
-    "fast": { "$value": "120ms" },
-    "standard": { "$value": "200ms" },
-    "slow": { "$value": "320ms" }
+    "fast": {
+      "$value": "120ms"
+    },
+    "standard": {
+      "$value": "200ms"
+    },
+    "slow": {
+      "$value": "320ms"
+    }
   },
   "easing": {
     "$type": "cubicBezier",
-    "standard": { "$value": [0.2, 0.8, 0.2, 1] }
+    "standard": {
+      "$value": [0.2, 0.8, 0.2, 1]
+    }
   },
   "zIndex": {
     "$type": "number",
-    "base": { "$value": 0 },
-    "sticky": { "$value": 100 },
-    "dropdown": { "$value": 300 },
-    "overlay": { "$value": 500 },
-    "modal": { "$value": 600 },
-    "toast": { "$value": 700 },
-    "security": { "$value": 800 }
+    "base": {
+      "$value": 0
+    },
+    "sticky": {
+      "$value": 100
+    },
+    "dropdown": {
+      "$value": 300
+    },
+    "overlay": {
+      "$value": 500
+    },
+    "modal": {
+      "$value": 600
+    },
+    "toast": {
+      "$value": 700
+    },
+    "security": {
+      "$value": 800
+    }
   },
   "font": {
     "$type": "fontFamily",
-    "brand": {
-      "$value": ["Cormorant Garamond", "Iowan Old Style", "Georgia", "serif"]
-    },
-    "editorial": {
-      "$value": ["Newsreader", "Iowan Old Style", "Georgia", "serif"]
+    "display": {
+      "$value": ["Fraunces", "Iowan Old Style", "Georgia", "serif"],
+      "$description": "Display and editorial headings. Self-hosted (web: next/font/local, iOS: bundled TTF)."
     },
     "ui": {
       "$value": [
-        "Inter",
+        "Geist",
         "ui-sans-serif",
+        "system-ui",
         "-apple-system",
         "BlinkMacSystemFont",
         "Segoe UI",
         "sans-serif"
       ]
+    },
+    "mono": {
+      "$value": [
+        "Geist Mono",
+        "ui-monospace",
+        "SFMono-Regular",
+        "Menlo",
+        "Consolas",
+        "monospace"
+      ]
+    },
+    "brand": {
+      "$value": "{font.display}",
+      "$description": "Deprecated alias of font.display."
+    },
+    "editorial": {
+      "$value": "{font.display}",
+      "$description": "Deprecated alias of font.display."
     }
   },
   "borderWidth": {
     "$type": "dimension",
     "hairline": {
       "$value": "1px"
+    },
+    "focus": {
+      "$value": "1.5px"
     }
   },
   "borderOpacity": {
@@ -231,143 +533,317 @@
     "preset": {
       "$type": "color",
       "obsidianGold": {
-        "canvas": { "$value": "#14110D" },
-        "surface": { "$value": "#211B14" },
-        "text": { "$value": "#F7EFD9" },
-        "textMuted": { "$value": "#8D887A" },
-        "border": { "$value": "#726C5F" }
+        "canvas": {
+          "$value": "#14110D"
+        },
+        "surface": {
+          "$value": "#211B14"
+        },
+        "text": {
+          "$value": "#F7EFD9"
+        },
+        "textMuted": {
+          "$value": "#8D887A"
+        },
+        "border": {
+          "$value": "#726C5F"
+        }
       },
       "creamPaper": {
-        "canvas": { "$value": "#F8F0DF" },
-        "surface": { "$value": "#FFFAF0" },
-        "text": { "$value": "#241D16" },
-        "textMuted": { "$value": "#6F685D" },
-        "border": { "$value": "#8B857C" }
+        "canvas": {
+          "$value": "#F8F0DF"
+        },
+        "surface": {
+          "$value": "#FFFAF0"
+        },
+        "text": {
+          "$value": "#241D16"
+        },
+        "textMuted": {
+          "$value": "#6F685D"
+        },
+        "border": {
+          "$value": "#8B857C"
+        }
       },
       "lavenderDream": {
-        "canvas": { "$value": "#EEE6FA" },
-        "surface": { "$value": "#FAF7FF" },
-        "text": { "$value": "#2E2140" },
-        "textMuted": { "$value": "#6B607C" },
-        "border": { "$value": "#867D92" }
+        "canvas": {
+          "$value": "#EEE6FA"
+        },
+        "surface": {
+          "$value": "#FAF7FF"
+        },
+        "text": {
+          "$value": "#2E2140"
+        },
+        "textMuted": {
+          "$value": "#6B607C"
+        },
+        "border": {
+          "$value": "#867D92"
+        }
       },
       "oceanGlow": {
-        "canvas": { "$value": "#DFF5F4" },
-        "surface": { "$value": "#F5FFFF" },
-        "text": { "$value": "#102F39" },
-        "textMuted": { "$value": "#526E75" },
-        "border": { "$value": "#74898F" }
+        "canvas": {
+          "$value": "#DFF5F4"
+        },
+        "surface": {
+          "$value": "#F5FFFF"
+        },
+        "text": {
+          "$value": "#102F39"
+        },
+        "textMuted": {
+          "$value": "#526E75"
+        },
+        "border": {
+          "$value": "#74898F"
+        }
       },
       "daisyDay": {
-        "canvas": { "$value": "#FFF4C9" },
-        "surface": { "$value": "#FFFBED" },
-        "text": { "$value": "#3A3115" },
-        "textMuted": { "$value": "#746B4A" },
-        "border": { "$value": "#8F8872" }
+        "canvas": {
+          "$value": "#FFF4C9"
+        },
+        "surface": {
+          "$value": "#FFFBED"
+        },
+        "text": {
+          "$value": "#3A3115"
+        },
+        "textMuted": {
+          "$value": "#746B4A"
+        },
+        "border": {
+          "$value": "#8F8872"
+        }
       },
       "neonNight": {
-        "canvas": { "$value": "#100D20" },
-        "surface": { "$value": "#211839" },
-        "text": { "$value": "#F8F2FF" },
-        "textMuted": { "$value": "#8C8897" },
-        "border": { "$value": "#716982" }
+        "canvas": {
+          "$value": "#100D20"
+        },
+        "surface": {
+          "$value": "#211839"
+        },
+        "text": {
+          "$value": "#F8F2FF"
+        },
+        "textMuted": {
+          "$value": "#8C8897"
+        },
+        "border": {
+          "$value": "#716982"
+        }
       },
       "y2kGlitter": {
-        "canvas": { "$value": "#F2E8FA" },
-        "surface": { "$value": "#FFF7FF" },
-        "text": { "$value": "#352044" },
-        "textMuted": { "$value": "#71607E" },
-        "border": { "$value": "#8C7C94" }
+        "canvas": {
+          "$value": "#F2E8FA"
+        },
+        "surface": {
+          "$value": "#FFF7FF"
+        },
+        "text": {
+          "$value": "#352044"
+        },
+        "textMuted": {
+          "$value": "#71607E"
+        },
+        "border": {
+          "$value": "#8C7C94"
+        }
       },
       "darkAcademia": {
-        "canvas": { "$value": "#211B14" },
-        "surface": { "$value": "#30271C" },
-        "text": { "$value": "#F1DFBD" },
-        "textMuted": { "$value": "#A0937B" },
-        "border": { "$value": "#817460" }
+        "canvas": {
+          "$value": "#211B14"
+        },
+        "surface": {
+          "$value": "#30271C"
+        },
+        "text": {
+          "$value": "#F1DFBD"
+        },
+        "textMuted": {
+          "$value": "#A0937B"
+        },
+        "border": {
+          "$value": "#817460"
+        }
       },
       "frutigerAero": {
-        "canvas": { "$value": "#DFF7FF" },
-        "surface": { "$value": "#F7FFFF" },
-        "text": { "$value": "#12374A" },
-        "textMuted": { "$value": "#4D6F7E" },
-        "border": { "$value": "#728B96" }
+        "canvas": {
+          "$value": "#DFF7FF"
+        },
+        "surface": {
+          "$value": "#F7FFFF"
+        },
+        "text": {
+          "$value": "#12374A"
+        },
+        "textMuted": {
+          "$value": "#4D6F7E"
+        },
+        "border": {
+          "$value": "#728B96"
+        }
       },
       "tumblr2014": {
-        "canvas": { "$value": "#263247" },
-        "surface": { "$value": "#34445F" },
-        "text": { "$value": "#F5F7FB" },
-        "textMuted": { "$value": "#B1B6C0" },
-        "border": { "$value": "#8A94A4" }
+        "canvas": {
+          "$value": "#263247"
+        },
+        "surface": {
+          "$value": "#34445F"
+        },
+        "text": {
+          "$value": "#F5F7FB"
+        },
+        "textMuted": {
+          "$value": "#B1B6C0"
+        },
+        "border": {
+          "$value": "#8A94A4"
+        }
       },
       "retroWindows": {
-        "canvas": { "$value": "#C0C0C0" },
-        "surface": { "$value": "#ECECEC" },
-        "text": { "$value": "#101010" },
-        "textMuted": { "$value": "#4A4A4A" },
-        "border": { "$value": "#656565" }
+        "canvas": {
+          "$value": "#C0C0C0"
+        },
+        "surface": {
+          "$value": "#ECECEC"
+        },
+        "text": {
+          "$value": "#101010"
+        },
+        "textMuted": {
+          "$value": "#4A4A4A"
+        },
+        "border": {
+          "$value": "#656565"
+        }
       },
       "cyberpunk": {
-        "canvas": { "$value": "#110B1B" },
-        "surface": { "$value": "#21122D" },
-        "text": { "$value": "#F4FF52" },
-        "textMuted": { "$value": "#878A38" },
-        "border": { "$value": "#706B3B" }
+        "canvas": {
+          "$value": "#110B1B"
+        },
+        "surface": {
+          "$value": "#21122D"
+        },
+        "text": {
+          "$value": "#F4FF52"
+        },
+        "textMuted": {
+          "$value": "#878A38"
+        },
+        "border": {
+          "$value": "#706B3B"
+        }
       },
       "minimalEditorial": {
-        "canvas": { "$value": "#F7F5F0" },
-        "surface": { "$value": "#FFFFFF" },
-        "text": { "$value": "#151515" },
-        "textMuted": { "$value": "#6D6C6A" },
-        "border": { "$value": "#898989" }
+        "canvas": {
+          "$value": "#F7F5F0"
+        },
+        "surface": {
+          "$value": "#FFFFFF"
+        },
+        "text": {
+          "$value": "#151515"
+        },
+        "textMuted": {
+          "$value": "#6D6C6A"
+        },
+        "border": {
+          "$value": "#898989"
+        }
       },
       "polaroidScrapbook": {
-        "canvas": { "$value": "#EEE3CC" },
-        "surface": { "$value": "#FFFDF8" },
-        "text": { "$value": "#292118" },
-        "textMuted": { "$value": "#696053" },
-        "border": { "$value": "#827C75" }
+        "canvas": {
+          "$value": "#EEE3CC"
+        },
+        "surface": {
+          "$value": "#FFFDF8"
+        },
+        "text": {
+          "$value": "#292118"
+        },
+        "textMuted": {
+          "$value": "#696053"
+        },
+        "border": {
+          "$value": "#827C75"
+        }
       }
     },
     "accent": {
       "$type": "color",
       "gold": {
-        "onLight": { "$value": "#8C5F1A" },
-        "onDark": { "$value": "#C4933F" }
+        "onLight": {
+          "$value": "#8C5F1A"
+        },
+        "onDark": {
+          "$value": "#C4933F"
+        }
       },
       "lavender": {
-        "onLight": { "$value": "#7F51B5" },
-        "onDark": { "$value": "#A281CA" }
+        "onLight": {
+          "$value": "#7F51B5"
+        },
+        "onDark": {
+          "$value": "#A281CA"
+        }
       },
       "ocean": {
-        "onLight": { "$value": "#127282" },
-        "onDark": { "$value": "#7FA4D8" }
+        "onLight": {
+          "$value": "#127282"
+        },
+        "onDark": {
+          "$value": "#7FA4D8"
+        }
       },
       "daisy": {
-        "onLight": { "$value": "#915D0F" },
-        "onDark": { "$value": "#DB8D16" }
+        "onLight": {
+          "$value": "#915D0F"
+        },
+        "onDark": {
+          "$value": "#DB8D16"
+        }
       },
       "pink": {
-        "onLight": { "$value": "#AF398A" },
-        "onDark": { "$value": "#DC49FF" }
+        "onLight": {
+          "$value": "#AF398A"
+        },
+        "onDark": {
+          "$value": "#DC49FF"
+        }
       },
       "emerald": {
-        "onLight": { "$value": "#267647" },
-        "onDark": { "$value": "#34A362" }
+        "onLight": {
+          "$value": "#267647"
+        },
+        "onDark": {
+          "$value": "#34A362"
+        }
       },
       "cyan": {
-        "onLight": { "$value": "#007287" },
-        "onDark": { "$value": "#00E5FF" }
+        "onLight": {
+          "$value": "#007287"
+        },
+        "onDark": {
+          "$value": "#00E5FF"
+        }
       },
       "crimson": {
-        "onLight": { "$value": "#A23C2D" },
-        "onDark": { "$value": "#D57566" }
+        "onLight": {
+          "$value": "#A23C2D"
+        },
+        "onDark": {
+          "$value": "#D57566"
+        }
       }
     },
     "font": {
       "$type": "fontFamily",
       "$description": "System font stacks only: no font URLs and no new font-src.",
-      "editorial": { "$value": "{font.editorial}" },
+      "editorial": {
+        "$value": ["Newsreader", "Iowan Old Style", "Georgia", "serif"]
+      },
       "modern": {
         "$value": [
           "Inter",
@@ -399,6 +875,445 @@
       "handwritten": {
         "$value": ["Bradley Hand", "Segoe Print", "Noteworthy", "cursive"]
       }
+    }
+  },
+  "type": {
+    "$description": "Figma text styles. size/lineHeight in px, tracking in em (unitless ratio on native). Eyebrow is also uppercase (applied by consumers).",
+    "displayXl": {
+      "fontFamily": {
+        "$value": "{font.display}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 300,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "76px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "78px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "-0.025em",
+        "$type": "dimension"
+      }
+    },
+    "displayL": {
+      "fontFamily": {
+        "$value": "{font.display}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 300,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "44px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "48px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "-0.025em",
+        "$type": "dimension"
+      }
+    },
+    "displayM": {
+      "fontFamily": {
+        "$value": "{font.display}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 300,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "34px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "38px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "-0.025em",
+        "$type": "dimension"
+      }
+    },
+    "displayAccent": {
+      "fontFamily": {
+        "$value": "{font.display}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 300,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "34px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "38px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "-0.025em",
+        "$type": "dimension"
+      },
+      "fontStyle": {
+        "$value": "italic",
+        "$type": "string"
+      }
+    },
+    "titleL": {
+      "fontFamily": {
+        "$value": "{font.display}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 400,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "26px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "32px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "-0.015em",
+        "$type": "dimension"
+      }
+    },
+    "titleM": {
+      "fontFamily": {
+        "$value": "{font.display}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 400,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "22px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "28px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "-0.01em",
+        "$type": "dimension"
+      }
+    },
+    "titleS": {
+      "fontFamily": {
+        "$value": "{font.display}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 400,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "18px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "24px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    },
+    "bodyL": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 400,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "17px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "26px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    },
+    "bodyM": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 400,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "15px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "21px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    },
+    "bodyS": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 400,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "13px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "18px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    },
+    "labelM": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 500,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "15px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "20px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    },
+    "labelS": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 500,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "13px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "18px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    },
+    "labelXs": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 500,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "10px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "12px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    },
+    "eyebrow": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 500,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "11px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "14px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0.14em",
+        "$type": "dimension"
+      }
+    },
+    "caption": {
+      "fontFamily": {
+        "$value": "{font.ui}",
+        "$type": "fontFamily"
+      },
+      "fontWeight": {
+        "$value": 400,
+        "$type": "number"
+      },
+      "fontSize": {
+        "$value": "12px",
+        "$type": "dimension"
+      },
+      "lineHeight": {
+        "$value": "16px",
+        "$type": "dimension"
+      },
+      "tracking": {
+        "$value": "0em",
+        "$type": "dimension"
+      }
+    }
+  },
+  "elevation": {
+    "$description": "Shadows: Soft (cards) and Lift (floating, inverse cards, tab bar). Same in Light and Dark. color is #RRGGBBAA.",
+    "soft": {
+      "x": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "y": {
+        "$value": "6px",
+        "$type": "dimension"
+      },
+      "blur": {
+        "$value": "24px",
+        "$type": "dimension"
+      },
+      "spread": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "color": {
+        "$value": "#3D2B1A12",
+        "$type": "color"
+      }
+    },
+    "lift": {
+      "x": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "y": {
+        "$value": "14px",
+        "$type": "dimension"
+      },
+      "blur": {
+        "$value": "36px",
+        "$type": "dimension"
+      },
+      "spread": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "color": {
+        "$value": "#33211229",
+        "$type": "color"
+      }
+    }
+  },
+  "layout": {
+    "$type": "dimension",
+    "$description": "Fixed layout constants from the Figma Layout frame.",
+    "iphoneWidth": {
+      "$value": "402px"
+    },
+    "iphoneHeight": {
+      "$value": "874px"
+    },
+    "statusBarHeight": {
+      "$value": "58px"
+    },
+    "homeIndicatorHeight": {
+      "$value": "34px"
+    },
+    "tabBarWidth": {
+      "$value": "370px"
+    },
+    "tabBarHeight": {
+      "$value": "64px"
+    },
+    "tabBarTop": {
+      "$value": "774px"
+    },
+    "mobileGutter": {
+      "$value": "20px"
+    },
+    "webSidebar": {
+      "$value": "264px"
+    },
+    "webPagePadding": {
+      "$value": "48px"
+    },
+    "webColumnGap": {
+      "$value": "40px"
+    },
+    "webFeedColumn": {
+      "$value": "660px"
+    },
+    "webRightRail": {
+      "$value": "388px"
+    }
+  },
+  "icon": {
+    "$type": "dimension",
+    "size": {
+      "$value": "24px"
+    },
+    "stroke": {
+      "$value": "1.6px"
+    },
+    "strokeActive": {
+      "$value": "1.8px"
     }
   }
 }

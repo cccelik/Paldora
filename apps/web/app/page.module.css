@@ -50,7 +50,7 @@
 
 .intro {
   max-width: var(--pal-size-reading-column);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-lead);
   line-height: 1.6;
 }
@@ -60,7 +60,7 @@
   padding: var(--pal-space-2) var(--pal-space-4);
   border-radius: var(--pal-radius-pill);
   background: var(--pal-surface);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
 }
 
@@ -87,7 +87,7 @@
 }
 
 .promiseDetail {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 @media (min-width: 768px) {

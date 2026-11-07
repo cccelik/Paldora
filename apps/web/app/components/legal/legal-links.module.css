@@ -11,7 +11,7 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--pal-size-touch-target);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
   text-decoration: underline;
   text-underline-offset: 0.2em;

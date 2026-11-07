@@ -5,7 +5,7 @@
   overflow: hidden;
   border-radius: 50%;
   background: var(--pal-highlight);
-  color: var(--pal-color-brand-obsidian);
+  color: var(--pal-text-primary);
   font-family: var(--pal-font-editorial);
   font-weight: 600;
 }

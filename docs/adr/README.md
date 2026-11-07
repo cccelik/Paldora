@@ -33,3 +33,4 @@ accepted when their phase is built.
 | [021](021-firebase-native-contract.md)            | Firebase native contract: callable registry, fixtures, opaque cursors, epoch-ms timestamps           | Proposed (supersedes 004 for native; owner decisions)  |
 | [022](022-post-interaction-index.md)              | Per-actor interaction index on the post document, maintained in the writing transaction              | Proposed                                               |
 | [023](023-web-hosting-app-hosting.md)             | Web hosted on Firebase App Hosting in `europe-west4`; Functions in the same region                   | Accepted (D5)                                          |
+| [024](024-hearth-and-brass-v2-tokens.md)          | Hearth & Brass v2 tokens: semantic Light/Dark colors, type, motion, layout; Fraunces/Geist fonts     | Accepted (owner, 2026-11-07; supersedes 005 palette)   |

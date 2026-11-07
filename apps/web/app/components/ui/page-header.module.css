@@ -17,7 +17,7 @@
 
 .description {
   max-width: var(--pal-size-reading-column);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .meta {

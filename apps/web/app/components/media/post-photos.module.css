@@ -55,16 +55,12 @@
   border: 0;
   /* Solid, not transparent: the backdrop is not part of the dialog's own
      painted background, so contrast must hold against this surface. */
-  background: var(--pal-color-brand-obsidian);
-  color: var(--pal-color-text-dark-primary);
+  background: var(--pal-bg-inverse);
+  color: var(--pal-text-on-inverse);
 }
 
 .dialog::backdrop {
-  background: color-mix(
-    in srgb,
-    var(--pal-color-brand-obsidian) 94%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--pal-bg-inverse) 94%, transparent);
 }
 
 .stage {
@@ -87,7 +83,7 @@
 }
 
 .count {
-  color: var(--pal-color-text-dark-muted);
+  color: color-mix(in srgb, var(--pal-text-on-inverse) 72%, transparent);
 }
 
 .full {
@@ -107,7 +103,7 @@
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-4);
   border: var(--pal-border-width-hairline) solid
-    color-mix(in srgb, var(--pal-color-text-dark-primary) 40%, transparent);
+    color-mix(in srgb, var(--pal-text-on-inverse) 40%, transparent);
   border-radius: var(--pal-radius-pill);
   background: transparent;
   color: inherit;
@@ -122,6 +118,6 @@
 }
 
 .control:focus-visible {
-  outline: var(--pal-size-focus-ring) solid var(--pal-color-brand-lavender);
+  outline: var(--pal-size-focus-ring) solid var(--pal-focus-ring);
   outline-offset: 2px;
 }

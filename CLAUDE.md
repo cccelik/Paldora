@@ -272,9 +272,9 @@ Invariants:
 
 **Brand:**
 
-- Palette: Obsidian Ink, Antique Gold, Champagne, Warm Ivory, Soft Lavender. Canonical values are in [design/design-system.md](legacy/design/design-system.md).
-- Use gold as a signal, never as a fill.
-- Typography: an editorial serif for brand moments and Room/Life Update headings, a clean sans for all functional UI, and handwriting only for decoration.
+- Palette: **Hearth & Brass** ([ADR 024](docs/adr/024-hearth-and-brass-v2-tokens.md), supersedes the old Obsidian/Gold palette): canvas, surface, sunken, inverse and paper backgrounds, a brass accent, ember and sage. Values live in `design/tokens/paldora.tokens.json` (Light and Dark are modes, never hard-code hex). The legacy palette in [design/design-system.md](legacy/design/design-system.md) is history.
+- Use brass as a signal, never as a fill. `bg/inverse` stays dark in both modes.
+- Typography: Fraunces (display and editorial headings), Geist (all functional UI) and Geist Mono (code, IDs), self-hosted under the SIL OFL; handwriting only for decoration.
 - Motifs: subtle four-point stars, open-box symbolism, Polaroids, paper, tape, postcards. At most one decorative cluster per viewport outside Rooms.
 - **Never:** generic SaaS, corporate blue, childish, crypto, Instagram/TikTok clone, glassmorphism, or decoration that harms usability.
 

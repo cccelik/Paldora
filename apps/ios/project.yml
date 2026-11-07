@@ -54,6 +54,14 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
+        UIAppFonts:
+          - Fraunces-Light.ttf
+          - Fraunces-LightItalic.ttf
+          - Fraunces-Regular.ttf
+          - Geist-Regular.ttf
+          - Geist-Medium.ttf
+          - Geist-SemiBold.ttf
+          - GeistMono-Regular.ttf
         NSCameraUsageDescription: Paldora uses the front camera only when you choose to react to a post with a photo. Photos are never saved to your library.
         PaldoraHostedProjectID: $(PALDORA_HOSTED_PROJECT_ID)
         PaldoraHostedAPIKey: $(PALDORA_HOSTED_API_KEY)

@@ -32,7 +32,7 @@
     );
   border-radius: var(--pal-radius-pill);
   background: transparent;
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font: inherit;
   font-weight: 600;
   overflow-wrap: anywhere;

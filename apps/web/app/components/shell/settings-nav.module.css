@@ -10,7 +10,7 @@
   min-height: var(--pal-size-touch-target);
   padding: 0 var(--pal-space-4);
   border-radius: var(--pal-radius-pill);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-weight: 600;
   text-decoration: none;
 }

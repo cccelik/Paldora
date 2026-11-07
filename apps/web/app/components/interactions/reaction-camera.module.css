@@ -16,11 +16,7 @@
 }
 
 .dialog::backdrop {
-  background: color-mix(
-    in srgb,
-    var(--pal-color-brand-obsidian) 60%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--pal-bg-inverse) 60%, transparent);
 }
 
 .body {
@@ -66,7 +62,7 @@
 }
 
 .detail {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 /* A Polaroid-like frame; the live preview is mirrored like a mirror. */
@@ -78,7 +74,7 @@
   border: var(--pal-space-2) solid var(--pal-surface);
   border-bottom-width: var(--pal-space-6);
   border-radius: var(--pal-radius-sm);
-  background: var(--pal-color-brand-obsidian);
+  background: var(--pal-bg-inverse);
   object-fit: cover;
 }
 

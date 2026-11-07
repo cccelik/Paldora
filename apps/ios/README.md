@@ -32,7 +32,7 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     `TransportError`; never logs bodies, tokens or emails).
   - `Model/`: `AppModel` (`@Observable`; states loading, signedOut,
     signedIn, accountNotReady, profileUnavailable, notConfigured).
-  - `Design/`: `Theme` and `Typography` over `PaldoraTokens`, shared components.
+  - `Design/`: `Theme` (Hearth & Brass colors via `PaldoraColors`), `PaldoraFont` (Fraunces/Geist/Geist Mono from `Resources/Fonts`, `UIAppFonts`, system fallback, Dynamic Type) and `Typography` over `PaldoraTokens`, shared components.
   - `Views/`: sign-in, status screens, tab shell, and the Profile tab (edit
     display name and bio, appearance, reaction presets, sign out).
   - `Features/`: one folder per feature, `@Observable` view models that take a

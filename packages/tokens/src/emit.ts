@@ -10,25 +10,92 @@ const kebab = (value: string) =>
     .replace(/\./g, '-')
     .toLowerCase();
 
+/**
+ * Self-hosted web fonts are loaded by `next/font/local`, which gives each face
+ * a hashed family name and exposes it through a CSS variable. A stack whose
+ * first family is listed here starts with that variable and falls back to the
+ * plain family name (for example in Storybook-less contexts or tests).
+ */
+const WEB_FONT_FACE_VARIABLES: Readonly<Record<string, string>> = {
+  Fraunces: '--font-fraunces',
+  Geist: '--font-geist',
+  'Geist Mono': '--font-geist-mono',
+};
+
+const quoteFamily = (family: string | number) =>
+  /\s/.test(String(family)) ? `'${family}'` : String(family);
+
+function cssFontStack(families: readonly (string | number)[]): string {
+  const [first, ...rest] = families;
+  const variable =
+    first === undefined ? undefined : WEB_FONT_FACE_VARIABLES[String(first)];
+  const stack = families.map(quoteFamily);
+  if (variable === undefined || first === undefined) return stack.join(', ');
+  return [
+    `var(${variable}, ${quoteFamily(first)})`,
+    ...rest.map(quoteFamily),
+  ].join(', ');
+}
+
 function cssValue(token: ResolvedToken): string {
   if (token.type === 'cubicBezier' && Array.isArray(token.value)) {
     return `cubic-bezier(${token.value.join(', ')})`;
   }
   if (token.type === 'fontFamily' && Array.isArray(token.value)) {
-    return token.value
-      .map((family) => (/\s/.test(String(family)) ? `'${family}'` : family))
-      .join(', ');
+    return cssFontStack(token.value);
   }
   return String(token.value);
 }
 
+/** `#RRGGBBAA` to `rgba(r, g, b, a)` with the alpha rounded to 2 places. */
+function cssRgba(value: string): string {
+  const match =
+    /^#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})?$/i.exec(value);
+  if (!match?.[1] || !match[2] || !match[3]) {
+    throw new Error(`Unsupported color value ${value}.`);
+  }
+  const alpha = match[4] ? parseInt(match[4], 16) / 255 : 1;
+  const channel = (hex: string) => parseInt(hex, 16);
+  return `rgba(${channel(match[1])}, ${channel(match[2])}, ${channel(match[3])}, ${Number(alpha.toFixed(2))})`;
+}
+
+/** Composes `--pal-elevation-<name>` box-shadow values from the parts. */
+function elevationBlock(tokens: readonly ResolvedToken[]): string {
+  const byPath = new Map(tokens.map((token) => [token.path, token.value]));
+  const names = [
+    ...new Set(
+      tokens
+        .filter((token) => token.path.startsWith('elevation.'))
+        .map((token) => token.path.split('.')[1] ?? ''),
+    ),
+  ];
+  return names
+    .map((name) => {
+      const part = (key: string) =>
+        String(byPath.get(`elevation.${name}.${key}`));
+      return `  --pal-elevation-${kebab(name)}: ${part('x')} ${part('y')} ${part('blur')} ${part('spread')} ${cssRgba(part('color'))};`;
+    })
+    .join('\n');
+}
+
+/**
+ * Semantic colors for one mode. `deprecated.<mode>.*` keeps the pre-v2 names
+ * (--pal-canvas, --pal-text, ...) alive for the web CSS that has not
+ * migrated yet; they hold the same value as their v2 replacement.
+ */
 function themeBlock(tokens: readonly ResolvedToken[], mode: string): string {
+  const prefixes = [`theme.${mode}.`, `deprecated.${mode}.`];
   return tokens
-    .filter((token) => token.path.startsWith(`theme.${mode}.`))
-    .map(
-      (token) =>
-        `  --pal-${kebab(token.path.slice(`theme.${mode}.`.length))}: ${cssValue(token)};`,
-    )
+    .flatMap((token) => {
+      const prefix = prefixes.find((candidate) =>
+        token.path.startsWith(candidate),
+      );
+      return prefix === undefined
+        ? []
+        : [
+            `  --pal-${kebab(token.path.slice(prefix.length))}: ${cssValue(token)};`,
+          ];
+    })
     .join('\n');
 }
 
@@ -42,9 +109,13 @@ export function emitCss(tokens: readonly ResolvedToken[]): string {
     // Room tokens never reach the shell; they live in room-themes.css.
     .filter(
       (token) =>
-        !token.path.startsWith('theme.') && !token.path.startsWith('room.'),
+        !token.path.startsWith('theme.') &&
+        !token.path.startsWith('deprecated.') &&
+        !token.path.startsWith('room.') &&
+        !token.path.startsWith('elevation.'),
     )
     .map((token) => `  --pal-${kebab(token.path)}: ${cssValue(token)};`)
+    .concat(elevationBlock(tokens))
     .join('\n');
   const light = themeBlock(tokens, 'light');
   const dark = themeBlock(tokens, 'dark');
@@ -252,7 +323,89 @@ function nativeValue(
 
 /** Room tokens ship as the structured tables below, not as flat constants. */
 const nativeFlatTokens = (tokens: readonly ResolvedToken[]) =>
-  tokens.filter((token) => !token.path.startsWith('room.'));
+  tokens.filter(
+    (token) =>
+      !token.path.startsWith('room.') && !token.path.startsWith('deprecated.'),
+  );
+
+interface SemanticColor {
+  readonly name: string;
+  readonly light: string;
+  readonly dark: string;
+}
+
+/** Light/Dark pairs of `theme.<mode>.<name>`, in source order. */
+function semanticColors(tokens: readonly ResolvedToken[]): SemanticColor[] {
+  const dark = new Map(
+    tokens
+      .filter((token) => token.path.startsWith('theme.dark.'))
+      .map((token) => [token.path.slice('theme.dark.'.length), token.value]),
+  );
+  return tokens
+    .filter((token) => token.path.startsWith('theme.light.'))
+    .map((token) => {
+      const name = token.path.slice('theme.light.'.length);
+      const darkValue = dark.get(name);
+      if (typeof darkValue !== 'string' || typeof token.value !== 'string') {
+        throw new Error(
+          `Theme token ${name} is missing a Light or Dark value.`,
+        );
+      }
+      return { name, light: token.value, dark: darkValue };
+    });
+}
+
+const memberName = (path: string) => {
+  const id = identifier(path);
+  return id.charAt(0).toLowerCase() + id.slice(1);
+};
+
+function swiftSemanticColors(tokens: readonly ResolvedToken[]): string {
+  const items = semanticColors(tokens).map(
+    ({ name, light, dark }) =>
+      `    public static let ${memberName(name)} = PaldoraSemanticColor(light: ${colorLiteral(light, 'swift')}, dark: ${colorLiteral(dark, 'swift')})`,
+  );
+  return `
+/// A color with a value per interface style. The app turns it into a dynamic
+/// \`Color\` that resolves by \`userInterfaceStyle\`.
+public struct PaldoraSemanticColor: Equatable, Sendable {
+    public let light: PaldoraColor
+    public let dark: PaldoraColor
+
+    public init(light: PaldoraColor, dark: PaldoraColor) {
+        self.light = light
+        self.dark = dark
+    }
+}
+
+/// Semantic colors, named like the Figma variables (color/bg/canvas = bgCanvas).
+public enum PaldoraColors {
+${items.join('\n')}
+}
+`;
+}
+
+function kotlinSemanticColors(tokens: readonly ResolvedToken[]): string {
+  const colors = semanticColors(tokens);
+  const lines = (side: 'light' | 'dark') =>
+    colors
+      .map(
+        (color) =>
+          `    const val ${memberName(color.name)}: Long = ${colorLiteral(color[side], 'kotlin')}`,
+      )
+      .join('\n');
+  return `
+/** Semantic colors for the Light appearance (color/bg/canvas = bgCanvas). */
+object PaldoraLightColors {
+${lines('light')}
+}
+
+/** Semantic colors for the Dark appearance; same names as [PaldoraLightColors]. */
+object PaldoraDarkColors {
+${lines('dark')}
+}
+`;
+}
 
 const swiftDoc = `// Units: dimensions are CGFloat points (rem x 16; em stays a ratio),
 // durations are TimeInterval seconds, colors are sRGB PaldoraColor values.`;
@@ -423,7 +576,7 @@ public struct PaldoraColor: Equatable, Sendable {
 public enum PaldoraTokens {
 ${lines}
 }
-${swiftRoomTables(tokens)}`;
+${swiftSemanticColors(tokens)}${swiftRoomTables(tokens)}`;
 }
 
 export function emitKotlin(tokens: readonly ResolvedToken[]): string {
@@ -441,5 +594,5 @@ package app.paldora.tokens
 object PaldoraTokens {
 ${lines}
 }
-${kotlinRoomTables(tokens)}`;
+${kotlinSemanticColors(tokens)}${kotlinRoomTables(tokens)}`;
 }

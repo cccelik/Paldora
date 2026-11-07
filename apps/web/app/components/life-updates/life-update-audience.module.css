@@ -23,7 +23,7 @@
 }
 
 .hint {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
 }
 
@@ -68,7 +68,7 @@
 }
 
 .boxGroup:disabled {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .boxGroup:disabled .boxRow {
@@ -110,7 +110,7 @@
 .boxReason {
   flex-basis: 100%;
   padding-inline-start: calc(1.25rem + var(--pal-space-3));
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
 }
 

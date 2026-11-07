@@ -16,6 +16,6 @@
 }
 
 .detail {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
 }

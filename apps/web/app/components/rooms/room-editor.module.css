@@ -44,7 +44,7 @@
 
 .sectionDetail,
 .hint {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 /* Theme picker: one card per preset, name and Light/Dark in words. */

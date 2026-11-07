@@ -14,7 +14,7 @@
   padding: var(--pal-space-3) var(--pal-space-4);
   border-radius: var(--pal-radius-md);
   background: var(--pal-surface);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .threads,

@@ -1,3 +1,4 @@
+import { fontVariableClasses } from '@/fonts';
 import '@/globals.css';
 import {
   APPEARANCE_COOKIE,
@@ -22,8 +23,8 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FAF7EF' },
-    { media: '(prefers-color-scheme: dark)', color: '#11100E' },
+    { media: '(prefers-color-scheme: light)', color: '#F4EFE7' },
+    { media: '(prefers-color-scheme: dark)', color: '#14110E' },
   ],
 };
 
@@ -37,7 +38,11 @@ export default async function RootLayout({
     (await cookies()).get(APPEARANCE_COOKIE)?.value,
   );
   return (
-    <html lang="en" data-appearance={appearance}>
+    <html
+      lang="en"
+      className={fontVariableClasses}
+      data-appearance={appearance}
+    >
       <body>
         <a className="skip-link" href="#main">
           Skip to content

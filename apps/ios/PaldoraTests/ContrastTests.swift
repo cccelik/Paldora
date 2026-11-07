@@ -26,48 +26,49 @@ struct ContrastTests {
         var description: String { name }
     }
 
+    /// The text/background pairs the app uses, in both appearances, computed from
+    /// the generated semantic colors. text/muted (Figma) is deliberately absent:
+    /// it is 3.29:1 on canvas in Light and is not used for small text.
     private static let appPairs: [Pair] = {
-        typealias T = PaldoraTokens
+        typealias C = PaldoraColors
         var pairs: [Pair] = []
-        // Light appearance: Theme.text, textMuted, goldText, danger, success on canvas, surface and highlight.
-        let light: [(String, PaldoraColor)] = [("canvas", T.themeLightCanvas), ("surface", T.themeLightSurface), ("highlight", T.themeLightHighlight)]
-        for (bgName, bg) in light {
+        let modes: [(String, (PaldoraSemanticColor) -> PaldoraColor)] = [("light", { $0.light }), ("dark", { $0.dark })]
+        for (mode, pick) in modes {
+            for (bgName, bg) in [("canvas", C.bgCanvas), ("surface", C.bgSurface), ("sunken", C.bgSunken)] {
+                pairs += [
+                    Pair(name: "\(mode) textPrimary on \(bgName)", foreground: pick(C.textPrimary), background: pick(bg)),
+                    Pair(name: "\(mode) textSecondary on \(bgName)", foreground: pick(C.textSecondary), background: pick(bg)),
+                ]
+            }
+            for (bgName, bg) in [("canvas", C.bgCanvas), ("surface", C.bgSurface), ("brassSoft", C.accentBrassSoft)] {
+                pairs += [Pair(name: "\(mode) brassText on \(bgName)", foreground: pick(C.accentBrassText), background: pick(bg))]
+            }
             pairs += [
-                Pair(name: "light text on \(bgName)", foreground: T.themeLightText, background: bg),
-                Pair(name: "light textMuted on \(bgName)", foreground: T.themeLightTextMuted, background: bg),
+                Pair(name: "\(mode) textPrimary on brassSoft", foreground: pick(C.textPrimary), background: pick(C.accentBrassSoft)),
+                Pair(name: "\(mode) onInverse on inverse", foreground: pick(C.textOnInverse), background: pick(C.bgInverse)),
+                Pair(name: "\(mode) onInverse on inverseRaised", foreground: pick(C.textOnInverse), background: pick(C.bgInverseRaised)),
+                Pair(name: "\(mode) onPrimary on actionPrimary", foreground: pick(C.actionOnPrimary), background: pick(C.actionPrimary)),
+                Pair(name: "\(mode) onBrass on brass", foreground: pick(C.accentOnBrass), background: pick(C.accentBrass)),
+                Pair(name: "\(mode) nav onActive on active", foreground: pick(C.navOnActive), background: pick(C.navActive)),
+                Pair(name: "\(mode) danger on surface", foreground: pick(C.statusDanger), background: pick(C.bgSurface)),
+                Pair(name: "\(mode) danger on canvas", foreground: pick(C.statusDanger), background: pick(C.bgCanvas)),
+                Pair(name: "\(mode) success on surface", foreground: pick(C.statusSuccess), background: pick(C.bgSurface)),
+                Pair(name: "\(mode) success on canvas", foreground: pick(C.statusSuccess), background: pick(C.bgCanvas)),
+                Pair(name: "\(mode) focus ring on canvas", foreground: pick(C.focusRing), background: pick(C.bgCanvas), minimum: 3),
+                Pair(name: "\(mode) focus ring on surface", foreground: pick(C.focusRing), background: pick(C.bgSurface), minimum: 3),
+                Pair(name: "\(mode) focus ring on inverse", foreground: pick(C.focusRing), background: pick(C.bgInverse), minimum: 3),
             ]
         }
-        // goldText, danger and success never sit on the highlight fill (chips and avatars use
-        // text and textMuted there), so only canvas and surface are checked for them.
-        for (bgName, bg) in [("canvas", T.themeLightCanvas), ("surface", T.themeLightSurface)] {
-            pairs += [
-                Pair(name: "light goldText on \(bgName)", foreground: T.themeLightAccentText, background: bg),
-                Pair(name: "light danger on \(bgName)", foreground: T.themeLightDangerText, background: bg),
-                Pair(name: "light success on \(bgName)", foreground: T.themeLightSuccessText, background: bg),
-            ]
-        }
-        let dark: [(String, PaldoraColor)] = [("canvas", T.themeDarkCanvas), ("surface", T.themeDarkSurface)]
-        for (bgName, bg) in dark {
-            pairs += [
-                Pair(name: "dark text on \(bgName)", foreground: T.themeDarkText, background: bg),
-                Pair(name: "dark textMuted on \(bgName)", foreground: T.themeDarkTextMuted, background: bg),
-                Pair(name: "dark goldText on \(bgName)", foreground: T.themeDarkAccentText, background: bg),
-                Pair(name: "dark danger on \(bgName)", foreground: T.themeDarkDangerText, background: bg),
-                Pair(name: "dark success on \(bgName)", foreground: T.themeDarkSuccessText, background: bg),
-            ]
-        }
-        pairs += [
-            Pair(name: "light text on highlight", foreground: T.themeLightText, background: T.themeLightHighlight),
-            Pair(name: "light textMuted on highlight", foreground: T.themeLightTextMuted, background: T.themeLightHighlight),
-        ]
-        // The dark "highlight" token is the surface (Theme.highlight uses themeDarkSurface in dark).
-        pairs += [
-            Pair(name: "light onInk (ivory) on ink (obsidian)", foreground: T.colorBrandIvory, background: T.colorBrandObsidian),
-            Pair(name: "dark onInk (obsidian) on ink (champagne)", foreground: T.colorBrandObsidian, background: T.colorBrandChampagne),
-            Pair(name: "light primary text on ink hover", foreground: T.colorBrandIvory, background: T.colorBrandObsidian),
-        ]
         return pairs
     }()
+
+    /// Figma text/muted is large-text and decoration only: 3:1 where it holds.
+    @Test func mutedTextMeetsThreeToOneOnCanvasAndSurface() {
+        for bg in [PaldoraColors.bgCanvas, PaldoraColors.bgSurface] {
+            #expect(Contrast.ratio(PaldoraColors.textMuted.light, bg.light) >= 3)
+            #expect(Contrast.ratio(PaldoraColors.textMuted.dark, bg.dark) >= 4.5)
+        }
+    }
 
     @Test func everyAppTextPairMeetsAA() {
         var failures: [String] = []

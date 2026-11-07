@@ -7,7 +7,7 @@
 
 .sectionDetail,
 .hint {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .actions {
@@ -48,7 +48,7 @@
 }
 
 .bannerEmpty {
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 /* A stale save: stays until the person reloads. */

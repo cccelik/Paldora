@@ -20,7 +20,7 @@
 
 .detail {
   max-width: 32rem;
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
 }
 
 .action {

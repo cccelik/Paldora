@@ -65,6 +65,6 @@
   align-items: center;
   gap: var(--pal-space-1);
   padding: var(--pal-space-1) var(--pal-space-2);
-  color: var(--pal-text-muted);
+  color: var(--pal-text-secondary);
   font-size: var(--pal-font-size-sm);
 }

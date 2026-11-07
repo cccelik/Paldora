@@ -16,11 +16,7 @@
 }
 
 .dialog::backdrop {
-  background: color-mix(
-    in srgb,
-    var(--pal-color-brand-obsidian) 60%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--pal-bg-inverse) 60%, transparent);
 }
 
 .body {
