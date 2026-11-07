@@ -7,7 +7,7 @@ import { DEFAULT_ROOM_WIDGETS } from '@paldora/domain';
 import { NativeAccounts } from './native-accounts.js';
 import { NativeBoxes } from './native-boxes.js';
 import { nativeBlockPairId } from './native-box-invitations.js';
-import { NativeRooms } from './native-rooms.js';
+import { NativeRooms, personalizationFlagsFromEnv } from './native-rooms.js';
 
 if (
   !process.env.FIREBASE_AUTH_EMULATOR_HOST ||
@@ -24,7 +24,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const accounts = new NativeAccounts(db, auth);
 const boxes = new NativeBoxes(db);
-const rooms = new NativeRooms(db);
+const rooms = new NativeRooms(db, {
+  personalizationCss: true,
+  personalizationWidgets: true,
+});
 afterAll(() => deleteApp(app));
 
 async function person(username: string) {
@@ -285,5 +288,170 @@ describe('trusted Room policy and versioned writes', () => {
       }),
     ).rejects.toMatchObject({ code: 'STALE' });
     expect((await assetRef.get()).get('attachedRoomUid')).toBeNull();
+  });
+});
+
+describe('personalization kill switches (ADR 018)', () => {
+  const stored = {
+    cssSource: '.room-title { font-weight: 700 }',
+    widgets: [{ title: 'Hello', source: '<p>Safe</p>' }],
+  };
+  const on = { personalizationCss: true, personalizationWidgets: true };
+  const matrix = [
+    {
+      name: 'css only',
+      flags: { personalizationCss: true },
+      css: true,
+      widgets: false,
+    },
+    {
+      name: 'widgets only',
+      flags: { personalizationWidgets: true },
+      css: false,
+      widgets: true,
+    },
+    { name: 'both on', flags: on, css: true, widgets: true },
+    { name: 'both off', flags: {}, css: false, widgets: false },
+  ];
+
+  async function scene() {
+    const owner = await person(`owner${randomUUID().slice(0, 8)}`);
+    const friend = await person(`friend${randomUUID().slice(0, 8)}`);
+    await db
+      .collection('nativeFriendPairs')
+      .doc(nativeBlockPairId(owner, friend))
+      .set({ users: [owner, friend].sort(), status: 'accepted' });
+    const ownerName = (
+      await db.collection('nativeAccounts').doc(owner).get()
+    ).get('username') as string;
+    const saved = await new NativeRooms(db, on).updatePersonalization(owner, {
+      ...stored,
+      expectedUpdatedAt: null,
+    });
+    return { owner, friend, ownerName, version: saved.updatedAt };
+  }
+
+  it('reads the flags only from the exact value 1', () => {
+    expect(personalizationFlagsFromEnv({})).toEqual({
+      personalizationCss: false,
+      personalizationWidgets: false,
+    });
+    expect(
+      personalizationFlagsFromEnv({
+        PALDORA_PERSONALIZATION_CSS: 'true',
+        PALDORA_PERSONALIZATION_WIDGETS: '1',
+      }),
+    ).toEqual({ personalizationCss: false, personalizationWidgets: true });
+  });
+
+  it('defaults to both surfaces off', async () => {
+    const { owner } = await scene();
+    expect(
+      await new NativeRooms(db).personalizationSource(owner),
+    ).toMatchObject({ cssEnabled: false, widgetsEnabled: false });
+  });
+
+  for (const { name, flags, css, widgets } of matrix) {
+    it(`${name}: renders per surface for owner and visitor, keeps owner source`, async () => {
+      const { owner, friend, ownerName } = await scene();
+      const service = new NativeRooms(db, flags);
+      for (const viewer of [owner, friend]) {
+        const rendered = await service.personalizationRendered(
+          viewer,
+          ownerName,
+        );
+        expect(rendered.css !== '').toBe(css);
+        expect(rendered.widgets.length).toBe(widgets ? 1 : 0);
+      }
+      const source = await service.personalizationSource(owner);
+      expect(source).toMatchObject({
+        ...stored,
+        cssEnabled: css,
+        widgetsEnabled: widgets,
+      });
+    });
+
+    it(`${name}: rejects writes that change a disabled surface, with no state change`, async () => {
+      const { owner, version } = await scene();
+      const service = new NativeRooms(db, flags);
+      const attempt = (changes: Partial<typeof stored>) =>
+        service.updatePersonalization(owner, {
+          ...stored,
+          ...changes,
+          expectedUpdatedAt: version,
+        });
+      const cssChange = { cssSource: '.room-text { font-weight: 600 }' };
+      const widgetChange = {
+        widgets: [{ title: 'New', source: '<p>New</p>' }],
+      };
+      if (css) await attempt(cssChange);
+      else
+        await expect(attempt(cssChange)).rejects.toMatchObject({
+          code: 'INVALID',
+        });
+      const afterCss = await service.personalizationSource(owner);
+      expect(afterCss.cssSource).toBe(
+        css ? cssChange.cssSource : stored.cssSource,
+      );
+      const current = (await service.get(owner)).updatedAt;
+      const next = (changes: Partial<typeof stored>) =>
+        service.updatePersonalization(owner, {
+          cssSource: afterCss.cssSource,
+          widgets: afterCss.widgets,
+          ...changes,
+          expectedUpdatedAt: current,
+        });
+      if (widgets) await next(widgetChange);
+      else
+        await expect(next(widgetChange)).rejects.toMatchObject({
+          code: 'INVALID',
+        });
+      const after = await service.personalizationSource(owner);
+      expect(after.widgets).toEqual(
+        widgets ? widgetChange.widgets : stored.widgets,
+      );
+      if (!css && !widgets)
+        expect((await service.get(owner)).updatedAt).toBe(current);
+    });
+  }
+
+  it('lets a disabled surface be resubmitted unchanged while the other changes', async () => {
+    const { owner, version } = await scene();
+    const service = new NativeRooms(db, { personalizationWidgets: true });
+    const saved = await service.updatePersonalization(owner, {
+      cssSource: stored.cssSource,
+      widgets: [{ title: 'Edited', source: '<p>Edited</p>' }],
+      expectedUpdatedAt: version,
+    });
+    expect(saved.updatedAt).not.toBe(version);
+    const source = await service.personalizationSource(owner);
+    expect(source.cssSource).toBe(stored.cssSource);
+    expect(source.widgets[0]?.title).toBe('Edited');
+  });
+
+  it('never deletes stored source when a switch flips off and back on', async () => {
+    const { owner, friend, ownerName } = await scene();
+    expect(
+      await new NativeRooms(db).personalizationRendered(friend, ownerName),
+    ).toEqual({ css: '', widgets: [] });
+    const again = await new NativeRooms(db, on).personalizationRendered(
+      friend,
+      ownerName,
+    );
+    expect(again.css).toContain('font-weight');
+    expect(again.widgets).toHaveLength(1);
+    expect(
+      (await new NativeRooms(db).personalizationSource(owner)).widgets,
+    ).toEqual(stored.widgets);
+  });
+
+  it('keeps denying a stranger the same way whatever the flags are', async () => {
+    const { ownerName } = await scene();
+    const stranger = await person(`stranger${randomUUID().slice(0, 8)}`);
+    for (const flags of [{}, on]) {
+      await expect(
+        new NativeRooms(db, flags).personalizationRendered(stranger, ownerName),
+      ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
+    }
   });
 });

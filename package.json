@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "PALDORA_TRUST_INTERACTION_INDEX=1 pnpm --filter @paldora/web dev",
+    "dev": "PALDORA_TRUST_INTERACTION_INDEX=1 PALDORA_PERSONALIZATION_CSS=1 PALDORA_PERSONALIZATION_WIDGETS=1 pnpm --filter @paldora/web dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint scripts --max-warnings=0 && turbo run lint",
@@ -28,7 +28,7 @@
     "firebase:local:flow:test": "pnpm turbo run build --filter=@paldora/firebase-functions && firebase emulators:exec --only auth,firestore,storage,functions,pubsub --project demo-paldora --config firebase.native.json 'pnpm --filter @paldora/firebase-functions test:integration'",
     "firebase:local:dev": "pnpm turbo run build --filter=@paldora/firebase-functions && firebase emulators:start --only auth,firestore,storage,functions,pubsub --project demo-paldora --config firebase.native.json",
     "firebase:local:seed": "pnpm --filter @paldora/firebase-trusted build && GCLOUD_PROJECT=demo-paldora node --env-file=.env packages/firebase-trusted/scripts/seed-local.mjs",
-    "firebase:web:local:test": "pnpm turbo run build --filter=@paldora/firebase-functions && FIREBASE_FUNCTIONS_EMULATOR_HOST=127.0.0.1:5001 firebase emulators:exec --only auth,firestore,storage,functions,pubsub --project demo-paldora --config firebase.native.json 'pnpm --filter @paldora/firebase-trusted seed:e2e && pnpm exec playwright test -c apps/web/e2e/firebase-local.config.ts'",
+    "firebase:web:local:test": "pnpm turbo run build --filter=@paldora/firebase-functions && FIREBASE_FUNCTIONS_EMULATOR_HOST=127.0.0.1:5001 firebase emulators:exec --only auth,firestore,storage,functions,pubsub --project demo-paldora --config firebase.native.json 'pnpm --filter @paldora/firebase-trusted seed:e2e && pnpm exec playwright test -c apps/web/e2e/firebase-local.config.ts && pnpm exec playwright test -c apps/web/e2e/firebase-local-personalization-off.config.ts'",
     "firebase:native:test": "firebase emulators:exec --only firestore --project demo-paldora --config firebase.native.json 'pnpm --filter @paldora/firebase-native test:rules'",
     "firebase:parity:check": "node scripts/check-firebase-cutover.mjs",
     "functions:bundle": "pnpm turbo run build --filter=@paldora/firebase-functions && pnpm --filter @paldora/firebase-functions bundle",

@@ -81,6 +81,9 @@ paldora-firebase-web-api-key --project <STAGING>` (paste the Web API key
     address that web requests fail closed without; `FIREBASE_STORAGE_BUCKET` only
     if the bucket is not the default), run `pnpm hosted:check`, commit, and roll
     out. Never set any `*_EMULATOR_HOST`.
+    16a. Leave `PALDORA_PERSONALIZATION_CSS` and `PALDORA_PERSONALIZATION_WIDGETS`
+    at `'0'` in the overlay. Turning either on is a separate owner decision
+    (staging checklist, Room personalization).
 17. Confirm the rollout built with pnpm/Node 24 (**verify**) and the first
     request does not fail closed (`PALDORA_ENV` hosted checks).
 

@@ -69,9 +69,37 @@ function settings(room: DocumentSnapshot) {
   };
 }
 
+/**
+ * Independent personalization kill switches (ADR 018). Both fail closed:
+ * absent means off. Flipping one never deletes stored source.
+ */
+export interface NativeRoomsOptions {
+  readonly personalizationCss?: boolean;
+  readonly personalizationWidgets?: boolean;
+}
+
+/** Reads `PALDORA_PERSONALIZATION_CSS` / `_WIDGETS`; only the exact value `1` enables a surface. */
+export function personalizationFlagsFromEnv(
+  env: Record<string, string | undefined>,
+): NativeRoomsOptions {
+  return {
+    personalizationCss: env.PALDORA_PERSONALIZATION_CSS === '1',
+    personalizationWidgets: env.PALDORA_PERSONALIZATION_WIDGETS === '1',
+  };
+}
+
 /** Server-only Room settings and audience. No Room read is authorized by a cached preview. */
 export class NativeRooms {
-  public constructor(private readonly db: Firestore) {}
+  private readonly cssEnabled: boolean;
+  private readonly widgetsEnabled: boolean;
+
+  public constructor(
+    private readonly db: Firestore,
+    options: NativeRoomsOptions = {},
+  ) {
+    this.cssEnabled = options.personalizationCss === true;
+    this.widgetsEnabled = options.personalizationWidgets === true;
+  }
 
   private room(uid: string) {
     return this.db.collection('nativeRooms').doc(uid);
@@ -421,8 +449,8 @@ export class NativeRooms {
       widgets:
         (row.get('widgets') as PersonalizationSource['widgets'] | undefined) ??
         [],
-      cssEnabled: true,
-      widgetsEnabled: true,
+      cssEnabled: this.cssEnabled,
+      widgetsEnabled: this.widgetsEnabled,
     };
   }
 
@@ -436,17 +464,21 @@ export class NativeRooms {
       return { css: '', widgets: [] };
     try {
       return {
-        css: compileRoomCss(
-          (row.get('cssSource') as string | undefined) ?? '',
-          room.owner.id,
-        ),
-        widgets: (
-          (row.get('widgets') as
-            UpdatePersonalizationInput['widgets'] | undefined) ?? []
-        ).map((widget) => ({
-          title: widget.title,
-          document: widgetDocument(compileRoomHtml(widget.source)),
-        })),
+        css: this.cssEnabled
+          ? compileRoomCss(
+              (row.get('cssSource') as string | undefined) ?? '',
+              room.owner.id,
+            )
+          : '',
+        widgets: this.widgetsEnabled
+          ? (
+              (row.get('widgets') as
+                UpdatePersonalizationInput['widgets'] | undefined) ?? []
+            ).map((widget) => ({
+              title: widget.title,
+              document: widgetDocument(compileRoomHtml(widget.source)),
+            }))
+          : [],
       };
     } catch {
       return { css: '', widgets: [] };
@@ -476,12 +508,19 @@ export class NativeRooms {
       ]);
       if (!active(account) || !account.get('username'))
         throw new NativeRoomError('UNAVAILABLE');
-      if (
-        current.get('cssSource') === parsed.data.cssSource &&
+      const sameCss =
+        ((current.get('cssSource') as string | undefined) ?? '') ===
+        parsed.data.cssSource;
+      const sameWidgets =
         JSON.stringify(current.get('widgets') ?? []) ===
-          JSON.stringify(parsed.data.widgets)
+        JSON.stringify(parsed.data.widgets);
+      // A disabled surface cannot change; resubmitting its stored value is a no-op.
+      if (
+        (!this.cssEnabled && !sameCss) ||
+        (!this.widgetsEnabled && !sameWidgets)
       )
-        return;
+        throw new NativeRoomError('INVALID');
+      if (sameCss && sameWidgets) return;
       if (version(room) !== parsed.data.expectedUpdatedAt)
         throw new NativeRoomError('STALE');
       const updatedAt = Math.max(

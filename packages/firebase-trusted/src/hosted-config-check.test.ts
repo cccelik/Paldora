@@ -134,6 +134,33 @@ describe('hosted config check', () => {
     ).toMatch(/must equal production/);
   });
 
+  it.each(['PALDORA_PERSONALIZATION_CSS', 'PALDORA_PERSONALIZATION_WIDGETS'])(
+    'requires %s in overlays and only accepts 0 or 1',
+    (name) => {
+      expect(
+        failuresAfter('apps/web/apphosting.staging.yaml', (t) =>
+          t.replace(`  - variable: ${name}\n    value: '0'\n`, ''),
+        ),
+      ).toMatch(new RegExp(`${name} must be set explicitly`));
+      expect(
+        failuresAfter('apps/web/apphosting.production.yaml', (t) =>
+          t.replace(
+            `variable: ${name}\n    value: '0'`,
+            `variable: ${name}\n    value: 'true'`,
+          ),
+        ),
+      ).toMatch(new RegExp(`${name} must be 0 or 1`));
+      expect(
+        failuresAfter('apps/web/apphosting.production.yaml', (t) =>
+          t.replace(
+            `variable: ${name}\n    value: '0'`,
+            `variable: ${name}\n    value: '1'`,
+          ),
+        ),
+      ).toBe('');
+    },
+  );
+
   it('rejects a functions region other than europe-west4', () => {
     expect(
       failuresAfter('apps/firebase-functions/src/index.ts', (t) =>

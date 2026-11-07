@@ -51,6 +51,16 @@ fall back to the scan; run `pnpm firebase:interaction-index:local` against the
 emulators to backfill them. Hosted environments leave the flag off until the
 staging rollout in the checklist.
 
+`pnpm dev` also sets `PALDORA_PERSONALIZATION_CSS=1` and
+`PALDORA_PERSONALIZATION_WIDGETS=1`. These are the two independent Room
+personalization kill switches ([ADR 018](adr/018-room-personalization-boundaries.md)):
+only the exact value `1` enables a surface, and anything else (including
+unset) is off. When a surface is off its writes are rejected, no viewer
+receives its output, and the owner can still read the stored source. The web
+e2e suite runs with both on; a second config
+(`apps/web/e2e/firebase-local-personalization-off.config.ts`) runs the off
+matrix, because Playwright cannot vary a web server's environment per project.
+
 The website is at `http://127.0.0.1:3000`. Use only `demo-paldora` for local
 emulators. Sign in with the fixture email and password, then finish onboarding.
 The seed command requires running emulators and an email/password; see

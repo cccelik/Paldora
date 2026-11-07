@@ -17,6 +17,7 @@ export default defineConfig({
     '**/web-hardening.spec.ts',
     '**/web-keyboard.spec.ts',
     '**/public-pages.spec.ts',
+    '**/room-personalization.spec.ts',
   ],
   fullyParallel: false,
   workers: 1,
@@ -43,6 +44,8 @@ export default defineConfig({
     FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199',
     FIREBASE_FUNCTIONS_EMULATOR_HOST: '127.0.0.1:5001',
     PALDORA_TRUST_INTERACTION_INDEX: '1',
+    PALDORA_PERSONALIZATION_CSS: '1',
+    PALDORA_PERSONALIZATION_WIDGETS: '1',
   }),
   outputDir: `${repoRoot}test-results/firebase-local`,
 });

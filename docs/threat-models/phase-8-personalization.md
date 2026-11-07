@@ -64,6 +64,28 @@ The inherited parent CSP is preserved; the child meta CSP denies resources.
 Browser tests verify opaque origin, blocked script/network/form/navigation
 behavior and authorized private/no-store CSS delivery.
 
+## Firebase-mode enforcement points and coverage
+
+Kill switches are `PALDORA_PERSONALIZATION_CSS` and
+`PALDORA_PERSONALIZATION_WIDGETS` (exact `1` enables; default off). They are
+read once into `NativeRooms` options (`packages/firebase-trusted/src/native-rooms.ts`)
+by the web data context; native Rooms callables do not expose personalization.
+When a surface is off: `updatePersonalization` rejects any change to it
+(`INVALID`, surfaced as `VALIDATION_FAILED`, no state change; resubmitting the
+stored value is a no-op), `personalizationRendered` returns empty CSS or no
+widgets for every viewer including the owner, and `personalizationSource`
+still returns the stored source with the real `cssEnabled`/`widgetsEnabled`
+so the editor shows the surface as unavailable. Stored data is never deleted.
+Staging and production overlays pin both to `'0'`; `pnpm hosted:check`
+enforces presence and `0`/`1` values.
+
+Coverage: `native-rooms.integration.test.ts` (flag matrix: each flag on/off,
+owner and visitor, read and write, both off, flip-and-restore, stranger
+denial), `hosted-config-check.test.ts`, `e2e/room-personalization.spec.ts`
+(flags on: save, rejection, stale, keyboard reorder, sandbox/CSP, scoped CSS,
+blocked/stranger denial) and `e2e/room-personalization-off.spec.ts` (flags off,
+its own Playwright config).
+
 ## Dedicated security review gate
 
 Codex reviewed the exact CSS and HTML grammars and pinned dependencies before

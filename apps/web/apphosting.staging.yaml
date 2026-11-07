@@ -15,6 +15,15 @@
 #     value: <monitored reports and appeals mailbox>
 # The web app fails closed at the first Firebase request if any is missing.
 # NEXT_PUBLIC_CONTACT_EMAIL is shown on /contact; it must be a plain address.
+# Room personalization kill switches (ADR 018). Both stay '0' until the OWNER
+# decides to activate each surface after reviewing ADR 018 and
+# docs/threat-models/phase-8-security-review.md (an internal review, not an
+# external audit) and running the staging checklist verification. Only '0' or
+# '1' are accepted by `pnpm hosted:check`.
 env:
   - variable: PALDORA_ENV
     value: staging
+  - variable: PALDORA_PERSONALIZATION_CSS
+    value: '0'
+  - variable: PALDORA_PERSONALIZATION_WIDGETS
+    value: '0'

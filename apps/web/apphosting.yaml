@@ -35,3 +35,5 @@ env:
   # NEXT_PUBLIC_WEB_URL are per-environment: see the overlay files.
   # Do NOT set PALDORA_TRUST_INTERACTION_INDEX until the index backfill is
   # verified (staging checklist L). Never set any *_EMULATOR_HOST variable.
+  # PALDORA_PERSONALIZATION_CSS / _WIDGETS are set explicitly to '0' in the
+  # staging and production overlays; activation is an owner decision (ADR 018).

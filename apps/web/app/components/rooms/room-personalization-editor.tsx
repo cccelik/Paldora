@@ -12,7 +12,7 @@ import {
 } from '@/components/rooms/use-room-save';
 import { Button, TextAreaField, TextField } from '@/components/ui';
 import type { PersonalizationSource } from '@paldora/validation';
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import styles from './room-personalization.module.css';
 
 export function RoomPersonalizationEditor({
@@ -25,18 +25,23 @@ export function RoomPersonalizationEditor({
   const [css, setCss] = useState(source.cssSource);
   const [widgets, setWidgets] = useState(source.widgets);
   const [state, action] = useRoomSave(savePersonalization, context);
-  if (!source.cssEnabled && !source.widgetsEnabled) return null;
-  const patch = (
-    index: number,
-    change: Partial<PersonalizationSource['widgets'][number]>,
-  ) =>
-    setWidgets((current) =>
-      current.map((widget, position) =>
-        position === index ? { ...widget, ...change } : widget,
-      ),
+  if (!source.cssEnabled && !source.widgetsEnabled)
+    return (
+      <EditorSection
+        id="customize-personalization"
+        title="Personalization"
+        description="Typography and static text widgets. These never change who can see your Room."
+      >
+        <p data-testid="css-disabled">
+          Room typography is unavailable right now. Anything you saved earlier
+          is kept.
+        </p>
+        <p data-testid="widgets-disabled">
+          Text widgets are unavailable right now. Anything you saved earlier is
+          kept.
+        </p>
+      </EditorSection>
     );
-  const move = (index: number, offset: number) =>
-    setWidgets((current) => reorder(current, index, offset));
   return (
     <EditorSection
       id="customize-personalization"
@@ -50,89 +55,142 @@ export function RoomPersonalizationEditor({
             <CssFields css={css} setCss={setCss} />
           </>
         ) : (
-          <input type="hidden" name="cssSource" value={css} />
-        )}
-        {source.widgetsEnabled ? (
           <>
-            <p>
-              Up to three text widgets, 8 KiB each. Use p, h2, h3, span, strong,
-              em, ul, ol, li, br, blockquote, pre and code. Attributes, links,
-              images and scripts are unavailable.
+            <p data-testid="css-disabled">
+              Room typography is unavailable right now. Anything you saved
+              earlier is kept.
             </p>
-            {widgets.map((widget, index) => (
-              <fieldset key={index} className={styles.widget}>
-                <legend>Text widget {index + 1}</legend>
-                <TextField
-                  label="Widget title"
-                  id={`widget-title-${index}`}
-                  name={`title-${index}`}
-                  maxLength={80}
-                  value={widget.title}
-                  onChange={(event) =>
-                    patch(index, { title: event.target.value })
-                  }
-                />
-                <TextAreaField
-                  label="Widget HTML"
-                  id={`widget-source-${index}`}
-                  name={`source-${index}`}
-                  rows={5}
-                  maxLength={8192}
-                  value={widget.source}
-                  onChange={(event) =>
-                    patch(index, { source: event.target.value })
-                  }
-                />
-                <div className={styles.actions}>
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    disabled={index === 0}
-                    onClick={() => move(index, -1)}
-                    aria-label={`Move widget ${index + 1} up`}
-                  >
-                    Move up
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    disabled={index === widgets.length - 1}
-                    onClick={() => move(index, 1)}
-                    aria-label={`Move widget ${index + 1} down`}
-                  >
-                    Move down
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    onClick={() =>
-                      setWidgets((current) =>
-                        current.filter((_, position) => position !== index),
-                      )
-                    }
-                    aria-label={`Remove widget ${index + 1}`}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </fieldset>
-            ))}
-            <Button
-              variant="secondary"
-              type="button"
-              disabled={widgets.length >= 3}
-              onClick={() =>
-                setWidgets((current) => [
-                  ...current,
-                  { title: '', source: '<p>Hello friends</p>' },
-                ])
-              }
-            >
-              Add text widget
-            </Button>
+            <input type="hidden" name="cssSource" value={css} />
           </>
-        ) : (
-          widgets.map((widget, index) => (
+        )}
+        <WidgetFields
+          enabled={source.widgetsEnabled}
+          widgets={widgets}
+          setWidgets={setWidgets}
+        />
+        <RoomSectionFeedback
+          state={state}
+          context={context}
+          lockedId="personalization-locked"
+        />
+        <RoomSaveButton context={context} lockedId="personalization-locked">
+          Save personalization
+        </RoomSaveButton>
+      </form>
+    </EditorSection>
+  );
+}
+
+type Widgets = PersonalizationSource['widgets'];
+
+function WidgetFields({
+  enabled,
+  widgets,
+  setWidgets,
+}: {
+  enabled: boolean;
+  widgets: Widgets;
+  setWidgets: Dispatch<SetStateAction<Widgets>>;
+}) {
+  const patch = (
+    index: number,
+    change: Partial<PersonalizationSource['widgets'][number]>,
+  ) =>
+    setWidgets((current) =>
+      current.map((widget, position) =>
+        position === index ? { ...widget, ...change } : widget,
+      ),
+    );
+  const move = (index: number, offset: number) =>
+    setWidgets((current) => reorder(current, index, offset));
+  return (
+    <>
+      {enabled ? (
+        <>
+          <p>
+            Up to three text widgets, 8 KiB each. Use p, h2, h3, span, strong,
+            em, ul, ol, li, br, blockquote, pre and code. Attributes, links,
+            images and scripts are unavailable.
+          </p>
+          {widgets.map((widget, index) => (
+            <fieldset key={index} className={styles.widget}>
+              <legend>Text widget {index + 1}</legend>
+              <TextField
+                label="Widget title"
+                id={`widget-title-${index}`}
+                name={`title-${index}`}
+                maxLength={80}
+                value={widget.title}
+                onChange={(event) =>
+                  patch(index, { title: event.target.value })
+                }
+              />
+              <TextAreaField
+                label="Widget HTML"
+                id={`widget-source-${index}`}
+                name={`source-${index}`}
+                rows={5}
+                maxLength={8192}
+                value={widget.source}
+                onChange={(event) =>
+                  patch(index, { source: event.target.value })
+                }
+              />
+              <div className={styles.actions}>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                  aria-label={`Move widget ${index + 1} up`}
+                >
+                  Move up
+                </Button>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  disabled={index === widgets.length - 1}
+                  onClick={() => move(index, 1)}
+                  aria-label={`Move widget ${index + 1} down`}
+                >
+                  Move down
+                </Button>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() =>
+                    setWidgets((current) =>
+                      current.filter((_, position) => position !== index),
+                    )
+                  }
+                  aria-label={`Remove widget ${index + 1}`}
+                >
+                  Remove
+                </Button>
+              </div>
+            </fieldset>
+          ))}
+          <Button
+            variant="secondary"
+            type="button"
+            disabled={widgets.length >= 3}
+            onClick={() =>
+              setWidgets((current) => [
+                ...current,
+                { title: '', source: '<p>Hello friends</p>' },
+              ])
+            }
+          >
+            Add text widget
+          </Button>
+        </>
+      ) : (
+        <>
+          <p data-testid="widgets-disabled">
+            Text widgets are unavailable right now. Anything you saved earlier
+            is kept.
+          </p>
+          {widgets.map((widget, index) => (
             <span key={index}>
               <input
                 type="hidden"
@@ -145,18 +203,10 @@ export function RoomPersonalizationEditor({
                 value={widget.source}
               />
             </span>
-          ))
-        )}
-        <RoomSectionFeedback
-          state={state}
-          context={context}
-          lockedId="personalization-locked"
-        />
-        <RoomSaveButton context={context} lockedId="personalization-locked">
-          Save personalization
-        </RoomSaveButton>
-      </form>
-    </EditorSection>
+          ))}
+        </>
+      )}
+    </>
   );
 }
 

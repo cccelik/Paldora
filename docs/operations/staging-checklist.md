@@ -274,6 +274,21 @@ Rules for using this list:
       the index is missing). Confirm a lost index re-arms its repair job
       after the 10 minute cooldown.
 
+- [ ] Room personalization flags (ADR 018): `PALDORA_PERSONALIZATION_CSS`
+      and `PALDORA_PERSONALIZATION_WIDGETS` stay `'0'` in both overlays until
+      the owner activates them; the review behind that decision
+      (`docs/threat-models/phase-8-security-review.md`) was internal, not an
+      external audit. Before turning either on in staging, verify: (1) with
+      both off, the Customize page shows both surfaces unavailable, saves are
+      refused, and a friend's view of a Room with stored source shows no CSS
+      and no iframe; (2) flip one flag at a time and confirm only that surface
+      changes, stored source is never lost, and flipping it back restores it;
+      (3) the hosted response carries exactly one CSP without
+      `script-src 'unsafe-inline'`, widget iframes have an empty `sandbox`,
+      and `personalization.css` is `private, no-store`; (4) a blocked user
+      and a stranger get the identical not-found for the Room and the CSS
+      route; (5) rollback: set the flag back to `'0'` and redeploy.
+
 ## M. Backup and restore drill
 
 - [ ] Decide the Firestore protection method (managed export, scheduled

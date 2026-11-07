@@ -139,6 +139,12 @@ function checkFunctions(root, config, failures) {
   }
 }
 
+/** Independent Room personalization kill switches (ADR 018). */
+const PERSONALIZATION_FLAGS = [
+  'PALDORA_PERSONALIZATION_CSS',
+  'PALDORA_PERSONALIZATION_WIDGETS',
+];
+
 function checkAppHosting(root, failures) {
   const dir = join(root, 'apps/web');
   const files = existsSync(dir)
@@ -167,6 +173,12 @@ function checkAppHosting(root, failures) {
         !['staging', 'production'].includes(entry.value)
       )
         failures.push(`${label}: PALDORA_ENV must be staging or production`);
+      if (PERSONALIZATION_FLAGS.includes(entry.variable)) {
+        if (entry.secret)
+          failures.push(`${label}: ${entry.variable} must not be a secret`);
+        if (!['0', '1'].includes(entry.value))
+          failures.push(`${label}: ${entry.variable} must be 0 or 1`);
+      }
     }
     const overlay = /^apphosting\.(staging|production)\.yaml$/.exec(name);
     if (overlay) {
@@ -175,6 +187,11 @@ function checkAppHosting(root, failures) {
       );
       if (env?.value !== overlay[1])
         failures.push(`${label}: PALDORA_ENV must equal ${overlay[1]}`);
+      for (const flag of PERSONALIZATION_FLAGS)
+        if (!parseEnvEntries(text).some((e) => e.variable === flag))
+          failures.push(
+            `${label}: ${flag} must be set explicitly (0 until the owner activates it)`,
+          );
     }
   }
 }

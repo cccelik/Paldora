@@ -16,6 +16,7 @@ import {
   NativeNotifications,
   NativeProfiles,
   NativeRooms,
+  personalizationFlagsFromEnv,
 } from '@paldora/firebase-trusted';
 import {
   type BoxView,
@@ -62,7 +63,10 @@ export class WebDataContext {
     this.services.db,
     this.services.auth,
   );
-  public readonly roomsService = new NativeRooms(this.services.db);
+  public readonly roomsService = new NativeRooms(
+    this.services.db,
+    personalizationFlagsFromEnv(process.env),
+  );
   public readonly memoriesService = new NativeMemories(this.services.db);
   public readonly mediaService = new NativeMedia(
     this.services.db,

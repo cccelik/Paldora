@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { initializeApp, deleteApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { NativeAccounts, NativeProfiles } from '../dist/index.js';
+import {
+  NativeAccounts,
+  NativeProfiles,
+  NativeRooms,
+  nativeBlockPairId,
+} from '../dist/index.js';
 
 if (
   process.env.GCLOUD_PROJECT !== 'demo-paldora' ||
@@ -122,6 +127,53 @@ try {
     await db.collection('nativeRooms').doc(actorUid).set({
       visibility: 'members',
       updatedAt: Date.now(),
+    });
+    // Phase 8 personalization actors. The Room owner befriends one visitor and
+    // blocks another; the stranger has no relationship at all.
+    const person = async (role, name) => {
+      const uid = randomUUID();
+      await auth.createUser({
+        uid,
+        email: `p8-${role}-${suffix}@example.invalid`,
+        password: 'LocalFixturePassw0rd!',
+        emailVerified: true,
+      });
+      await auth.setCustomUserClaims(uid, { paldoraAdmitted: true });
+      await accounts.provision(uid);
+      await profiles.update(uid, {
+        username: `p8${role}${suffix}`,
+        displayName: name,
+        onboardingState: 'complete',
+      });
+      return uid;
+    };
+    const befriend = (first, second) =>
+      db
+        .collection('nativeFriendPairs')
+        .doc(nativeBlockPairId(first, second))
+        .set({ users: [first, second].sort(), status: 'accepted' });
+    const p8Owner = await person('owner', 'Personal Owner');
+    const p8Friend = await person('friend', 'Personal Friend');
+    const p8Blocked = await person('blocked', 'Personal Blocked');
+    await person('stranger', 'Personal Stranger');
+    await befriend(p8Owner, p8Friend);
+    await befriend(p8Owner, p8Blocked);
+    await db
+      .collection('nativeBlockPairs')
+      .doc(nativeBlockPairId(p8Owner, p8Blocked))
+      .set({ blockedBy: [p8Owner], epoch: 1 });
+    // Stored personalization for the flags-off suite (written with both
+    // surfaces enabled, then read back with both disabled).
+    const p8OffOwner = await person('offowner', 'Stored Owner');
+    const p8OffFriend = await person('offfriend', 'Stored Friend');
+    await befriend(p8OffOwner, p8OffFriend);
+    await new NativeRooms(db, {
+      personalizationCss: true,
+      personalizationWidgets: true,
+    }).updatePersonalization(p8OffOwner, {
+      cssSource: '.room-title { font-weight: 700 }',
+      widgets: [{ title: 'Stored note', source: '<p>Stored words</p>' }],
+      expectedUpdatedAt: null,
     });
     const unadmittedUid = randomUUID();
     await auth.createUser({
