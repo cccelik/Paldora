@@ -32,7 +32,8 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     `TransportError`; never logs bodies, tokens or emails).
   - `Model/`: `AppModel` (`@Observable`; states loading, signedOut,
     signedIn, accountNotReady, profileUnavailable, notConfigured).
-  - `Design/`: `Theme` (Hearth & Brass colors via `PaldoraColors`), `PaldoraFont` (Fraunces/Geist/Geist Mono from `Resources/Fonts`, `UIAppFonts`, system fallback, Dynamic Type) and `Typography` over `PaldoraTokens`, shared components.
+  - `Design/`: `Theme` (Hearth & Brass colors via `PaldoraColors`), `PaldoraFont` (Fraunces/Geist/Geist Mono from `Resources/Fonts`, `UIAppFonts`, system fallback, Dynamic Type) and `Typography` over `PaldoraTokens`, plus the older shared building blocks in `Components.swift` (`PrimaryButtonStyle`, `QuietButtonStyle`, `FieldContainer`, `InlineMessage`, and `AvatarView` in `Media/RemoteImage.swift` are deprecated wrappers over the design system below; `SectionHeader`, `AdaptiveStack`, `FlowLayout`, `BrandMark` stay).
+  - `DesignSystem/`: the Hearth & Brass component library, built from Figma page "02 · Components" (see "Design system" below).
   - `Views/`: sign-in, status screens, tab shell, and the Profile tab (edit
     display name and bio, appearance, reaction presets, sign out).
   - `Features/`: one folder per feature, `@Observable` view models that take a
@@ -257,6 +258,86 @@ milliseconds (`EpochMillis`, with a `.date` helper), cursors are opaque
 strings, unknown JSON keys are ignored, and errors are the Functions code plus
 an optional `details.reason`.
 
+## Design system
+
+`Paldora/DesignSystem/` holds the SwiftUI components of Figma page "02 · Components"
+(file `RAZq5RS2gSwVa4xvxbk0gZ`). Names map 1:1 to the Figma component names with a
+`Paldora` prefix (`Button` is `PaldoraButton`, `Text field` is `PaldoraTextField`,
+`List row` is `PaldoraListRow`). Every color comes from `Theme` (generated
+`PaldoraColors`), every font from `PaldoraFont.Style` through `.paldoraText(_:)`
+(Dynamic Type), spacing, radius, elevation and motion from `PaldoraTokens`; layout
+numbers that exist only in a component frame are named constants beside it. There
+is no hard-coded hex. Light and Dark follow the system. Reduce Motion removes
+component animation (`paldoraAnimation`). Controls draw at the Figma size but keep a
+44 pt hit region (`paldoraHitTarget`) and draw the focus ring on keyboard focus.
+
+| Folder         | Components                                                                                                                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Foundations/` | `PaldoraIcon` / `PaldoraIconView` (51 icons: SF Symbols, plus `spark` and `flame` drawn as shapes; stroke 1.6, active 1.8), `PaldoraElevation` (`soft`, `lift`), `PaldoraMotion`, `PaldoraHitTarget`, `PaldoraTone`, extra text styles, `PaldoraEyebrow` |
+| `Buttons/`     | `PaldoraButton` (+ `PaldoraButtonStyle`), `PaldoraIconButton`                                                                                                                                                                                            |
+| `Inputs/`      | `PaldoraTextField`, `PaldoraFieldContainer`, `PaldoraFieldMessage`                                                                                                                                                                                       |
+| `Controls/`    | `PaldoraChip`, `PaldoraSelectableChip`, `PaldoraToggle` (+ `PaldoraToggleStyle`), `PaldoraRadio`, `PaldoraCheckbox`, `PaldoraSegmentedControl`, `PaldoraListRow`, `PaldoraListGroup`                                                                     |
+| `Feedback/`    | `PaldoraBanner`, `PaldoraToast`, `PaldoraSkeleton`, `PaldoraPostSkeleton`                                                                                                                                                                                |
+| `Navigation/`  | `PaldoraNavBar`, `PaldoraTabBar` (+ `PaldoraTab`)                                                                                                                                                                                                        |
+| `Content/`     | `PaldoraAvatar`, `PaldoraAvatarStack`, `PaldoraPostCard`, `PaldoraLifeUpdateCard`, `PaldoraBoxCard`, `PaldoraComment`, `PaldoraNotificationRow`, `PaldoraUploadTile`                                                                                     |
+| `Overlays/`    | `PaldoraBottomSheetContent` (+ `.paldoraBottomSheet`), `PaldoraDialogCard` (+ `.paldoraDialog`)                                                                                                                                                          |
+| `Gallery/`     | DEBUG-only `ComponentGallery`                                                                                                                                                                                                                            |
+
+Data-bound components take small presentation structs (`PaldoraPostCardContent`,
+`PaldoraLifeUpdateCardContent`, `PaldoraBoxCardContent`, `PaldoraCommentContent`,
+`PaldoraNotificationRowContent`) and view slots (media, cover, thumbnail, menu,
+footer), never network DTOs; features map DTOs to them. `PaldoraAvatar` keeps the
+authenticated thumbnail loading (`mediaId` through the environment `ImageLoader`);
+slots take `RemoteImage` as before. Loading is skeletons, never spinners (except
+inside a button). Only one overlay (sheet or dialog) at a time.
+
+**Component gallery (DEBUG only, compiled out of Release).** Launch the app with
+`-PALDORA_GALLERY`:
+
+```bash
+xcrun simctl launch <udid> com.paldora.app -PALDORA_GALLERY \
+  -PALDORA_GALLERY_SECTION cards -PALDORA_GALLERY_BLOCK "Post card"   # both optional
+# Dark / large text: add  -AppleInterfaceStyle Dark   and
+#   -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityL
+```
+
+Pick a section from the menu (Buttons, Inputs, Controls, Lists, Feedback, Navigation,
+Avatars, Cards, Threads, Overlays); the Appearance (Auto, Light, Dark) and Text size
+(Auto, AX3) controls at the top override the system. Every block names its Figma node.
+`PALDORA_GALLERY_FLAT=1` (environment) draws no shadows; the UI test sets it because
+Xcode's contrast audit mis-samples text near a soft shadow (verified: with shadows the
+audit reports passing pairs, without them it does not).
+
+**Deviations from Figma (intentional).**
+
+- Small text that Figma sets in `text/muted` (3.3:1 in Light) uses `text/secondary`
+  (eyebrow labels, captions, times, deleted comments, list values, audience labels).
+  The placeholder, chevrons and the dashed Add outline keep `text/muted` (not text that
+  carries meaning).
+- Accent button and Life Update call to action: ink text (`accent/on-brass`, 4.9:1)
+  instead of cream (3.3:1 on brass). Accent chip text is `status/danger` (4.5:1 on
+  ember-soft), not `accent/ember` (3.7:1). Success banner title is `text/primary`
+  (sage on sage-soft is 3.5:1); its icon stays sage.
+- Tab bar: the fourth tab is drawn as "Activity" (Figma) and spoken as "Notifications";
+  at accessibility text sizes the labels are hidden (icons only, the spoken label stays)
+  because five labels cannot fit; the room tab uses `chair.lounge` (Figma draws an
+  armchair). Badges are a small ember dot (Figma has none).
+- Icons are SF Symbols, not the Figma paths: `light` weight stands for the 1.6 pt stroke
+  and `regular` for 1.8 pt active. `grip` is `line.3.horizontal`; `alert` is the
+  triangle. `spark` and `flame` are shapes with the Figma stroke widths.
+- Disabled buttons are 40% opacity as in Figma. Button heights are the Figma 56 / 48 /
+  36 pills; the 36 pt one has a 44 pt hit region (and layout height). Life Update and
+  dialog buttons use the M (48) size, the frames show 46 and 50.
+- Avatar: initials are one letter under 34 pt (stacks) and two otherwise, on a stable
+  brass, sage or ember tint per name; the Figma frames show a single letter everywhere.
+- The Box card shows "n new" as an ember chip over the cover's top corner (Figma lists the
+  behavior without a drawn position). The skeleton pulses (opacity) instead of a shimmer.
+- Segmented control stacks vertically at accessibility text sizes. The bottom sheet is
+  the system sheet (detents medium and large, 30 pt corner radius, canvas background)
+  with the Figma content; the scrim is the system's, the dialog scrim is 50% `bg/inverse`.
+- The off toggle track has a 1 pt `text/muted` outline (3:1, WCAG 1.4.11); Figma draws the hairline fill alone (1.3:1).
+- Gallery photos are token gradients, not the Figma photographs.
+
 ## Tests
 
 ```bash
@@ -265,7 +346,7 @@ cd apps/ios && xcodebuild test -project Paldora.xcodeproj -scheme Paldora \
   -only-testing:PaldoraTests -derivedDataPath ~/Library/Caches/paldora-ios/DerivedData \
   -destination 'platform=iOS Simulator,name=iPhone 16e,OS=18.3.1' \
   -skipPackagePluginValidation CODE_SIGN_IDENTITY=-     # app unit tests
-apps/ios/scripts/ui-test.sh                              # XCUITest on emulators
+apps/ios/scripts/ui-test.sh                              # XCUITest on emulators (includes the gallery audit)
 ```
 
 `ui-test.sh` (run from anywhere) builds the Functions, starts the
@@ -285,6 +366,16 @@ post and comment) and its receipt, and creating a Box, posting, opening the
 post with a generated photo, opening it from Home and the photo viewer,
 reacting and commenting. Override with
 `IOS_SIM_NAME` and `IOS_SIM_OS`.
+
+`ComponentGalleryUITests` launches the DEBUG gallery (`-PALDORA_GALLERY`, no sign-in
+needed), opens every section and runs `performAccessibilityAudit` in Light, Dark and at
+accessibility3, with the main audit's exemptions (findings without an element, "nearly
+passed") plus: contrast of disabled controls (WCAG 1.4.3 exempts inactive components),
+contrast under the home indicator, the known email-style text-field "text clipped" false
+positive. Token contrast for the component pairs is checked in `ContrastTests`;
+`DesignSystemTests` covers the non-visual logic (button state mapping, chip selection,
+field state, segmented selection, tone, avatar initials, tab selection, hit-target helper).
+Run only it with `UI_TEST_ONLY=PaldoraUITests/ComponentGalleryUITests apps/ios/scripts/ui-test.sh`.
 
 The fixture suite loads every file in `contracts/native/fixtures` and
 round-trips each valid request and response through the Swift types. A fixture

@@ -19,12 +19,25 @@ struct PaldoraApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(model: model)
+            appContent
                 .onChange(of: scenePhase) {
                     cover.apply(scenePhase)
                     PrivacyShield.shared.set(covered: cover.isCovered)
                 }
         }
+    }
+
+    @ViewBuilder private var appContent: some View {
+        #if DEBUG
+        // DEBUG only: `-PALDORA_GALLERY` shows the design-system component gallery.
+        if ComponentGallery.isRequested {
+            ComponentGallery()
+        } else {
+            RootView(model: model)
+        }
+        #else
+        RootView(model: model)
+        #endif
     }
 
     /// Wires Firebase once, fail closed. Release builds without a hosted

@@ -76,46 +76,17 @@ struct RemoteImage: View {
     }
 }
 
-/// Avatar with an initials fallback while loading and whenever the image is
-/// unavailable.
+/// Deprecated: an avatar with an initials fallback. Now a wrapper over `PaldoraAvatar`,
+/// which keeps the authenticated thumbnail loading.
+@available(*, deprecated, message: "Use PaldoraAvatar(name:size:mediaId:).")
 struct AvatarView: View {
     let mediaId: String?
     let name: String
     var size: CGFloat = 40
-    @Environment(\.imageLoader) private var loader
-    @State private var image: UIImage?
-    @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
     var body: some View {
-        ZStack {
-            Circle().fill(Theme.highlight)
-            if let image {
-                Image(uiImage: image).resizable().scaledToFill()
-            } else {
-                Text(Self.initials(name)).font(.system(.footnote, design: .serif).weight(.semibold))
-                    .minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(Theme.text)
-            }
-        }
-        .frame(width: size * scale, height: size * scale)
-        .clipShape(Circle())
-        .overlay(Circle().stroke(Theme.gold.opacity(0.6), lineWidth: 1))
-        // Exposed (not hidden) so the initials are not "inaccessible text"; kept short because
-        // the name is always read next to it.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Profile photo")
-        .accessibilityAddTraits(.isImage)
-        .task(id: mediaId) { await load() }
+        PaldoraAvatar(name: name, size: size, mediaId: mediaId)
     }
 
-    private func load() async {
-        image = nil
-        guard let mediaId, let loader else { return }
-        if let hit = loader.cached(mediaId, .thumbnail) { image = hit; return }
-        if case .image(let loaded) = await loader.image(mediaId, .thumbnail) { image = loaded }
-    }
-
-    static func initials(_ name: String) -> String {
-        let parts = name.split(separator: " ").prefix(2).compactMap(\.first)
-        return parts.isEmpty ? "P" : String(parts).uppercased()
-    }
+    static func initials(_ name: String) -> String { PaldoraAvatar.initials(name) }
 }

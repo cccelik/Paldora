@@ -30,20 +30,32 @@ struct BrandMark: View {
     }
 }
 
-/// Enabled: ink fill. Disabled: a quiet outlined surface with muted text, which keeps
-/// AA contrast (a faded ink fill with ivory text does not).
+/// Deprecated: the primary pill. Now delegates to `PaldoraButtonStyle` (Primary, M,
+/// full width); new code uses `PaldoraButton` or `PaldoraButtonStyle`.
+@available(*, deprecated, message: "Use PaldoraButton or PaldoraButtonStyle(kind: .primary, fullWidth: true).")
 struct PrimaryButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(Typography.headline)
-            .foregroundStyle(isEnabled ? Theme.onInk : Theme.textMuted)
-            .frame(maxWidth: .infinity, minHeight: Theme.touchTarget)
-            .padding(.horizontal, Theme.space4)
-            .background(isEnabled ? Theme.ink : Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
-            .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.hairline, lineWidth: isEnabled ? 0 : 1))
-            .opacity(configuration.isPressed ? 0.85 : 1)
+        LegacyPrimary(configuration: configuration)
+    }
+
+    /// Enabled is the new Primary pill. Disabled keeps the older quiet outlined look rather than
+    /// the kit's 40% fade: faded ink with ivory text is below AA and the main-screen audit flags it.
+    private struct LegacyPrimary: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            if isEnabled {
+                PaldoraButtonStyle(kind: .primary, size: .medium, fullWidth: true).makeBody(configuration: configuration)
+            } else {
+                configuration.label
+                    .paldoraText(PaldoraButtonSize.medium.textStyle)
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: PaldoraButtonSize.medium.height)
+                    .background(Theme.bgSurface, in: Capsule())
+                    .paldoraHairline(Capsule())
+            }
+        }
     }
 }
 
@@ -75,51 +87,36 @@ struct AdaptiveStack<Content: View>: View {
     }
 }
 
+/// Deprecated: a quiet text button. Now delegates to the Ghost `PaldoraButtonStyle`.
+@available(*, deprecated, message: "Use PaldoraButton(kind: .ghost) or PaldoraButtonStyle(kind: .ghost).")
 struct QuietButtonStyle: ButtonStyle {
     var destructive = false
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(Typography.label)
-            .foregroundStyle(destructive ? Theme.danger : Theme.goldText)
-            .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-            .contentShape(Rectangle())
-            .opacity(configuration.isPressed ? 0.6 : 1)
+        PaldoraButtonStyle(kind: .ghost, size: .small, destructive: destructive).makeBody(configuration: configuration)
     }
 }
 
-/// A labelled text field with a hairline surface; at least 44pt tall.
+/// Deprecated: a labelled input surface. Now `PaldoraFieldContainer` (54 pt, eyebrow label).
+@available(*, deprecated, message: "Use PaldoraTextField or PaldoraFieldContainer.")
 struct FieldContainer<Content: View>: View {
     let title: String
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.space1) {
-            Text(title).font(Typography.label).foregroundStyle(Theme.textMuted)
-            content
-                .font(Typography.body)
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(minHeight: Theme.touchTarget)
-                .padding(.horizontal, Theme.space3)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
-                .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.hairline, lineWidth: 1))
-        }
+        PaldoraFieldContainer(title: title) { content }
     }
 }
 
-/// Inline status text with an icon so meaning never relies on color alone.
+/// Deprecated: inline status text with an icon. Now `PaldoraFieldMessage`.
+@available(*, deprecated, message: "Use PaldoraFieldMessage.")
 struct InlineMessage: View {
     enum Kind { case error, success }
     let text: String
     var kind: Kind = .error
 
     var body: some View {
-        Label(text, systemImage: kind == .error ? "exclamationmark.circle" : "checkmark.circle")
-            .font(Typography.callout)
-            .foregroundStyle(kind == .error ? Theme.danger : Theme.success)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
+        PaldoraFieldMessage(text: text, isError: kind == .error)
     }
 }
 

@@ -54,6 +54,15 @@ struct ContrastTests {
                 Pair(name: "\(mode) danger on canvas", foreground: pick(C.statusDanger), background: pick(C.bgCanvas)),
                 Pair(name: "\(mode) success on surface", foreground: pick(C.statusSuccess), background: pick(C.bgSurface)),
                 Pair(name: "\(mode) success on canvas", foreground: pick(C.statusSuccess), background: pick(C.bgCanvas)),
+                // Design-system component pairs (banner, chip, avatar tints, Life Update, toast).
+                Pair(name: "\(mode) textSecondary on brassSoft", foreground: pick(C.textSecondary), background: pick(C.accentBrassSoft)),
+                Pair(name: "\(mode) textSecondary on sageSoft", foreground: pick(C.textSecondary), background: pick(C.accentSageSoft)),
+                Pair(name: "\(mode) textSecondary on emberSoft", foreground: pick(C.textSecondary), background: pick(C.accentEmberSoft)),
+                Pair(name: "\(mode) textPrimary on sageSoft", foreground: pick(C.textPrimary), background: pick(C.accentSageSoft)),
+                Pair(name: "\(mode) textPrimary on emberSoft", foreground: pick(C.textPrimary), background: pick(C.accentEmberSoft)),
+                Pair(name: "\(mode) danger on emberSoft", foreground: pick(C.statusDanger), background: pick(C.accentEmberSoft)),
+                // Figma brass on the inverse surface is 4.34:1 in Light (eyebrow, toast action); kept as designed.
+                Pair(name: "\(mode) brass on inverse", foreground: pick(C.accentBrass), background: pick(C.bgInverse), minimum: 4.3),
                 Pair(name: "\(mode) focus ring on canvas", foreground: pick(C.focusRing), background: pick(C.bgCanvas), minimum: 3),
                 Pair(name: "\(mode) focus ring on surface", foreground: pick(C.focusRing), background: pick(C.bgSurface), minimum: 3),
                 Pair(name: "\(mode) focus ring on inverse", foreground: pick(C.focusRing), background: pick(C.bgInverse), minimum: 3),

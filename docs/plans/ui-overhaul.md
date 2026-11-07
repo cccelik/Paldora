@@ -1,6 +1,6 @@
 # UI overhaul: "Hearth & Brass" (Paldora v2 design kit)
 
-Status: in progress (started 2026-11-07). Step 0 (tokens and fonts) done 2026-11-07, see "Step 0 result". Owner instruction: implement the Figma
+Status: in progress (started 2026-11-07). Step 0 (tokens and fonts) done 2026-11-07, see "Step 0 result". Step 1, iOS part (component library and gallery) done 2026-11-07, see "Step 1 result (iOS)"; web components still open. Owner instruction: implement the Figma
 kit across the product with reusable components. This plan supersedes the
 palette in `legacy/design/design-system.md` (Obsidian Ink / Antique Gold /
 Champagne / Warm Ivory / Soft Lavender) where they differ; CLAUDE.md §I is
@@ -157,3 +157,57 @@ Verified against Figma `RAZq5RS2gSwVa4xvxbk0gZ` with `get_variable_defs` on
   fixed: 72 for Light, 24 for Regular, a choice, since Figma did not state one).
 - **Not done here:** components, screens, Room UI (steps 1 to 4). Kotlin output
   is generated but still not compiled (no Android toolchain in CI yet).
+
+## Step 1 result (iOS, 2026-11-07)
+
+`apps/ios/Paldora/DesignSystem/` (Foundations, Buttons, Inputs, Controls, Feedback,
+Navigation, Content, Overlays, Gallery; every file under 300 lines). Built from page
+"02 · Components" (30:6) with `get_design_context` per frame; colors, fonts, spacing,
+radius, elevation and motion come from the generated tokens, no hex in the library.
+Details, usage and the deviation list are in `apps/ios/README.md` ("Design system").
+
+| Component (Figma) | Node   | SwiftUI                                                                                     |
+| ----------------- | ------ | ------------------------------------------------------------------------------------------- |
+| Button            | 43:98  | `PaldoraButton`, `PaldoraButtonStyle`                                                       |
+| Icon button       | 43:125 | `PaldoraIconButton`                                                                         |
+| Chip              | 43:146 | `PaldoraChip`, `PaldoraSelectableChip`                                                      |
+| Text field        | 43:189 | `PaldoraTextField`, `PaldoraFieldContainer`, `PaldoraFieldMessage`                          |
+| Toggle            | 43:198 | `PaldoraToggle`, `PaldoraToggleStyle`                                                       |
+| Radio             | 43:205 | `PaldoraRadio`, `PaldoraRadioIndicator`                                                     |
+| Checkbox          | 43:214 | `PaldoraCheckbox`, `PaldoraCheckboxIndicator`                                               |
+| Avatar            | 43:245 | `PaldoraAvatar`, `PaldoraAvatarStack`                                                       |
+| Banner            | 43:280 | `PaldoraBanner` (`PaldoraTone`)                                                             |
+| Toast             | 43:296 | `PaldoraToast`                                                                              |
+| List row          | 43:347 | `PaldoraListRow`, `PaldoraListGroup`, `PaldoraListDivider`                                  |
+| Segmented control | 43:377 | `PaldoraSegmentedControl`                                                                   |
+| Post card         | 44:55  | `PaldoraPostCard` (`PaldoraPostCardContent`)                                                |
+| Life Update card  | 44:74  | `PaldoraLifeUpdateCard`                                                                     |
+| Box card          | 44:93  | `PaldoraBoxCard`                                                                            |
+| Comment           | 44:122 | `PaldoraComment`                                                                            |
+| Notification row  | 44:140 | `PaldoraNotificationRow`                                                                    |
+| Upload tile       | 44:166 | `PaldoraUploadTile` (`PaldoraUploadState`)                                                  |
+| Nav bar           | 44:200 | `PaldoraNavBar`                                                                             |
+| Skeleton          | 44:212 | `PaldoraSkeleton`, `PaldoraPostSkeleton`                                                    |
+| Overlays          | 44:247 | `PaldoraBottomSheetContent` + `.paldoraBottomSheet`, `PaldoraDialogCard` + `.paldoraDialog` |
+| Tab bar           | 21:108 | `PaldoraTabBar`, `PaldoraTab`                                                               |
+| Icons (page 01)   | 42:389 | `PaldoraIcon`, `PaldoraIconView`                                                            |
+| Web sidebar       | 26:371 | not built (web step)                                                                        |
+
+- **Migration:** `PrimaryButtonStyle`, `QuietButtonStyle`, `FieldContainer`,
+  `InlineMessage` (Components.swift) and `AvatarView` are deprecated thin wrappers over
+  the new components; no screen was redesigned. Expect deprecation warnings until step 2
+  migrates the call sites (about 150).
+- **Gallery:** DEBUG-only `ComponentGallery` behind `-PALDORA_GALLERY`; XCUITest audit in
+  Light, Dark and accessibility3; unit tests in `DesignSystemTests`.
+- **Open items:** (1) step 2 replaces the deprecated wrappers and wires `PaldoraTabBar`,
+  `PaldoraNavBar` and the sheets into the screens (the app still uses the system tab bar);
+  (2) Figma `text/muted` is below AA for small text in Light and Figma components that set
+  small text in it were repointed to `text/secondary`; decide whether Figma should darken
+  it; (3) brass on `bg/inverse` is 4.34:1 in Light (Life Update eyebrow, toast action),
+  pinned in `ContrastTests` at 4.3; (4) Figma "Accent" button and chip text colors fail AA
+  and were changed (README deviations), Figma should adopt `accent/on-brass`; (5) the Figma
+  fourth tab is "Activity", the app calls it Notifications; (6) icons are SF Symbols, the
+  Figma room glyph (armchair) maps to `chair.lounge`; (7) shadows are not themed per mode
+  (Figma has one Lift and one Soft); (8) web component library (`apps/web/app/components/ui`)
+  is still to do, and the Figma web sidebar frame 26:371 belongs to it; (9) Room theme
+  canvases and widgets (step 4) are not part of this library.
