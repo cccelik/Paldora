@@ -853,6 +853,15 @@ async function seed({ db, auth, uids, tokenOf, stateRef, state }) {
         if (error.status !== 'ALREADY_EXISTS') throw error;
       }
     });
+  // A freshly seeded fixture account has no username yet; onboard it so
+  // friend requests and invitations by username can address it.
+  const meBefore = await callable(await tokenOf('me'), 'getMyProfile', {});
+  if (!(meBefore.profile?.username ?? meBefore.username))
+    await profiles.update(uids.me, {
+      username: 'local_me',
+      displayName: 'Local Me',
+      onboardingState: 'complete',
+    });
   const meProfile = await callable(await tokenOf('me'), 'getMyProfile', {});
   const meUsername = meProfile.profile?.username ?? meProfile.username;
   for (const [key] of PEOPLE)
