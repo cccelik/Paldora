@@ -4,9 +4,11 @@
 }
 
 .title {
-  font-family: var(--pal-font-editorial);
-  font-size: var(--pal-font-size-heading-small);
-  font-weight: 600;
+  font-family: var(--pal-type-title-m-font-family);
+  font-size: var(--pal-type-title-m-font-size);
+  font-weight: var(--pal-type-title-m-font-weight);
+  letter-spacing: var(--pal-type-title-m-tracking);
+  line-height: var(--pal-type-title-m-line-height);
 }
 
 .description {

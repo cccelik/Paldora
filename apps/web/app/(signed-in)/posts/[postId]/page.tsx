@@ -2,8 +2,8 @@ import styles from '@/(signed-in)/posts/[postId]/page.module.css';
 
 import { FirebaseCommentThreads } from '@/components/interactions/firebase-comments';
 
-import { FirebaseBoxFeed } from '@/components/posts/firebase-box-feed';
-import { BackLink } from '@/components/ui';
+import { PostDetail } from '@/components/posts/post-detail';
+import { Chip, NavBar } from '@/components/ui';
 
 import { lifeUpdateHref } from '@/lib/life-updates/life-update-form';
 import {
@@ -41,23 +41,28 @@ export default async function PostPage({
     ]);
     return (
       <div className={styles.stack}>
-        <BackLink href={`/boxes/${box.id}`}>{box.name}</BackLink>
-        <FirebaseBoxFeed
-          items={[item]}
+        <NavBar
+          title={box.name}
+          back={{ href: `/boxes/${box.id}`, label: `Back to ${box.name}` }}
+          action={<Chip icon="lock">Private Box</Chip>}
+        />
+        <PostDetail
+          item={item}
           active={box.status === 'active'}
           presets={me.preferences.reactionPresets}
-        />
-        <FirebaseCommentThreads
-          boxId={box.id}
-          postId={id}
-          threads={comments.items}
-          nextCursor={comments.nextCursor}
-          pinned={pinned}
-          pinnedMissing={!!focusId && !pinned}
-          active={box.status === 'active'}
-          presets={me.preferences.reactionPresets}
-          count={item.interactions.commentCount}
-        />
+        >
+          <FirebaseCommentThreads
+            boxId={box.id}
+            postId={id}
+            threads={comments.items}
+            nextCursor={comments.nextCursor}
+            pinned={pinned}
+            pinnedMissing={!!focusId && !pinned}
+            active={box.status === 'active'}
+            presets={me.preferences.reactionPresets}
+            count={item.interactions.commentCount}
+          />
+        </PostDetail>
       </div>
     );
   }

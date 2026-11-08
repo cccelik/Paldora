@@ -33,13 +33,14 @@
 }
 
 .title {
-  font-family: var(--pal-font-editorial);
+  font-family: var(--pal-type-display-l-font-family);
   font-size: clamp(
     var(--pal-font-size-title),
     6vw,
-    var(--pal-font-size-display-large)
+    var(--pal-type-display-l-font-size)
   );
-  font-weight: 600;
+  font-weight: var(--pal-type-display-l-font-weight);
+  letter-spacing: var(--pal-type-display-l-tracking);
   line-height: 1.1;
 }
 
@@ -61,19 +62,21 @@
     display: grid;
     align-content: space-between;
     padding: var(--pal-space-12);
-    background: var(--pal-canvas);
-    color: var(--pal-text);
+    background: var(--pal-bg-inverse);
+    color: var(--pal-text-on-inverse);
   }
 
   .quote {
     max-width: 24rem;
-    font-family: var(--pal-font-brand);
-    font-size: var(--pal-font-size-display-large);
-    line-height: 1.15;
+    font-family: var(--pal-type-display-l-font-family);
+    font-size: var(--pal-type-display-l-font-size);
+    font-weight: var(--pal-type-display-l-font-weight);
+    letter-spacing: var(--pal-type-display-l-tracking);
+    line-height: var(--pal-type-display-l-line-height);
   }
 
   .storyFootnote {
-    color: var(--pal-text-secondary);
+    color: var(--pal-text-on-inverse);
     font-size: var(--pal-font-size-sm);
   }
 }

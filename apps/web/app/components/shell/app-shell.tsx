@@ -1,17 +1,18 @@
 import { signOutAction } from '@/actions/auth';
 import { SubmitButton } from '@/components/forms/submit-button';
-import { NotificationBell } from '@/components/notifications/notification-bell';
-import { AppNav, BottomNav } from '@/components/shell/app-nav';
 import styles from '@/components/shell/app-shell.module.css';
+import { ShellNavigation } from '@/components/shell/shell-navigation';
 import { Avatar, Wordmark } from '@/components/ui';
 import { primaryNavigation } from '@/lib/server/navigation';
 import { type CurrentUser, type UnreadCount } from '@paldora/validation';
 import Link from 'next/link';
 import { type ReactNode } from 'react';
 /**
- * The trusted frame around signed-in pages. Navigation and account actions
- * live here, outside any user-customized content (a Room canvas sits in
- * `main`, below the header and the bottom nav).
+ * The trusted frame around signed-in pages (Figma W03 layout): a 264px
+ * sidebar from 1024px, a slim top bar and a floating bottom nav below it.
+ * Navigation and account actions live here, outside any user-customized
+ * content (a Room canvas sits in `main`, below the sidebar and the bottom
+ * nav).
  */
 export function AppShell({
   user,
@@ -19,44 +20,63 @@ export function AppShell({
   children,
 }: {
   user: CurrentUser;
-  /** The first unread count; the bell keeps it current from then on. */
+  /** The first unread count; the navigation keeps it current from then on. */
   unread: UnreadCount;
   children: ReactNode;
 }) {
-  const name = user.profile.displayName ?? user.profile.username;
+  const handle = user.profile.username ?? '';
+  const name = user.profile.displayName ?? handle;
   const links = primaryNavigation(user.profile.username);
-  const avatar = <Avatar url={user.profile.avatar?.thumbnailUrl} name={name} />;
+  const avatarUrl = user.profile.avatar?.thumbnailUrl ?? null;
+  const signOut = (
+    <form action={signOutAction} className={styles.signOut}>
+      <SubmitButton variant="quiet" pendingLabel="Signing out…">
+        Sign out
+      </SubmitButton>
+    </form>
+  );
   return (
-    <>
-      <header className={styles.header}>
-        <div className={styles.bar}>
+    <div className={styles.frame}>
+      <aside className={styles.sidebar}>
+        <ShellNavigation
+          part="sidebar"
+          links={links}
+          unread={unread}
+          profile={{
+            name,
+            handle,
+            avatarUrl,
+          }}
+          footer={signOut}
+        />
+      </aside>
+      <div className={styles.content}>
+        <header className={styles.header}>
           <Link href="/home" className={styles.brand} aria-label="Paldora home">
             <Wordmark />
           </Link>
-          <AppNav links={links} />
           <div className={styles.account}>
-            <NotificationBell initial={unread} />
-            {/* Below 768px Settings lives here, as the avatar. */}
             <Link
               href="/settings/account"
               className={styles.avatarLink}
               aria-label="Settings"
             >
-              {avatar}
+              <Avatar url={avatarUrl} name={name} />
             </Link>
-            <span className={styles.avatarPlain}>{avatar}</span>
-            <form action={signOutAction} className={styles.signOut}>
-              <SubmitButton variant="quiet" pendingLabel="Signing out…">
-                Sign out
-              </SubmitButton>
-            </form>
+            {signOut}
           </div>
-        </div>
-      </header>
-      <main id="main" className={styles.main}>
-        {children}
-      </main>
-      <BottomNav links={links} />
-    </>
+        </header>
+        <main id="main" className={styles.main}>
+          {children}
+        </main>
+      </div>
+      <ShellNavigation
+        part="bottom"
+        links={links}
+        unread={unread}
+        profile={{ name, handle }}
+        footer={null}
+      />
+    </div>
   );
 }

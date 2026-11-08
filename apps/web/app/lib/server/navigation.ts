@@ -1,13 +1,17 @@
+import { type IconName } from '@/components/ui/icons';
 import { roomHref } from '@/lib/rooms/room-theme';
 /**
- * The one list of primary destinations. The desktop top nav shows every
- * link in list order; below 768px the bottom nav shows the five with a
- * `bottom` position, in that order, and Settings moves to the avatar in the
- * header. Memories stays reachable from Home, Life Updates, and Rooms.
+ * The one list of primary destinations (the seven of the Figma web sidebar).
+ * From 1024px the sidebar shows every link in list order; below that the
+ * bottom nav shows the five with a `bottom` position, in that order, with My
+ * Room among them, and Settings moves to the avatar in the header. Memories
+ * stays reachable from Home, Life Updates, and Rooms; Life Updates from Home
+ * and the sidebar's "New life update" button.
  */
 export interface NavigationLink {
   readonly href: string;
   readonly label: string;
+  readonly icon: IconName;
   /** The path prefix that marks this link as the current section. */
   readonly section: string;
   /** Position in the bottom nav, or null when it is not there. */
@@ -17,21 +21,22 @@ export interface NavigationLink {
 const link = (
   href: string,
   label: string,
+  icon: IconName,
   bottom: number | null,
   section = href,
-): NavigationLink => ({ href, label, section, bottom });
+): NavigationLink => ({ href, label, icon, section, bottom });
 
 export function primaryNavigation(
   username: string | null,
 ): readonly NavigationLink[] {
   return [
-    link('/home', 'Home', 0),
-    link('/friends', 'Friends', 3),
-    link('/boxes', 'Boxes', 1),
-    link('/life-updates', 'Life Updates', 2),
-    link('/memories', 'Memories', null),
-    ...(username ? [link(roomHref(username), 'My Room', 4)] : []),
-    link('/settings/account', 'Settings', null, '/settings'),
+    link('/home', 'Home', 'home', 0),
+    link('/boxes', 'Boxes', 'box', 1),
+    ...(username ? [link(roomHref(username), 'My Room', 'room', 2)] : []),
+    link('/memories', 'Memories', 'book', null),
+    link('/notifications', 'Activity', 'bell', 4),
+    link('/friends', 'Friends', 'friends', 3),
+    link('/settings/account', 'Settings', 'gear', null, '/settings'),
   ];
 }
 

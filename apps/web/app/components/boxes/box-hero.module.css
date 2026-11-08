@@ -1,0 +1,53 @@
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pal-space-5);
+  padding: var(--pal-space-8) var(--pal-space-6);
+  border-radius: var(--pal-radius-xl);
+  background: var(--pal-bg-inverse);
+  box-shadow: var(--pal-elevation-lift);
+  color: var(--pal-text-on-inverse);
+}
+
+.text {
+  display: grid;
+  flex: 1 1 16rem;
+  gap: var(--pal-space-2);
+  min-width: 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+  font-size: var(--pal-type-eyebrow-font-size);
+  font-weight: var(--pal-type-eyebrow-font-weight);
+  letter-spacing: var(--pal-type-eyebrow-tracking);
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--pal-type-display-l-font-family);
+  font-size: clamp(
+    var(--pal-type-display-m-font-size),
+    6vw,
+    var(--pal-type-display-xl-font-size)
+  );
+  font-weight: var(--pal-type-display-l-font-weight);
+  letter-spacing: var(--pal-type-display-l-tracking);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: var(--pal-font-size-readable);
+}
+
+.side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}

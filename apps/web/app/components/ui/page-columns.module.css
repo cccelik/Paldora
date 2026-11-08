@@ -1,0 +1,29 @@
+.columns {
+  display: grid;
+  gap: var(--pal-space-8);
+}
+
+.main {
+  display: grid;
+  align-content: start;
+  gap: var(--pal-space-6);
+  min-width: 0;
+}
+
+.rail {
+  display: grid;
+  align-content: start;
+  gap: var(--pal-space-4);
+  min-width: 0;
+}
+
+.narrow {
+  max-width: 44rem;
+}
+
+@media (min-width: 1280px) {
+  .withRail {
+    grid-template-columns: minmax(0, 1fr) var(--pal-layout-web-right-rail);
+    gap: var(--pal-layout-web-column-gap);
+  }
+}

@@ -12,9 +12,11 @@
 .legend {
   margin-bottom: var(--pal-space-2);
   padding: 0;
-  font-family: var(--pal-font-editorial);
-  font-size: var(--pal-font-size-subtitle);
-  font-weight: 600;
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-type-eyebrow-font-size);
+  font-weight: var(--pal-type-eyebrow-font-weight);
+  letter-spacing: var(--pal-type-eyebrow-tracking);
+  text-transform: uppercase;
 }
 
 .subLegend {

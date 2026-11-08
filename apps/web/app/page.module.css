@@ -34,18 +34,20 @@
 }
 
 .title {
-  font-family: var(--pal-font-brand);
+  font-family: var(--pal-type-display-xl-font-family);
   font-size: clamp(
     var(--pal-font-size-hero-small),
     9vw,
-    var(--pal-font-size-hero-large)
+    var(--pal-type-display-xl-font-size)
   );
-  font-weight: 600;
+  font-weight: var(--pal-type-display-xl-font-weight);
+  letter-spacing: var(--pal-type-display-xl-tracking);
   line-height: 1;
 }
 
 .title em {
   color: var(--pal-accent-text);
+  font-style: italic;
 }
 
 .intro {
@@ -76,14 +78,15 @@
   display: grid;
   gap: var(--pal-space-2);
   padding: var(--pal-space-6);
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
   border-radius: var(--pal-radius-lg);
   background: var(--pal-surface);
 }
 
 .promiseTitle {
-  font-family: var(--pal-font-editorial);
-  font-size: var(--pal-font-size-subtitle);
-  font-weight: 600;
+  font-family: var(--pal-type-title-m-font-family);
+  font-size: var(--pal-type-title-m-font-size);
+  font-weight: var(--pal-type-title-m-font-weight);
 }
 
 .promiseDetail {

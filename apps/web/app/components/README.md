@@ -5,17 +5,17 @@ small client leaves. Route files fetch data and compose components. Reusable
 presentation lives here; authorization and media bytes stay in server-only
 services and same-origin route handlers.
 
-| Area                    | Active components                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| Public info pages       | `LegalPage`, `LegalSection`, `LegalLinks` (`components/legal`; routes in `app/(public)`)    |
-| Shell and feedback      | `AppShell`, `AppNav`, `ToastProvider`, `RealtimeBridge`                                     |
-| Boxes and social        | `MemberList`, `BoxSections`, friendship and invitation controls                             |
-| Posts and conversations | `FirebaseBoxFeed`, `FirebaseCommentThreads`, `FirebasePostReactions`, `PostComposer`        |
-| Life Updates            | `FirebaseLifeUpdateCard`, `LifeUpdateComposer`, `LifeUpdateEditor`                          |
-| Memories                | `FirebaseMemoryTimeline`, `FirebaseMemoryYearNav`, `FirebaseMemoryMonthNav`, `MemoryPeriod` |
-| Rooms                   | `RoomCanvas`, widget editors, `RoomPhotoWidget`, personalization editor                     |
-| Media                   | `AvatarUploader`, `RoomBannerEditor`, private same-origin media viewers                     |
-| Account and operations  | export/deletion controls, report controls, moderation case controls                         |
+| Area                    | Active components                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Public info pages       | `LegalPage`, `LegalSection`, `LegalLinks` (`components/legal`; routes in `app/(public)`)                            |
+| Shell and feedback      | `AppShell`, `ShellNavigation` (`Sidebar` from 1024px, floating bottom nav below), `ToastProvider`, `RealtimeBridge` |
+| Boxes and social        | `MemberList`, `BoxSections`, friendship and invitation controls                                                     |
+| Posts and conversations | `FirebaseBoxFeed`, `FirebaseCommentThreads`, `FirebasePostReactions`, `PostComposer`                                |
+| Life Updates            | `FirebaseLifeUpdateCard`, `LifeUpdateComposer`, `LifeUpdateEditor`                                                  |
+| Memories                | `FirebaseMemoryTimeline`, `FirebaseMemoryYearNav`, `FirebaseMemoryMonthNav`, `MemoryPeriod`                         |
+| Rooms                   | `RoomCanvas`, widget editors, `RoomPhotoWidget`, personalization editor                                             |
+| Media                   | `AvatarUploader`, `RoomBannerEditor`, private same-origin media viewers                                             |
+| Account and operations  | export/deletion controls, report controls, moderation case controls                                                 |
 
 `app/lib/server/session.ts` verifies the seven-day Auth session and loads the
 current admitted account. `app/lib/server/firebase/data.ts` provides trusted
@@ -57,7 +57,7 @@ on the generated `--pal-*` tokens, and shown in Light and Dark at
 | Nav bar (44:200)                         | `NavBar`                                                                                         |
 | Skeleton (44:212)                        | `Skeleton`, `PostSkeleton`                                                                       |
 | Overlays (44:247)                        | `Dialog`, `BottomSheet`, `OverlayCard` (`ui/overlays`, client)                                   |
-| Web sidebar (26:371)                     | `Sidebar` (`shell/sidebar`; not yet wired into `AppShell`, step 3)                               |
+| Web sidebar (26:371)                     | `Sidebar` (`shell/sidebar`, rendered by `shell/shell-navigation` inside `AppShell`)              |
 | Icons (page 01)                          | `Icon` (`ui/icons`; the file cannot be named `icon`, a Next metadata convention)                 |
 
 Rules: icon-only controls need a `label`; small text uses `text/secondary`
@@ -65,3 +65,18 @@ Rules: icon-only controls need a `label`; small text uses `text/secondary`
 skeleton, never a spinner (except `Button loading`); one overlay at a time.
 `PostCard`, `LifeUpdateCard`, `BoxCard` and `Comment` take presentation props
 and slots, not Firestore view models; step 3 maps the feature data to them.
+
+## Step 3 screens (web)
+
+Feature data is mapped onto the primitives by the feature components, not by
+the primitives: `FirebaseBoxFeed` (`PostCard`, `LifeUpdateCard`),
+`FirebaseLifeUpdateCard` (detail), `FirebaseCommentThreads` (`Comment`),
+`PostDetail` (Figma W04), `BoxHero` and `BoxRail`, `BoxCardList` (`BoxCard`),
+the notifications row (`NotificationRow`), `SettingsNav`. Page-level helpers in
+`ui`: `PageHeader` (eyebrow, italic accent, action slot), `PageColumns` (feed
+plus 388px rail from 1280px), `PageLoading` (route `loading.tsx` skeletons) and
+`StatusPanel` (in-shell inaccessible and error states, used by
+`(signed-in)/not-found.tsx` and `(signed-in)/error.tsx`). `PostCard` takes
+`ariaLabel` and `controls`; `LifeUpdateCard` takes `ariaLabel`, `children` and a
+light `footer` panel (interactive controls need a light surface on the inverse
+card).

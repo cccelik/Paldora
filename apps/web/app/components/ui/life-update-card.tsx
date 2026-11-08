@@ -12,6 +12,9 @@ export function LifeUpdateCard({
   thumbnail,
   action,
   eyebrow = 'Life update',
+  ariaLabel,
+  children,
+  footer,
 }: {
   title: ReactNode;
   when: ReactNode;
@@ -19,9 +22,14 @@ export function LifeUpdateCard({
   thumbnail?: ReactNode;
   action?: ReactNode;
   eyebrow?: string;
+  ariaLabel?: string;
+  /** The sections and photos, between the title and the call to action. */
+  children?: ReactNode;
+  /** Interactive controls (reactions) on a light panel, so they keep contrast. */
+  footer?: ReactNode;
 }) {
   return (
-    <article className={styles.card}>
+    <article className={styles.card} aria-label={ariaLabel}>
       <header className={styles.header}>
         <p className={styles.eyebrow}>
           <span className={styles.spark}>
@@ -40,7 +48,9 @@ export function LifeUpdateCard({
           {quote ? <p className={styles.quote}>{quote}</p> : null}
         </div>
       ) : null}
+      {children ? <div className={styles.body}>{children}</div> : null}
       {action ? <div className={styles.action}>{action}</div> : null}
+      {footer ? <div className={styles.panel}>{footer}</div> : null}
     </article>
   );
 }

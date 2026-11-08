@@ -7,6 +7,7 @@ export function Comment({
   when,
   reply = false,
   deleted = false,
+  placeholder = 'This comment was deleted.',
   actions,
   children,
 }: {
@@ -14,6 +15,8 @@ export function Comment({
   when: ReactNode;
   reply?: boolean;
   deleted?: boolean;
+  /** The line shown instead of the text when `deleted` (also for hidden). */
+  placeholder?: string;
   /** Reaction, reply and menu controls. */
   actions?: ReactNode;
   children?: ReactNode;
@@ -27,7 +30,7 @@ export function Comment({
       />
       <div className={styles.main}>
         {deleted ? (
-          <p className={styles.deleted}>This comment was deleted.</p>
+          <p className={styles.deleted}>{placeholder}</p>
         ) : (
           <>
             <p className={styles.head}>

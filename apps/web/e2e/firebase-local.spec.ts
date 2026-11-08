@@ -119,6 +119,17 @@ test('admitted sign-in, onboarding, Box creation and session removal', async ({
   await expect(
     page.getByRole('article', { name: 'Post by Local Member' }),
   ).toContainText('A private local memory');
+  await expectSound(page);
+  for (const path of [
+    boxUrl,
+    '/boxes',
+    '/notifications',
+    '/memories',
+    '/settings/appearance',
+  ]) {
+    await page.goto(path);
+    await expectSound(page);
+  }
   await page.goto(boxUrl);
   await post.getByRole('button', { name: 'React with 👍' }).click();
   await expect(
@@ -153,6 +164,7 @@ test('admitted sign-in, onboarding, Box creation and session removal', async ({
   await expect(page.getByRole('list', { name: 'Comments' })).toContainText(
     'A private comment',
   );
+  await expectSound(page);
   const commentRow = page
     .getByRole('list', { name: 'Comments' })
     .getByRole('listitem')
@@ -810,7 +822,7 @@ test('Firebase notifications, report receipts, staff takedown and SSE', async ({
     await actor.getByLabel('Add a comment').fill('A reply for the owner');
     await actor.getByRole('button', { name: 'Comment', exact: true }).click();
     await expect(
-      page.getByRole('link', { name: /Notifications, 1 unread/ }),
+      page.getByRole('link', { name: /Activity.*1 unread/ }),
     ).toBeVisible({ timeout: 15_000 });
     await page.goto('/notifications');
     await expect(

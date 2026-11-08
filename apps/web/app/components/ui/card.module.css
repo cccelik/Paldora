@@ -2,6 +2,7 @@
   display: grid;
   gap: var(--pal-space-4);
   padding: var(--pal-space-6);
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
   border-radius: var(--pal-radius-lg);
   background: var(--pal-surface);
 }

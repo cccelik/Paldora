@@ -8,11 +8,11 @@ describe('primaryNavigation', () => {
   it('lists every desktop destination, with My Room for the signed-in user', () => {
     expect(primaryNavigation('ada').map((entry) => entry.label)).toEqual([
       'Home',
-      'Friends',
       'Boxes',
-      'Life Updates',
-      'Memories',
       'My Room',
+      'Memories',
+      'Activity',
+      'Friends',
       'Settings',
     ]);
     expect(
@@ -20,10 +20,10 @@ describe('primaryNavigation', () => {
     ).toBe('/rooms/ada');
   });
 
-  it('gives the bottom nav exactly five items in its own order', () => {
+  it('gives the bottom nav exactly five items, My Room among them', () => {
     expect(
       bottomLinks(primaryNavigation('ada')).map((entry) => entry.label),
-    ).toEqual(['Home', 'Boxes', 'Life Updates', 'Friends', 'My Room']);
+    ).toEqual(['Home', 'Boxes', 'My Room', 'Friends', 'Activity']);
   });
 
   it('leaves My Room out until there is a username', () => {

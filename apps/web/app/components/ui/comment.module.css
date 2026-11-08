@@ -13,6 +13,14 @@
   flex: 1;
   gap: var(--pal-space-1);
   min-width: 0;
+  padding: 10px 14px;
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-bg-sunken);
+}
+
+.reply .main {
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
+  background: var(--pal-bg-surface);
 }
 
 .head {
@@ -35,6 +43,7 @@
 .body {
   font-size: var(--pal-font-size-readable);
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .actions {

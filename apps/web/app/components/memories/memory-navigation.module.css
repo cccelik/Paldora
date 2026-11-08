@@ -12,8 +12,8 @@
 }
 
 .choices {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--pal-space-2);
 }
 
@@ -34,9 +34,9 @@
       var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
       transparent
     );
-  border-radius: var(--pal-radius-md);
-  background: var(--pal-canvas);
-  color: var(--pal-text);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-bg-surface);
+  color: var(--pal-text-primary);
   text-decoration: none;
   overflow-wrap: anywhere;
   transition: border-color var(--pal-duration-fast) var(--pal-easing-standard);
@@ -55,10 +55,15 @@ a.choice:hover {
   );
 }
 
-/* Gold marks where you are; it never fills. */
+/* The Figma selected chip: inverse fill marks where you are. */
 .choice[aria-current='page'] {
-  border-color: var(--pal-accent);
-  background: var(--pal-surface);
+  border-color: var(--pal-bg-inverse);
+  background: var(--pal-bg-inverse);
+  color: var(--pal-text-on-inverse);
+}
+
+.choice[aria-current='page'] .count {
+  color: inherit;
 }
 
 .quiet {

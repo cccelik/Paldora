@@ -1,0 +1,64 @@
+/* The floating solid bottom nav (Figma tab bar, no glass). Below 1024px. */
+.bottomNav {
+  position: fixed;
+  inset-inline: max(var(--pal-space-3), env(safe-area-inset-left, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--pal-space-2));
+  z-index: var(--pal-z-index-sticky);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--pal-space-1);
+  max-width: var(--pal-layout-tab-bar-width);
+  margin-inline: auto;
+  padding: var(--pal-space-1);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-bg-inverse);
+  box-shadow: var(--pal-elevation-lift);
+}
+
+.bottomLink {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: var(--pal-size-touch-target);
+  padding: var(--pal-space-1) 0;
+  border-radius: var(--pal-radius-pill);
+  color: var(--pal-text-on-inverse);
+  font-size: var(--pal-type-label-xs-font-size);
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  opacity: 0.78;
+}
+
+.bottomLink[aria-current='page'] {
+  background: var(--pal-bg-inverse-raised);
+  opacity: 1;
+}
+
+.bottomIcon {
+  position: relative;
+  display: inline-flex;
+}
+
+.dot {
+  position: absolute;
+  top: -4px;
+  inset-inline-start: 60%;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-accent-ember);
+  color: var(--pal-text-primary);
+  font-size: var(--pal-type-label-xs-font-size);
+  font-weight: 600;
+  line-height: 16px;
+}
+
+@media (min-width: 1024px) {
+  .bottomNav {
+    display: none;
+  }
+}

@@ -5,18 +5,19 @@ import { Wordmark } from '@/components/ui/wordmark';
 import styles from '@/components/shell/sidebar.module.css';
 import { type Route } from 'next';
 import Link from 'next/link';
+import { type ReactNode } from 'react';
 /**
  * Figma "Web sidebar" (26:371), 264 wide: seven items, the active one a dark
  * pill, an ember count on Activity, the accent "New life update" button and
  * the signed-in profile. Presentational: `currentHref` marks the active
- * item. Step 3 swaps it in for `AppNav` in `AppShell`.
+ * item. `ShellNavigation` feeds it live and `AppShell` renders it from 1024px.
  */
 export interface SidebarItem {
   href: string;
   label: string;
   icon: IconName;
   /** An unread count, shown in an ember badge and spoken. */
-  count?: number;
+  count?: number | string;
 }
 
 export function Sidebar({
@@ -25,12 +26,15 @@ export function Sidebar({
   composeHref,
   profile,
   navLabel = 'Primary',
+  footer,
 }: {
   items: readonly SidebarItem[];
   currentHref: string;
   composeHref: string;
   profile: { name: string; handle: string; avatarUrl?: string | null };
   navLabel?: string;
+  /** Account controls under the profile (sign out). Trusted chrome only. */
+  footer?: ReactNode;
 }) {
   const settings = items.filter((item) => item.href.startsWith('/settings'));
   const main = items.filter((item) => !item.href.startsWith('/settings'));
@@ -77,6 +81,7 @@ export function Sidebar({
           <span className={styles.handle}>@{profile.handle}</span>
         </p>
       </div>
+      {footer}
     </div>
   );
 }

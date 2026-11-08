@@ -71,6 +71,25 @@
   overflow-wrap: anywhere;
 }
 
+.body {
+  display: grid;
+  gap: var(--pal-space-3);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.body > * {
+  white-space: normal;
+}
+
+/* A light panel inside the dark card: controls need their own surface. */
+.panel {
+  padding: var(--pal-space-3);
+  border-radius: var(--pal-radius-md);
+  background: var(--pal-bg-surface);
+  color: var(--pal-text-primary);
+}
+
 .action {
   display: grid;
 }

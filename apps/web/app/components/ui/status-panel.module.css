@@ -1,0 +1,19 @@
+.panel {
+  display: grid;
+  justify-items: start;
+  gap: var(--pal-space-4);
+  max-width: 36rem;
+  padding: var(--pal-space-8) 0;
+}
+
+.title {
+  font-family: var(--pal-type-display-m-font-family);
+  font-size: var(--pal-type-display-m-font-size);
+  font-weight: var(--pal-type-display-m-font-weight);
+  letter-spacing: var(--pal-type-display-m-tracking);
+  line-height: var(--pal-type-display-m-line-height);
+}
+
+.detail {
+  color: var(--pal-text-secondary);
+}

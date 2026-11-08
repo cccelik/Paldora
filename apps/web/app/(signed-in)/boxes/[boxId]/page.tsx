@@ -10,11 +10,13 @@ import { MoreLink } from '@/components/common/more-link';
 
 import { FirebaseBoxFeed } from '@/components/posts/firebase-box-feed';
 import { PostComposer } from '@/components/posts/post-composer';
+import { BoxHero } from '@/components/boxes/box-hero';
 import {
   BackLink,
-  Badge,
   buttonClassName,
-  PageHeader,
+  Chip,
+  EmptyState,
+  PageColumns,
   Section,
 } from '@/components/ui';
 import { BOX_ABSENT, uuidParam } from '@/lib/server/route-params';
@@ -44,7 +46,7 @@ function BoxPosts({
   me: CurrentUser;
 }) {
   return (
-    <Section id="posts" title="Posts">
+    <section id="posts" className={styles.posts} aria-label="Posts">
       {status === 'active' ? <PostComposer boxId={boxId} /> : null}
       <div className={styles.actions}>
         {status === 'active' ? (
@@ -69,7 +71,7 @@ function BoxPosts({
           label="Show older posts"
         />
       ) : null}
-    </Section>
+    </section>
   );
 }
 
@@ -100,53 +102,65 @@ export default async function BoxPage({
     ),
   ]);
   return (
-    <div className={styles.stack}>
+    <div className={styles.page}>
       <BackLink href="/boxes">All Boxes</BackLink>
-      <PageHeader
-        title={box.name}
-        meta={
+      <BoxHero
+        box={box}
+        members={members.items}
+        canInvite={manager}
+        roleLabel={roleLabel[box.currentUserRole]}
+      />
+      {box.status === 'archived' ? (
+        <EmptyState>
+          This Box is archived. It stays readable, but no one new can join until
+          the owner restores it.
+        </EmptyState>
+      ) : null}
+      <PageColumns
+        railLabel="Members"
+        rail={
           <>
-            <Badge tone={owner ? 'accent' : 'neutral'}>
-              {roleLabel[box.currentUserRole]}
-            </Badge>
-            <Badge>
-              {box.memberCount} {box.memberCount === 1 ? 'member' : 'members'}
-            </Badge>
-            {box.status === 'archived' ? <Badge>Archived</Badge> : null}
+            <Section id="members" title="Members">
+              <MemberList
+                boxId={boxId}
+                viewerId={me.user.id}
+                viewerRole={box.currentUserRole}
+                members={members.items}
+              />
+              {members.nextCursor ? (
+                <MoreLink
+                  href={`/boxes/${boxId}?members=${encodeURIComponent(members.nextCursor)}`}
+                  label="Show more members"
+                />
+              ) : null}
+            </Section>
           </>
         }
-        description={
-          box.status === 'archived'
-            ? 'This Box is archived. It stays readable, but no one new can join until the owner restores it.'
-            : undefined
-        }
-      />
-      <BoxPosts
-        boxId={boxId}
-        status={box.status}
-        firebaseFeed={firebaseFeed}
-        me={me}
-      />
-      <Section id="members" title="Members">
-        <MemberList
+      >
+        <nav aria-label="This Box" className={styles.tabs}>
+          <Chip kind="selected">Moments</Chip>
+          <Link className={styles.tab} href="#members">
+            Members
+          </Link>
+          <Link className={styles.tab} href={`/boxes/${boxId}/memories`}>
+            Memories
+          </Link>
+        </nav>
+        <BoxPosts
           boxId={boxId}
-          viewerId={me.user.id}
-          viewerRole={box.currentUserRole}
-          members={members.items}
+          status={box.status}
+          firebaseFeed={firebaseFeed}
+          me={me}
         />
-        {members.nextCursor ? (
-          <MoreLink
-            href={`/boxes/${boxId}?members=${encodeURIComponent(members.nextCursor)}`}
-            label="Show more members"
-          />
+      </PageColumns>
+      <div className={styles.manage}>
+        {invitations ? (
+          <InviteSection box={box} invitations={invitations.items} />
         ) : null}
-      </Section>
-      {invitations ? (
-        <InviteSection box={box} invitations={invitations.items} />
-      ) : null}
-      {owner ? <SettingsSection box={box} /> : null}
-      <LeaveSection box={box} />
-      {owner ? <DeleteSection box={box} /> : null}
+        {owner ? <SettingsSection box={box} /> : null}
+        <LeaveSection box={box} />
+        {owner ? <DeleteSection box={box} /> : null}
+      </div>
     </div>
   );
 }

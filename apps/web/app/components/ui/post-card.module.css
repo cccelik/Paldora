@@ -40,6 +40,7 @@
   font-size: var(--pal-type-title-s-font-size);
   line-height: var(--pal-type-title-s-line-height);
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .footer {
@@ -62,4 +63,11 @@
   gap: 6px;
   color: var(--pal-text-secondary);
   font-size: var(--pal-type-body-s-font-size);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
 }

@@ -1,6 +1,12 @@
+/* The Figma composer: a surface card above the feed. */
 .composer {
   display: grid;
   gap: var(--pal-space-3);
+  padding: var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-bg-surface);
+  box-shadow: var(--pal-elevation-soft);
 }
 
 .row {

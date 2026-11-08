@@ -1,8 +1,5 @@
-/* The vertical rhythm shared by Friends, Boxes, and a single Box. */
+/* Wider than a single column: photo left, conversation right (Figma W04). */
 .stack {
   display: grid;
-  gap: var(--pal-space-8);
-  max-width: 44rem;
+  gap: var(--pal-space-6);
 }
-
-/* A row of secondary links that wraps on narrow screens. */

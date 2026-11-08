@@ -1,15 +1,14 @@
+/* The Figma "Appearance" panel: a Fraunces title, then the controls. */
 .section {
   display: grid;
   gap: var(--pal-space-5);
-  padding: var(--pal-space-6);
-  border-radius: var(--pal-radius-lg);
-  background: var(--pal-surface);
 }
 
 .sectionTitle {
-  font-family: var(--pal-font-editorial);
-  font-size: var(--pal-font-size-heading-small);
-  font-weight: 600;
+  font-family: var(--pal-type-title-l-font-family);
+  font-size: var(--pal-type-title-l-font-size);
+  font-weight: var(--pal-type-title-l-font-weight);
+  line-height: var(--pal-type-title-l-line-height);
 }
 
 .sectionDetail {

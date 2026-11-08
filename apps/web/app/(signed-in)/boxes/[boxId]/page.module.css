@@ -1,7 +1,37 @@
-/* The vertical rhythm shared by Friends, Boxes, and a single Box. */
-.stack {
+/* The vertical rhythm of a single Box. */
+.page {
   display: grid;
-  gap: var(--pal-space-8);
+  gap: var(--pal-space-6);
+}
+
+.posts {
+  display: grid;
+  gap: var(--pal-space-4);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pal-size-touch-target);
+  padding: 0 var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-bg-surface);
+  color: var(--pal-text-primary);
+  font-size: var(--pal-font-size-readable);
+  text-decoration: none;
+}
+
+.manage {
+  display: grid;
+  gap: var(--pal-space-6);
   max-width: 44rem;
 }
 

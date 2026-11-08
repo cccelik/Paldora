@@ -15,7 +15,7 @@ export function MemoryScopePage({
   return (
     <Stack>
       {back}
-      <PageHeader title={title} description={description} />
+      <PageHeader eyebrow="Memories" title={title} description={description} />
       {children}
     </Stack>
   );

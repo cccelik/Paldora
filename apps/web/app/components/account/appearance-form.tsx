@@ -15,8 +15,8 @@ const options: readonly { value: Appearance; label: string; detail: string }[] =
       label: 'System',
       detail: 'Follow this device’s setting.',
     },
-    { value: 'light', label: 'Light', detail: 'Warm ivory paper.' },
-    { value: 'dark', label: 'Dark', detail: 'Obsidian ink.' },
+    { value: 'light', label: 'Light', detail: 'Warm paper and brass.' },
+    { value: 'dark', label: 'Dark', detail: 'A dark hearth, the same brass.' },
   ];
 
 /** App appearance only. Room themes are separate and arrive with Rooms. */

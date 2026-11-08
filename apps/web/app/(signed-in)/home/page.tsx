@@ -1,9 +1,7 @@
-import pageStyles from '@/(signed-in)/home/page-layout.module.css';
-import styles from '@/(signed-in)/home/page.module.css';
+import { BoxRail } from '@/components/boxes/box-rail';
 import { MoreLink } from '@/components/common/more-link';
-
 import { FirebaseBoxFeed } from '@/components/posts/firebase-box-feed';
-import { Avatar, buttonClassName, Section } from '@/components/ui';
+import { buttonClassName, PageColumns, PageHeader } from '@/components/ui';
 import { completedUser, cursorParam } from '@/lib/server/session';
 
 import {
@@ -17,55 +15,48 @@ export const metadata = { title: 'Home' };
 export default async function HomePage({ searchParams }: PageProps<'/home'>) {
   const { profile, preferences } = await completedUser();
   const cursor = cursorParam((await searchParams).feed);
-  const feed = await (await firebaseWebData()).homeFeed({ limit: 20, cursor });
+  const data = await firebaseWebData();
+  const [feed, boxes] = await Promise.all([
+    data.homeFeed({ limit: 20, cursor }),
+    data.boxes({ limit: 50 }),
+  ]);
+  const boxNames = new Map(boxes.items.map((box) => [box.id, box.name]));
   return (
-    <div className={pageStyles.stack}>
-      <section className={styles.welcome} aria-labelledby="welcome-title">
-        <Avatar
-          url={profile.avatar?.url}
-          name={profile.displayName}
-          size="large"
-        />
-        <div className={styles.text}>
-          <p className={styles.eyebrow}>@{profile.username}</p>
-          <h1 id="welcome-title" className={styles.title}>
-            Welcome, {profile.displayName}.
-          </h1>
-          {profile.bio ? <p className={styles.bio}>{profile.bio}</p> : null}
-        </div>
-      </section>
-      <Section
-        id="feed"
-        title="Your feed"
+    <PageColumns
+      railLabel="Your Boxes"
+      rail={<BoxRail boxes={boxes.items.slice(0, 6)} />}
+    >
+      <PageHeader
+        eyebrow={`@${profile.username}`}
+        title="Welcome back,"
+        accent={`${profile.displayName ?? profile.username}.`}
         description="Posts from your Boxes, newest first. No ranking, ever."
-      >
-        <div className={pageStyles.actions}>
-          <Link
-            className={buttonClassName('secondary')}
-            href="/life-updates/new"
-          >
-            New Life Update
-          </Link>
-          <Link className={buttonClassName('quiet')} href="/memories">
-            Memories
-          </Link>
-        </div>
-        {
-          <FirebaseBoxFeed
-            items={feed.items as FirebaseFeedItem[]}
-            active
-            presets={preferences.reactionPresets}
-            showBox
-            empty="Nothing here yet. Open a Box and share something, or accept an invitation."
-          />
+        action={
+          <>
+            <Link className={buttonClassName('secondary')} href="/life-updates">
+              Your Life Updates
+            </Link>
+            <Link className={buttonClassName('quiet')} href="/memories">
+              Memories
+            </Link>
+          </>
         }
+      />
+      <section id="feed" aria-label="Your feed">
+        <FirebaseBoxFeed
+          items={feed.items as FirebaseFeedItem[]}
+          active
+          presets={preferences.reactionPresets}
+          boxNames={boxNames}
+          empty="Nothing here yet. Open a Box and share something, or accept an invitation."
+        />
         {feed.nextCursor ? (
           <MoreLink
             href={`/home?feed=${encodeURIComponent(feed.nextCursor)}`}
             label="Show older posts"
           />
         ) : null}
-      </Section>
-    </div>
+      </section>
+    </PageColumns>
   );
 }

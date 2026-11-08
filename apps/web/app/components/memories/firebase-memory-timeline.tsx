@@ -62,7 +62,11 @@ export function FirebaseMemoryTimeline({
                       items={[feedItem]}
                       active={post.interactions.canInteract}
                       presets={presets}
-                      showBox={!boxId}
+                      {...(boxId
+                        ? {}
+                        : {
+                            boxNames: new Map([[post.box.id, post.box.name]]),
+                          })}
                     />
                   </li>
                 );

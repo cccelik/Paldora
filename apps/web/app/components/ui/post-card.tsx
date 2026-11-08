@@ -19,6 +19,8 @@ export function PostCard({
   comments,
   actions,
   audience = 'Only this Box',
+  ariaLabel,
+  controls,
 }: {
   author: { name: string | null; avatarUrl?: string | null | undefined };
   /** Box name and time, for example "Sunday Supper · 2h". */
@@ -34,9 +36,13 @@ export function PostCard({
   /** Replaces the static counts with real controls. */
   actions?: ReactNode;
   audience?: string;
+  /** Names the article for assistive technology, for example "Post by Ada". */
+  ariaLabel?: string;
+  /** Author controls (edit, delete, report), full width under the footer. */
+  controls?: ReactNode;
 }) {
   return (
-    <article className={styles.card}>
+    <article className={styles.card} aria-label={ariaLabel}>
       <header className={styles.header}>
         <Avatar url={author.avatarUrl} name={author.name} size="m" />
         <div className={styles.who}>
@@ -67,6 +73,7 @@ export function PostCard({
           {audience}
         </p>
       </footer>
+      {controls ? <div className={styles.controls}>{controls}</div> : null}
     </article>
   );
 }

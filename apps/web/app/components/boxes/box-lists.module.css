@@ -1,38 +1,19 @@
+/* Figma Box cards, in a grid that never scrolls sideways. */
 .cards {
   display: grid;
-  gap: var(--pal-space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--pal-space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.card {
+.coverInitial {
   display: grid;
-  gap: var(--pal-space-2);
-  padding: var(--pal-space-4) var(--pal-space-5);
-  border: var(--pal-border-width-hairline) solid
-    color-mix(
-      in srgb,
-      var(--pal-text) calc(var(--pal-border-opacity-soft) * 100%),
-      transparent
-    );
-  border-radius: var(--pal-radius-md);
-  background: var(--pal-canvas);
-}
-
-.cardLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--pal-size-touch-target);
-  font-family: var(--pal-font-editorial);
-  font-size: var(--pal-font-size-subtitle);
-  font-weight: 600;
-  overflow-wrap: anywhere;
-  text-underline-offset: 0.2em;
-}
-
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pal-space-2);
+  place-items: center;
+  height: 100%;
+  color: var(--pal-accent-text);
+  font-family: var(--pal-font-display);
+  font-size: var(--pal-type-display-m-font-size);
+  font-weight: 300;
 }

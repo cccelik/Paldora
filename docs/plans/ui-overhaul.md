@@ -317,3 +317,49 @@ the same components pass the gallery audits and the token pairs are pinned in `C
 re-check when the audit changes. Screenshots were not compared pixel by pixel with the Figma
 frames: layout and copy follow `get_metadata` text and structure of every F1 to F10 frame, and
 the deviations are listed in `apps/ios/README.md` ("Screens"). Not committed.
+
+## Step 3 result (web screens, 2026-11-08)
+
+The signed-in web app now follows the Figma desktop layouts on the Step 1 components.
+`Sidebar` is wired into `AppShell` (via `shell/shell-navigation`, which keeps one live unread
+count) from 1024px; below that a slim top bar (wordmark, Settings avatar, sign out) and a floating
+solid bottom nav (Home, Boxes, My Room, Friends, Activity) take over. Navigation is the seven
+Figma items (Home, Boxes, My Room, Memories, Activity, Friends, Settings); the Activity item and
+the bottom nav show the unread count, spoken as "n unread". Life Updates are reached from Home
+("Your Life Updates") and the sidebar's "New life update" button. `AppNav` and the bell were
+removed.
+
+| Figma frame         | Result                                                                                                                                                                                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W01 Landing         | Restyled (Display XL title with italic accent, promises as cards). No photo, polaroid, or "Join with an invite" button: no assets exist and registration is disabled.                                                                                       |
+| W02 Sign in         | Restyled (Display L title; the story panel is the inverse brand surface). No photo, no Apple/Google (CLAUDE.md section D).                                                                                                                                  |
+| W03 Home            | Display greeting with eyebrow, feed of `PostCard` and `LifeUpdateCard` (reactions, camera, comments, edit, delete, report preserved), "Your Boxes" rail from real Boxes. Not built: circle filter chips, search, Home composer, "Coming up", "On this day". |
+| W04 Post detail     | `NavBar` (back to Box, "Private Box"), photo left, text, reactions and conversation (`Comment`, replies indented, deleted and hidden placeholders) right. Not built: "Seen by".                                                                             |
+| W05 New Life Update | The existing composer on a card (page, not a modal route). Not built: category chips, Save draft.                                                                                                                                                           |
+| W06 Box detail      | Inverse `BoxHero` (name, real member count and role, avatars, Invite), Moments/Members/Memories tabs, composer, feed, Members rail. Not built: next-supper card, member badges like "Host".                                                                 |
+| W07 My Room         | Not touched (Room canvas and themes are step 4); it now sits inside the new shell.                                                                                                                                                                          |
+| W08 Memories        | Chips on the inverse selected style, Fraunces italic month headings. Not built: stat tiles, mosaic layout, "Quietly gathered" card (no counts exist; the list view stays).                                                                                  |
+| W09 Activity        | Title, "n new" eyebrow, Mark all read, real friend requests in the rail. Not built: Today/This week grouping, filter chips, Quiet hours, inline Join.                                                                                                       |
+| W10 Settings        | Section list left (icons), section right, mode cards for Light/Dark/System. Not built: text size, comfort toggles (new capabilities).                                                                                                                       |
+
+States: route `loading.tsx` skeletons (Home, Boxes, Box, Post, Activity, Memories, Life Updates,
+Friends), `(signed-in)/not-found.tsx` (same copy for missing, deleted, blocked), `(signed-in)/error.tsx`
+(retry), empty states per list, archived Box banner and read-only composer. Light and Dark come
+from tokens; 390px uses the same components with the bottom nav.
+
+New reusable pieces: `PageHeader` (eyebrow, accent, action), `PageColumns`, `PageLoading`,
+`StatusPanel`, `BoxHero`, `BoxRail`, `PostDetail`; `PostCard` (`ariaLabel`, `controls`),
+`LifeUpdateCard` (`ariaLabel`, children, light `footer` panel), `Comment` (`placeholder`).
+
+Deviations: Life Update reaction controls sit on a light panel inside the dark card (the reaction
+bar is not designed for `bg/inverse`); the home greeting is "Welcome back" (no time-of-day, the
+server does not know the viewer's time zone); Friends, Boxes list, Life Updates and
+Account pages keep their content and only inherit the shell, header and card styling; Edit/Delete
+stay inline buttons with the existing confirm (no overflow menu or `Dialog` swap yet).
+
+Verification (2026-11-08, Node v23.7.0, since Node 24 is not installed; pnpm warns about the engine): `pnpm format:check`,
+`lint`, `typecheck`, `test` (web 212 passed), `tokens:check`, `build` and `scan:client-bundle` pass;
+`pnpm test:e2e` 70 passed (desktop and mobile-390, local config) plus 2 passed (personalization-off). The
+e2e now runs axe plus an overflow check on Box, Boxes, Activity, Memories, Settings > Appearance and
+the post page, at both widths. Screenshots were not compared pixel by pixel with the Figma frames.
+Not committed.

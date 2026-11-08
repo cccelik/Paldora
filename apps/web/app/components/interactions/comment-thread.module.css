@@ -5,15 +5,18 @@
 }
 
 .title {
-  font-family: var(--pal-font-editorial);
-  font-size: var(--pal-font-size-heading-small);
-  font-weight: 600;
+  color: var(--pal-text-secondary);
+  font-family: var(--pal-font-ui);
+  font-size: var(--pal-type-eyebrow-font-size);
+  font-weight: var(--pal-type-eyebrow-font-weight);
+  letter-spacing: var(--pal-type-eyebrow-tracking);
+  text-transform: uppercase;
 }
 
 .note {
   padding: var(--pal-space-3) var(--pal-space-4);
   border-radius: var(--pal-radius-md);
-  background: var(--pal-surface);
+  background: var(--pal-bg-sunken);
   color: var(--pal-text-secondary);
 }
 
@@ -39,4 +42,22 @@
   padding: var(--pal-space-3);
   border: var(--pal-border-width-hairline) solid var(--pal-accent);
   border-radius: var(--pal-radius-lg);
+}
+
+.item {
+  margin: 0;
+  /* Clears the sticky header when a deep link scrolls here. */
+  scroll-margin-top: 7rem;
+}
+
+.item:target {
+  outline: var(--pal-border-width-focus) solid var(--pal-accent-brass);
+  outline-offset: 4px;
+  border-radius: var(--pal-radius-md);
+}
+
+.controls {
+  display: grid;
+  gap: var(--pal-space-2);
+  justify-items: start;
 }

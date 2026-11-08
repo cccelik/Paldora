@@ -3,6 +3,11 @@
   display: grid;
   gap: var(--pal-space-6);
   min-width: 0;
+  padding: var(--pal-space-6);
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
+  border-radius: var(--pal-radius-xl);
+  background: var(--pal-bg-surface);
+  box-shadow: var(--pal-elevation-soft);
 }
 
 .hint {
