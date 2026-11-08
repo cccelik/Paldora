@@ -4,14 +4,14 @@ interface WordmarkProps {
   size?: 'inline' | 'display';
 }
 
-/** The Paldora wordmark: editorial serif with one four-point star. */
+/** The Paldora wordmark: lowercase italic serif ending in an accent dot. */
 export function Wordmark({ size = 'inline' }: WordmarkProps) {
   return (
     <span className={`${styles.wordmark} ${styles[size]}`}>
-      <span className={styles.star} aria-hidden="true">
-        ✦
+      paldora
+      <span className={styles.dot} aria-hidden="true">
+        .
       </span>
-      Paldora
     </span>
   );
 }

@@ -405,3 +405,40 @@ colours were already equal to Figma (Step 0); no registry value changed.
   because the font is a per-Room choice. The Figma template banner, avatar and
   photo images are not reproduced (fixtures carry no images; CSP).
 - **Not visually diffed:** no screenshot comparison against Figma was run.
+
+## Visual QA (web, 2026-11-08)
+
+Method: local app on the `demo-paldora` emulators (seeded fixture, one Box, one post), Playwright
+captures of W01-W10 plus Boxes and Friends at 1440x1024 and 390x844, Light and Dark, compared with
+the Figma Dark frames of page 06 (30:9, nodes 44:7531-44:8424) through `get_screenshot`. The Light
+frames (19:3) were not fetched; Light was checked from the same tokens and by eye on the captures.
+The Figma frames carry photos, copy and widgets that have no data or capability here (all already
+listed under Step 3), so only structure, type, colour and states were compared.
+
+Fixed (real drift):
+
+- **Wordmark** (every screen): Figma draws a lowercase Fraunces italic "paldora" ending in an accent
+  dot; the web drew a bold "Paldora" with a star. `Wordmark` now matches (inline size title-small).
+- **Active navigation item** (sidebar): Figma uses the primary fill (cream in Dark, ink in Light);
+  the web used `bg/inverse`, which is dark in both modes. Now `action/primary` + `action/on-primary`.
+  Sidebar horizontal padding 16 -> 20 to match the 223 px item width.
+- **Memories chips** (W08): selected chip and type now match the Chip component (primary fill, 14 px,
+  weight 500) instead of 600/18 px bold on an inverse fill.
+- **Camera reaction trigger** (W03, W04, W06, W08): the `.camera` pill class was never passed to
+  `ReactionCamera`, so it rendered as a default grey button. It now matches the reaction pills.
+
+| Screen              | Result                                                                                                                                                                           |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W01 Landing         | fixed (wordmark); documented deviation: copy, hero photo, polaroid, "Join with an invite" (Step 3)                                                                               |
+| W02 Sign in         | fixed (wordmark); documented deviation: no photo, no Apple/Google, no password reveal                                                                                            |
+| W03 Home            | fixed (wordmark, active item, Camera); documented deviation: chips, composer, Coming up, On this day                                                                             |
+| W04 Post detail     | fixed (wordmark, Camera); documented deviation: photo/conversation bubbles layout depends on data, no Seen by                                                                    |
+| W05 New Life Update | match on tokens; documented deviation: page not modal, no category chips, no Save draft                                                                                          |
+| W06 Box detail      | fixed (wordmark, active item, Camera); documented deviation: tab order and pill style (Moments, Members, Memories chips, not a segmented control), no next-supper card or badges |
+| W07 My Room         | match (Step 4 deviations: muted eyebrows with accent rule, system fonts)                                                                                                         |
+| W08 Memories        | fixed (chips, wordmark); documented deviation: no stat tiles or mosaic, list view kept                                                                                           |
+| W09 Activity        | fixed (wordmark, active item); documented deviation: empty state is plain text with no grouping, filters or Quiet hours                                                          |
+| W10 Settings        | match on structure; documented deviation: sections differ (Reports, Content notices), no text size or comfort toggles, section pane narrower than Figma                          |
+
+390 px: top bar, bottom nav and cards reviewed on W03 Dark; no overflow (e2e overflow checks cover
+the rest). Not compared pixel by pixel; sizes were read by eye from side-by-side captures.

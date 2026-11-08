@@ -50,6 +50,7 @@ export function FirebasePostReactions({
           active ? (
             <ReactionCamera
               boxId={boxId}
+              triggerClassName={styles.camera}
               hasCameraReaction={
                 summary.viewerReaction?.kind === REAL_REACTION_KIND
               }

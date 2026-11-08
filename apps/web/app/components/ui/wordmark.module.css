@@ -1,15 +1,15 @@
 .wordmark {
   display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
+  align-items: baseline;
   font-family: var(--pal-font-brand);
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
   color: var(--pal-text);
 }
 
 .inline {
-  font-size: var(--pal-font-size-heading);
+  font-size: var(--pal-font-size-title-small);
 }
 
 .display {
@@ -20,7 +20,8 @@
   );
 }
 
-.star {
+.dot {
   color: var(--pal-accent);
-  font-size: var(--pal-font-size-relative-small);
+  font-style: normal;
+  font-weight: 700;
 }

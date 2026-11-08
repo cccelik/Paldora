@@ -37,6 +37,7 @@
   border-radius: var(--pal-radius-pill);
   background: var(--pal-bg-surface);
   color: var(--pal-text-primary);
+  font-size: var(--pal-font-size-sm);
   text-decoration: none;
   overflow-wrap: anywhere;
   transition: border-color var(--pal-duration-fast) var(--pal-easing-standard);
@@ -44,7 +45,7 @@
 
 .filters .choice {
   border-radius: var(--pal-radius-pill);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 a.choice:hover {
@@ -55,11 +56,11 @@ a.choice:hover {
   );
 }
 
-/* The Figma selected chip: inverse fill marks where you are. */
+/* The Figma selected chip: the primary fill marks where you are. */
 .choice[aria-current='page'] {
-  border-color: var(--pal-bg-inverse);
-  background: var(--pal-bg-inverse);
-  color: var(--pal-text-on-inverse);
+  border-color: var(--pal-action-primary);
+  background: var(--pal-action-primary);
+  color: var(--pal-action-on-primary);
 }
 
 .choice[aria-current='page'] .count {
@@ -71,7 +72,7 @@ a.choice:hover {
 }
 
 .label {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .count {

@@ -4,7 +4,7 @@
   gap: var(--pal-space-5);
   width: var(--pal-layout-web-sidebar);
   min-height: 100%;
-  padding: var(--pal-space-6) var(--pal-space-4);
+  padding: var(--pal-space-6) var(--pal-space-5);
   background: var(--pal-bg-canvas);
 }
 
@@ -44,8 +44,8 @@
 }
 
 .link[aria-current='page'] {
-  background: var(--pal-bg-inverse);
-  color: var(--pal-text-on-inverse);
+  background: var(--pal-action-primary);
+  color: var(--pal-action-on-primary);
 }
 
 .label {
