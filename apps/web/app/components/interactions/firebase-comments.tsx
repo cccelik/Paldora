@@ -422,7 +422,7 @@ function FirebaseThread({
         />
       </ol>
       {replies.length ? (
-        <ol className={styles.threads} aria-label="Replies">
+        <ol className={styles.replies} aria-label="Replies">
           {replies.map((item) => (
             <ThreadItem
               key={itemId(item)}
