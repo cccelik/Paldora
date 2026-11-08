@@ -222,10 +222,10 @@ test('admitted sign-in, onboarding, Box creation and session removal', async ({
   );
   await expect(commentOptions).toBeFocused();
   // The reply composer is collapsed until Reply is pressed.
-  const replyToggle = rootComment.getByRole('button', {
-    name: 'Reply',
-    exact: true,
-  });
+  // The expanded form also has a submit button named Reply; the toggle is first.
+  const replyToggle = rootComment
+    .getByRole('button', { name: 'Reply', exact: true })
+    .first();
   await expect(replyToggle).toHaveAttribute('aria-expanded', 'false');
   await replyToggle.click();
   await expect(replyToggle).toHaveAttribute('aria-expanded', 'true');
