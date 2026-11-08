@@ -45,6 +45,39 @@ PALDORA_FIXTURE_EMAIL=me@example.test \
 pnpm dev
 ```
 
+### Demo content (local only)
+
+With the emulators running and the fixture account above present, populate a
+browsable app with fictional data:
+
+```bash
+pnpm firebase:local:seed-demo              # seed (a second run does nothing)
+pnpm firebase:local:seed-demo --reset-demo # remove only the demo content
+```
+
+`packages/firebase-trusted/scripts/seed-demo.mjs` creates seven fictional users
+(`demo_mara`, `demo_juno`, `demo_teo`, `demo_priya`, `demo_sol`, `demo_wren`,
+`demo_bram`; emails `demo.<name>@example.test`; shared password
+`Demo-Paldora-Pass1!`), a partial friendship graph (everyone is friends with
+`me@example.test`; `demo_wren` knows only that account, `demo_bram` has an
+unanswered request to `demo_sol`), seven Boxes (one archived, one without
+`me@example.test`, one including a non-friend invited by username), about 18
+posts with procedurally generated photos, comments, replies, emoji reactions,
+three Life Updates (one multi-Box, one Only Me for `me@example.test`) and a
+themed Room with Top Friends for `demo_mara`. It drives the real callables and
+media upload flow through the Functions emulator with Auth-emulator ID tokens,
+so every invariant applies, and it needs no `.env`.
+
+It refuses to run unless `GCLOUD_PROJECT` is `demo-paldora` and the Auth,
+Firestore, Storage and Functions emulator hosts are `127.0.0.1` or `localhost`.
+A marker document (`nativeDemoSeed/v1`) records the run; a re-run after a
+complete seed changes nothing, and a re-run after a partial failure resumes
+without duplicating (idempotency keys). `--reset-demo` deletes the demo Boxes
+and Life Updates through their owners' deletion paths and the demo users
+through account deletion, leaving `me@example.test` and its own content. Posts
+carry their real creation time, so they are not spread over several days. To
+wipe everything instead, restart the emulators without persisted data.
+
 `pnpm dev` sets `PALDORA_TRUST_INTERACTION_INDEX=1`, so local reads use the
 per-actor interaction index (ADR 022). Posts created before the index existed
 fall back to the scan; run `pnpm firebase:interaction-index:local` against the
