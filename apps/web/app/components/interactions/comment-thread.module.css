@@ -59,5 +59,32 @@
 .controls {
   display: grid;
   gap: var(--pal-space-2);
-  justify-items: start;
+  width: 100%;
+}
+
+.controlRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-1);
+  width: 100%;
+}
+
+.menuSlot {
+  margin-inline-start: auto;
+}
+
+.replyBox {
+  width: 100%;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}
+
+.formStack {
+  display: grid;
+  gap: var(--pal-space-3);
 }

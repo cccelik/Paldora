@@ -627,6 +627,23 @@ allow-listed in the audit like the other sampling false positives and the handle
 - Removed deviation: inline Edit/Delete/Report on post cards. Authorization, copy and server actions
   are unchanged. e2e covers the menu by keyboard, focus return and axe (desktop and 390px).
 
+### Follow-up (web, 2026-11-08): decluttered comments
+
+Owner feedback: comments were cluttered (an always-open reply textarea, an inline "Comment posted."
+banner, and separate Edit, Delete and Report controls on every comment).
+
+- Edit, Delete and Report moved into `CommentMenu` (`interactions/firebase-comments`), an `OverflowMenu`
+  labelled "Comment options", like `PostMenu`: the author gets Edit comment (active Box only) and Delete
+  comment, everyone else gets Report comment. Each opens a `Dialog` (`CommentEditForm`,
+  `DeleteDialogForm` with "Yes, delete comment", `ReportForm`). Authorization and server actions are
+  unchanged.
+- The reply composer is collapsed: a quiet "Reply" button (`aria-expanded`) sits next to React; the
+  textarea appears on press with autofocus, Escape or Cancel collapses it and returns focus to Reply, and it
+  collapses after a successful post. One reply level is unchanged.
+- "Comment posted." is a toast (`useToast`), not an inline banner; errors stay inline in the form.
+- e2e (`firebase-local.spec.ts`) now covers the menu by keyboard, focus return, reply expand and
+  collapse, the toast, and axe with the menu and the composer open.
+
 ## Web icons (2026-11-08)
 
 Owner request: web icons must be proper symbols like iOS SF Symbols. SF

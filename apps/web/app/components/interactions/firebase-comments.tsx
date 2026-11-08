@@ -13,10 +13,19 @@ import { MoreLink } from '@/components/common/more-link';
 import { ActionFeedback } from '@/components/forms/action-feedback';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { useActionSuccess } from '@/components/forms/use-action-success';
-import { ConfirmAction } from '@/components/forms/confirm-action';
-import { ReportControl } from '@/components/moderation/report-control';
+import { DeleteDialogForm } from '@/components/forms/delete-dialog-form';
+import { useToast } from '@/components/common/toast';
+import { ReportForm } from '@/components/moderation/report-control';
 import styles from '@/components/interactions/comment-thread.module.css';
-import { Button, Comment, HiddenFields, TextAreaField } from '@/components/ui';
+import {
+  Button,
+  Comment,
+  Dialog,
+  HiddenFields,
+  OverflowMenu,
+  TextAreaField,
+  type OverflowMenuItem,
+} from '@/components/ui';
 import { idleResult } from '@/lib/actions/action-result';
 import type {
   FirebaseCommentItem,
@@ -24,27 +33,44 @@ import type {
   FirebaseThreadItem,
 } from '@/lib/server/firebase/data';
 import { COMMENT_CONTENT_MAX_LENGTH } from '@paldora/domain';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 
 function CommentForm({
   boxId,
   postId,
   parentId = '',
+  onPosted,
+  onCancel,
 }: {
   boxId: string;
   postId: string;
   parentId?: string;
+  /** A reply composer collapses after a successful post. */
+  onPosted?: () => void;
+  /** Present for a reply composer: Cancel and Escape collapse it. */
+  onCancel?: () => void;
 }) {
   const [state, action] = useActionState(
     createFirebaseCommentAction,
     idleResult,
   );
   const [text, setText] = useState('');
-  useActionSuccess(state, () => setText(''));
+  const field = useRef<HTMLTextAreaElement>(null);
+  const showToast = useToast();
+  useEffect(() => {
+    if (onCancel) field.current?.focus();
+  }, [onCancel]);
+  useActionSuccess(state, () => {
+    setText('');
+    if (state.status === 'success')
+      showToast({ message: state.message, tone: 'success' });
+    onPosted?.();
+  });
   return (
     <form action={action} className={styles.section}>
       <HiddenFields values={{ boxId, postId, parentId }} />
       <TextAreaField
+        ref={field}
         label={parentId ? 'Write a reply' : 'Add a comment'}
         id={`firebase-comment-${parentId || postId}`}
         name="content"
@@ -52,13 +78,146 @@ function CommentForm({
         value={text}
         maxLength={COMMENT_CONTENT_MAX_LENGTH}
         onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && onCancel) {
+            event.preventDefault();
+            onCancel();
+          }
+        }}
+        required
+      />
+      {state.status === 'error' ? <ActionFeedback state={state} /> : null}
+      <div className={styles.formRow}>
+        <SubmitButton pendingLabel="Sending…" disabled={!text.trim()}>
+          {parentId ? 'Reply' : 'Comment'}
+        </SubmitButton>
+        {onCancel ? (
+          <Button variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : null}
+      </div>
+    </form>
+  );
+}
+
+function CommentEditForm({
+  boxId,
+  postId,
+  comment,
+  onDone,
+}: {
+  boxId: string;
+  postId: string;
+  comment: FirebaseCommentItem;
+  onDone: () => void;
+}) {
+  const [state, action] = useActionState(editFirebaseCommentAction, idleResult);
+  useActionSuccess(state, () => onDone());
+  return (
+    <form action={action} className={styles.formStack}>
+      <HiddenFields values={{ boxId, postId, commentId: comment.id }} />
+      <TextAreaField
+        label="Edit your comment"
+        id={`edit-comment-${comment.id}`}
+        name="content"
+        rows={3}
+        defaultValue={comment.content}
+        maxLength={COMMENT_CONTENT_MAX_LENGTH}
         required
       />
       <ActionFeedback state={state} />
-      <SubmitButton pendingLabel="Sending…" disabled={!text.trim()}>
-        {parentId ? 'Reply' : 'Comment'}
-      </SubmitButton>
+      <div className={styles.formRow}>
+        <SubmitButton pendingLabel="Saving…">Save comment</SubmitButton>
+        <Button variant="secondary" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
     </form>
+  );
+}
+
+type Sheet = 'edit' | 'delete' | 'report' | null;
+
+/**
+ * The overflow menu of one comment, like `PostMenu`: the author edits and
+ * deletes (edit only while the Box is active), everyone else reports.
+ */
+function CommentMenu({
+  boxId,
+  postId,
+  comment,
+  active,
+}: {
+  boxId: string;
+  postId: string;
+  comment: FirebaseCommentItem;
+  active: boolean;
+}) {
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const close = () => setSheet(null);
+  const items: OverflowMenuItem[] = comment.canEdit
+    ? [
+        ...(active
+          ? [
+              {
+                key: 'edit',
+                label: 'Edit comment',
+                onSelect: () => setSheet('edit'),
+              },
+            ]
+          : []),
+        {
+          key: 'delete',
+          label: 'Delete comment',
+          destructive: true,
+          onSelect: () => setSheet('delete'),
+        },
+      ]
+    : [
+        {
+          key: 'report',
+          label: 'Report comment',
+          onSelect: () => setSheet('report'),
+        },
+      ];
+  return (
+    <>
+      <OverflowMenu label="Comment options" items={items} />
+      <Dialog open={sheet === 'edit'} onClose={close} title="Edit comment">
+        {sheet === 'edit' ? (
+          <CommentEditForm
+            boxId={boxId}
+            postId={postId}
+            comment={comment}
+            onDone={close}
+          />
+        ) : null}
+      </Dialog>
+      <Dialog open={sheet === 'delete'} onClose={close} title="Delete comment?">
+        {sheet === 'delete' ? (
+          <>
+            <p>Delete this comment?</p>
+            <DeleteDialogForm
+              action={deleteFirebaseCommentAction}
+              fields={{ boxId, postId, commentId: comment.id }}
+              confirmLabel="Yes, delete comment"
+              onCancel={close}
+            />
+          </>
+        ) : null}
+      </Dialog>
+      <Dialog open={sheet === 'report'} onClose={close} title="Report comment">
+        {sheet === 'report' ? (
+          <>
+            <ReportForm targetKind="comment" targetId={comment.id} />
+            <Button variant="secondary" onClick={close}>
+              Close
+            </Button>
+          </>
+        ) : null}
+      </Dialog>
+    </>
   );
 }
 
@@ -77,14 +236,15 @@ function CommentRow({
   presets: readonly string[];
   reply?: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const replyButton = useRef<HTMLButtonElement>(null);
   const [summary, setSummary] = useState(comment.interactions);
   const [reactionError, setReactionError] = useState<string | null>(null);
-  const [editState, editAction] = useActionState(
-    editFirebaseCommentAction,
-    idleResult,
-  );
-  useActionSuccess(editState, () => setEditing(false));
+  const collapse = () => {
+    setReplying(false);
+    replyButton.current?.focus();
+  };
+  const replyId = `reply-composer-${comment.id}`;
   return (
     <li id={`comment-${comment.id}`} className={styles.item}>
       <Comment
@@ -101,75 +261,62 @@ function CommentRow({
         }
         actions={
           <div className={styles.controls}>
-            <ReactionBar
-              summary={summary}
-              presets={presets}
-              canInteract={active}
-              compact
-              label={`Reactions to ${comment.authorName}'s comment`}
-              react={async (kind) => {
-                const result = await setFirebaseCommentReactionAction({
-                  boxId,
-                  postId,
-                  commentId: comment.id,
-                  kind,
-                });
-                if (result.status === 'success') {
-                  setSummary(result.data);
-                  setReactionError(null);
-                } else setReactionError(result.message);
-              }}
-            />
-            {reactionError ? <p role="alert">{reactionError}</p> : null}
-            {active ? (
-              <CommentForm
-                boxId={boxId}
-                postId={postId}
-                parentId={comment.id}
+            <div className={styles.controlRow}>
+              <ReactionBar
+                summary={summary}
+                presets={presets}
+                canInteract={active}
+                compact
+                label={`Reactions to ${comment.authorName}'s comment`}
+                react={async (kind) => {
+                  const result = await setFirebaseCommentReactionAction({
+                    boxId,
+                    postId,
+                    commentId: comment.id,
+                    kind,
+                  });
+                  if (result.status === 'success') {
+                    setSummary(result.data);
+                    setReactionError(null);
+                  } else setReactionError(result.message);
+                }}
               />
-            ) : null}
-            {comment.canEdit ? (
-              <>
-                {active && !editing ? (
-                  <Button variant="secondary" onClick={() => setEditing(true)}>
-                    Edit comment
-                  </Button>
-                ) : null}
-                <ConfirmAction
-                  action={deleteFirebaseCommentAction}
-                  fields={{ boxId, postId, commentId: comment.id }}
-                  label="Delete comment"
-                  prompt="Delete this comment?"
-                  confirmLabel="Yes, delete comment"
-                  pendingLabel="Deleting…"
+              {active ? (
+                <Button
+                  ref={replyButton}
+                  variant="quiet"
+                  aria-expanded={replying}
+                  aria-controls={replying ? replyId : undefined}
+                  onClick={() => setReplying((value) => !value)}
+                >
+                  Reply
+                </Button>
+              ) : null}
+              <span className={styles.menuSlot}>
+                <CommentMenu
+                  boxId={boxId}
+                  postId={postId}
+                  comment={comment}
+                  active={active}
                 />
-              </>
+              </span>
+            </div>
+            {reactionError ? <p role="alert">{reactionError}</p> : null}
+            {active && replying ? (
+              <div id={replyId} className={styles.replyBox}>
+                <CommentForm
+                  boxId={boxId}
+                  postId={postId}
+                  parentId={comment.id}
+                  onPosted={collapse}
+                  onCancel={collapse}
+                />
+              </div>
             ) : null}
-            <ReportControl targetKind="comment" targetId={comment.id} />
           </div>
         }
       >
-        {editing ? (
-          <form action={editAction} className={styles.section}>
-            <HiddenFields values={{ boxId, postId, commentId: comment.id }} />
-            <TextAreaField
-              label="Edit comment"
-              id={`edit-comment-${comment.id}`}
-              name="content"
-              rows={2}
-              defaultValue={comment.content}
-              maxLength={COMMENT_CONTENT_MAX_LENGTH}
-              required
-            />
-            <ActionFeedback state={editState} />
-            <SubmitButton pendingLabel="Saving…">Save comment</SubmitButton>
-            <Button variant="secondary" onClick={() => setEditing(false)}>
-              Cancel
-            </Button>
-          </form>
-        ) : (
-          comment.content
-        )}
+        {comment.content}
       </Comment>
     </li>
   );

@@ -73,7 +73,7 @@ and slots, not Firestore view models; step 3 maps the feature data to them.
 
 Feature data is mapped onto the primitives by the feature components, not by
 the primitives: `FirebaseBoxFeed` (`PostCard`, `LifeUpdateCard`),
-`FirebaseLifeUpdateCard` (detail), `FirebaseCommentThreads` (`Comment`),
+`FirebaseLifeUpdateCard` (detail), `FirebaseCommentThreads` (`Comment`; per-comment `CommentMenu` overflow with edit/delete/report dialogs, a collapsed Reply composer, success as a toast),
 `PostDetail` (Figma W04), `BoxHero` and `BoxRail`, `BoxCardList` (`BoxCard`),
 the notifications row (`NotificationRow`), `SettingsNav`. Page-level helpers in
 `ui`: `PageHeader` (eyebrow, italic accent, action slot), `PageColumns` (feed

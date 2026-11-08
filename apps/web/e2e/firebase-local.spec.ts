@@ -184,17 +184,74 @@ test('admitted sign-in, onboarding, Box creation and session removal', async ({
   await expect(page.getByRole('list', { name: 'Comments' })).toContainText(
     'A private comment',
   );
-  await page.getByRole('button', { name: 'Edit comment' }).click();
-  await page.getByLabel('Edit comment').fill('An edited private comment');
+  // Comment options: keyboard, axe with the menu open, then Edit in a dialog.
+  const rootComment = page.getByRole('list', { name: 'Thread root' });
+  const commentOptions = rootComment.getByRole('button', {
+    name: 'Comment options',
+  });
+  await expect(page.getByRole('button', { name: 'Edit comment' })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByRole('button', { name: 'Delete comment' }),
+  ).toHaveCount(0);
+  await expect(page.getByText('Report this comment')).toHaveCount(0);
+  await expect(page.getByLabel('Write a reply')).toHaveCount(0);
+  await commentOptions.focus();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('menuitem', { name: 'Edit comment' }),
+  ).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(
+    page.getByRole('menuitem', { name: 'Delete comment' }),
+  ).toBeFocused();
+  await expectSound(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(commentOptions).toBeFocused();
+  await commentOptions.click();
+  await page.getByRole('menuitem', { name: 'Edit comment' }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'Edit comment' }),
+  ).toBeVisible();
+  await page.getByLabel('Edit your comment').fill('An edited private comment');
   await page.getByRole('button', { name: 'Save comment' }).click();
   await expect(page.getByRole('list', { name: 'Comments' })).toContainText(
     'An edited private comment',
   );
+  await expect(commentOptions).toBeFocused();
+  // The reply composer is collapsed until Reply is pressed.
+  const replyToggle = rootComment.getByRole('button', {
+    name: 'Reply',
+    exact: true,
+  });
+  await expect(replyToggle).toHaveAttribute('aria-expanded', 'false');
+  await replyToggle.click();
+  await expect(replyToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByLabel('Write a reply')).toBeFocused();
+  await expectSound(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByLabel('Write a reply')).toHaveCount(0);
+  await expect(replyToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(replyToggle).toBeFocused();
+  await replyToggle.click();
   await page.getByLabel('Write a reply').fill('A private reply');
-  await page.getByRole('button', { name: 'Reply', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByLabel('Write a reply')).toHaveCount(0);
+  await replyToggle.click();
+  await page.getByLabel('Write a reply').fill('A private reply');
+  await rootComment
+    .locator('form')
+    .getByRole('button', { name: 'Reply' })
+    .click();
   await expect(page.getByRole('list', { name: 'Comments' })).toContainText(
     'A private reply',
   );
+  // The success message is a short-lived toast, and the composer collapsed.
+  await expect(page.getByText('Comment posted.')).toBeVisible();
+  await expect(page.getByLabel('Write a reply')).toHaveCount(0);
+  await expect(page.getByText('Comment posted.')).toHaveCount(1);
   await page.reload();
   await expect(page.getByRole('list', { name: 'Comments' })).toContainText(
     'A private reply',
@@ -203,31 +260,26 @@ test('admitted sign-in, onboarding, Box creation and session removal', async ({
     .locator('li[id^="comment-"]')
     .filter({ hasText: 'A private reply' })
     .first();
-  await replyRow.getByLabel('Write a reply').fill('Reply to a reply');
   await replyRow.getByRole('button', { name: 'Reply', exact: true }).click();
+  await replyRow.getByLabel('Write a reply').fill('Reply to a reply');
+  await replyRow
+    .locator('form')
+    .getByRole('button', { name: 'Reply', exact: true })
+    .click();
   await expect(page.getByRole('list', { name: 'Comments' })).toContainText(
     'Reply to a reply',
   );
   for (const content of ['Third reply', 'Fourth reply']) {
     await page.reload();
-    await page
-      .getByRole('list', { name: 'Thread root' })
-      .getByLabel('Write a reply')
-      .fill(content);
-    await expect(
-      page
-        .getByRole('list', { name: 'Thread root' })
-        .getByRole('button', { name: 'Reply', exact: true }),
-    ).toBeEnabled();
-    await page
-      .getByRole('list', { name: 'Thread root' })
-      .getByRole('button', { name: 'Reply', exact: true })
-      .click();
-    await expect(
-      page
-        .getByRole('list', { name: 'Thread root' })
-        .getByLabel('Write a reply'),
-    ).toHaveValue('');
+    const root = page.getByRole('list', { name: 'Thread root' });
+    await root.getByRole('button', { name: 'Reply', exact: true }).click();
+    await root.getByLabel('Write a reply').fill(content);
+    const send = root
+      .locator('form')
+      .getByRole('button', { name: 'Reply', exact: true });
+    await expect(send).toBeEnabled();
+    await send.click();
+    await expect(root.getByLabel('Write a reply')).toHaveCount(0);
   }
   await page.reload();
   await page.getByRole('button', { name: 'View 1 more reply' }).click();
@@ -239,7 +291,15 @@ test('admitted sign-in, onboarding, Box creation and session removal', async ({
   await expect(
     page.getByRole('group', { name: 'Linked comment' }),
   ).toContainText('A private reply');
-  await page.getByRole('button', { name: 'Delete comment' }).first().click();
+  await page
+    .getByRole('group', { name: 'Linked comment' })
+    .getByRole('button', { name: 'Comment options' })
+    .first()
+    .click();
+  await page.getByRole('menuitem', { name: 'Delete comment' }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'Delete comment?' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Yes, delete comment' }).click();
   await expect(page.getByText('An edited private comment')).toHaveCount(0);
   await page.goBack();
