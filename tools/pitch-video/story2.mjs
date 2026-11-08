@@ -96,7 +96,7 @@ export const CUTS = {
         kind: 'benefit',
         copy: 'private',
         side: 'R',
-        shots: [S('desktop/boxes', 20), S('desktop/boxes', 85)],
+        shots: [S('desktop/boxes', 66), S('desktop/boxes', 102)],
       },
       {
         kind: 'benefit',
@@ -162,7 +162,7 @@ export const CUTS = {
         kind: 'benefit',
         copy: 'private',
         side: 'R',
-        shots: [S('desktop/boxes', 60)],
+        shots: [S('desktop/boxes', 70)],
       },
       {
         kind: 'benefit',

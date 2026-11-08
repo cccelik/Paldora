@@ -13,14 +13,12 @@
     };
     const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
     const outCubic = (u) => 1 - (1 - u) ** 3;
-    const outBack = (u) => {
-      const c = 1.9;
-      return 1 + (c + 1) * (u - 1) ** 3 + c * (u - 1) ** 2;
-    };
+    const smooth = (u) => u * u * (3 - 2 * u);
+    const RV = 0.65; // phrase reveal time (s)
+    const XF = 0.45; // group crossfade (s)
     let cfg,
       root,
-      els = {},
-      curGroup = null;
+      els = {};
 
     function el(tag, css, parent = root, text) {
       const e = document.createElement(tag);
@@ -69,15 +67,14 @@
         els.stars.push(s);
       }
       els.stage = el('div', 'position:absolute;inset:0');
-      els.flash = el(
+      els.glow = el(
         'div',
-        `position:absolute;inset:0;background:${C.brass};opacity:0;pointer-events:none;z-index:50`,
+        `position:absolute;inset:0;background:radial-gradient(ellipse 50% 40% at 50% 50%,${C.brass},transparent 70%);opacity:0;pointer-events:none;z-index:50`,
       );
       els.black = el(
         'div',
         'position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:60',
       );
-      els.imgs = [new Image(), new Image()];
     };
 
     function words(lines, size, align, container, grid) {
@@ -93,26 +90,27 @@
         for (const w of line) {
           const span = el(
             'span',
-            `display:inline-block;font:${w.a ? 'italic ' : ''}300 ${size * (w.big || 1)}px/${size * 1.04 * (w.big || 1)}px Fraunces;color:${w.a ? C.brassText : C.text};letter-spacing:-.012em;opacity:0;transform-origin:50% 80%${grid ? ';grid-area:1/1' : ''}`,
+            `display:inline-block;font:${w.a ? 'italic ' : ''}300 ${size * (w.big || 1)}px/${size * 1.04 * (w.big || 1)}px Fraunces;color:${w.a ? C.brassText : C.text};letter-spacing:-.012em;opacity:0${grid ? ';grid-area:1/1' : ''}`,
             row,
             w.t,
           );
-          out.push({ span, at: w.at, big: w.big || 1 });
+          out.push({ span, at: w.at });
         }
       }
       return out;
     }
 
+    /** Build one group's DOM inside its own layer (kept until the group has faded out). */
     function build(g) {
-      els.stage.innerHTML = '';
-      g.w = [];
       const P = cfg.portrait;
+      g.root = el('div', 'position:absolute;inset:0;opacity:0', els.stage);
+      g.w = [];
       if (g.hl) {
         const h = g.hl;
         const box = el(
           'div',
           `position:absolute;left:${h.x}px;top:${h.y}px;width:${h.w}px;height:${h.h}px;display:flex;flex-direction:column;justify-content:${h.vj || 'center'};align-items:${h.align === 'center' ? 'center' : 'flex-start'};gap:${h.size * 0.28}px`,
-          els.stage,
+          g.root,
         );
         const inner = el(
           'div',
@@ -139,7 +137,7 @@
         g.cardEl = el(
           'div',
           `position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:${c.r}px;overflow:hidden;background:#EAE2D5;box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);${c.phone ? 'box-shadow:0 0 0 14px #0c0a09,0 0 0 16px #3A332C,0 40px 120px rgba(0,0,0,.6);' : ''}`,
-          els.stage,
+          g.root,
         );
         g.imgA = el(
           'img',
@@ -159,30 +157,28 @@
           );
           g.bar = el(
             'div',
-            `position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;background:${C.brass}`,
+            `position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:${C.brass}`,
             g.cardEl,
           );
         }
       }
-      if (g.pill)
-        g.pillEl = el(
-          'div',
-          `position:absolute;left:${g.pill.x}px;top:${g.pill.y}px;padding:14px 34px;border-radius:999px;background:#2A2420;color:${C.text};font:600 ${g.pill.size}px Geist;letter-spacing:.02em;border:1px solid #3A332C;opacity:0;transform-origin:0 50%`,
-          els.stage,
-          '',
-        );
+      if (g.pill) {
+        const css = `position:absolute;left:${g.pill.x}px;top:${g.pill.y}px;padding:14px 34px;border-radius:999px;background:#2A2420;color:${C.text};font:600 ${g.pill.size}px Geist;letter-spacing:.02em;border:1px solid #3A332C;opacity:0;white-space:nowrap`;
+        g.pillEl = el('div', css, g.root, '');
+        g.pillPrev = el('div', css, g.root, '');
+      }
       if (g.kind === 'wordmark') {
         g.mark = el(
           'div',
-          `position:absolute;left:0;right:0;top:${P ? 620 : 250}px;text-align:center;font:italic 300 ${P ? 230 : 300}px/1 Fraunces;color:${C.text};opacity:0;transform-origin:50% 60%`,
-          els.stage,
+          `position:absolute;left:0;right:0;top:${P ? 620 : 250}px;text-align:center;font:italic 300 ${P ? 230 : 300}px/1 Fraunces;color:${C.text};opacity:0`,
+          g.root,
         );
         g.mark.innerHTML =
           'paldora<span style="color:' + C.brass + '">.</span>';
         g.tag = el(
           'div',
           `position:absolute;left:0;right:0;top:${P ? 940 : 620}px;text-align:center;font:500 ${P ? 46 : 44}px Geist;letter-spacing:.04em;color:${C.secondary};opacity:0`,
-          els.stage,
+          g.root,
           cfg.endText,
         );
       }
@@ -209,50 +205,41 @@
         0,
         Math.floor((t - shot.t0) * cfg.fps * (shot.speed || 1)) + shot.start,
       );
+    const reveal = (lt, at) => smooth(clamp((lt - at) / RV)); // soft ease, no overshoot
 
-    window.frame = async (t) => {
-      const g =
-        cfg.groups.find((x) => t >= x.t0 && t < x.t1) ||
-        cfg.groups[cfg.groups.length - 1];
-      if (g !== curGroup) {
-        build(g);
-        curGroup = g;
-      }
+    function update(g, t) {
       const lt = t - g.t0;
       const beat = cfg.beat;
-      // background beat pulse and drifting stars
-      const ph = (t % beat) / beat;
-      els.ring.style.opacity = String(
-        0.16 * (1 - ph) ** 2 * (t > cfg.dropT ? 1 : 0.5),
-      );
-      els.ring.style.transform = `scale(${0.75 + 0.5 * outCubic(ph)})`;
-      els.stars.forEach((s, i) => {
-        s.style.transform = `rotate(${t * 20 * (i % 2 ? 1 : -1)}deg) scale(${1 + 0.15 * Math.sin(t * 2 + i)})`;
-      });
-      // headline words
-      for (const w of g.w) {
-        const u = clamp((lt - w.at) / 0.26);
-        const e = u <= 0 ? 0 : outBack(u);
-        w.span.style.opacity = u <= 0 ? '0' : String(clamp(u * 4));
-        w.span.style.transform = `translateY(${(1 - e) * 36}px) scale(${0.55 + 0.45 * e}) rotate(${(1 - e) * -3}deg)`;
+      // phrase batches: fade in and drift up a few pixels together
+      if (g.kind === 'replace') {
+        g.w.forEach((w, i) => {
+          const start = i * beat;
+          const inn = smooth(clamp((lt - start) / 0.45));
+          const out = 1 - smooth(clamp((lt - (start + beat - 0.3)) / 0.3));
+          w.span.style.opacity = String(inn * out);
+          w.span.style.transform = `translateY(${(1 - inn) * 12}px)`;
+        });
+      } else {
+        for (const w of g.w) {
+          const e = reveal(lt, w.at);
+          w.span.style.opacity = String(e);
+          w.span.style.transform = `translateY(${(1 - e) * 14}px)`;
+        }
       }
-      if (g.subEl)
-        g.subEl.style.opacity = String(clamp((lt - g.sub.at) / 0.35));
-      // card shots
-      let shot = null;
+      if (g.subEl) {
+        const e = reveal(lt, g.sub.at);
+        g.subEl.style.opacity = String(e);
+        g.subEl.style.transform = `translateY(${(1 - e) * 10}px)`;
+      }
       if (g.shots) {
-        shot =
+        const shot =
           g.shots.find((s) => t >= s.t0 && t < s.t1) ||
           g.shots[g.shots.length - 1];
         const su = clamp((t - shot.t0) / (shot.t1 - shot.t0));
-        const enter = outCubic(clamp((t - shot.t0) / 0.24));
-        const dx = g.card.dir * (1 - enter) * 90;
-        g.cardEl.style.opacity = String(clamp(enter * 2));
-        g.cardEl.style.transform = `translateX(${dx}px) scale(${0.95 + 0.05 * enter})`;
-        const zoom = shot.z0 + (shot.z1 - shot.z0) * outCubic(su);
+        const zoom = shot.z0 + (shot.z1 - shot.z0) * smooth(su);
         const idx = Math.min(frameIdx(shot, t), shot.count - 1);
         if (g.kind === 'split') {
-          const wipe = 1 - 0.5 * outCubic(clamp(lt / 0.5));
+          const wipe = 1 - 0.5 * smooth(clamp(lt / 0.9));
           setImg(
             g.imgA,
             shot.dir,
@@ -277,7 +264,7 @@
           );
           g.clip.style.clipPath = `inset(0 0 0 ${wipe * 100}%)`;
           g.bar.style.left = `${wipe * 100}%`;
-        } else
+        } else if (g.kind !== 'themes')
           setImg(
             g.imgA,
             shot.dir,
@@ -289,16 +276,12 @@
             zoom,
             shot.focus,
           );
-        els.flash.style.opacity = String(
-          0.22 * clamp(1 - (t - shot.t0) / 0.14),
-        );
-      } else
-        els.flash.style.opacity = String(
-          g.flash ? 0.3 * clamp(1 - lt / 0.16) : 0,
-        );
-      // themes montage
+        if (g.kind !== 'themes')
+          g.cardEl.style.transform = `translateY(${(1 - smooth(clamp(lt / 0.7))) * 14}px)`;
+      }
       if (g.kind === 'themes') {
-        const slot = Math.min(g.slots - 1, Math.floor(lt / (beat / 2)));
+        const slotLen = beat / 2;
+        const slot = Math.min(g.slots - 1, Math.floor(lt / slotLen));
         const k = g.order[slot];
         const sh = g.shots[0];
         setImg(
@@ -309,42 +292,61 @@
           sh.srcH,
           g.card.w,
           g.card.h,
-          1.0 + 0.05 * ((lt % (beat / 2)) / (beat / 2)),
+          1 + 0.04 * ((lt % slotLen) / slotLen),
           sh.focus,
         );
-        g.cardEl.style.opacity = '1';
-        g.cardEl.style.transform = 'none';
+        // name pills crossfade (new in, previous out) instead of snapping
+        const p = smooth(clamp((lt - slot * slotLen) / 0.16));
         g.pillEl.textContent = cfg.themeNames[k];
-        const pu = clamp((lt % (beat / 2)) / 0.12);
-        g.pillEl.style.opacity = '1';
-        g.pillEl.style.transform = `scale(${0.85 + 0.15 * outBack(pu)})`;
-        els.flash.style.opacity = String(
-          0.18 * clamp(1 - (lt % (beat / 2)) / 0.08),
-        );
-      }
-      if (g.kind === 'replace') {
-        const k = Math.floor(lt / beat);
-        g.w.forEach((w, i) => {
-          w.span.style.opacity = i === k ? '1' : '0';
-        });
-        const u = clamp((lt - k * beat) / 0.2);
-        if (g.w[k])
-          g.w[k].span.style.transform =
-            `scale(${0.7 + 0.3 * outBack(u)}) translateX(${Math.sin(t * 90) * (1 - u) * 14}px)`;
-        els.flash.style.opacity =
-          k < 3 ? String(0.18 * clamp(1 - (lt - k * beat) / 0.1)) : '0';
+        g.pillEl.style.opacity = String(slot === 0 ? p : p);
+        if (slot > 0) {
+          g.pillPrev.textContent = cfg.themeNames[g.order[slot - 1]];
+          g.pillPrev.style.opacity = String(1 - p);
+        }
       }
       if (g.kind === 'wordmark') {
-        const u = clamp(lt / 0.5);
-        g.mark.style.opacity = String(clamp(u * 3));
-        g.mark.style.transform = `scale(${0.8 + 0.2 * outBack(u)})`;
-        g.tag.style.opacity = String(clamp((lt - 2 * beat) / 0.5));
-        els.flash.style.opacity = String(0.38 * clamp(1 - lt / 0.25));
+        const e = smooth(clamp(lt / 0.8));
+        g.mark.style.opacity = String(e);
+        g.mark.style.transform = `translateY(${(1 - e) * 14}px)`;
+        const te = reveal(lt, 2 * beat);
+        g.tag.style.opacity = String(te);
+        g.tag.style.transform = `translateY(${(1 - te) * 10}px)`;
+        els.glow.style.opacity = String(0.1 * (1 - smooth(clamp(lt / 1.2))));
       }
-      // out fade
-      els.black.style.opacity = String(clamp((t - (cfg.total - 0.6)) / 0.6));
+    }
+
+    window.frame = async (t) => {
+      const beat = cfg.beat;
+      const ph = (t % beat) / beat;
+      els.ring.style.opacity = String(
+        0.07 * (1 - ph) ** 2 * (t > cfg.dropT ? 1 : 0.5),
+      );
+      els.ring.style.transform = `scale(${0.8 + 0.4 * smooth(ph)})`;
+      els.stars.forEach((s, i) => {
+        s.style.transform = `rotate(${t * 14 * (i % 2 ? 1 : -1)}deg) scale(${1 + 0.12 * Math.sin(t * 1.5 + i)})`;
+      });
+      els.glow.style.opacity = '0';
+      const decodes = [];
+      cfg.groups.forEach((g, gi) => {
+        const first = gi === 0;
+        const last = gi === cfg.groups.length - 1;
+        const active = t >= g.t0 && t < g.t1 + (last ? 0 : 0.3);
+        if (!active) {
+          if (g.root) g.root.style.display = 'none';
+          return;
+        }
+        if (!g.root) build(g);
+        g.root.style.display = 'block';
+        g.root.style.zIndex = String(gi);
+        const fin = first ? 1 : smooth(clamp((t - g.t0) / XF));
+        const fout = last ? 1 : 1 - smooth(clamp((t - g.t1) / 0.3));
+        g.root.style.opacity = String(fin * fout);
+        update(g, t);
+        decodes.push(g.imgA, g.imgB);
+      });
+      els.black.style.opacity = String(clamp((t - (cfg.total - 0.7)) / 0.7));
       await Promise.all(
-        [g.imgA, g.imgB].filter(Boolean).map((i) => i.decode().catch(() => {})),
+        decodes.filter(Boolean).map((i) => i.decode().catch(() => {})),
       );
     };
   </script>

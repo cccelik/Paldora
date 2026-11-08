@@ -310,7 +310,13 @@ for (let b = 0; b < D; b++) {
   }
 }
 for (const q of arr.hookHits ?? [])
-  put(tom(95 - q * 8, 1), at(0, q * 4), 0.9, 0, 0.1); // beats of the pain hook
+  put(
+    pluck([69, 72, 76][q] ?? 69, BEAT * 1.4, 0.9),
+    at(0, q * 4),
+    0.4,
+    -0.1 + q * 0.1,
+    0.5,
+  ); // soft chime cues on the cold-open phrases
 // snare roll into the drop
 for (let s = 0; s < 8; s++)
   put(snare(0.25 + s * 0.09), at(D - 1, 8 + s), 0.8, 0, 0.05);

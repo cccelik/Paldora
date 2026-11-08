@@ -26,41 +26,43 @@ const dims = {
 const nice = (t) =>
   t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-/** "Line one\n*accent* word" -> lines of tokens with eighth-note timing. */
-function tokens(text, startEighth = 0, times = null, big = {}) {
-  let i = 0;
-  return text
-    .split('\n')
-    .map((line) => {
-      const out = [];
-      for (const raw of line.split(' ')) {
-        let accent = false;
-        let wd = raw;
-        if (wd.startsWith('*')) accent = true;
-        if (accent || line.includes('*')) {
-          // accent runs between asterisks, possibly spanning several words
-        }
-        out.push({ raw: wd });
+/**
+ * "Line one\n*accent* word" -> lines of word tokens tagged with a reveal batch `b`.
+ * Each line is one batch (a phrase); a "|" token inside a line starts a new batch.
+ * `lineBatch` overrides the batch per line (lines that ride together).
+ */
+function tokens(text, lineBatch = null) {
+  let b = -1;
+  return text.split('\n').map((line, li) => {
+    if (lineBatch) b = lineBatch[li];
+    else b += 1;
+    let on = false;
+    const out = [];
+    for (const raw of line.split(' ')) {
+      if (raw === '|') {
+        b += 1;
+        continue;
       }
-      return out;
-    })
-    .map((row) => {
-      let on = false;
-      return row.map(({ raw }) => {
-        if (raw.startsWith('*')) on = true;
-        const clean = raw.replaceAll('*', '');
-        const tok = {
-          t: clean,
-          a: on,
-          at: (times ? times[i] : startEighth + i) * (BEAT / 2) + 0.04,
-          ...(big[i] ? { big: big[i] } : {}),
-        };
-        if (raw.endsWith('*')) on = false;
-        i++;
-        return tok;
-      });
-    });
+      if (raw.startsWith('*')) on = true;
+      out.push({ t: raw.replaceAll('*', ''), a: on, b });
+      if (raw.endsWith('*')) on = false;
+    }
+    return out;
+  });
 }
+
+/** Reveal times (seconds, group-local) from batch start times; the whole batch fades together. */
+function timed(lines, starts, big = {}) {
+  return lines.map((row) =>
+    row.map((w) => ({
+      t: w.t,
+      a: w.a,
+      at: starts[Math.min(w.b, starts.length - 1)],
+      ...(big[w.t] ? { big: big[w.t] } : {}),
+    })),
+  );
+}
+const nBatches = (lines) => Math.max(...lines.flat().map((w) => w.b)) + 1;
 
 const count = (dir) =>
   readdirSync(path.join(framesRoot, dir)).filter((f) => f.endsWith('.jpg'))
@@ -88,9 +90,8 @@ for (const g of cut.groups) {
       align: 'center',
       lines: [COPY.hook.map((t) => ({ t, a: false, at: 0 }))],
     };
-    o.flash = true;
   } else if (g.kind === 'hookLine') {
-    const lines = tokens(COPY.hookLine, 0);
+    const lines = timed(tokens(COPY.hookLine, [0, 1, 1]), [0.05, BEAT]);
     o.hl = {
       x: 0,
       y: 0,
@@ -101,11 +102,15 @@ for (const g of cut.groups) {
       lines,
     };
   } else if (g.kind === 'turn') {
-    const times =
-      g.bars === 2 ? [0, 1, 2, 3, 4, 8, 9, 10] : [0, 1, 2, 3, 4, 5, 6, 7];
-    const lines = tokens('So we built a\nbox\nfor your people.', 0, times, {
-      4: P ? 2.7 : 2.6,
-    });
+    const starts =
+      g.bars === 2 ? [0.05, 2 * BEAT, 4 * BEAT] : [0.05, BEAT, 2 * BEAT];
+    const lines = timed(
+      tokens('So we built a\nbox\nfor your people.'),
+      starts,
+      {
+        box: P ? 2.7 : 2.6,
+      },
+    );
     lines[1][0].a = true;
     o.hl = {
       x: 0,
@@ -116,7 +121,6 @@ for (const g of cut.groups) {
       align: 'center',
       lines,
     };
-    o.flash = true;
   } else if (g.kind === 'cta') {
     o.hl = {
       x: 0,
@@ -125,25 +129,29 @@ for (const g of cut.groups) {
       h: H,
       size: P ? 150 : 200,
       align: 'center',
-      lines: tokens(COPY.cta, 0),
+      lines: timed(tokens(COPY.cta), [0.05, BEAT]),
     };
-    o.flash = true;
   } else if (g.kind === 'wordmark') {
-    o.flash = true;
   } else {
     // benefit / themes / split share the "headline + card" composition
     const [headline, sub] = COPY[g.copy ?? 'themes'];
-    const lines = tokens(
+    const raw =
       P && g.kind === 'themes'
         ? headline
         : g.kind === 'themes'
-          ? headline.replace('\n', ' ')
-          : headline,
-      0,
-    );
-    const nTok = lines.flat().length;
+          ? headline.replace('\n', ' | ')
+          : g.kind === 'split' && !P
+            ? headline.replace('\n', ' | ')
+            : headline;
+    const barsInGroup = g.bars ?? g.shots.reduce((a, x) => a + x.bars, 0);
+    const bs =
+      barsInGroup >= 2
+        ? [0.05, BEAT, 2 * BEAT]
+        : [0.05, BEAT * 0.75, BEAT * 1.5];
+    const parsed = tokens(raw);
+    const lines = timed(parsed, bs);
     const subObj = sub
-      ? { text: sub, size: P ? 36 : 34, at: nTok * (BEAT / 2) + 0.15 }
+      ? { text: sub, size: P ? 36 : 34, at: bs[Math.min(nBatches(parsed), 2)] }
       : null;
     if (g.kind === 'benefit') {
       const phone = !!g.phone;
@@ -261,7 +269,7 @@ for (const g of cut.groups) {
             h: 290,
             size: 92,
             align: 'center',
-            lines: tokens(COPY.split[0].replace('\n', ' '), 0),
+            lines,
           };
       o.sub = P ? subObj : subObj ? { ...subObj, size: 32 } : null;
       o.shots = [
