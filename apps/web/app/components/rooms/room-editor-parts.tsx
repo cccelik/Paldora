@@ -7,7 +7,7 @@ import {
   ROOM_STALE_CODE,
   type RoomSaveContext,
 } from '@/components/rooms/use-room-save';
-import { Button, HiddenFields } from '@/components/ui';
+import { Button, HiddenFields, Icon } from '@/components/ui';
 import { type ActionResult } from '@/lib/actions/action-result';
 import { moveLabel } from '@/lib/rooms/room-editor';
 import { type RoomView } from '@paldora/validation';
@@ -118,7 +118,7 @@ export function MoveButtons({
         disabled={index === 0}
         onClick={() => onMove(-1)}
       >
-        <span aria-hidden="true">↑</span>
+        <Icon name="arrowUp" size={16} />
       </Button>
       <Button
         variant="quiet"
@@ -128,7 +128,7 @@ export function MoveButtons({
         disabled={index === total - 1}
         onClick={() => onMove(1)}
       >
-        <span aria-hidden="true">↓</span>
+        <Icon name="arrowDown" size={16} />
       </Button>
     </span>
   );

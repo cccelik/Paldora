@@ -14,7 +14,7 @@ import {
 import { completedUser, cursorParam, orNotFound } from '@/lib/server/session';
 
 import { firebaseWebData } from '@/lib/server/firebase/data';
-import Link from 'next/link';
+import { BackLink } from '@/components/ui/back-link';
 export const metadata = { title: 'Life Update' };
 
 const absent = LIFE_UPDATE_ABSENT;
@@ -47,11 +47,9 @@ async function firebaseLifeUpdatePage(
     : [null, null];
   return (
     <div className={styles.stack}>
-      <p>
-        <Link href={context ? `/boxes/${context.boxId}` : '/life-updates'}>
-          ← {context?.boxName ?? 'Your Life Updates'}
-        </Link>
-      </p>
+      <BackLink href={context ? `/boxes/${context.boxId}` : '/life-updates'}>
+        {context?.boxName ?? 'Your Life Updates'}
+      </BackLink>
       <FirebaseLifeUpdateCard
         update={update}
         ownPage

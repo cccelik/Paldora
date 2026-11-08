@@ -626,3 +626,16 @@ allow-listed in the audit like the other sampling false positives and the handle
   `ReportControl`, which still serves Rooms and comments.
 - Removed deviation: inline Edit/Delete/Report on post cards. Authorization, copy and server actions
   are unchanged. e2e covers the menu by keyboard, focus return and axe (desktop and 390px).
+
+## Web icons (2026-11-08)
+
+Owner request: web icons must be proper symbols like iOS SF Symbols. SF
+Symbols cannot be used on the web (Apple's licence limits them to Apple
+platform apps), so `ui/icons.tsx` now renders Lucide (ISC) through
+`lucide-react` 1.61.0, pinned exactly (published 2026-10-21, over two weeks
+old), named imports only. The `Icon` API and iOS `PaldoraIcon` names are kept;
+new names added (report, block, delete, share, send, search, settings, archive,
+activity, memories, arrows). Text arrows in `BackLink`, the Life Update back
+link and the Room reorder buttons became icons. Mapping table:
+`apps/web/app/components/README.md`; decision: ADR 025. Unit test:
+`ui/icons.test.tsx`.

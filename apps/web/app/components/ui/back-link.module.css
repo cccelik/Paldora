@@ -1,0 +1,6 @@
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pal-space-1, 4px);
+  min-height: 44px;
+}
