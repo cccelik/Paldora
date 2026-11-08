@@ -30,7 +30,7 @@ struct MemoriesView: View {
             .frame(maxWidth: .infinity)
         }
         .paldoraCanvas()
-        .paldoraNavBar("Memories")
+        .paldoraNavBar("Memories", showsTitle: false)
         .refreshable { await model.refresh() }
         .task { await model.load() }
     }

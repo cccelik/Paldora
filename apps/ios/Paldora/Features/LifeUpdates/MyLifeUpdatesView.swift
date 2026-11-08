@@ -10,6 +10,12 @@ struct MyLifeUpdatesView: View {
         _list = State(initialValue: makeMyLifeUpdates(env: env))
     }
 
+    /// The large "Life updates" heading is only drawn above a loaded, non-empty list.
+    private var hasChapters: Bool {
+        if case .loaded = list.phase { return !list.items.isEmpty }
+        return false
+    }
+
     var body: some View {
         Group {
             switch list.phase {
@@ -40,8 +46,9 @@ struct MyLifeUpdatesView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paldoraCanvas()
-        .paldoraNavBar("Life updates", trailing: .none)
+        .paldoraNavBar("Life updates", trailing: .none, showsTitle: !hasChapters)
         .overlay(alignment: .topTrailing) {
             NavigationLink(value: LifeUpdateComposeRoute()) {
                 PaldoraIconView(.plus, size: 20).foregroundStyle(Theme.actionOnPrimary)

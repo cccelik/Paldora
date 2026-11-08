@@ -442,3 +442,55 @@ Fixed (real drift):
 
 390 px: top bar, bottom nav and cards reviewed on W03 Dark; no overflow (e2e overflow checks cover
 the rest). Not compared pixel by pixel; sizes were read by eye from side-by-side captures.
+
+## Visual QA (iOS, 2026-11-08)
+
+Method: Figma file `RAZq5RS2gSwVa4xvxbk0gZ`, Mobile flows Light (30:7) and Dark (30:8), read with
+`get_screenshot`/`get_design_context` and compared side by side with iPhone 16e (iOS 18.3.1) screenshots
+of the DEBUG app on the `demo-paldora` emulators, Light and Dark. The screenshots come from
+`PaldoraUITests/VisualCaptureUITests` (skipped unless `TEST_RUNNER_PALDORA_VISUAL_QA=1`; writes PNGs to
+`PALDORA_VISUAL_DIR`; set the simulator appearance with `xcrun simctl ui <udid> appearance light|dark`
+for Light, because `-AppleInterfaceStyle Light` does not override a Dark simulator). The emulator fixture
+is nearly empty (one Box, one peer post, one comment) so photo-heavy Figma content cannot match; those
+differences are data, not drift. Comparison is visual (layout, type size, colour, radius, state), not a
+pixel diff.
+
+Fixed (real drift):
+
+- Tab bar: inactive icons are dimmed to 65% as in Figma (172,168,163); labels stay full strength.
+- Nav bar: the centered title is drawn only on screens without a large title (new `showsTitle`).
+  Friends, Memories, My Life updates (when it has items) and the Box detail no longer repeat their
+  name twice.
+- `PaldoraScreenTitle` subtitle is Body/M 15/22 (Figma), not Body/L 17.
+- My Life updates empty state left the default white window background above and below the state
+  (the canvas only covered the content); it now fills the screen.
+- Accessibility audit allow-list: "WORK OR UNIVERSITY" joins "TRAVEL" as a composer section label the
+  audit mis-samples (the layout shift from the 15 pt subtitle moved the report to that label; the token
+  pair is pinned in `ContrastTests`).
+
+| Figma frame                | Result                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.2 Sign in                | Fixed (subtitle size). Documented deviation: no back button, Apple/Google, password reveal or "or" divider (sign-in is the root; section D). Focused-field state not captured.                                                                                                                                                          |
+| 2.1 Friends                | Fixed (duplicate title). Deviation: "Add" text action instead of a plus button (kept for the existing UI tests and VoiceOver), no friend count or search, requests card is its own screen.                                                                                                                                              |
+| 3.1 Boxes                  | Match (eyebrow, title, subtitle, card, ember "n new" chip placement is the documented deviation). Title is Display M 34; Figma sets this one at 36 (one-off size outside the token scale).                                                                                                                                              |
+| 3.4 Box detail             | Fixed (duplicate title). Documented deviation: no photo hero, member avatar row, Moments/Memories/Members tabs or "Next supper" card; the screen is a heading, three chips and the composer (Members, Memories and Manage are real capabilities).                                                                                       |
+| 4.1 Home                   | Documented deviation: no wordmark, greeting, search, circle chips, share-a-moment bar; Figma content that needs capabilities or data that do not exist (section D). Post card, reactions, audience label match.                                                                                                                         |
+| 5.1 Post                   | Documented deviation: no photo (fixture has none), no "Seen by", composer is a labelled field with a send button (Figma floats a pill). Comment bubbles, reaction chips match.                                                                                                                                                          |
+| 5.6 Activity               | Match for the empty state; list rows are `PaldoraNotificationRow` (not populated by the fixture). Filter chips and "Quiet hours" are not built.                                                                                                                                                                                         |
+| 6.1 New Life Update        | Documented deviation (nine sections, no type chips or title field).                                                                                                                                                                                                                                                                     |
+| 6.2 Your Life updates      | Fixed (empty state background). List rows are `PaldoraLifeUpdateCard` data not in the fixture.                                                                                                                                                                                                                                          |
+| 6.4 Memories               | Documented deviation: one filtered list (segmented type, year chips) instead of year mosaic tiles; fixture has no photos.                                                                                                                                                                                                               |
+| 7.1 My Room, 7.3 Customize | Documented deviation: Room header follows the step 4 template (72 pt avatar left, name 28) rather than the centred 110 pt hero of the 7.1 frame; Customize is list groups with choice sheets, not the Theme/Style/Layout/Widgets segmented grid (step 2 decision). App chrome (Customize, Memories, visibility) sits outside the theme. |
+| 9.1 Settings               | Documented deviation: Profile tab also hosts edit-profile and photo; Settings groups match the list-group style.                                                                                                                                                                                                                        |
+| Dark counterparts          | Match on tokens (canvas, surface, border, tab bar, chips, accents) for every captured frame.                                                                                                                                                                                                                                            |
+
+Not compared (no captured screen or no iOS counterpart): 1.1, 1.3 to 1.11 beyond the sign-in
+screen, 2.2 to 2.6, 3.2, 3.3, 3.5 to 3.11, 4.2 to 4.7, 5.2 to 5.5, 5.7, 6.3, 6.5 to 6.7, 7.2,
+7.4 to 7.9, 9.2 to 9.5, F10. They use the same components, which the component gallery and
+Step 2 already checked against page "02 · Components".
+
+Verification (Node v23.7.0): PaldoraKit `swift test` 26 tests passed; app unit tests 187 passed;
+`apps/ios/scripts/ui-test.sh` full run 24 tests (22 flows and audits plus the 2 capture tests): all
+passed except `testMainScreensAuditAtAccessibility3` on the first run ("WORK OR UNIVERSITY" contrast
+sampling report, see above); after the allow-list entry that test was re-run alone and passed;
+`pnpm format:check` passes. Not committed.

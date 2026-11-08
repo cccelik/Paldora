@@ -29,7 +29,7 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// so the audited runs draw flat; token contrast is pinned in ContrastTests.
     private static let samplingFalsePositives: Set<String> = [
         "Invite your first friend", "Add someone by their exact username. Paldora never suggests strangers.",
-        "Add a friend", "TRAVEL",
+        "Add a friend", "TRAVEL", "WORK OR UNIVERSITY",
     ]
 
     private let flat = ["PALDORA_GALLERY_FLAT": "1"]
@@ -157,7 +157,7 @@ final class AccessibilityAuditUITests: XCTestCase {
                    type == .textField || type == .secureTextField { return true }
                 // Contrast the audit reports on text and buttons that the same components pass in the
                 // Light, Dark and accessibility3 gallery audits (token pairs are pinned in ContrastTests):
-                // the Friends empty state and the Life Update composer's section label. Recorded as a
+                // the Friends empty state and the Life Update composer section labels. Recorded as a
                 // sampling false positive in apps/ios/README.md; remove when the audit stops flagging them.
                 if issue.auditType == .contrast, let label = issue.element?.label,
                    Self.samplingFalsePositives.contains(label) { return true }

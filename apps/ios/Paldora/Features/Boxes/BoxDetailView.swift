@@ -17,7 +17,7 @@ struct BoxDetailView: View {
     var body: some View {
         content
             .paldoraCanvas()
-            .paldoraNavBar(model.box?.name ?? "Box")
+            .paldoraNavBar(model.box?.name ?? "Box", showsTitle: false)
             .task { await model.load(); seenVersion = env.contentVersion }
             .onAppear {
                 // Returning from Manage: pick up renames and archive changes, and leave a Box that is gone.

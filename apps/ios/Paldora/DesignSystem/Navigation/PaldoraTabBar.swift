@@ -43,6 +43,7 @@ struct PaldoraTabBar: View {
     var badges: [PaldoraTab: Int] = [:]
 
     private static var radius: CGFloat { 32 }
+    private static var inactiveIconOpacity: Double { 0.65 }
 
     var body: some View {
         HStack(spacing: 2) {
@@ -65,7 +66,9 @@ struct PaldoraTabBar: View {
             selection = PaldoraTab.selection(current: selection, tapped: tab)
         } label: {
             VStack(spacing: 3) {
+                // Figma: inactive icons are dimmed to about 65% (172,168,163), the label stays full.
                 PaldoraIconView(tab.icon, size: 21, isActive: isActive)
+                    .opacity(isActive ? 1 : Self.inactiveIconOpacity)
                     .overlay(alignment: .topTrailing) {
                         if badge > 0 {
                             Circle().fill(Theme.ember).frame(width: 8, height: 8).offset(x: 4, y: -2)

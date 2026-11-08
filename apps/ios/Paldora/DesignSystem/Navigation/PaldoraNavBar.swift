@@ -19,16 +19,22 @@ struct PaldoraNavBar: View {
     let title: String
     let leading: Leading
     var trailing: Trailing = .none
+    /// Figma draws the centered title only on screens without a large title of their own
+    /// (Friends, Memories, Life updates and the Box hero have none); hidden, the screen's
+    /// own heading carries the name.
+    var showsTitle = true
 
     var body: some View {
         ZStack {
-            Text(title)
-                .paldoraText(.buttonL)
-                .foregroundStyle(Theme.textPrimary)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, PaldoraHitTarget.minimum + Theme.space3 * 2)
-                .accessibilityAddTraits(.isHeader)
+            if showsTitle {
+                Text(title)
+                    .paldoraText(.buttonL)
+                    .foregroundStyle(Theme.textPrimary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, PaldoraHitTarget.minimum + Theme.space3 * 2)
+                    .accessibilityAddTraits(.isHeader)
+            }
             HStack {
                 leadingButton
                 Spacer(minLength: 0)

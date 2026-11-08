@@ -19,6 +19,7 @@ private struct PaldoraNavBarModifier: ViewModifier {
     let title: String
     let isModal: Bool
     let trailing: PaldoraNavBar.Trailing
+    let showsTitle: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(PaldoraChrome.self) private var chrome: PaldoraChrome?
     @State private var token = UUID()
@@ -30,7 +31,7 @@ private struct PaldoraNavBarModifier: ViewModifier {
             .toolbar(.hidden, for: .navigationBar)
             .background(PaldoraSwipeBackEnabler())
             .safeAreaInset(edge: .top, spacing: 0) {
-                PaldoraNavBar(title: title, leading: isModal ? .close { dismiss() } : .back { dismiss() }, trailing: trailing)
+                PaldoraNavBar(title: title, leading: isModal ? .close { dismiss() } : .back { dismiss() }, trailing: trailing, showsTitle: showsTitle)
                     .padding(.horizontal, Theme.gutter)
                     .padding(.vertical, Theme.space2)
                     .background(Theme.bgCanvas)
@@ -42,8 +43,8 @@ extension View {
     /// Replaces the system navigation bar with `PaldoraNavBar`. `isModal` draws Close
     /// instead of Back (sheets, full-screen flows). The canvas shows through.
     func paldoraNavBar(_ title: String, isModal: Bool = false,
-                       trailing: PaldoraNavBar.Trailing = .none) -> some View {
-        modifier(PaldoraNavBarModifier(title: title, isModal: isModal, trailing: trailing))
+                       trailing: PaldoraNavBar.Trailing = .none, showsTitle: Bool = true) -> some View {
+        modifier(PaldoraNavBarModifier(title: title, isModal: isModal, trailing: trailing, showsTitle: showsTitle))
     }
 
     /// The canvas background every screen sits on.
@@ -71,7 +72,7 @@ private struct PaldoraSwipeBackEnabler: UIViewControllerRepresentable {
 }
 
 /// An optional eyebrow, a Display/M title (the last lines may be set in the italic
-/// accent) and a Body/L subtitle: the heading block of Figma's form and flow screens.
+/// accent) and a Body/M subtitle: the heading block of Figma's form and flow screens.
 struct PaldoraScreenTitle: View {
     var eyebrow: String?
     let title: String
@@ -92,7 +93,7 @@ struct PaldoraScreenTitle: View {
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
             if let subtitle {
-                Text(subtitle).paldoraText(.bodyL).foregroundStyle(Theme.textSecondary)
+                Text(subtitle).paldoraText(.bodyM).foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

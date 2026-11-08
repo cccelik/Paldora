@@ -42,7 +42,7 @@ struct FriendsView: View {
             .frame(maxWidth: .infinity)
         }
         .paldoraCanvas()
-        .paldoraNavBar("Friends", trailing: .action(title: "Add") { pushed = .add })
+        .paldoraNavBar("Friends", trailing: .action(title: "Add") { pushed = .add }, showsTitle: false)
         .refreshable { await model.refresh() }
         .task { await model.load() }
         .paldoraToast($toast)
