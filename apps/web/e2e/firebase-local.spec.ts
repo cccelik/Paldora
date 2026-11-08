@@ -243,18 +243,39 @@ test('admitted sign-in, onboarding, Box creation and session removal', async ({
   await page.getByRole('button', { name: 'Yes, delete comment' }).click();
   await expect(page.getByText('An edited private comment')).toHaveCount(0);
   await page.goBack();
-  await post.getByRole('button', { name: 'Edit' }).click();
-  await post.getByLabel('Edit your post').fill('An edited private memory');
-  await post.getByRole('button', { name: 'Save' }).click();
+  // The overflow menu: keyboard, focus return, then axe with it open.
+  const options = post.getByRole('button', { name: 'Post options' });
+  await expect(options).toHaveAttribute('aria-haspopup', 'menu');
+  await options.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', { name: 'Edit post' })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(
+    page.getByRole('menuitem', { name: 'Delete post' }),
+  ).toBeFocused();
+  await expectSound(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(options).toBeFocused();
+  await options.click();
+  await page.getByRole('menuitem', { name: 'Edit post' }).click();
+  await expect(page.getByRole('dialog', { name: 'Edit post' })).toBeVisible();
+  await page.getByLabel('Edit your post').fill('An edited private memory');
+  await page.getByRole('button', { name: 'Save' }).click();
   await expect(post).toContainText('An edited private memory');
-  await post.getByRole('button', { name: 'Delete' }).click();
+  await expect(options).toBeFocused();
+  await options.click();
+  await page.getByRole('menuitem', { name: 'Delete post' }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'Delete post?' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Yes, delete' }).click();
   await expect(page.getByText('An edited private memory')).toHaveCount(0);
   await page.goto(postUrl!);
   await expect(
     page.getByRole('heading', { name: 'This page isn’t here.' }),
   ).toBeVisible();
-  await page.goBack();
+  await page.goto(boxUrl);
   await page.getByRole('button', { name: 'Archive this Box' }).click();
   await expect(
     page.getByText(
@@ -327,7 +348,8 @@ test('Only Me and Box Life Updates use Firebase and preserve their audience', as
     page.getByRole('list', { name: 'Your Life Updates' }),
   ).toContainText('A private chapter');
   await page.goto(onlyMeUrl);
-  await page.getByRole('link', { name: 'Edit Life Update' }).click();
+  await page.getByRole('button', { name: 'Life Update options' }).click();
+  await page.getByRole('menuitem', { name: 'Edit Life Update' }).click();
   await page.getByLabel('Life lately').fill('An edited private chapter');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page).toHaveURL(onlyMeUrl);
@@ -340,7 +362,8 @@ test('Only Me and Box Life Updates use Firebase and preserve their audience', as
       .getByRole('list', { name: 'Photos' })
       .getByRole('img'),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Delete Life Update' }).click();
+  await page.getByRole('button', { name: 'Life Update options' }).click();
+  await page.getByRole('menuitem', { name: 'Delete Life Update' }).click();
   await page.getByRole('button', { name: 'Yes, delete Life Update' }).click();
   await expect(page).toHaveURL(/\/life-updates$/);
   await expect(page.getByText('An edited private chapter')).toHaveCount(0);
@@ -739,7 +762,8 @@ test('private Firebase post photos process, reauthorize and retire on deletion',
     await post.getByRole('button', { name: 'React with 👍' }).click();
     await expect(reaction).toHaveCount(0);
     expect((await page.request.get(reactionUrl)).status()).toBe(404);
-    await post.getByRole('button', { name: 'Delete' }).click();
+    await post.getByRole('button', { name: 'Post options' }).click();
+    await page.getByRole('menuitem', { name: 'Delete post' }).click();
     await page.getByRole('button', { name: 'Yes, delete' }).click();
     await expect(post).toHaveCount(0);
     expect((await page.request.get(imageUrl)).status()).toBe(404);
@@ -835,10 +859,10 @@ test('Firebase notifications, report receipts, staff takedown and SSE', async ({
       .click();
     await expect(page).toHaveURL(/\/posts\/[0-9a-f-]{36}/);
     await page.goto(postUrl!);
-    await page.getByText('Report this post').click();
-    const postReport = page
-      .locator('details')
-      .filter({ hasText: 'Report this post' });
+    await page.getByRole('button', { name: 'Post options' }).click();
+    await page.getByRole('menuitem', { name: 'Report post' }).click();
+    const postReport = page.getByRole('dialog', { name: 'Report post' });
+    await expectSound(page);
     await postReport.getByLabel('Reason').selectOption('privacy');
     await postReport.getByRole('button', { name: 'Send report' }).click();
     await expect(

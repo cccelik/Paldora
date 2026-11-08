@@ -1,13 +1,9 @@
-import {
-  deleteLifeUpdateAction,
-  deleteLifeUpdateAndLeaveAction,
-} from '@/actions/life-updates';
 import { LocalTime } from '@/components/common/local-time';
-import { ConfirmAction } from '@/components/forms/confirm-action';
 import { FirebasePostReactions } from '@/components/interactions/firebase-post-reactions';
 import { FirebaseMediaPhotos } from '@/components/media/firebase-media-photos';
+import { LifeUpdateMenu } from '@/components/life-updates/life-update-menu';
 import styles from '@/components/posts/post-card.module.css';
-import { buttonClassName, Chip, LifeUpdateCard } from '@/components/ui';
+import { Chip, LifeUpdateCard } from '@/components/ui';
 import type { FirebaseLifeUpdateItem } from '@/lib/server/firebase/data';
 import { LIFE_UPDATE_SECTION_LABELS } from '@paldora/domain';
 import Link from 'next/link';
@@ -41,8 +37,17 @@ export function FirebaseLifeUpdateCard({
         </>
       }
       title={`${update.authorName}’s life update`}
+      menu={
+        update.isOwner ? (
+          <LifeUpdateMenu
+            lifeUpdateId={update.id}
+            canEdit={update.canEdit}
+            leaveAfterDelete={ownPage}
+          />
+        ) : null
+      }
       footer={
-        context || update.isOwner ? (
+        context ? (
           <div className={styles.footer}>
             {context ? (
               <FirebasePostReactions
@@ -53,30 +58,6 @@ export function FirebaseLifeUpdateCard({
                 active={context.canInteract}
                 commentsHref={`/life-updates/${update.id}?box=${context.boxId}#comments`}
               />
-            ) : null}
-            {update.isOwner ? (
-              <div className={styles.owner}>
-                {update.canEdit ? (
-                  <Link
-                    className={buttonClassName('secondary')}
-                    href={`/life-updates/${update.id}/edit`}
-                  >
-                    Edit Life Update
-                  </Link>
-                ) : null}
-                <ConfirmAction
-                  action={
-                    ownPage
-                      ? deleteLifeUpdateAndLeaveAction
-                      : deleteLifeUpdateAction
-                  }
-                  fields={{ lifeUpdateId: update.id }}
-                  label="Delete Life Update"
-                  prompt="Delete this Life Update from every Box?"
-                  confirmLabel="Yes, delete Life Update"
-                  pendingLabel="Deleting…"
-                />
-              </div>
             ) : null}
           </div>
         ) : null

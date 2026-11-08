@@ -1,8 +1,7 @@
 import { LocalTime } from '@/components/common/local-time';
 import { FirebasePostReactions } from '@/components/interactions/firebase-post-reactions';
 import { FirebaseMediaPhotos } from '@/components/media/firebase-media-photos';
-import { ReportControl } from '@/components/moderation/report-control';
-import { PostActions } from '@/components/posts/post-actions';
+import { PostMenu } from '@/components/posts/post-menu';
 import styles from '@/components/posts/post-detail.module.css';
 import { Avatar } from '@/components/ui';
 import type { FirebaseFeedItem } from '@/lib/server/firebase/data';
@@ -51,6 +50,15 @@ export function PostDetail({
                 {item.edited ? <> · edited</> : null}
               </p>
             </div>
+            <div className={styles.menu}>
+              <PostMenu
+                postId={item.id}
+                content={item.content}
+                hasPhotos={hasMedia}
+                canManage={item.canEdit && active}
+                leaveAfterDelete
+              />
+            </div>
           </header>
           <p className={styles.body}>{item.content}</p>
           <FirebasePostReactions
@@ -60,16 +68,6 @@ export function PostDetail({
             presets={presets}
             active={active}
           />
-          <div className={styles.controls}>
-            {item.canEdit && active ? (
-              <PostActions
-                postId={item.id}
-                content={item.content}
-                hasPhotos={hasMedia}
-              />
-            ) : null}
-            <ReportControl targetKind="post" targetId={item.id} />
-          </div>
         </article>
         {children}
       </div>

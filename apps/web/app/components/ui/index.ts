@@ -29,6 +29,10 @@ export { LifeUpdateCard } from '@/components/ui/life-update-card';
 export { ListGroup, ListRow } from '@/components/ui/list-row';
 export { NavBar } from '@/components/ui/nav-bar';
 export { NotificationRow } from '@/components/ui/notification-row';
+export {
+  OverflowMenu,
+  type OverflowMenuItem,
+} from '@/components/ui/overflow-menu';
 export { PageColumns } from '@/components/ui/page-columns';
 export { PageLoading } from '@/components/ui/page-loading';
 export { PageHeader } from '@/components/ui/page-header';
@@ -38,6 +42,7 @@ export { Checkbox, Radio, Toggle } from '@/components/ui/selection-controls';
 export { Section } from '@/components/ui/section';
 export { PostSkeleton, Skeleton } from '@/components/ui/skeleton';
 export { StatusPanel } from '@/components/ui/status-panel';
+export { BottomSheet, Dialog, OverlayCard } from '@/components/ui/overlays';
 export { Toast } from '@/components/ui/toast';
 export { UploadTile, type UploadState } from '@/components/ui/upload-tile';
 export { Wordmark } from '@/components/ui/wordmark';

@@ -5,7 +5,6 @@ import {
   Button,
   Comment,
   Icon,
-  IconButton,
   LifeUpdateCard,
   ListGroup,
   ListRow,
@@ -15,6 +14,7 @@ import {
   PostSkeleton,
   UploadTile,
 } from '@/components/ui';
+import { GalleryPostMenu } from '@/design-preview/gallery-post-menu';
 import { Sidebar } from '@/components/shell/sidebar';
 import { Block } from '@/design-preview/gallery-block';
 import styles from '@/design-preview/gallery.module.css';
@@ -25,11 +25,7 @@ const people = [
   { id: '3', name: 'Leah Hartmann' },
   { id: '4', name: 'Sam Ortiz' },
 ];
-const menu = (
-  <IconButton label="Post options" kind="plain">
-    <Icon name="more" size={20} />
-  </IconButton>
-);
+const menu = <GalleryPostMenu />;
 
 export function AvatarBlock() {
   return (

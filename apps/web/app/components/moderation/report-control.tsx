@@ -10,7 +10,7 @@ import { useActionState } from 'react';
 
 type TargetKind = 'user' | 'box' | 'post' | 'comment';
 
-export function ReportControl({
+export function ReportForm({
   targetKind,
   targetId,
 }: {
@@ -18,44 +18,56 @@ export function ReportControl({
   targetId: string;
 }) {
   const [state, action] = useActionState(createReportAction, idleResult);
+  return (
+    <form action={action} className={styles.form}>
+      <HiddenFields values={{ targetKind, targetId }} />
+      <label className={styles.label} htmlFor={`report-category-${targetId}`}>
+        Reason
+      </label>
+      <select
+        className={styles.select}
+        id={`report-category-${targetId}`}
+        name="category"
+        required
+        defaultValue=""
+      >
+        <option value="" disabled>
+          Choose a reason
+        </option>
+        <option value="harassment">Harassment</option>
+        <option value="spam">Spam</option>
+        <option value="privacy">Privacy</option>
+        <option value="other">Something else</option>
+      </select>
+      <TextAreaField
+        id={`report-detail-${targetId}`}
+        label="More information"
+        name="detail"
+        optional
+        maxLength={2000}
+        rows={3}
+        help="Only moderators can read this. Please avoid sharing private details you do not need to include."
+      />
+      <ActionFeedback state={state} />
+      <SubmitButton pendingLabel="Sending…" variant="secondary">
+        Send report
+      </SubmitButton>
+    </form>
+  );
+}
+
+export function ReportControl({
+  targetKind,
+  targetId,
+}: {
+  targetKind: TargetKind;
+  targetId: string;
+}) {
   const label = targetKind === 'user' ? 'person' : targetKind;
   return (
     <details className={styles.control}>
       <summary className={styles.summary}>Report this {label}</summary>
-      <form action={action} className={styles.form}>
-        <HiddenFields values={{ targetKind, targetId }} />
-        <label className={styles.label} htmlFor={`report-category-${targetId}`}>
-          Reason
-        </label>
-        <select
-          className={styles.select}
-          id={`report-category-${targetId}`}
-          name="category"
-          required
-          defaultValue=""
-        >
-          <option value="" disabled>
-            Choose a reason
-          </option>
-          <option value="harassment">Harassment</option>
-          <option value="spam">Spam</option>
-          <option value="privacy">Privacy</option>
-          <option value="other">Something else</option>
-        </select>
-        <TextAreaField
-          id={`report-detail-${targetId}`}
-          label="More information"
-          name="detail"
-          optional
-          maxLength={2000}
-          rows={3}
-          help="Only moderators can read this. Please avoid sharing private details you do not need to include."
-        />
-        <ActionFeedback state={state} />
-        <SubmitButton pendingLabel="Sending…" variant="secondary">
-          Send report
-        </SubmitButton>
-      </form>
+      <ReportForm targetKind={targetKind} targetId={targetId} />
     </details>
   );
 }

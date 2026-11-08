@@ -1,8 +1,7 @@
 import { LocalTime } from '@/components/common/local-time';
 import { FirebasePostReactions } from '@/components/interactions/firebase-post-reactions';
 import { FirebaseMediaPhotos } from '@/components/media/firebase-media-photos';
-import { ReportControl } from '@/components/moderation/report-control';
-import { PostActions } from '@/components/posts/post-actions';
+import { PostMenu } from '@/components/posts/post-menu';
 import styles from '@/components/posts/post-card.module.css';
 import {
   buttonClassName,
@@ -58,17 +57,13 @@ function FeedPost({
           active={active}
         />
       }
-      controls={
-        <>
-          {item.canEdit && active ? (
-            <PostActions
-              postId={item.id}
-              content={item.content}
-              hasPhotos={item.mediaAssetIds.length > 0}
-            />
-          ) : null}
-          <ReportControl targetKind="post" targetId={item.id} />
-        </>
+      menu={
+        <PostMenu
+          postId={item.id}
+          content={item.content}
+          hasPhotos={item.mediaAssetIds.length > 0}
+          canManage={item.canEdit && active}
+        />
       }
     >
       {item.content}

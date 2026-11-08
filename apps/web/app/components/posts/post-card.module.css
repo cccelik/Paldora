@@ -33,13 +33,6 @@
   text-underline-offset: 0.2em;
 }
 
-.owner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pal-space-2);
-}
-
 .footer {
   display: grid;
   gap: var(--pal-space-3);

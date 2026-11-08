@@ -5,7 +5,7 @@ import styles from '@/components/ui/post-card.module.css';
 import { type ReactNode } from 'react';
 /**
  * Figma "Post card" (44:55): Photo and Text variants. Presentational: the
- * feature supplies the data, the media, the overflow menu and (instead of the
+ * feature supplies the data, the media, the overflow menu (`OverflowMenu`) and (instead of the
  * static counts) real reaction controls through `actions`.
  */
 export function PostCard({
@@ -20,7 +20,6 @@ export function PostCard({
   actions,
   audience = 'Only this Box',
   ariaLabel,
-  controls,
 }: {
   author: { name: string | null; avatarUrl?: string | null | undefined };
   /** Box name and time, for example "Sunday Supper · 2h". */
@@ -38,8 +37,6 @@ export function PostCard({
   audience?: string;
   /** Names the article for assistive technology, for example "Post by Ada". */
   ariaLabel?: string;
-  /** Author controls (edit, delete, report), full width under the footer. */
-  controls?: ReactNode;
 }) {
   return (
     <article className={styles.card} aria-label={ariaLabel}>
@@ -73,7 +70,6 @@ export function PostCard({
           {audience}
         </p>
       </footer>
-      {controls ? <div className={styles.controls}>{controls}</div> : null}
     </article>
   );
 }

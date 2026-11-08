@@ -45,11 +45,9 @@
   white-space: pre-wrap;
 }
 
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pal-space-2);
+/* The menu sits at the end of the header row. */
+.menu {
+  margin-inline-start: auto;
 }
 
 @media (min-width: 1024px) {

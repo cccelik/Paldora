@@ -64,10 +64,3 @@
   color: var(--pal-text-secondary);
   font-size: var(--pal-type-body-s-font-size);
 }
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pal-space-2);
-}

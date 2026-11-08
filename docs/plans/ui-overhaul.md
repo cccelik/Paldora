@@ -251,7 +251,9 @@ focus returns.
 
 **Deviations from Figma (same reasons as iOS):**
 
-- Small text in `text/muted` uses `text/secondary`; the placeholder keeps muted.
+- Small text in `text/muted` uses `text/secondary`; the placeholder keeps muted. The owner accepted
+  this `text/muted` AA exception permanently (2026-11-08): small text stays `text/secondary`,
+  `text/muted` is for placeholders only (and large text, icons, decoration).
 - Accent button: ink (`accent/on-brass`) text. Accent chip text is
   `status/danger`. Success banner title is `text/primary`.
 - Life Update eyebrow and toast action are cream (underlined for the action),
@@ -354,8 +356,9 @@ New reusable pieces: `PageHeader` (eyebrow, accent, action), `PageColumns`, `Pag
 Deviations: Life Update reaction controls sit on a light panel inside the dark card (the reaction
 bar is not designed for `bg/inverse`); the home greeting is "Welcome back" (no time-of-day, the
 server does not know the viewer's time zone); Friends, Boxes list, Life Updates and
-Account pages keep their content and only inherit the shell, header and card styling; Edit/Delete
-stay inline buttons with the existing confirm (no overflow menu or `Dialog` swap yet).
+Account pages keep their content and only inherit the shell, header and card styling. Post and Life
+Update owner/viewer actions now live in an `OverflowMenu` with `Dialog` confirms (see the follow-up
+below).
 
 Verification (2026-11-08, Node v23.7.0, since Node 24 is not installed; pnpm warns about the engine): `pnpm format:check`,
 `lint`, `typecheck`, `test` (web 212 passed), `tokens:check`, `build` and `scan:client-bundle` pass;
@@ -471,8 +474,7 @@ template images, eyebrows muted with accent rule).
 
 Left as documented or not reproducible without data: W01 hero photo, copy, "Join with an invite",
 and 64px page margins (web uses a 1216px column); W02 photo, Apple/Google, password reveal, Forgot
-password in the label row; W03 chips, composer, Coming up, On this day, and inline Edit/Delete/Report
-on post cards (Figma uses an overflow menu; product decision); W04 photo and conversation bubbles,
+password in the label row; W03 chips, composer, Coming up, On this day; W04 photo and conversation bubbles,
 inline send button; W05 modal; W06 segmented tabs, next supper, hero photo; W07 Polaroid wall,
 guestbook; W08 stats and mosaic; W09 grouping, Quiet hours, Friend requests; W10 mode previews, text
 size, comfort toggles. Eyebrow colour on a few screens is brass or primary where Figma uses muted
@@ -610,3 +612,17 @@ capture tests without `TEST_RUNNER_PALDORA_VISUAL_QA`), 0 failures. The first tw
 reverted did not clear it, and at accessibility3 the text wraps to two lines), so that one finding is
 allow-listed in the audit like the other sampling false positives and the handle now wraps explicitly.
 `pnpm format:check` passes. Not committed.
+
+### Follow-up (web, 2026-11-08): overflow menu on post cards
+
+- New `OverflowMenu` (`ui/overflow-menu`, client): Figma "more" plain icon button (44px hit area)
+  opening a `role="menu"`; Enter/Space/ArrowDown open on the first item, Arrow/Home/End move, Escape or
+  Tab closes, an outside press closes, focus returns to the trigger. `tone="inverse"` for the dark Life
+  Update card.
+- `PostMenu` (`posts/post-menu`): Edit post and Delete post (author, active Box only) plus Report post
+  (any viewer), each in a `Dialog`; used by the Box feed card (W03/W06) and Post detail (W04, which also
+  leaves the page after delete). `LifeUpdateMenu`: Edit Life Update (link) and Delete Life Update
+  (`Dialog`), for the author. `PostCard` lost its `controls` slot; `ReportForm` was split from
+  `ReportControl`, which still serves Rooms and comments.
+- Removed deviation: inline Edit/Delete/Report on post cards. Authorization, copy and server actions
+  are unchanged. e2e covers the menu by keyboard, focus return and axe (desktop and 390px).

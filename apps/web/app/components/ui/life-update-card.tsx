@@ -15,6 +15,7 @@ export function LifeUpdateCard({
   ariaLabel,
   children,
   footer,
+  menu,
 }: {
   title: ReactNode;
   when: ReactNode;
@@ -27,6 +28,8 @@ export function LifeUpdateCard({
   children?: ReactNode;
   /** Interactive controls (reactions) on a light panel, so they keep contrast. */
   footer?: ReactNode;
+  /** An `OverflowMenu` with `tone="inverse"`, at the end of the header. */
+  menu?: ReactNode;
 }) {
   return (
     <article className={styles.card} aria-label={ariaLabel}>
@@ -38,6 +41,7 @@ export function LifeUpdateCard({
           {eyebrow}
         </p>
         <p className={styles.when}>{when}</p>
+        {menu}
       </header>
       <h3 className={styles.title}>{title}</h3>
       {thumbnail || quote ? (
