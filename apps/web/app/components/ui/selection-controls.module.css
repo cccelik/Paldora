@@ -1,0 +1,109 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-3);
+  min-height: var(--pal-size-touch-target);
+  color: var(--pal-text-primary);
+  cursor: pointer;
+}
+
+.label {
+  font-size: var(--pal-font-size-readable);
+}
+
+.toggle,
+.radio,
+.checkbox {
+  position: relative;
+  flex: none;
+  margin: 0;
+  appearance: none;
+  cursor: pointer;
+}
+
+.toggle:disabled,
+.radio:disabled,
+.checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.toggle {
+  width: 46px;
+  height: 28px;
+  border: var(--pal-border-width-hairline) solid var(--pal-text-muted);
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-border-hairline);
+  transition: background-color var(--pal-duration-fast)
+    var(--pal-easing-standard);
+}
+
+.toggle::before {
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--pal-bg-paper);
+  box-shadow: var(--pal-elevation-soft);
+  content: '';
+  transition: transform var(--pal-duration-fast) var(--pal-easing-standard);
+}
+
+.toggle:checked {
+  border-color: var(--pal-accent-brass);
+  background: var(--pal-accent-brass);
+}
+
+.toggle:checked::before {
+  transform: translateX(18px);
+}
+
+.toggle:dir(rtl):checked::before {
+  transform: translateX(-18px);
+}
+
+.radio {
+  width: 22px;
+  height: 22px;
+  border: var(--pal-border-width-focus) solid var(--pal-text-muted);
+  border-radius: 50%;
+  background: var(--pal-bg-surface);
+}
+
+.radio:checked {
+  border: 6px solid var(--pal-accent-brass);
+}
+
+.checkbox {
+  width: 22px;
+  height: 22px;
+  border: var(--pal-border-width-focus) solid var(--pal-text-muted);
+  border-radius: 7px;
+  background: transparent;
+}
+
+.checkbox:checked {
+  border-color: var(--pal-accent-brass);
+  background: var(--pal-accent-brass);
+}
+
+.checkbox:checked::before {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 7px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--pal-accent-on-brass);
+  border-width: 0 2px 2px 0;
+  content: '';
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle,
+  .toggle::before {
+    transition: none;
+  }
+}

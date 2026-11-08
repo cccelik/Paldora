@@ -1,0 +1,51 @@
+.comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.reply {
+  margin-inline-start: 44px;
+}
+
+.main {
+  display: grid;
+  flex: 1;
+  gap: var(--pal-space-1);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--pal-space-2);
+}
+
+.name {
+  font-size: var(--pal-font-size-sm);
+  font-weight: 500;
+}
+
+.when {
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-type-caption-font-size);
+}
+
+.body {
+  font-size: var(--pal-font-size-readable);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-2);
+}
+
+.deleted {
+  padding-block: var(--pal-space-1);
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-font-size-sm);
+  font-style: italic;
+}

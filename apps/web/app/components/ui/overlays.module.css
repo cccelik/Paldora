@@ -1,0 +1,87 @@
+.overlay {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pal-text-primary);
+}
+
+.overlay::backdrop {
+  background: color-mix(in srgb, var(--pal-bg-inverse) 50%, transparent);
+}
+
+.dialog {
+  width: min(calc(100% - var(--pal-space-8)), 22rem);
+  margin: auto;
+}
+
+/* The sheet rises from the bottom edge, clear of the home indicator. */
+.sheet {
+  width: 100%;
+  max-width: 36rem;
+  margin: auto auto 0;
+}
+
+.card {
+  display: grid;
+  gap: var(--pal-space-3);
+  background: var(--pal-bg-surface);
+  box-shadow: var(--pal-elevation-lift);
+}
+
+.dialogCard {
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-xl);
+}
+
+.sheetCard {
+  padding: var(--pal-space-3) var(--pal-space-5)
+    calc(var(--pal-space-6) + env(safe-area-inset-bottom, 0px));
+  border-radius: var(--pal-radius-sheet) var(--pal-radius-sheet) 0 0;
+}
+
+.grabber {
+  justify-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: var(--pal-radius-pill);
+  background: var(--pal-border-hairline);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--pal-font-display);
+  font-size: var(--pal-type-title-m-font-size);
+  font-weight: 400;
+  letter-spacing: var(--pal-type-title-m-tracking);
+  line-height: var(--pal-type-title-m-line-height);
+}
+
+.body {
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-font-size-readable);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--pal-space-2);
+  margin-top: var(--pal-space-2);
+}
+
+.sheetCard .actions {
+  display: grid;
+  justify-content: stretch;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .overlay[open] .card {
+    animation: enter var(--pal-duration-standard) var(--pal-easing-standard);
+  }
+}
+
+@keyframes enter {
+  from {
+    transform: translateY(1rem);
+  }
+}

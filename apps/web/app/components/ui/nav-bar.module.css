@@ -1,0 +1,26 @@
+.bar {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: var(--pal-space-2);
+  min-height: 56px;
+}
+
+.side {
+  display: flex;
+  align-items: center;
+}
+
+.end {
+  justify-content: flex-end;
+}
+
+.title {
+  overflow: hidden;
+  font-size: var(--pal-type-label-m-font-size);
+  font-weight: 500;
+  line-height: var(--pal-type-label-m-line-height);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

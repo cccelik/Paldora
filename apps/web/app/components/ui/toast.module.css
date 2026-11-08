@@ -1,0 +1,58 @@
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 18px;
+  box-shadow: var(--pal-elevation-lift);
+}
+
+/* Inverse stays dark in both modes (bg/inverse). */
+.action {
+  padding: var(--pal-space-1) var(--pal-space-1) var(--pal-space-1)
+    var(--pal-space-4);
+  background: var(--pal-bg-inverse);
+  color: var(--pal-text-on-inverse);
+}
+
+.notification {
+  gap: var(--pal-space-3);
+  padding: var(--pal-space-3);
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
+  border-radius: 22px;
+  background: var(--pal-bg-surface);
+  color: var(--pal-text-primary);
+}
+
+.message {
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--pal-space-2);
+  font-size: var(--pal-font-size-sm);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* Brass on the inverse surface is 4.3:1 in Light, so the action is underlined cream. */
+.actionSlot {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.actionSlot :is(a, button) {
+  color: inherit;
+}
+
+.lines {
+  display: grid;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--pal-font-size-sm);
+}
+
+.subtitle {
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-type-caption-font-size);
+}

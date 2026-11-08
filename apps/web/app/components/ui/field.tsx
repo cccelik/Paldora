@@ -11,6 +11,16 @@ interface FieldFrame {
   help?: string;
   optional?: boolean;
   prefix?: string;
+  /** Error message: danger border, the message below, `aria-invalid` on the control. */
+  error?: string;
+}
+
+/** The `aria-describedby` value: help first, then the error. */
+function describedBy(id: string, help?: string, error?: string) {
+  const ids = [help ? `${id}-help` : '', error ? `${id}-error` : ''].filter(
+    Boolean,
+  );
+  return ids.length > 0 ? ids.join(' ') : undefined;
 }
 
 function Frame({
@@ -20,6 +30,7 @@ function Frame({
   optional,
   prefix,
   readOnly,
+  error,
   children,
 }: FieldFrame & { readOnly?: boolean | undefined; children: React.ReactNode }) {
   return (
@@ -28,7 +39,10 @@ function Frame({
         {label}
         {optional ? <span className={styles.optional}>Optional</span> : null}
       </label>
-      <div className={`${styles.control} ${readOnly ? styles.readOnly : ''}`}>
+      <div
+        className={`${styles.control} ${readOnly ? styles.readOnly : ''}`}
+        data-invalid={error ? 'true' : undefined}
+      >
         {prefix ? (
           <span className={styles.prefix} aria-hidden="true">
             {prefix}
@@ -39,6 +53,11 @@ function Frame({
       {help ? (
         <p className={styles.help} id={`${id}-help`}>
           {help}
+        </p>
+      ) : null}
+      {error ? (
+        <p className={styles.error} id={`${id}-error`}>
+          {error}
         </p>
       ) : null}
     </div>
@@ -55,6 +74,7 @@ export function TextField({
   help,
   optional,
   prefix,
+  error,
   ...input
 }: InputFieldProps) {
   return (
@@ -62,13 +82,15 @@ export function TextField({
       label={label}
       id={id}
       readOnly={input.readOnly}
+      {...(error ? { error } : {})}
       {...(help ? { help } : {})}
       {...(optional ? { optional } : {})}
       {...(prefix ? { prefix } : {})}
     >
       <input
         id={id}
-        aria-describedby={help ? `${id}-help` : undefined}
+        aria-describedby={describedBy(id, help, error)}
+        aria-invalid={error ? true : undefined}
         {...input}
       />
     </Frame>
@@ -86,18 +108,21 @@ export function TextAreaField({
   id,
   help,
   optional,
+  error,
   ...textarea
 }: AreaFieldProps) {
   return (
     <Frame
       label={label}
       id={id}
+      {...(error ? { error } : {})}
       {...(help ? { help } : {})}
       {...(optional ? { optional } : {})}
     >
       <textarea
         id={id}
-        aria-describedby={help ? `${id}-help` : undefined}
+        aria-describedby={describedBy(id, help, error)}
+        aria-invalid={error ? true : undefined}
         {...textarea}
       />
     </Frame>

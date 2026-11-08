@@ -1,6 +1,6 @@
-import styles from '@/components/ui/badge.module.css';
+import { Chip } from '@/components/ui/chip';
 import { type ReactNode } from 'react';
-/** A small status or role label. Text always carries the meaning. */
+/** A small status or role label: a static `Chip` (default or brass). */
 export function Badge({
   children,
   tone = 'neutral',
@@ -8,11 +8,5 @@ export function Badge({
   children: ReactNode;
   tone?: 'neutral' | 'accent';
 }) {
-  return (
-    <span
-      className={`${styles.badge} ${tone === 'accent' ? styles.accent : ''}`}
-    >
-      {children}
-    </span>
-  );
+  return <Chip kind={tone === 'accent' ? 'brass' : 'default'}>{children}</Chip>;
 }

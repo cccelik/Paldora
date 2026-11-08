@@ -26,8 +26,9 @@ export function SubmitButton({
       type="submit"
       variant={variant}
       block={block}
-      disabled={pending || disabled}
-      aria-disabled={pending || disabled}
+      loading={pending}
+      disabled={disabled}
+      aria-disabled={disabled || undefined}
       aria-describedby={describedBy}
     >
       {pending ? pendingLabel : children}

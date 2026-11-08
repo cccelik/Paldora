@@ -1,0 +1,83 @@
+.card {
+  display: grid;
+  gap: var(--pal-space-4);
+  padding: var(--pal-space-6);
+  border-radius: var(--pal-radius-xl);
+  background: var(--pal-bg-inverse);
+  box-shadow: var(--pal-elevation-lift);
+  color: var(--pal-text-on-inverse);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pal-space-3);
+}
+
+/* Eyebrow text is cream: brass on bg/inverse is 4.3:1 in Light. The spark stays brass. */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+  font-size: var(--pal-type-eyebrow-font-size);
+  font-weight: 500;
+  letter-spacing: var(--pal-type-eyebrow-tracking);
+  text-transform: uppercase;
+}
+
+.spark {
+  display: inline-flex;
+  color: var(--pal-accent-brass);
+}
+
+.when {
+  font-size: var(--pal-font-size-sm);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--pal-font-display);
+  font-size: var(--pal-type-title-l-font-size);
+  font-weight: 300;
+  letter-spacing: var(--pal-type-title-l-tracking);
+  line-height: var(--pal-type-title-l-line-height);
+  overflow-wrap: anywhere;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+.thumbnail {
+  flex: none;
+  width: 92px;
+  height: 92px;
+  overflow: hidden;
+  border-radius: var(--pal-radius-md);
+}
+
+.thumbnail > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.quote {
+  min-width: 0;
+  font-size: var(--pal-font-size-readable);
+  overflow-wrap: anywhere;
+}
+
+.action {
+  display: grid;
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: var(--pal-type-display-m-font-size);
+    line-height: var(--pal-type-display-m-line-height);
+  }
+}

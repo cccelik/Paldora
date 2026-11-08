@@ -4,10 +4,11 @@
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: var(--pal-highlight);
+  background: var(--pal-accent-brass-soft);
   color: var(--pal-text-primary);
-  font-family: var(--pal-font-editorial);
-  font-weight: 600;
+  font-family: var(--pal-font-display);
+  font-weight: 400;
+  line-height: 1;
 }
 
 .avatar img {
@@ -16,14 +17,58 @@
   object-fit: cover;
 }
 
-.small {
-  width: 2.5rem;
-  height: 2.5rem;
+.s {
+  width: 28px;
+  height: 28px;
+  font-size: var(--pal-font-size-xs);
+}
+
+.m {
+  width: 40px;
+  height: 40px;
   font-size: var(--pal-font-size-body);
 }
 
-.large {
-  width: 7.5rem;
-  height: 7.5rem;
+.l {
+  width: 56px;
+  height: 56px;
+  font-size: var(--pal-font-size-heading-small);
+}
+
+.xl {
+  width: 104px;
+  height: 104px;
   font-size: var(--pal-font-size-display-large);
+}
+
+.ring {
+  box-shadow:
+    0 0 0 2px var(--pal-bg-canvas),
+    0 0 0 4px var(--pal-accent-brass);
+}
+
+.stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+.stacked + .stacked {
+  margin-inline-start: -8px;
+}
+
+.stacked {
+  display: inline-flex;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--pal-bg-surface);
+}
+
+.more {
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  justify-content: center;
+  background: var(--pal-bg-sunken);
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-font-size-xs);
+  font-weight: 500;
 }

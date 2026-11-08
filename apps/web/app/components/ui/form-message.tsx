@@ -1,9 +1,15 @@
-import styles from '@/components/ui/form-message.module.css';
+import { Banner, type BannerTone } from '@/components/ui/banner';
 export type MessageTone = 'success' | 'attention' | 'failure';
 
+const bannerTone: Record<MessageTone, BannerTone> = {
+  success: 'success',
+  attention: 'warning',
+  failure: 'danger',
+};
+
 /**
- * Inline feedback for a form. The live region always exists, so screen
- * readers announce messages that appear after submission.
+ * Inline feedback for a form, drawn as a `Banner`. The live region always
+ * exists, so screen readers announce messages that appear after submission.
  */
 export function FormMessage({
   message,
@@ -15,9 +21,7 @@ export function FormMessage({
   return (
     <div role={tone === 'failure' ? 'alert' : 'status'} aria-live="polite">
       {message ? (
-        <p className={`${styles.message} ${styles[tone ?? 'success']}`}>
-          {message}
-        </p>
+        <Banner tone={bannerTone[tone ?? 'success']} title={message} />
       ) : null}
     </div>
   );

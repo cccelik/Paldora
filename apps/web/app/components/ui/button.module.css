@@ -1,61 +1,124 @@
 .button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--pal-space-2);
-  min-height: var(--pal-size-touch-target);
-  padding: 0 var(--pal-space-5);
   border: var(--pal-border-width-hairline) solid transparent;
   border-radius: var(--pal-radius-pill);
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
   transition:
     background-color var(--pal-duration-fast) var(--pal-easing-standard),
-    border-color var(--pal-duration-fast) var(--pal-easing-standard);
+    border-color var(--pal-duration-fast) var(--pal-easing-standard),
+    box-shadow var(--pal-duration-fast) var(--pal-easing-standard);
+}
+
+/* Sizes follow Figma: L 56, M 48, S 36 (with a 44px hit area). */
+.size-l {
+  min-height: 56px;
+  padding: 0 var(--pal-space-6);
+  font-size: 1rem;
+}
+
+.size-m {
+  min-height: 48px;
+  padding: 0 22px;
+  font-size: var(--pal-font-size-readable);
+}
+
+.size-s {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: var(--pal-font-size-caption);
+}
+
+.size-s::after {
+  position: absolute;
+  inset: -4px 0;
+  content: '';
+}
+
+.button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: inset 0 0 0 999px
+    color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.button:active:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: inset 0 0 0 999px
+    color-mix(in srgb, currentColor 18%, transparent);
 }
 
 .button:disabled,
 .button[aria-disabled='true'] {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.4;
+}
+
+.button[data-loading] {
+  cursor: progress;
+  opacity: 1;
 }
 
 .primary {
-  background: var(--pal-text);
-  color: var(--pal-canvas);
+  background: var(--pal-action-primary);
+  color: var(--pal-action-on-primary);
 }
 
 .secondary {
-  border-color: color-mix(
-    in srgb,
-    var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
-    transparent
-  );
-  background: transparent;
-  color: var(--pal-text);
+  border-color: var(--pal-border-hairline);
+  background: var(--pal-bg-surface);
+  color: var(--pal-text-primary);
 }
 
-.secondary:hover:not(:disabled) {
-  border-color: var(--pal-text);
+/* Ink on brass, not cream (accent/on-brass): 4.9:1 where cream is 3.3:1. */
+.accent {
+  background: var(--pal-accent-brass);
+  color: var(--pal-accent-on-brass);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--pal-text-primary);
 }
 
 .quiet {
   padding-inline: var(--pal-space-3);
   background: transparent;
-  color: var(--pal-text);
+  color: var(--pal-text-primary);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 
 .danger {
-  padding-inline: var(--pal-space-3);
-  background: transparent;
-  color: var(--pal-danger-text);
+  background: var(--pal-status-danger);
+  color: var(--pal-action-on-primary);
 }
 
 .block {
   width: 100%;
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2400ms;
+  }
 }

@@ -1,0 +1,65 @@
+.card {
+  display: grid;
+  gap: var(--pal-space-3);
+  padding: var(--pal-space-4);
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-bg-surface);
+  box-shadow: var(--pal-elevation-soft);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--pal-font-size-readable);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-type-body-s-font-size);
+}
+
+.media {
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.body {
+  font-family: var(--pal-font-display);
+  font-size: var(--pal-type-title-s-font-size);
+  line-height: var(--pal-type-title-s-line-height);
+  overflow-wrap: anywhere;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pal-space-2);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+}
+
+.audience {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-type-body-s-font-size);
+}

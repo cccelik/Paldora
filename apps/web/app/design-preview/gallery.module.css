@@ -1,0 +1,108 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pal-space-8);
+  max-width: var(--pal-size-content-max);
+  margin: 0 auto;
+  padding: var(--pal-space-6) var(--pal-layout-mobile-gutter);
+}
+
+.pageTitle {
+  font-family: var(--pal-font-display);
+  font-size: var(--pal-type-display-m-font-size);
+  font-weight: 300;
+  line-height: var(--pal-type-display-m-line-height);
+}
+
+.note {
+  color: var(--pal-text-secondary);
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pal-space-8);
+  padding: var(--pal-layout-mobile-gutter);
+  border-radius: var(--pal-radius-xl);
+  background: var(--pal-bg-canvas);
+  color: var(--pal-text-primary);
+}
+
+.panelTitle {
+  font-family: var(--pal-font-display);
+  font-size: var(--pal-type-title-l-font-size);
+  font-weight: 400;
+}
+
+.block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pal-space-3);
+  min-width: 0;
+}
+
+.blockTitle {
+  font-size: var(--pal-type-label-m-font-size);
+  font-weight: 500;
+}
+
+.node {
+  color: var(--pal-text-secondary);
+  font-family: var(--pal-font-mono);
+  font-size: var(--pal-type-caption-font-size);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pal-space-3);
+}
+
+.stack {
+  display: grid;
+  gap: var(--pal-space-3);
+  max-width: 28rem;
+}
+
+.cards {
+  display: grid;
+  gap: var(--pal-space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  align-items: start;
+}
+
+/* A stand-in photo built from tokens, so no image files are needed. */
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 7rem;
+  background: linear-gradient(
+    135deg,
+    var(--pal-accent-brass-soft),
+    var(--pal-accent-ember-soft) 55%,
+    var(--pal-accent-sage-soft)
+  );
+}
+
+.tiles {
+  display: grid;
+  gap: var(--pal-space-3);
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  max-width: 40rem;
+}
+
+.sidebarFrame {
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+  border: var(--pal-border-width-hairline) solid var(--pal-border-hairline);
+  border-radius: var(--pal-radius-lg);
+}
+
+.sheetFrame {
+  display: grid;
+  gap: var(--pal-space-4);
+  max-width: 36rem;
+}

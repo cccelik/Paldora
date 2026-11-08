@@ -1,7 +1,11 @@
 import { openNotificationAction } from '@/actions/notifications';
 import { LocalTime } from '@/components/common/local-time';
 import styles from '@/components/notifications/notification-row.module.css';
-import { Avatar, HiddenFields } from '@/components/ui';
+import {
+  Avatar,
+  HiddenFields,
+  NotificationRow as NotificationRowView,
+} from '@/components/ui';
 import { notificationSentence } from '@/lib/notifications/notification-text';
 import { type NotificationView } from '@paldora/validation';
 /**
@@ -24,36 +28,29 @@ export function NotificationRow({
         />
         <HiddenFields values={{ boxId: notification.box.id }} />
         <HiddenFields values={{ commentId: notification.commentId ?? '' }} />
-        <button
-          type="submit"
-          className={styles.row}
-          data-read={notification.read ? 'true' : 'false'}
-        >
-          <Avatar
-            url={notification.actor.avatarUrl}
-            name={notification.actor.displayName}
-          />
-          <span className={styles.text}>
-            <span className={styles.sentence}>{sentence}</span>
-            <span className={styles.time}>
-              <LocalTime iso={notification.createdAt} />
-            </span>
-          </span>
-          {notification.reaction?.thumbnailUrl ? (
-            <img
-              className={styles.thumbnail}
-              src={notification.reaction.thumbnailUrl}
-              alt=""
-              referrerPolicy="no-referrer"
+        <NotificationRowView
+          as="submit"
+          unread={!notification.read}
+          avatar={
+            <Avatar
+              url={notification.actor.avatarUrl}
+              name={notification.actor.displayName}
             />
-          ) : null}
-          {notification.read ? null : (
-            <span className={styles.unread}>
-              <span className={styles.dot} aria-hidden="true" />
-              <span className="visually-hidden">Unread</span>
-            </span>
-          )}
-        </button>
+          }
+          time={<LocalTime iso={notification.createdAt} />}
+          thumbnail={
+            notification.reaction?.thumbnailUrl ? (
+              <img
+                className={styles.thumbnail}
+                src={notification.reaction.thumbnailUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+              />
+            ) : undefined
+          }
+        >
+          {sentence}
+        </NotificationRowView>
       </form>
     </li>
   );

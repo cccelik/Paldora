@@ -1,0 +1,77 @@
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 var(--pal-space-3);
+  border: var(--pal-border-width-hairline) solid transparent;
+  border-radius: var(--pal-radius-pill);
+  font: inherit;
+  font-size: var(--pal-font-size-caption);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.button {
+  cursor: pointer;
+  transition: background-color var(--pal-duration-fast)
+    var(--pal-easing-standard);
+}
+
+/* 28px chips keep a 44px hit area. */
+.button::after {
+  position: absolute;
+  inset: -8px -2px;
+  content: '';
+}
+
+.button:hover {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.default {
+  border-color: var(--pal-border-hairline);
+  background: var(--pal-bg-surface);
+  color: var(--pal-text-secondary);
+}
+
+.selected {
+  background: var(--pal-action-primary);
+  color: var(--pal-action-on-primary);
+}
+
+/* status/danger on ember-soft (4.5:1), not ember (3.7:1). */
+.accent {
+  background: var(--pal-accent-ember-soft);
+  color: var(--pal-status-danger);
+}
+
+.soft {
+  background: var(--pal-bg-sunken);
+  color: var(--pal-text-secondary);
+}
+
+.brass {
+  background: var(--pal-accent-brass-soft);
+  color: var(--pal-accent-brass-text);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.dot-ember {
+  background: var(--pal-accent-ember);
+}
+
+.dot-brass {
+  background: var(--pal-accent-brass);
+}
+
+.dot-sage {
+  background: var(--pal-accent-sage);
+}

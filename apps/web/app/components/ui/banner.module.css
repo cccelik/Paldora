@@ -1,0 +1,66 @@
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  padding-top: 1px;
+}
+
+.text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  color: var(--pal-text-primary);
+  font-size: var(--pal-font-size-sm);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.message {
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-type-body-s-font-size);
+  line-height: var(--pal-type-body-s-line-height);
+  overflow-wrap: anywhere;
+}
+
+.info {
+  background: var(--pal-bg-sunken);
+}
+
+.info .icon {
+  color: var(--pal-text-secondary);
+}
+
+/* The success title stays text/primary: sage on sage-soft is 3.5:1. */
+.success {
+  background: var(--pal-accent-sage-soft);
+}
+
+.success .icon {
+  color: var(--pal-accent-sage);
+}
+
+.warning {
+  background: var(--pal-accent-brass-soft);
+}
+
+.warning .icon {
+  color: var(--pal-accent-brass-text);
+}
+
+.danger {
+  background: var(--pal-accent-ember-soft);
+}
+
+.danger .icon {
+  color: var(--pal-status-danger);
+}

@@ -3,35 +3,42 @@
   gap: var(--pal-space-2);
 }
 
+/* Eyebrow: Geist Medium 11, +14% tracking, uppercase (Figma label). */
 .label {
-  font-weight: 600;
+  color: var(--pal-text-secondary);
+  font-size: var(--pal-type-eyebrow-font-size);
+  font-weight: 500;
+  letter-spacing: var(--pal-type-eyebrow-tracking);
+  line-height: var(--pal-type-eyebrow-line-height);
+  text-transform: uppercase;
 }
 
 .optional {
   margin-inline-start: var(--pal-space-2);
-  color: var(--pal-text-secondary);
-  font-size: var(--pal-font-size-sm);
   font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .control {
   display: flex;
   align-items: center;
-  min-height: var(--pal-size-touch-target);
-  border: var(--pal-border-width-hairline) solid
-    color-mix(
-      in srgb,
-      var(--pal-text) calc(var(--pal-border-opacity-strong) * 100%),
-      transparent
-    );
+  min-height: 54px;
+  border: var(--pal-border-width-hairline) solid var(--pal-text-muted);
   border-radius: var(--pal-radius-md);
-  background: var(--pal-canvas);
+  background: var(--pal-bg-surface);
+  transition: border-color var(--pal-duration-fast) var(--pal-easing-standard);
 }
 
+/* Focus: brass 1.5 border, plus the focus ring for keyboard users. */
 .control:focus-within {
-  border-color: var(--pal-focus);
+  border: var(--pal-border-width-focus) solid var(--pal-accent-brass);
   outline: var(--pal-size-focus-ring) solid var(--pal-focus);
   outline-offset: 1px;
+}
+
+.control[data-invalid='true'] {
+  border: var(--pal-border-width-focus) solid var(--pal-status-danger);
 }
 
 .control input,
@@ -41,8 +48,13 @@
   padding: var(--pal-space-3) var(--pal-space-4);
   border: 0;
   background: transparent;
-  color: var(--pal-text);
+  color: var(--pal-text-primary);
   font: inherit;
+}
+
+.control input::placeholder,
+.control textarea::placeholder {
+  color: var(--pal-text-muted);
 }
 
 .control input:focus-visible,
@@ -64,11 +76,16 @@
 }
 
 .readOnly {
-  background: var(--pal-surface);
+  background: var(--pal-bg-sunken);
   color: var(--pal-text-secondary);
 }
 
 .help {
   color: var(--pal-text-secondary);
+  font-size: var(--pal-font-size-sm);
+}
+
+.error {
+  color: var(--pal-status-danger);
   font-size: var(--pal-font-size-sm);
 }

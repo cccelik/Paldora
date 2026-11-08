@@ -1,6 +1,6 @@
 # UI overhaul: "Hearth & Brass" (Paldora v2 design kit)
 
-Status: in progress (started 2026-11-07). Step 0 (tokens and fonts) done 2026-11-07, see "Step 0 result". Step 1, iOS part (component library and gallery) done 2026-11-07, see "Step 1 result (iOS)"; web components still open. Owner instruction: implement the Figma
+Status: in progress (started 2026-11-07). Step 0 (tokens and fonts) done 2026-11-07, see "Step 0 result". Step 1, iOS part (component library and gallery) done 2026-11-07, see "Step 1 result (iOS)"; web components done 2026-11-08, see "Step 1 result (web)". Owner instruction: implement the Figma
 kit across the product with reusable components. This plan supersedes the
 palette in `legacy/design/design-system.md` (Obsidian Ink / Antique Gold /
 Champagne / Warm Ivory / Soft Lavender) where they differ; CLAUDE.md §I is
@@ -211,3 +211,67 @@ Details, usage and the deviation list are in `apps/ios/README.md` ("Design syste
   (Figma has one Lift and one Soft); (8) web component library (`apps/web/app/components/ui`)
   is still to do, and the Figma web sidebar frame 26:371 belongs to it; (9) Room theme
   canvases and widgets (step 4) are not part of this library.
+
+## Step 1 result (web, 2026-11-08)
+
+`apps/web/app/components/ui` (plus `shell/sidebar`) now has one reusable
+implementation per Figma component, named like the SwiftUI ones, on the
+generated `--pal-*` tokens and co-located CSS Modules (no Tailwind, no inline
+style, no hex). The catalog is in `apps/web/app/components/README.md`. Existing
+owners were extended, not forked: `Button` (accent, ghost, sizes, `loading`;
+`danger` is now the filled Figma kind), `Avatar` (sizes, ring, stack; old
+`small`/`large` still accepted), `TextField` (error state, eyebrow label,
+brass focus), `Badge` (now a `Chip`), `FormMessage` (renders a `Banner`), the
+toast stack (`ToastItem` renders the new `Toast`), `SubmitButton` (uses
+`Button loading`) and the notifications feature row (wraps `NotificationRow`).
+
+| Component (Figma)                        | Node                     | React                                         |
+| ---------------------------------------- | ------------------------ | --------------------------------------------- |
+| Button                                   | 43:98                    | `Button`                                      |
+| Icon button                              | 43:125                   | `IconButton`                                  |
+| Chip                                     | 43:146                   | `Chip`, `SelectableChip`                      |
+| Text field                               | 43:189                   | `TextField`, `TextAreaField`                  |
+| Toggle / Radio / Checkbox                | 43:198 / 43:205 / 43:214 | `Toggle`, `Radio`, `Checkbox`                 |
+| Avatar                                   | 43:245                   | `Avatar`, `AvatarStack`                       |
+| Banner                                   | 43:280                   | `Banner`                                      |
+| Toast                                    | 43:296                   | `Toast`                                       |
+| List row                                 | 43:347                   | `ListGroup`, `ListRow`                        |
+| Segmented control                        | 43:377                   | `SegmentedControl`                            |
+| Post card / Life Update card / Box card  | 44:55 / 44:74 / 44:93    | `PostCard`, `LifeUpdateCard`, `BoxCard`       |
+| Comment / Notification row / Upload tile | 44:122 / 44:140 / 44:166 | `Comment`, `NotificationRow`, `UploadTile`    |
+| Nav bar / Skeleton / Overlays            | 44:200 / 44:212 / 44:247 | `NavBar`, `Skeleton`, `Dialog`, `BottomSheet` |
+| Web sidebar                              | 26:371                   | `Sidebar`                                     |
+
+**Gallery:** `/design-preview` (`app/design-preview`), Light and Dark panels
+(`data-appearance`), 404 unless `PALDORA_ENV=local` (`designPreviewEnabled`,
+unit-tested). `e2e/design-preview.spec.ts` runs in the local web config at
+desktop and 390px: every block present in both appearances, axe WCAG 2.2 AA,
+no horizontal overflow, toggle keyboard, dialog open, axe while open, Escape,
+focus returns.
+
+**Deviations from Figma (same reasons as iOS):**
+
+- Small text in `text/muted` uses `text/secondary`; the placeholder keeps muted.
+- Accent button: ink (`accent/on-brass`) text. Accent chip text is
+  `status/danger`. Success banner title is `text/primary`.
+- Life Update eyebrow and toast action are cream (underlined for the action),
+  not brass: brass on `bg/inverse` is 4.3:1 in Light. The spark icon stays brass.
+- Danger button text is `action/on-primary` (cream in Light, ink in Dark) on
+  `status/danger`.
+- Disabled uses 40% opacity as designed (exempt from contrast); hover is a
+  10% `currentColor` overlay, pressed 18% (Figma has no hover state).
+- Focus: text fields use the brass 1.5 border and keep the `color.focus` ring.
+- Size S buttons, 40px icon buttons and 28px chips draw at the Figma size with
+  a 44px hit area (pseudo-element).
+- The Figma sidebar fourth item is "Activity"; the app route and bell still say
+  Notifications. The sidebar is not wired into `AppShell` yet (step 3).
+- Icons are hand-drawn SVG paths on the 24px grid (the Figma set was not
+  exported), 1.6 stroke, 1.8 active; `palette` is not drawn (Room editor, step 4).
+- `icon.tsx` is named `icons.tsx` because `app/**/icon.tsx` is a Next metadata
+  route convention.
+- Pages were not redesigned; only trivial swaps (the components above) landed.
+
+**Open:** step 3 maps feature data onto `PostCard`, `LifeUpdateCard`,
+`BoxCard`, `Comment`, wires `Sidebar`, `NavBar` and the overlays into the
+shell, and replaces ad hoc confirm UI with `Dialog`. `text/muted` in Figma is
+still below AA for small text.

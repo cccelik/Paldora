@@ -1,0 +1,63 @@
+.tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: 150px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 18px;
+  background: var(--pal-bg-sunken);
+  color: var(--pal-text-primary);
+  font: inherit;
+}
+
+.thumb {
+  position: absolute;
+  inset: 0;
+}
+
+.thumb > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  background: var(--pal-bg-inverse);
+  color: var(--pal-text-on-inverse);
+}
+
+.percent {
+  font-size: var(--pal-font-size-body-large);
+  font-weight: 500;
+}
+
+.caption {
+  font-size: var(--pal-type-body-s-font-size);
+}
+
+.add {
+  border: var(--pal-border-width-hairline) dashed var(--pal-text-muted);
+  color: var(--pal-text-secondary);
+  cursor: pointer;
+}
+
+.failed {
+  cursor: pointer;
+}
+
+.add:hover,
+.failed:hover {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor 8%, transparent);
+}

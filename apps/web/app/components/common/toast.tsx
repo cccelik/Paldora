@@ -1,6 +1,8 @@
 'use client';
 
 import styles from '@/components/common/toast.module.css';
+import { Icon } from '@/components/ui/icons';
+import { Toast as ToastView } from '@/components/ui/toast';
 import { type ActionResult } from '@/lib/actions/action-result';
 import {
   initialToastState,
@@ -56,30 +58,32 @@ function ToastItem({
   onDismiss: (id: number) => void;
 }) {
   return (
-    <li className={styles.toast} data-tone={toast.tone}>
-      <p className={styles.message}>
-        {toast.message}
-        {toast.link ? (
-          <>
-            {' '}
+    <li className={styles.item}>
+      <ToastView
+        tone={toast.tone}
+        action={
+          toast.link ? (
             <Link
-              className={styles.link}
               href={toast.link.href as Route}
               onClick={() => onDismiss(toast.id)}
             >
               {toast.link.label}
             </Link>
-          </>
-        ) : null}
-      </p>
-      <button
-        type="button"
-        className={styles.dismiss}
-        aria-label="Dismiss message"
-        onClick={() => onDismiss(toast.id)}
+          ) : undefined
+        }
+        dismiss={
+          <button
+            type="button"
+            className={styles.dismiss}
+            aria-label="Dismiss message"
+            onClick={() => onDismiss(toast.id)}
+          >
+            <Icon name="close" size={18} />
+          </button>
+        }
       >
-        <span aria-hidden="true">×</span>
-      </button>
+        {toast.message}
+      </ToastView>
     </li>
   );
 }
