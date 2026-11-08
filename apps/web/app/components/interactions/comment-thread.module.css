@@ -20,7 +20,14 @@
   color: var(--pal-text-secondary);
 }
 
-.threads,
+.threads {
+  display: grid;
+  gap: var(--pal-space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .replies {
   display: grid;
   gap: var(--pal-space-3);
@@ -31,7 +38,7 @@
 
 .thread {
   display: grid;
-  gap: var(--pal-space-2);
+  gap: var(--pal-space-3);
 }
 
 /* One level of indent only: 16px on narrow screens. */

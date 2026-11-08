@@ -11,9 +11,9 @@
 .main {
   display: grid;
   flex: 1;
-  gap: var(--pal-space-1);
+  gap: var(--pal-space-2);
   min-width: 0;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: var(--pal-radius-md);
   background: var(--pal-bg-sunken);
 }
