@@ -25,7 +25,9 @@ export function AuthLayout({
         </p>
       </aside>
       <main id="main" className={styles.panel}>
-        <Wordmark />
+        <div className={styles.panelBrand}>
+          <Wordmark />
+        </div>
         <section className={styles.card} aria-labelledby="auth-title">
           <p className={styles.eyebrow}>Paldora access</p>
           <h1 id="auth-title" className={styles.title}>

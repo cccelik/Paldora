@@ -24,3 +24,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Figma W04: on desktop the title sits left, beside the back button. */
+@media (min-width: 1024px) {
+  .title {
+    text-align: left;
+  }
+}

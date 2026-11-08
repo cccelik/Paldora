@@ -54,6 +54,11 @@
 }
 
 @media (min-width: 1024px) {
+  /* The story panel carries the wordmark at this width. */
+  .panelBrand {
+    display: none;
+  }
+
   .page {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }

@@ -29,6 +29,12 @@
   text-decoration: none;
 }
 
+.tabCurrent {
+  border-color: transparent;
+  background: var(--pal-action-primary);
+  color: var(--pal-action-on-primary);
+}
+
 .manage {
   display: grid;
   gap: var(--pal-space-6);

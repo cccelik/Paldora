@@ -411,7 +411,7 @@ colours were already equal to Figma (Step 0); no registry value changed.
 Method: local app on the `demo-paldora` emulators (seeded fixture, one Box, one post), Playwright
 captures of W01-W10 plus Boxes and Friends at 1440x1024 and 390x844, Light and Dark, compared with
 the Figma Dark frames of page 06 (30:9, nodes 44:7531-44:8424) through `get_screenshot`. The Light
-frames (19:3) were not fetched; Light was checked from the same tokens and by eye on the captures.
+frames (19:3) were compared in the follow-up below.
 The Figma frames carry photos, copy and widgets that have no data or capability here (all already
 listed under Step 3), so only structure, type, colour and states were compared.
 
@@ -442,6 +442,41 @@ Fixed (real drift):
 
 390 px: top bar, bottom nav and cards reviewed on W03 Dark; no overflow (e2e overflow checks cover
 the rest). Not compared pixel by pixel; sizes were read by eye from side-by-side captures.
+
+### Follow-up (web, 2026-11-08): Light frames and Room themes
+
+Method: production build on the `demo-paldora` emulators (`PALDORA_ENV=local`), Playwright captures at
+1440x1024 (W01-W10, Light) compared with Figma page 05 (19:3) through `get_screenshot`. Page 05 has
+1440 frames only, so 390 was checked for sanity on the same captures (W02, W06), with no Figma
+counterpart. All 14 Room presets were compared frame by frame (page 07, nodes 45:98-45:1182, phone
+frames) against `/design-preview/rooms/[theme]` at 402x874.
+
+Fixed (real drift):
+
+- **Room preview route unthemed** (`design-preview/rooms/[theme]`): `room-themes.css` is only loaded
+  by the `/rooms` layout, so the preview rendered with no preset colours and the 14-theme e2e/axe run
+  was checking an unthemed page. The route now imports it.
+- **Sign in (W02), desktop:** the wordmark appeared twice (story panel and form panel). The form
+  panel copy is now hidden at 1024px and up.
+- **Box detail (W06):** the current "Moments" tab was a 28px Chip with a smaller font than the other
+  tabs. It now uses the tab size with the primary fill.
+- **Post detail (W04), desktop:** the Nav bar title is left-aligned beside the back button (Figma),
+  not centred.
+- **Memories years (W08):** "Earlier years" / "Later years" links were full-width blocks; they are
+  now inline pills under the year chips.
+
+Room themes: all 14 match Figma on canvas, surface, accent, scheme and decoration (tape, sparkles,
+stars, flowers, pixels, hearts). Layout differs only by the documented deviations (system fonts, no
+template images, eyebrows muted with accent rule).
+
+Left as documented or not reproducible without data: W01 hero photo, copy, "Join with an invite",
+and 64px page margins (web uses a 1216px column); W02 photo, Apple/Google, password reveal, Forgot
+password in the label row; W03 chips, composer, Coming up, On this day, and inline Edit/Delete/Report
+on post cards (Figma uses an overflow menu; product decision); W04 photo and conversation bubbles,
+inline send button; W05 modal; W06 segmented tabs, next supper, hero photo; W07 Polaroid wall,
+guestbook; W08 stats and mosaic; W09 grouping, Quiet hours, Friend requests; W10 mode previews, text
+size, comfort toggles. Eyebrow colour on a few screens is brass or primary where Figma uses muted
+(documented Room deviation applies to Rooms only; left unchanged).
 
 ## Visual QA (iOS, 2026-11-08)
 

@@ -14,7 +14,6 @@ import { BoxHero } from '@/components/boxes/box-hero';
 import {
   BackLink,
   buttonClassName,
-  Chip,
   EmptyState,
   PageColumns,
   Section,
@@ -138,7 +137,12 @@ export default async function BoxPage({
         }
       >
         <nav aria-label="This Box" className={styles.tabs}>
-          <Chip kind="selected">Moments</Chip>
+          <span
+            className={`${styles.tab} ${styles.tabCurrent}`}
+            aria-current="page"
+          >
+            Moments
+          </span>
           <Link className={styles.tab} href="#members">
             Members
           </Link>

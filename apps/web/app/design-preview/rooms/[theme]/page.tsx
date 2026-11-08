@@ -1,3 +1,4 @@
+import '@paldora/tokens/room-themes.css';
 import { RoomCanvas } from '@/components/rooms/room-canvas';
 import {
   isRoomThemePreset,
@@ -10,6 +11,9 @@ import { notFound } from 'next/navigation';
 export const metadata: Metadata = { title: 'Room theme preview' };
 
 /**
+ * The theme stylesheet is imported here because it is otherwise loaded only by
+ * the `/rooms` layout; without it the preview renders unthemed.
+ *
  * One fake Room in one preset, for the per-theme accessibility run. Local
  * only: any other environment answers 404, like the component gallery.
  */

@@ -24,7 +24,7 @@
 }
 
 .choice {
-  display: grid;
+  display: inline-grid;
   align-content: center;
   min-height: var(--pal-size-touch-target);
   padding: var(--pal-space-2) var(--pal-space-4);
@@ -41,6 +41,11 @@
   text-decoration: none;
   overflow-wrap: anywhere;
   transition: border-color var(--pal-duration-fast) var(--pal-easing-standard);
+}
+
+/* The "Earlier years" / "Later years" links sit under the chips, not full width. */
+.nav > .choice {
+  margin: var(--pal-space-2) var(--pal-space-2) 0 0;
 }
 
 .filters .choice {
