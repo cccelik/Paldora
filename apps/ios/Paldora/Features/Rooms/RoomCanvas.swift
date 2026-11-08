@@ -47,27 +47,34 @@ struct RoomCanvas: View {
         }
     }
 
+    /// "@name · Place", as in the Figma template.
+    private var handleLine: String {
+        let handle = "@\(room.owner.username)"
+        guard let location = room.location, !location.isEmpty else { return handle }
+        return "\(handle) · \(location)"
+    }
+
     @ViewBuilder private var banner: some View {
         if let id = room.bannerMediaId {
             RemoteImage(assetId: id, variant: .display)
-                .frame(height: 160).frame(maxWidth: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.radius))
+                .frame(height: 110).frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLg))
+                .overlay(RoundedRectangle(cornerRadius: Theme.radiusLg).stroke(look.border, lineWidth: 1))
                 .accessibilityLabel("Room banner")
         }
     }
 
     private var header: some View {
         AdaptiveStack(alignment: .top) {
-            PaldoraAvatar(name: room.owner.displayName, size: 64, mediaId: room.owner.avatarMediaId)
+            // Figma: 72 pt photo ringed in the accent (a graphic mark), name, then handle.
+            PaldoraAvatar(name: room.owner.displayName, size: 72, ring: .color(look.accentColor), mediaId: room.owner.avatarMediaId)
+                .roomPalette(fill: look.surface, text: look.text)
             VStack(alignment: .leading, spacing: 4) {
-                Text(room.owner.displayName).font(look.font(.title2, weight: .semibold)).foregroundStyle(look.text)
+                Text(room.owner.displayName).font(look.font(.title, weight: .light)).foregroundStyle(look.text)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("room-owner-name")
-                Text("@\(room.owner.username)").font(look.font(.footnote)).foregroundStyle(look.muted)
+                Text(handleLine).font(look.font(.footnote)).foregroundStyle(look.muted)
                 if let bio = room.owner.bio, !bio.isEmpty {
                     Text(bio).font(look.font(.body)).foregroundStyle(look.text)
-                }
-                if let location = room.location, !location.isEmpty {
-                    Label(location, systemImage: "mappin.and.ellipse").font(look.font(.footnote)).foregroundStyle(look.muted)
                 }
             }
             Spacer(minLength: 0)

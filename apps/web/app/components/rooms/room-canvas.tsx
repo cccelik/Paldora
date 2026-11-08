@@ -76,6 +76,7 @@ export function RoomCanvas({
             url={room.owner.avatarUrl}
             name={room.owner.displayName}
             size="large"
+            tone="room"
           />
         </span>
         <div className={styles.names}>

@@ -18,6 +18,7 @@ export default defineConfig({
     '**/web-keyboard.spec.ts',
     '**/public-pages.spec.ts',
     '**/design-preview.spec.ts',
+    '**/room-themes.spec.ts',
     '**/room-personalization.spec.ts',
   ],
   fullyParallel: false,

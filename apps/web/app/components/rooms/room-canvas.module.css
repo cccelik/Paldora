@@ -11,8 +11,8 @@
   contain: layout paint;
   overflow: clip;
   display: grid;
-  gap: var(--pal-space-6);
-  padding-bottom: var(--pal-space-6);
+  gap: var(--pal-space-4);
+  padding: var(--pal-space-4);
   border: var(--pal-border-width-hairline) solid var(--room-border);
   border-radius: var(--pal-radius-xl);
   background: var(--room-canvas);
@@ -39,7 +39,8 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 6 / 1;
-  border-bottom: var(--pal-border-width-hairline) solid var(--room-border);
+  border: var(--pal-border-width-hairline) solid var(--room-border);
+  border-radius: var(--pal-radius-lg);
   background: var(--room-surface);
 }
 
@@ -57,18 +58,22 @@
 .identity {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--pal-space-4);
-  padding-inline: var(--pal-space-4);
 }
 
-/* Only the photo reaches up into the banner; text never sits on it. */
+/* Figma 72 pt photo beside the name, ringed in the accent (a graphic mark). */
 .avatar {
   display: inline-flex;
-  margin-top: calc(-1 * var(--pal-space-12));
-  border: 4px solid var(--room-canvas);
+  padding: 3px;
+  border: 2px solid var(--room-accent);
   border-radius: 50%;
-  background: var(--room-canvas);
+}
+
+.avatar > span:first-child {
+  width: 72px;
+  height: 72px;
+  font-size: var(--pal-font-size-heading);
 }
 
 .names {
@@ -85,7 +90,9 @@
     var(--pal-font-size-brand-small) + 2vw,
     var(--pal-font-size-display-large)
   );
+  font-weight: 300;
   line-height: 1.15;
+  letter-spacing: -0.025em;
   overflow-wrap: anywhere;
 }
 
@@ -110,11 +117,6 @@
   min-width: 0;
 }
 
-.single,
-.columns {
-  padding-inline: var(--pal-space-4);
-}
-
 /* Narrow screens: one column in the saved global order (`order` per widget). */
 .columns {
   display: flex;
@@ -128,10 +130,9 @@
 }
 
 @media (min-width: 768px) {
-  .identity,
-  .single,
-  .columns {
-    padding-inline: var(--pal-space-6);
+  .canvas {
+    gap: var(--pal-space-6);
+    padding: var(--pal-space-6);
   }
 
   .columns {

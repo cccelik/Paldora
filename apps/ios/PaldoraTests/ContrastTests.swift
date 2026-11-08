@@ -107,6 +107,32 @@ struct ContrastTests {
         #expect(failures.isEmpty, "Below threshold: \(failures.joined(separator: "; "))")
     }
 
+    /// Every pair the restyled Room canvas draws (Figma page 07), in all 14 presets and with
+    /// every accent a person can pick: borders and the focus mark (3:1), the music disc's
+    /// note drawn in the canvas color on the accent (3:1), muted eyebrows and captions (4.5:1),
+    /// and the avatar initials (text on surface, 4.5:1).
+    @Test func everyRoomThemeMeetsTheCanvasPairs() {
+        var failures: [String] = []
+        func check(_ name: String, _ fg: PaldoraColor, _ bg: PaldoraColor, _ minimum: Double) {
+            let ratio = Contrast.ratio(fg, bg)
+            if ratio < minimum { failures.append("\(name): \(String(format: "%.2f", ratio)) < \(minimum)") }
+        }
+        #expect(PaldoraRoomThemes.presets.count == 14)
+        for preset in PaldoraRoomThemes.presets {
+            for (bgName, bg) in [("canvas", preset.canvas), ("surface", preset.surface)] {
+                check("\(preset.id) border on \(bgName)", preset.border, bg, 3)
+                check("\(preset.id) text on \(bgName)", preset.text, bg, 4.5)
+                check("\(preset.id) muted eyebrow on \(bgName)", preset.textMuted, bg, 4.5)
+            }
+            for accent in PaldoraRoomThemes.accents {
+                let color = accent.color(for: preset.scheme)
+                check("\(preset.id) \(accent.key) disc note", preset.canvas, color, 3)
+                check("\(preset.id) \(accent.key) avatar ring on canvas", color, preset.canvas, 3)
+            }
+        }
+        #expect(failures.isEmpty, "Below threshold: \(failures.joined(separator: "; "))")
+    }
+
     @Test func ratioMatchesKnownValues() {
         let white = PaldoraColor(argb: 0xFFFFFFFF), black = PaldoraColor(argb: 0xFF000000)
         #expect(abs(Contrast.ratio(white, black) - 21) < 0.01)

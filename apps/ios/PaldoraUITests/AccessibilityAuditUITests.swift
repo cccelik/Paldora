@@ -44,6 +44,28 @@ final class AccessibilityAuditUITests: XCTestCase {
         auditTabs(app, label: "AX3")
     }
 
+    /// The themed Room canvas on its own (My Room tab), at the default size and at accessibility3.
+    func testMyRoomCanvasAudit() throws {
+        let app = try launchSignedIn(environment: flat)
+        auditRoom(app, label: "default")
+    }
+
+    func testMyRoomCanvasAuditAtAccessibility3() throws {
+        let app = try launchSignedIn(environment: flat, arguments: ["-UIPreferredContentSizeCategoryName", largest])
+        auditRoom(app, label: "AX3")
+    }
+
+    private func auditRoom(_ app: XCUIApplication, label: String) {
+        let customize = app.buttons["customize-room"]
+        app.tap(app.tab("My Room"), until: customize)
+        XCTAssertTrue(customize.waitForExistence(timeout: 30), "My Room did not load")
+        XCTAssertTrue(app.element("room-canvas").exists, "Room canvas missing")
+        audit(app, "My Room canvas \(label)")
+        customize.tap()
+        XCTAssertTrue(app.buttons["room-theme"].waitForExistence(timeout: 20), "Customize did not load")
+        audit(app, "Customize Room \(label)")
+    }
+
     private func auditTabs(_ app: XCUIApplication, label: String) {
         for tab in ["Home", "Boxes", "My Room", "Notifications", "Profile"] {
             let button = app.tab(tab)

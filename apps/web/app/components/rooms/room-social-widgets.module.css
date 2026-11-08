@@ -16,12 +16,26 @@
 }
 
 .musicLink {
-  padding: var(--pal-space-3) var(--pal-space-4);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--pal-space-3);
+  padding: var(--pal-space-3);
   border: var(--pal-border-width-hairline) solid var(--room-border);
-  border-inline-start: 4px solid var(--room-accent);
   border-radius: var(--pal-radius-md);
   background: var(--room-canvas);
   text-decoration: none;
+}
+
+/* Figma 44 pt disc in the accent; the note is drawn in the canvas color (3:1). */
+.disc {
+  display: grid;
+  grid-row: span 3;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--pal-radius-sm);
+  background: var(--room-accent);
+  color: var(--room-canvas);
 }
 
 .musicTitle {
@@ -40,9 +54,9 @@
 }
 
 .friends {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
-  gap: var(--pal-space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pal-space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -53,15 +67,22 @@
   justify-items: center;
   gap: var(--pal-space-1);
   min-height: var(--pal-size-touch-target);
-  padding: var(--pal-space-2);
+  min-width: 3.5rem;
+  padding: var(--pal-space-1);
   border-radius: var(--pal-radius-md);
   text-align: center;
+  text-decoration: none;
   text-underline-offset: 0.2em;
 }
 
 .friendName {
   max-width: 100%;
-  font-size: var(--pal-font-size-sm);
-  font-weight: 600;
+  color: var(--room-text-muted);
+  font-size: var(--pal-font-size-xs);
   overflow-wrap: anywhere;
+}
+
+.friend > span:first-child {
+  width: 50px;
+  height: 50px;
 }

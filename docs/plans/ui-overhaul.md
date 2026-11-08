@@ -363,3 +363,45 @@ Verification (2026-11-08, Node v23.7.0, since Node 24 is not installed; pnpm war
 e2e now runs axe plus an overflow check on Box, Boxes, Activity, Memories, Settings > Appearance and
 the post page, at both widths. Screenshots were not compared pixel by pixel with the Figma frames.
 Not committed.
+
+## Step 4 result (Room canvas and 14 themes, web and iOS, 2026-11-08)
+
+Source: Figma page 07 (30:10), template frame 45:98 (Obsidian Gold) read with
+`get_design_context`; the 14 frames share one token-bound structure (theme
+label row, banner 110, avatar 72 + name 28 Light + handle, Currently card,
+music row with 44 disc, Top Friends 50 pt avatars, photo row). Registry
+colours were already equal to Figma (Step 0); no registry value changed.
+
+- **Web:** `RoomCanvas` and the widget modules restyled: padded canvas, inset
+  banner with radius and border, 72 px avatar ringed in the accent, name Light
+  with tight tracking, eyebrow widget titles (uppercase, tracked), 44 px accent
+  music disc with a new `music` icon, Top Friends as a row of 50 px avatars with
+  muted captions, photo tiles radius md, italic Currently text. `Avatar` gained
+  `tone="room"` so initials use `--room-surface/-text/-border` instead of app
+  tokens. Room editors are app chrome (forms on app tokens) and were not
+  changed. Theme label chip and edit button of the Figma frame stay in app
+  chrome (owner strip and Customize link), outside `.room-canvas`.
+- **Fixture and coverage:** dev-only route `/design-preview/rooms/[theme]`
+  (404 outside `PALDORA_ENV=local`, like the gallery) renders a fake Room per
+  preset. `apps/web/e2e/room-themes.spec.ts` iterates all 14 presets with axe
+  (WCAG 2.2 AA incl. contrast) and an overflow check at desktop and 390; it is
+  part of `firebase-local.config.ts`. All 28 theme runs pass.
+- **iOS:** `RoomCanvas`/`RoomWidgetView` restyled to the same structure
+  (banner 110 radius lg with border, 72 pt avatar with accent ring, "@name ·
+  place" line, `PaldoraEyebrow` widget headings, 44 pt accent disc, 50 pt Top
+  Friends avatars, card radius lg with a full-strength border).
+  `PaldoraAvatar` gained `roomPalette(fill:text:)` and a `.color` ring.
+  `ContrastTests.everyRoomThemeMeetsTheCanvasPairs` checks border 3:1, text and
+  muted 4.5:1, disc note and avatar ring vs every accent 3:1 on all 14 presets.
+  `AccessibilityAuditUITests` gained My Room canvas and Customize audits at the
+  default size and accessibility3.
+- **Deviation 1 (eyebrow colour):** Figma draws eyebrows in `room/accent`.
+  The accent is only guaranteed 3:1, a person can choose any of 8 accents, and
+  with the default accents Tumblr 2014 on surface (3.84:1) and Retro Windows on
+  canvas (3.07:1) fail 4.5:1 for small text. Eyebrows use `text-muted` (4.5:1 or
+  better on all 14 presets, already pinned) and the accent is a short rule before
+  them. Registry not changed (Figma values are fixed by the file).
+- **Deviation 2:** Room fonts remain system stacks (ADR 017), not Fraunces/Geist,
+  because the font is a per-Room choice. The Figma template banner, avatar and
+  photo images are not reproduced (fixtures carry no images; CSP).
+- **Not visually diffed:** no screenshot comparison against Figma was run.

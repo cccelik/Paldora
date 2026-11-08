@@ -47,6 +47,13 @@
     0 0 0 4px var(--pal-accent-brass);
 }
 
+/* Inside a Room canvas: the theme's own surface, text and border. */
+.room {
+  border: var(--pal-border-width-hairline) solid var(--room-border);
+  background: var(--room-surface);
+  color: var(--room-text);
+}
+
 .stack {
   display: inline-flex;
   align-items: center;

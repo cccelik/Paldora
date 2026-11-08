@@ -10,20 +10,19 @@ struct RoomWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
-            // Heading text uses the theme's text color (AA on every theme); the accent
-            // is a graphic marker only, where 3:1 is the requirement.
+            // Figma eyebrow. Its text is the theme's muted color (AA on every theme and
+            // every accent); the accent is the short rule before it, a graphic mark (3:1).
             HStack(spacing: Theme.space2) {
-                RoundedRectangle(cornerRadius: 2).fill(look.accentColor).frame(width: 4, height: 18).accessibilityHidden(true)
-                Text(RoomRegistry.label(RoomRegistry.widgetLabels, widget.type))
-                    .font(look.font(.headline, weight: .semibold)).foregroundStyle(look.text)
+                RoundedRectangle(cornerRadius: 1).fill(look.accentColor).frame(width: 16, height: 2).accessibilityHidden(true)
+                PaldoraEyebrow(RoomRegistry.label(RoomRegistry.widgetLabels, widget.type), color: look.muted)
                     .accessibilityAddTraits(.isHeader)
             }
             inner
         }
-        .padding(Theme.space3)
+        .padding(Theme.space4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(look.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
-        .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(look.border.opacity(0.5), lineWidth: 1))
+        .background(look.surface, in: RoundedRectangle(cornerRadius: Theme.radiusLg))
+        .overlay(RoundedRectangle(cornerRadius: Theme.radiusLg).stroke(look.border, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("room-widget-\(widget.type)")
     }
@@ -47,7 +46,7 @@ struct RoomWidgetView: View {
 
     @ViewBuilder private var currently: some View {
         if let text = room.currently, !text.isEmpty {
-            Text(text).font(look.font(.body)).foregroundStyle(look.text)
+            Text(text).font(look.font(.title3).italic()).foregroundStyle(look.text)
         } else { empty("Nothing here yet.") }
     }
 
@@ -56,7 +55,11 @@ struct RoomWidgetView: View {
         if let music = room.music, let url = Self.safeURL(music.url) {
             Link(destination: url) {
                 HStack(spacing: Theme.space3) {
-                    Image(systemName: "music.note").foregroundStyle(look.accentColor)
+                    // Figma 44 pt disc in the accent; the note is drawn in the canvas color (3:1).
+                    Image(systemName: "music.note").foregroundStyle(look.canvas)
+                        .frame(width: 44, height: 44)
+                        .background(look.accentColor, in: RoundedRectangle(cornerRadius: Theme.radiusSm + 4))
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(music.title ?? url.host ?? "Listen").font(look.font(.body, weight: .semibold)).foregroundStyle(look.text)
                         if let artist = music.artist { Text(artist).font(look.font(.footnote)).foregroundStyle(look.muted) }
@@ -82,8 +85,9 @@ struct RoomWidgetView: View {
                 ForEach(items, id: \.uid) { person in
                     NavigationLink(value: RoomRoute(username: person.username)) {
                         VStack(spacing: 4) {
-                            PaldoraAvatar(name: person.displayName, size: 48, mediaId: person.avatarMediaId)
-                            Text(person.displayName).font(look.font(.footnote)).foregroundStyle(look.text).lineLimit(1)
+                            PaldoraAvatar(name: person.displayName, size: 50, ring: .color(look.border), mediaId: person.avatarMediaId)
+                                .roomPalette(fill: look.surface, text: look.text)
+                            Text(person.displayName).font(look.font(.caption)).foregroundStyle(look.muted).lineLimit(1)
                         }
                         .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
                     }

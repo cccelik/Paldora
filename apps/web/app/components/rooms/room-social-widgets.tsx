@@ -1,6 +1,6 @@
 import styles from '@/components/rooms/room-social-widgets.module.css';
 import { Empty } from '@/components/rooms/room-widget-parts';
-import { Avatar } from '@/components/ui';
+import { Avatar, Icon } from '@/components/ui';
 import { type WidgetProps } from '@/lib/rooms/room-preview-types';
 import { musicLink, roomHref } from '@/lib/rooms/room-theme';
 import { type RoomView } from '@paldora/validation';
@@ -15,6 +15,9 @@ export function MusicCard({
   const name = music.title ?? 'A song';
   const body = (
     <>
+      <span className={styles.disc} aria-hidden="true">
+        <Icon name="music" size={20} />
+      </span>
       <span className={styles.musicTitle}>{name}</span>
       {music.artist ? (
         <span className={styles.musicArtist}>{music.artist}</span>
@@ -57,7 +60,11 @@ export function TopFriends({ room, isOwner }: Omit<WidgetProps, 'previews'>) {
             className={styles.friend}
             href={roomHref(friend.username) as Route}
           >
-            <Avatar url={friend.avatarUrl} name={friend.displayName} />
+            <Avatar
+              url={friend.avatarUrl}
+              name={friend.displayName}
+              tone="room"
+            />
             <span className={styles.friendName}>{friend.displayName}</span>
           </Link>
         </li>

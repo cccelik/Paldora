@@ -9,7 +9,7 @@
   gap: var(--pal-space-3);
   align-content: start;
   min-width: 0;
-  padding: var(--pal-space-5);
+  padding: var(--pal-space-4);
   border: var(--pal-border-width-hairline) solid var(--room-border);
   border-radius: var(--pal-radius-lg);
   background: var(--room-surface);
@@ -44,12 +44,31 @@
   order: 6;
 }
 
+/*
+ * Figma eyebrow: small uppercase label. Its text is `--room-text-muted`
+ * (AA on every theme), because the accent is only guaranteed 3:1 and a
+ * person may pick any of eight; the accent is the short rule before it.
+ */
 .title {
-  padding-bottom: var(--pal-space-2);
-  border-bottom: 2px solid var(--room-accent);
-  font-family: var(--room-font);
-  font-size: var(--pal-font-size-subtitle);
-  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: var(--pal-space-2);
+  color: var(--room-text-muted);
+  font-family: var(--pal-font-ui);
+  font-size: var(--pal-font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.title::before {
+  content: '';
+  flex: none;
+  width: var(--pal-space-4);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--room-accent);
 }
 
 .empty {

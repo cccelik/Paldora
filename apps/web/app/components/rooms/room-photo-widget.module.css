@@ -20,7 +20,7 @@
   display: block;
   overflow: hidden;
   border: var(--pal-border-width-hairline) solid var(--room-border);
-  border-radius: var(--pal-radius-sm);
+  border-radius: var(--pal-radius-md);
   aspect-ratio: 1;
 }
 

@@ -101,6 +101,9 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     Top Friends, a photo grid with the full-screen viewer, and Life Update and
     post snippets. `single` and `two_column` layouts adapt: two columns only on
     a regular-width screen (iPad), otherwise one column in stored order.
+    The canvas follows the Figma Room template (UI overhaul step 4): eyebrow
+    widget titles in the theme's muted text, 44 pt accent music disc, 50 pt
+    Top Friends; all 14 presets are contrast-pinned in `ContrastTests`.
     Memories, Customize and the visibility note sit in an app-styled bar
     **outside** the Room theme. The owner editor covers theme, layout, accent,
     font, decoration, sparkles, location, currently, music, visibility, banner

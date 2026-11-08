@@ -9,6 +9,8 @@
 
 .currently {
   font-size: var(--pal-font-size-body-large);
+  font-style: italic;
+  line-height: 1.35;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

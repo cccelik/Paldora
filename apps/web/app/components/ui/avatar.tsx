@@ -22,17 +22,20 @@ export function Avatar({
   name,
   size = 'm',
   ring = false,
+  tone = 'app',
 }: {
   url: string | null | undefined;
   name: string | null | undefined;
   size?: AvatarSize | keyof typeof legacySizes;
   ring?: boolean;
+  /** `room` paints from the Room theme variables; only used inside a Room canvas. */
+  tone?: 'app' | 'room';
 }) {
   const resolved =
     size in legacySizes ? legacySizes[size as keyof typeof legacySizes] : size;
   return (
     <span
-      className={`${styles.avatar} ${styles[resolved]} ${ring ? styles.ring : ''}`}
+      className={`${styles.avatar} ${styles[resolved]} ${ring ? styles.ring : ''} ${tone === 'room' ? styles.room : ''}`}
       aria-hidden="true"
     >
       {url ? (

@@ -11,6 +11,8 @@ enum PaldoraAvatarSize: CGFloat, CaseIterable {
 /// ring when avatars overlap in a stack.
 enum PaldoraAvatarRing: Equatable {
     case none, brass, stack
+    /// A caller-supplied ring (a Room draws its accent here).
+    case color(Color)
 }
 
 /// Figma "Avatar": a circle with a photo or Fraunces initials on a soft tint.
@@ -25,6 +27,8 @@ struct PaldoraAvatar: View {
     var ring: PaldoraAvatarRing = .none
     var mediaId: String?
     var image: Image?
+    /// Set only inside a Room canvas, so the initials follow the Room theme.
+    private var palette: (fill: Color, text: Color)?
     @Environment(\.imageLoader) private var loader
     @State private var loaded: UIImage?
     @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
@@ -45,13 +49,13 @@ struct PaldoraAvatar: View {
     var body: some View {
         let side = size * scale
         ZStack {
-            Circle().fill(Self.tint(for: name))
+            Circle().fill(palette?.fill ?? Self.tint(for: name))
             if let photo {
                 photo.resizable().scaledToFill()
             } else {
                 Text(Self.initials(name, maxLetters: side < Self.monogramThreshold ? 1 : 2))
                     .font(Self.initialsFont(side))
-                    .foregroundStyle(Theme.textSecondary)
+                    .foregroundStyle(palette?.text ?? Theme.textSecondary)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             }
@@ -65,6 +69,13 @@ struct PaldoraAvatar: View {
         .task(id: mediaId) { await load() }
     }
 
+    /// The Room's own surface and text color for the initials (no app tint).
+    func roomPalette(fill: Color, text: Color) -> PaldoraAvatar {
+        var copy = self
+        copy.palette = (fill, text)
+        return copy
+    }
+
     private var photo: Image? {
         if let image { return image }
         return loaded.map { Image(uiImage: $0) }
@@ -75,6 +86,7 @@ struct PaldoraAvatar: View {
         case .none: EmptyView()
         case .brass: Circle().strokeBorder(Theme.brass, lineWidth: 2)
         case .stack: Circle().strokeBorder(Theme.bgSurface, lineWidth: 2)
+        case .color(let color): Circle().strokeBorder(color, lineWidth: 2)
         }
     }
 
