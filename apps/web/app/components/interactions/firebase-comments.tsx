@@ -411,7 +411,7 @@ function FirebaseThread({
     } else setProblem(result.message);
   };
   return (
-    <div>
+    <div className={styles.thread}>
       <ol className={styles.threads} aria-label="Thread root">
         <ThreadItem
           item={thread.root}
