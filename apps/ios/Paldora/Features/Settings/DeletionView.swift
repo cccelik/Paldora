@@ -7,53 +7,56 @@ struct DeletionView: View {
 
     init(env: FeatureEnvironment) { _model = State(initialValue: DeletionViewModel(env: env)) }
 
+    @Environment(PaldoraDialogCenter.self) private var dialogs
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.space4) {
                 switch model.phase {
-                case .loading: LoadingBlock(label: "Checking your account")
+                case .loading: LoadingBlock(label: "Checking your account", compact: true)
                 case .failed(let message): ErrorBlock(message: message) { await model.load() }
                 case .ready: content
                 }
             }
             .frame(maxWidth: Theme.readingWidth, alignment: .leading)
-            .padding(Theme.space4)
+            .padding(.horizontal, Theme.gutter)
+            .padding(.bottom, Theme.space8)
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Theme.canvas)
-        .navigationTitle("Delete account")
-        .navigationBarTitleDisplayMode(.inline)
+        .paldoraCanvas()
+        .paldoraNavBar("Delete account")
         .task { await model.load() }
-        .confirmationDialog(model.isPending ? "Cancel the deletion?" : "Delete your account? It is permanently removed after seven days unless you cancel.",
-                            isPresented: $confirming, titleVisibility: .visible) {
-            Button(model.isPending ? "Cancel deletion" : "Request account deletion", role: model.isPending ? nil : .destructive) {
-                Task { if model.isPending { await model.cancel() } else { await model.request() } }
-            }
-        }
     }
 
     @ViewBuilder private var content: some View {
         if let deletion = model.deletion, model.isPending {
-            Text("Your account is scheduled for permanent deletion on \(Self.date(deletion.dueAt)). You can cancel before then.")
-                .font(Typography.body).foregroundStyle(Theme.text).accessibilityIdentifier("deletion-pending")
+            PaldoraScreenTitle(title: "See you,", accent: "maybe.")
+            Text("Your account is scheduled for permanent deletion on \(Self.date(deletion.dueAt)). Until then you can cancel.")
+                .paldoraText(.bodyL).foregroundStyle(Theme.textPrimary).accessibilityIdentifier("deletion-pending")
         } else {
-            Text("Your account and owned content will be permanently removed after a seven-day cancellation window. Transfer ownership of every Box you own first. Download your archive before requesting deletion.")
-                .font(Typography.body).foregroundStyle(Theme.text)
+            PaldoraScreenTitle(title: "Delete your", accent: "account?",
+                               subtitle: "Your account and owned content are permanently removed after a seven-day cancellation window. Transfer ownership of every Box you own first, and download your archive before you go.")
         }
         if model.isBlockedState {
-            InlineMessage(text: DeletionViewModel.blockedMessage).accessibilityIdentifier("deletion-blocked")
+            PaldoraBanner(tone: .warning, title: DeletionViewModel.blockedMessage).accessibilityIdentifier("deletion-blocked")
         }
-        FieldContainer(title: "Confirm your password") {
-            SecureField("Password", text: $model.password, prompt: Text("Password").foregroundStyle(Theme.textMuted)).textContentType(.password)
-                .accessibilityIdentifier("deletion-password")
+        PaldoraTextField("Confirm with your password", text: $model.password, placeholder: "Password",
+                         isSecure: true, identifier: "deletion-password")
+            .textContentType(.password)
+        if let error = model.error, !model.isBlockedState { PaldoraBanner(tone: .danger, title: error) }
+        if let notice = model.notice { PaldoraBanner(tone: .success, title: notice) }
+        PaldoraButton(model.isPending ? "Cancel deletion" : "Delete my account", kind: model.isPending ? .primary : .danger,
+                      size: .medium, isLoading: model.isWorking, fullWidth: true) {
+            if model.isPending {
+                dialogs.present(icon: .refresh, title: "Cancel the deletion?", message: "Your account stays as it is.",
+                                confirmTitle: "Cancel deletion", isDestructive: false) { Task { await model.cancel() } }
+            } else {
+                dialogs.present(icon: .trash, title: "Delete your account?",
+                                message: "It is permanently removed after seven days unless you cancel.",
+                                confirmTitle: "Request account deletion") { Task { await model.request() } }
+            }
         }
-        if let error = model.error, !model.isBlockedState { InlineMessage(text: error) }
-        if let notice = model.notice { InlineMessage(text: notice, kind: .success) }
-        Button { confirming = true } label: {
-            if model.isWorking { ProgressView() } else { Text(model.isPending ? "Cancel deletion" : "Request account deletion") }
-        }
-        .buttonStyle(model.isPending ? AnyButtonStyle(PrimaryButtonStyle()) : AnyButtonStyle(QuietButtonStyle(destructive: true)))
         .disabled(!model.canSubmit)
         .accessibilityIdentifier("deletion-submit")
     }

@@ -1,6 +1,7 @@
 import PaldoraKit
 import SwiftUI
 
+/// Figma 10.1 Report and 10.2 Report sent, as a sheet.
 struct ReportCommentSheet: View {
     @State private var model: ReportCommentViewModel
     @Environment(\.dismiss) private var dismiss
@@ -10,40 +11,47 @@ struct ReportCommentSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: Theme.space4) {
-                if model.sent {
-                    InlineMessage(text: ReportCopy.received, kind: .success).accessibilityIdentifier("report-sent")
-                } else {
-                    Picker("Reason", selection: $model.category) {
-                        Text("Choose a reason").tag(ReportCategory?.none)
-                        ForEach(ReportCategory.allCases, id: \.self) { Text(ReportCopy.label($0)).tag(Optional($0)) }
+        VStack(spacing: 0) {
+            PaldoraNavBar(title: "Report this comment", leading: .close { dismiss() })
+                .padding(.horizontal, Theme.gutter).padding(.vertical, Theme.space2)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.space4) {
+                    if model.sent {
+                        PaldoraStateView(icon: .check, tone: .success, title: "Thanks for telling us.", message: ReportCopy.received) {
+                            PaldoraButton("Done", size: .medium, fullWidth: true) { dismiss() }.padding(.top, Theme.space3)
+                        }
+                        .accessibilityIdentifier("report-sent")
+                    } else {
+                        PaldoraScreenTitle(title: "Tell us", accent: "what's wrong.", subtitle: "They won't know who reported it.")
+                        PaldoraListGroup {
+                            PaldoraChoiceRow(title: "Reason", icon: .flag,
+                                             options: [.init(ReportCategory?.none, "Choose a reason")]
+                                                 + ReportCategory.allCases.map { .init(Optional($0), ReportCopy.label($0)) },
+                                             selection: $model.category)
+                                .accessibilityIdentifier("report-category")
+                        }
+                        PaldoraFieldContainer(title: "Anything we should know? · optional") {
+                            TextField("What happened?", text: $model.detail, prompt: Text("What happened?").foregroundStyle(Theme.textTertiary), axis: .vertical).lineLimit(3...8)
+                                .padding(.vertical, Theme.space3).accessibilityIdentifier("report-detail")
+                        }
+                        Text("\(model.detail.count) of \(ReportCommentViewModel.detailLimit)").paldoraText(.caption)
+                            .foregroundStyle(model.detail.count > ReportCommentViewModel.detailLimit ? Theme.statusDanger : Theme.textSecondary)
+                        if let error = model.error { PaldoraBanner(tone: .danger, title: error) }
+                        PaldoraButton("Send report", isLoading: model.isSending, fullWidth: true) { Task { await model.send() } }
+                            .disabled(!model.canSend).accessibilityIdentifier("send-report")
+                        Text("Reporting does not automatically remove content.").paldoraText(.caption).foregroundStyle(Theme.textSecondary)
                     }
-                    .pickerStyle(.menu).frame(minHeight: Theme.touchTarget).accessibilityIdentifier("report-category")
-                    FieldContainer(title: "More information (optional)") {
-                        TextField("What happened?", text: $model.detail, prompt: Text("What happened?").foregroundStyle(Theme.textMuted), axis: .vertical).lineLimit(3...8)
-                            .padding(.vertical, Theme.space2).accessibilityIdentifier("report-detail")
-                    }
-                    Text("\(model.detail.count) of \(ReportCommentViewModel.detailLimit)").font(Typography.caption)
-                        .foregroundStyle(model.detail.count > ReportCommentViewModel.detailLimit ? Theme.danger : Theme.textMuted)
-                    if let error = model.error { InlineMessage(text: error) }
-                    Button { Task { await model.send() } } label: {
-                        if model.isSending { ProgressView() } else { Text("Send report") }
-                    }
-                    .buttonStyle(PrimaryButtonStyle()).disabled(!model.canSend).accessibilityIdentifier("send-report")
-                    Text("Reporting does not automatically remove content.").font(Typography.caption).foregroundStyle(Theme.textMuted)
                 }
-                Spacer()
+                .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+                .padding(Theme.space5)
+                .frame(maxWidth: .infinity)
             }
-            .padding(Theme.space6)
-            .background(Theme.canvas)
-            .navigationTitle("Report this comment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(model.sent ? "Done" : "Cancel") { dismiss() } } }
         }
+        .paldoraCanvas()
     }
 }
 
+/// Figma 10.3 Your reports.
 struct MyReportsView: View {
     @State private var list: PagedList<ReportReceipt>
 
@@ -52,39 +60,46 @@ struct MyReportsView: View {
     var body: some View {
         Group {
             switch list.phase {
-            case .idle, .loading: LoadingBlock(label: "Loading your reports")
+            case .idle, .loading: ScrollView { LoadingBlock(label: "Loading your reports", compact: true).padding(Theme.gutter) }
             case .failed(let message): ErrorBlock(message: message) { await list.refresh() }
             case .unavailable: UnavailableBlock()
             case .loaded:
-                List {
-                    Text("Only you and the moderation team can see these receipts. Reporting does not automatically remove content.")
-                        .font(Typography.callout).foregroundStyle(Theme.textMuted).listRowBackground(Theme.canvas)
-                    if list.items.isEmpty {
-                        Text("You have not submitted a report.").font(Typography.body).listRowBackground(Theme.canvas)
-                            .accessibilityIdentifier("no-reports")
-                    }
-                    ForEach(list.items) { report in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(ReportCopy.kind(report.targetKind)).font(Typography.headline)
-                            Text("\(ReportCopy.categoryLabel(report.category)) · \(report.status == "closed" ? "Reviewed" : "Received") · \(report.createdAt.date.formatted(date: .abbreviated, time: .omitted))")
-                                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: Theme.space3) {
+                        PaldoraScreenTitle(title: "Reports",
+                                           subtitle: "Only you and the moderation team can see these receipts. Reporting does not automatically remove content.")
+                        if list.items.isEmpty {
+                            EmptyBlock(title: "No reports", message: "You have not submitted a report.", icon: .flag)
+                                .accessibilityIdentifier("no-reports")
                         }
-                        .accessibilityElement(children: .combine).accessibilityIdentifier("report-receipt")
-                        .listRowBackground(Theme.surface)
+                        ForEach(list.items) { report in
+                            PaldoraPersonRow(
+                                name: ReportCopy.kind(report.targetKind),
+                                subtitle: "\(ReportCopy.categoryLabel(report.category)) · \(report.createdAt.date.formatted(date: .abbreviated, time: .omitted))") {
+                                PaldoraChip(title: report.status == "closed" ? "Reviewed" : "Received",
+                                            style: report.status == "closed" ? .brass : .soft)
+                            }
+                            .accessibilityElement(children: .combine).accessibilityIdentifier("report-receipt")
+                        }
+                        LoadMoreFooter(isLoading: list.isLoadingMore, error: list.inlineError, hasMore: list.hasMore,
+                                       loadMore: { await list.loadMore() })
+                        Text("Statuses are kept coarse on purpose. We never share what happened to another person's account.")
+                            .paldoraText(.caption).foregroundStyle(Theme.textSecondary)
                     }
-                    LoadMoreFooter(isLoading: list.isLoadingMore, error: list.inlineError, hasMore: list.hasMore,
-                                   loadMore: { await list.loadMore() }).listRowBackground(Theme.canvas)
+                    .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+                    .padding(.horizontal, Theme.gutter)
+                    .frame(maxWidth: .infinity)
                 }
-                .scrollContentBackground(.hidden).refreshable { await list.refresh() }
+                .refreshable { await list.refresh() }
             }
         }
-        .background(Theme.canvas)
-        .navigationTitle("Your reports")
-        .navigationBarTitleDisplayMode(.inline)
+        .paldoraCanvas()
+        .paldoraNavBar("Your reports")
         .task { await list.refresh() }
     }
 }
 
+/// Figma 9.5 Content notices (what moderation hid from you).
 struct NoticesView: View {
     @State private var list: PagedList<ModerationNotice>
 
@@ -93,33 +108,32 @@ struct NoticesView: View {
     var body: some View {
         Group {
             switch list.phase {
-            case .idle, .loading: LoadingBlock(label: "Loading notices")
+            case .idle, .loading: ScrollView { LoadingBlock(label: "Loading notices", compact: true).padding(Theme.gutter) }
             case .failed(let message): ErrorBlock(message: message) { await list.refresh() }
             case .unavailable: UnavailableBlock()
             case .loaded:
-                List {
-                    Text("If a post or comment you made is hidden by moderation, it appears here. Other members cannot see the hidden content. If you think a decision is mistaken, contact the person who invited you to request a review.")
-                        .font(Typography.callout).foregroundStyle(Theme.textMuted).listRowBackground(Theme.canvas)
-                    if list.items.isEmpty {
-                        Text("No content notices.").font(Typography.body).listRowBackground(Theme.canvas)
-                            .accessibilityIdentifier("no-notices")
-                    }
-                    ForEach(list.items) { item in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Your \(item.targetKind) was hidden by moderation.").font(Typography.headline)
-                            Text("Reference ID: \(item.targetId)").font(Typography.caption).foregroundStyle(Theme.textMuted)
-                            Text("Originally shared \(item.originalCreatedAt.date.formatted(date: .abbreviated, time: .omitted))")
-                                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: Theme.space3) {
+                        PaldoraScreenTitle(title: "Content notices",
+                                           subtitle: "If a post or comment you made is hidden by moderation, it appears here. Other members cannot see the hidden content. If you think a decision is mistaken, contact the person who invited you to request a review.")
+                        if list.items.isEmpty {
+                            EmptyBlock(title: "No content notices", message: "Nothing of yours has been hidden.", icon: .info)
+                                .accessibilityIdentifier("no-notices")
                         }
-                        .accessibilityElement(children: .combine).listRowBackground(Theme.surface)
+                        ForEach(list.items) { item in
+                            PaldoraBanner(tone: .warning, title: "Your \(item.targetKind) was hidden by moderation.",
+                                          message: "Reference ID: \(item.targetId) · Originally shared \(item.originalCreatedAt.date.formatted(date: .abbreviated, time: .omitted))")
+                        }
                     }
+                    .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+                    .padding(.horizontal, Theme.gutter)
+                    .frame(maxWidth: .infinity)
                 }
-                .scrollContentBackground(.hidden).refreshable { await list.refresh() }
+                .refreshable { await list.refresh() }
             }
         }
-        .background(Theme.canvas)
-        .navigationTitle("Content notices")
-        .navigationBarTitleDisplayMode(.inline)
+        .paldoraCanvas()
+        .paldoraNavBar("Content notices")
         .task { await list.refresh() }
     }
 }

@@ -1,17 +1,13 @@
 import PaldoraKit
 import SwiftUI
 
+/// Figma 3.7 Members & roles: person rows with a role chip; role actions open a sheet
+/// and removal or transfer confirm in a dialog.
 struct MembersView: View {
     let env: FeatureEnvironment
     @State private var model: BoxMembersViewModel
-    @State private var confirm: Confirmation?
-
-    private struct Confirmation: Identifiable {
-        let id = UUID()
-        let title: String
-        let action: String
-        let run: () async -> Void
-    }
+    @State private var selected: BoxMember?
+    @Environment(PaldoraDialogCenter.self) private var dialogs
 
     init(env: FeatureEnvironment, box: Box) {
         self.env = env
@@ -21,79 +17,88 @@ struct MembersView: View {
     var body: some View {
         Group {
             switch model.members.phase {
-            case .idle, .loading: LoadingBlock(label: "Loading members")
+            case .idle, .loading: ScrollView { PaldoraRowSkeleton().padding(Theme.gutter) }
             case .failed(let message): ErrorBlock(message: message) { await model.members.refresh() }
             case .unavailable: UnavailableBlock()
             case .loaded: list
             }
         }
-        .background(Theme.canvas)
-        .navigationTitle("Members")
-        .navigationBarTitleDisplayMode(.inline)
+        .paldoraCanvas()
+        .paldoraNavBar("Members")
         .task { await model.members.loadFirst() }
-        .confirmationDialog(confirm?.title ?? "", isPresented: Binding(
-            get: { confirm != nil }, set: { if !$0 { confirm = nil } }
-        ), titleVisibility: .visible) {
-            if let confirm { Button(confirm.action, role: .destructive) { Task { await confirm.run() } } }
+        .paldoraBottomSheet(isPresented: Binding(get: { selected != nil }, set: { if !$0 { selected = nil } }),
+                            title: selected.map(name) ?? "Member") {
+            if let member = selected { actions(member) }
         }
     }
 
+    private func name(_ member: BoxMember) -> String { member.displayName ?? member.username ?? "Member" }
+
     private var list: some View {
-        List {
-            if let notice = model.notice { InlineMessage(text: notice, kind: .success).listRowBackground(Theme.canvas) }
-            if let error = model.error { InlineMessage(text: error).listRowBackground(Theme.canvas) }
-            ForEach(model.members.items) { member in
-                VStack(alignment: .leading, spacing: Theme.space2) {
-                    memberRow(member)
-                    if model.hasActions(member) { actions(member) }
-                }
-                .listRowBackground(Theme.surface)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Theme.space3) {
+                PaldoraScreenTitle(title: "Members", subtitle: Formatting.countLabel(model.members.items.count, singular: "person", plural: "people"))
+                if let notice = model.notice { PaldoraBanner(tone: .success, title: notice) }
+                if let error = model.error { PaldoraBanner(tone: .danger, title: error) }
+                ForEach(model.members.items) { member in row(member) }
+                LoadMoreFooter(isLoading: model.members.isLoadingMore, error: model.members.inlineError,
+                               hasMore: model.members.hasMore, loadMore: { await model.members.loadMore() })
             }
-            LoadMoreFooter(isLoading: model.members.isLoadingMore, error: model.members.inlineError,
-                           hasMore: model.members.hasMore, loadMore: { await model.members.loadMore() })
-                .listRowBackground(Theme.canvas)
+            .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+            .padding(.horizontal, Theme.gutter)
+            .frame(maxWidth: .infinity)
         }
-        .scrollContentBackground(.hidden)
         .refreshable { await model.members.refresh() }
     }
 
-    @ViewBuilder private func memberRow(_ member: BoxMember) -> some View {
-        let name = member.displayName ?? member.username ?? "Member"
-        let content = HStack(spacing: Theme.space3) {
-            AvatarView(mediaId: member.avatarMediaId, name: name)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(Typography.headline)
-                Text(member.role.rawValue.capitalized).font(Typography.caption).foregroundStyle(Theme.textMuted)
+    @ViewBuilder private func row(_ member: BoxMember) -> some View {
+        let row = PaldoraPersonRow(name: name(member), mediaId: member.avatarMediaId) {
+            HStack(spacing: Theme.space2) {
+                PaldoraChip(title: member.role.rawValue.capitalized, style: member.role == .member ? .standard : .brass)
+                if model.hasActions(member) {
+                    PaldoraIconButton(icon: .more, label: "Actions for \(name(member))", style: .plain) { selected = member }
+                        .accessibilityIdentifier("member-actions")
+                }
             }
         }
-        .frame(minHeight: Theme.touchTarget, alignment: .leading)
         if let username = member.username {
-            NavigationLink(value: RoomRoute(username: username)) { content }.accessibilityHint("Opens their Room")
-        } else { content }
+            NavigationLink(value: RoomRoute(username: username)) { row }
+                .buttonStyle(.plain).accessibilityHint("Opens their Room")
+        } else { row }
     }
 
-    private func actions(_ member: BoxMember) -> some View {
-        let name = member.displayName ?? member.username ?? "this member"
-        return FlowLayout {
+    @ViewBuilder private func actions(_ member: BoxMember) -> some View {
+        let who = name(member)
+        PaldoraListGroup {
             if model.canChangeRole(member) {
-                Button(BoxRules.nextRole(for: member.role) == .admin ? "Make admin" : "Make member") {
+                let makeAdmin = BoxRules.nextRole(for: member.role) == .admin
+                PaldoraListRow(title: makeAdmin ? "Make admin" : "Make member",
+                               subtitle: makeAdmin ? "Can invite, remove members and edit the Box" : nil,
+                               icon: .shield, trailing: .none) {
+                    selected = nil
                     Task { await model.changeRole(member) }
                 }
-                .buttonStyle(QuietButtonStyle()).accessibilityIdentifier("change-role")
+                .accessibilityIdentifier("change-role")
             }
             if model.canTransfer(member) {
-                Button("Make owner") {
-                    confirm = Confirmation(title: "Make \(name) the owner? You'll become an admin.", action: "Yes, transfer") {
-                        await model.transfer(member)
+                PaldoraListDivider()
+                PaldoraListRow(title: "Make owner", icon: .key, trailing: .none) {
+                    selected = nil
+                    dialogs.present(icon: .key, title: "Make \(who) the owner?", message: "You'll become an admin.",
+                                    confirmTitle: "Transfer ownership", isDestructive: false) {
+                        Task { await model.transfer(member) }
                     }
                 }
-                .buttonStyle(QuietButtonStyle()).accessibilityIdentifier("make-owner")
+                .accessibilityIdentifier("make-owner")
             }
             if model.canRemove(member) {
-                Button("Remove") {
-                    confirm = Confirmation(title: "Remove \(name) from this Box?", action: "Yes, remove") { await model.remove(member) }
+                PaldoraListDivider()
+                PaldoraListRow(title: "Remove from Box", icon: .close, trailing: .none, isDestructive: true) {
+                    selected = nil
+                    dialogs.present(icon: .close, title: "Remove \(who)?", message: "They lose access to this Box. They can be invited again.",
+                                    confirmTitle: "Remove") { Task { await model.remove(member) } }
                 }
-                .buttonStyle(QuietButtonStyle(destructive: true)).accessibilityIdentifier("remove-member")
+                .accessibilityIdentifier("remove-member")
             }
         }
     }

@@ -13,40 +13,50 @@ struct CameraReactionSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: Theme.space4) {
-                content
-                Spacer(minLength: 0)
+        VStack(spacing: 0) {
+            PaldoraNavBar(title: "Camera reaction", leading: .close { model.stop(); dismiss() })
+                .padding(.horizontal, Theme.gutter).padding(.vertical, Theme.space2)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.space4) {
+                    PaldoraScreenTitle(eyebrow: "Real reaction", title: "Your face,", accent: "right now.",
+                                       subtitle: "Only the people in this Box will see it.")
+                    content
+                }
+                .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+                .padding(Theme.space5)
+                .frame(maxWidth: .infinity)
             }
-            .padding(Theme.space6)
-            .background(Theme.canvas)
-            .navigationTitle("Camera reaction")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { model.stop(); dismiss() } } }
         }
+        .paldoraCanvas()
         .task { await model.prepare() }
         .onDisappear { model.stop() }
     }
 
     @ViewBuilder private var content: some View {
         switch model.phase {
-        case .idle: ProgressView("Opening the camera")
+        case .idle: PaldoraSkeleton(height: 320, radius: Theme.radius).accessibilityLabel("Opening the camera")
         case .unavailable:
-            notice("No camera is available on this device.", icon: "camera.slash")
+            PaldoraStateView(icon: .camera, tone: .info, title: "No camera",
+                             message: "No camera is available on this device.")
+                .accessibilityIdentifier("camera-notice")
         case .denied:
-            notice("Camera access is off. Turn it on for Paldora in Settings to react with a photo. Nothing is saved to your library.", icon: "camera.badge.ellipsis")
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                Link("Open Settings", destination: url).font(Typography.label).frame(minHeight: Theme.touchTarget)
-                    .accessibilityIdentifier("open-camera-settings")
+            PaldoraStateView(icon: .camera, tone: .warning, title: "Camera is off",
+                             message: "Turn it on for Paldora in Settings to react with a photo. Nothing is saved to your library.") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    Link(destination: url) { Text("Open Settings") }
+                        .buttonStyle(PaldoraButtonStyle(kind: .secondary, size: .medium))
+                        .accessibilityIdentifier("open-camera-settings")
+                }
             }
+            .accessibilityIdentifier("camera-notice")
         case .live:
             preview
-            Button("Take photo") { Task { await model.capture() } }
-                .buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("take-photo")
+            PaldoraButton("Take photo", icon: .camera, fullWidth: true) { Task { await model.capture() } }
+                .accessibilityIdentifier("take-photo")
         case .captured, .sending, .failed:
             captured
         case .done:
-            InlineMessage(text: "Your camera reaction was sent.", kind: .success).accessibilityIdentifier("camera-sent")
+            PaldoraBanner(tone: .success, title: "Your camera reaction was sent.").accessibilityIdentifier("camera-sent")
         }
     }
 
@@ -55,8 +65,8 @@ struct CameraReactionSheet: View {
             CameraPreview(session: session).frame(height: 320).clipShape(RoundedRectangle(cornerRadius: Theme.radius))
                 .accessibilityLabel("Front camera preview")
         } else {
-            Theme.highlight.frame(height: 320).clipShape(RoundedRectangle(cornerRadius: Theme.radius))
-                .overlay(Text("Test camera").foregroundStyle(Theme.textMuted))
+            Theme.brassSoft.frame(height: 320).clipShape(RoundedRectangle(cornerRadius: Theme.radius))
+                .overlay(Text("Test camera").paldoraText(.bodyM).foregroundStyle(Theme.textSecondary))
         }
     }
 
@@ -65,23 +75,18 @@ struct CameraReactionSheet: View {
             Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 320)
                 .clipShape(RoundedRectangle(cornerRadius: Theme.radius)).accessibilityLabel("Your photo")
         }
-        if case .failed(let message) = model.phase { InlineMessage(text: message).accessibilityIdentifier("camera-error") }
+        if case .failed(let message) = model.phase {
+            PaldoraBanner(tone: .danger, title: message).accessibilityIdentifier("camera-error")
+        }
         HStack(spacing: Theme.space3) {
-            Button("Retake") { Task { await model.retake() } }.buttonStyle(QuietButtonStyle())
+            PaldoraButton("Retake", kind: .secondary, size: .medium) { Task { await model.retake() } }
                 .disabled(model.phase == .sending).accessibilityIdentifier("retake-photo")
-            Button { Task { await model.send(); if let id = model.sentAssetId { onSent(id) } } } label: {
-                if model.phase == .sending { ProgressView() } else { Text(model.canRetrySend ? "Try again" : "Send reaction") }
+            PaldoraButton(model.canRetrySend ? "Try again" : "Send reaction", size: .medium,
+                          isLoading: model.phase == .sending, fullWidth: true) {
+                Task { await model.send(); if let id = model.sentAssetId { onSent(id) } }
             }
-            .buttonStyle(PrimaryButtonStyle()).disabled(model.phase == .sending).accessibilityIdentifier("send-camera-reaction")
+            .disabled(model.phase == .sending).accessibilityIdentifier("send-camera-reaction")
         }
-    }
-
-    private func notice(_ text: String, icon: String) -> some View {
-        VStack(spacing: Theme.space3) {
-            Image(systemName: icon).font(.largeTitle).foregroundStyle(Theme.textMuted).accessibilityHidden(true)
-            Text(text).font(Typography.body).foregroundStyle(Theme.text).multilineTextAlignment(.center)
-        }
-        .accessibilityElement(children: .combine).accessibilityIdentifier("camera-notice")
     }
 }
 

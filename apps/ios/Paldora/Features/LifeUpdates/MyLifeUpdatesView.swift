@@ -13,51 +13,60 @@ struct MyLifeUpdatesView: View {
     var body: some View {
         Group {
             switch list.phase {
-            case .idle, .loading: LoadingBlock(label: "Loading your Life Updates")
+            case .idle, .loading: ScrollView { LoadingBlock(label: "Loading your Life Updates", compact: true).padding(Theme.gutter) }
             case .failed(let message): ErrorBlock(message: message) { await list.refresh() }
             case .unavailable: UnavailableBlock()
             case .loaded:
                 if list.items.isEmpty {
-                    EmptyBlock(title: "No Life Updates yet", message: "Share a catch-up with your Boxes, or keep it to yourself.")
+                    EmptyBlock(title: "Your chapters will live here",
+                               message: "Share a catch-up with your Boxes, or keep it to yourself.", icon: .book)
                 } else {
-                    List {
-                        ForEach(list.items) { update in
-                            NavigationLink(value: LifeUpdateRoute(id: update.id)) { row(update) }
-                                .listRowBackground(Theme.surface)
-                                .accessibilityIdentifier("my-life-update")
+                    ScrollView {
+                        LazyVStack(spacing: Theme.space3) {
+                            PaldoraScreenTitle(eyebrow: "Your chapters", title: "Life updates")
+                            ForEach(list.items) { update in
+                                NavigationLink(value: LifeUpdateRoute(id: update.id)) { row(update) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("my-life-update")
+                            }
+                            LoadMoreFooter(isLoading: list.isLoadingMore, error: list.inlineError,
+                                           hasMore: list.hasMore, loadMore: { await list.loadMore() })
                         }
-                        LoadMoreFooter(isLoading: list.isLoadingMore, error: list.inlineError,
-                                       hasMore: list.hasMore, loadMore: { await list.loadMore() })
-                            .listRowBackground(Theme.canvas)
+                        .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+                        .padding(.horizontal, Theme.gutter)
+                        .frame(maxWidth: .infinity)
                     }
-                    .scrollContentBackground(.hidden)
                     .refreshable { await list.refresh() }
                 }
             }
         }
-        .background(Theme.canvas)
-        .navigationTitle("Life Updates")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink(value: LifeUpdateComposeRoute()) {
-                    Image(systemName: "plus").frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                }
-                .accessibilityLabel("New Life Update")
-                .accessibilityIdentifier("new-life-update")
+        .paldoraCanvas()
+        .paldoraNavBar("Life updates", trailing: .none)
+        .overlay(alignment: .topTrailing) {
+            NavigationLink(value: LifeUpdateComposeRoute()) {
+                PaldoraIconView(.plus, size: 20).foregroundStyle(Theme.actionOnPrimary)
+                    .frame(width: 40, height: 40).background(Theme.actionPrimary, in: Circle())
+                    .paldoraHitTarget()
             }
+            .accessibilityLabel("New Life Update")
+            .accessibilityIdentifier("new-life-update")
+            .padding(.trailing, Theme.gutter).padding(.top, Theme.space2)
         }
         .task { await list.refresh() }
     }
 
     private func row(_ update: LifeUpdate) -> some View {
         let first = LifeUpdateSectionKey.canonical.compactMap { update.sections.values[$0] }.first ?? "Photos only"
-        return VStack(alignment: .leading, spacing: 2) {
-            Text(first).font(Typography.body).foregroundStyle(Theme.text).lineLimit(3)
-            Text(Formatting.relativeTime(update.createdAt) + (update.audience == .onlyMe ? " · Only me" : " · \(update.contexts.count) Boxes"))
-                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+        return VStack(alignment: .leading, spacing: Theme.space2) {
+            Text(Formatting.relativeTime(update.createdAt)).paldoraText(.caption).foregroundStyle(Theme.textSecondary)
+            Text(first).paldoraText(.titleS).foregroundStyle(Theme.textPrimary).lineLimit(3)
+            PaldoraChip(title: update.audience == .onlyMe ? "Only me" : Formatting.countLabel(update.contexts.count, singular: "Box", plural: "Boxes"),
+                        style: .soft, leading: .icon(.lock))
         }
-        .frame(minHeight: Theme.touchTarget, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Theme.space4)
+        .background(Theme.bgSurface, in: RoundedRectangle(cornerRadius: Theme.radiusLg))
+        .paldoraHairline(RoundedRectangle(cornerRadius: Theme.radiusLg))
         .accessibilityElement(children: .combine)
     }
 }

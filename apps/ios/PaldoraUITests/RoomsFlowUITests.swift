@@ -7,7 +7,7 @@ final class RoomsFlowUITests: XCTestCase {
     func testChangeThemeSaveAndReload() throws {
         let app = try launchSignedIn()
         let customize = app.buttons["customize-room"]
-        app.tap(app.tabBars.buttons["My Room"], until: customize)
+        app.tap(app.tab("My Room"), until: customize)
         XCTAssertTrue(customize.waitForExistence(timeout: 30), "My Room did not load")
         XCTAssertTrue(app.element("room-canvas").exists, "Room canvas missing")
         customize.tap()
@@ -17,7 +17,7 @@ final class RoomsFlowUITests: XCTestCase {
         XCTAssertTrue(picker.waitForExistence(timeout: 20))
         let target = picker.label.contains("Lavender Dream") ? "Cyberpunk" : "Lavender Dream"
         picker.tap()
-        let option = app.buttons[target]
+        let option = app.buttons["choice-\(target)"]
         XCTAssertTrue(option.waitForExistence(timeout: 10), "Theme option \(target) missing")
         option.tap()
 
@@ -28,7 +28,7 @@ final class RoomsFlowUITests: XCTestCase {
         XCTAssertTrue(app.element("room-saved").waitForExistence(timeout: 30), "Room was not saved")
 
         // Leave and reopen the editor: the saved theme is what the server returns.
-        app.navigationBars.buttons.firstMatch.tap()
+        app.goBack()
         let again = app.buttons["customize-room"]
         XCTAssertTrue(again.waitForExistence(timeout: 20))
         again.tap()
@@ -40,7 +40,7 @@ final class RoomsFlowUITests: XCTestCase {
     func testOpenMemories() throws {
         let app = try launchSignedIn()
         let link = app.buttons["memories-link"]
-        app.tap(app.tabBars.buttons["Profile"], until: link)
+        app.tap(app.tab("Profile"), until: link)
         app.scrollToReveal(link)
         XCTAssertTrue(link.waitForExistence(timeout: 20))
         link.tap()

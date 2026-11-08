@@ -13,7 +13,7 @@ final class FeaturesFlowUITests: XCTestCase {
         let commentText = "UI comment \(stamp)"
 
         // Boxes: create one.
-        app.tabBars.buttons["Boxes"].tap()
+        app.tab("Boxes").tap()
         let create = app.buttons["create-box"]
         XCTAssertTrue(create.waitForExistence(timeout: 20))
         create.tap()
@@ -33,13 +33,14 @@ final class FeaturesFlowUITests: XCTestCase {
         let attach = app.buttons["attach-test-photo"]
         XCTAssertTrue(attach.waitForExistence(timeout: 10), "Test photo button missing")
         attach.tap()
-        XCTAssertTrue(app.staticTexts["Ready"].waitForExistence(timeout: 90), "Photo did not finish processing")
+        XCTAssertTrue(app.element("photo-upload", containing: "Photo").waitForExistence(timeout: 90), "Photo did not finish processing")
         app.buttons["publish-post"].tap()
         XCTAssertTrue(app.element("box-post", containing: postText).waitForExistence(timeout: 20),
                       "Post did not appear in the Box")
 
-        // Home: open it.
-        app.tabBars.buttons["Home"].tap()
+        // Home: open it (pushed screens hide the tab bar, as in Figma).
+        app.goBack()
+        app.tab("Home").tap()
         let item = app.element("feed-item", containing: postText)
         XCTAssertTrue(item.waitForExistence(timeout: 30), "Post did not appear on Home")
         item.tap()
@@ -77,11 +78,11 @@ final class FeaturesFlowUITests: XCTestCase {
         XCTAssertTrue(sendCamera.waitForExistence(timeout: 10))
         sendCamera.tap()
         XCTAssertTrue(app.element("camera-sent").waitForExistence(timeout: 90), "Camera reaction was not sent")
-        app.buttons["Close"].tap()
+        app.navButton("nav-close").tap()
 
         // Notifications tab opens (own activity does not notify you).
-        app.navigationBars.buttons.firstMatch.tap()
-        app.tabBars.buttons["Notifications"].tap()
+        app.goBack()
+        app.tab("Notifications").tap()
         let nothingNew = app.staticTexts["Nothing new"]
         XCTAssertTrue(nothingNew.waitForExistence(timeout: 20) || app.buttons["mark-all-read"].waitForExistence(timeout: 5))
     }

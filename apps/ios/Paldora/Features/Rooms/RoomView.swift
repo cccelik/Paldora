@@ -14,17 +14,16 @@ struct RoomView: View {
 
     var body: some View {
         content
-            .background(Theme.canvas)
-            .navigationTitle(route.username == nil ? "My Room" : "Room")
-            .navigationBarTitleDisplayMode(.inline)
+            .paldoraCanvas()
+            .modifier(RoomChrome(isTab: route.username == nil))
             .task { await model.load() }
     }
 
     @ViewBuilder private var content: some View {
         switch model.phase {
-        case .loading: LoadingBlock(label: "Loading Room")
+        case .loading: ScrollView { LoadingBlock(label: "Loading Room").padding(Theme.gutter) }
         case .failed(let message): ErrorBlock(message: message) { await model.load() }
-        case .unavailable: UnavailableBlock()
+        case .unavailable: roomUnavailable
         case .loaded(let room):
             VStack(spacing: 0) {
                 actionBar(room)
@@ -36,37 +35,54 @@ struct RoomView: View {
         }
     }
 
+    /// Figma 7.9: missing, hidden, blocked and malformed all look the same.
+    private var roomUnavailable: some View {
+        PaldoraStateView(icon: .lock, title: "This Room isn't available.",
+                         message: "It may be private, or the link may be wrong.")
+            .accessibilityIdentifier("unavailable")
+    }
+
     /// Account and privacy actions live outside the Room theme, in the app's own look.
     private func actionBar(_ room: Room) -> some View {
-        VStack(alignment: .leading, spacing: Theme.space1) {
-            AdaptiveStack(spacing: Theme.space4) {
+        VStack(alignment: .leading, spacing: Theme.space2) {
+            FlowLayout(spacing: Theme.space2) {
                 if model.isOwner {
-                    NavigationLink(value: RoomEditRoute()) {
-                        Label("Customize", systemImage: "paintbrush").font(Typography.label)
-                            .frame(minHeight: Theme.touchTarget)
-                    }
-                    .accessibilityIdentifier("customize-room")
+                    NavigationLink(value: RoomEditRoute()) { Label("Customize", systemImage: "paintbrush") }
+                        .buttonStyle(PaldoraButtonStyle(kind: .secondary, size: .small))
+                        .accessibilityIdentifier("customize-room")
                 }
                 if let name = model.username {
                     NavigationLink(value: MemoriesRoute(scope: .room(username: name))) {
-                        Label("Memories", systemImage: "clock.arrow.circlepath").font(Typography.label)
-                            .frame(minHeight: Theme.touchTarget)
+                        Label("Memories", systemImage: "clock.arrow.circlepath")
                     }
+                    .buttonStyle(PaldoraButtonStyle(kind: .secondary, size: .small))
                     .accessibilityIdentifier("room-memories")
                 }
             }
             if model.isOwner, let visibility = room.visibility {
-                Text("Visible to: \(RoomRegistry.label(RoomRegistry.visibilityLabels, visibility))")
-                    .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                PaldoraChip(title: "Visible to: \(RoomRegistry.label(RoomRegistry.visibilityLabels, visibility))",
+                            style: .soft, leading: .icon(.lock))
             } else if !model.isOwner {
-                Text(room.relationship == "friend" ? "Friend" : "Shares a Box with you")
-                    .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                PaldoraChip(title: room.relationship == "friend" ? "Friend" : "Shares a Box with you", style: .soft)
             }
         }
-        .padding(.horizontal, Theme.space4)
-        .padding(.vertical, Theme.space1)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.vertical, Theme.space2)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.canvas)
-        .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+        .background(Theme.bgCanvas)
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderHairline).frame(height: 1) }
+    }
+}
+
+/// My Room is a tab root (no bar); a visited Room is a pushed screen with Back.
+private struct RoomChrome: ViewModifier {
+    let isTab: Bool
+
+    func body(content: Content) -> some View {
+        if isTab {
+            content.toolbar(.hidden, for: .navigationBar)
+        } else {
+            content.paldoraNavBar("Room")
+        }
     }
 }

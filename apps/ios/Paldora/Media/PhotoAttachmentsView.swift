@@ -1,7 +1,8 @@
 import PhotosUI
 import SwiftUI
 
-/// Picker plus the per-photo progress, failure and retry rows.
+/// Picker plus the per-photo upload tiles (Figma "Upload tile": Done, Uploading,
+/// Processing, Failed, Add; at most four per post).
 struct PhotoAttachmentsView: View {
     let attachments: PhotoAttachments
     var title = "Add photos"
@@ -10,34 +11,29 @@ struct PhotoAttachmentsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
-            if !attachments.items.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Theme.space3) {
-                        ForEach(attachments.items) { PhotoUploadTile(upload: $0, attachments: attachments) }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: Theme.space3) {
+                    ForEach(attachments.items) { PhotoUploadTile(upload: $0, attachments: attachments) }
+                    if attachments.remaining > 0 {
+                        PhotosPicker(selection: $picked, maxSelectionCount: max(1, attachments.remaining),
+                                     matching: .images) {
+                            AddPhotoTile()
+                        }
+                        .accessibilityLabel(title)
+                        .accessibilityIdentifier("add-photos")
                     }
                 }
             }
-            HStack(spacing: Theme.space3) {
-                PhotosPicker(selection: $picked, maxSelectionCount: max(1, attachments.remaining),
-                             matching: .images) {
-                    Label(title, systemImage: "photo.on.rectangle")
-                        .font(Typography.label).foregroundStyle(Theme.goldText)
-                        .frame(minHeight: Theme.touchTarget)
-                }
-                .disabled(attachments.remaining == 0)
-                .accessibilityIdentifier("add-photos")
-                #if DEBUG
-                if ProcessInfo.processInfo.environment["PALDORA_UI_TEST_IMAGE"] == "1" {
-                    Button("Attach test photo") { attachments.add([DebugTestImage.jpeg()]) }
-                        .buttonStyle(QuietButtonStyle())
-                        .disabled(attachments.remaining == 0)
-                        .accessibilityIdentifier("attach-test-photo")
-                }
-                #endif
-                if showsCount {
-                    Text("\(attachments.items.count) of \(PhotoAttachments.postLimit)")
-                        .font(Typography.caption).foregroundStyle(Theme.textMuted)
-                }
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["PALDORA_UI_TEST_IMAGE"] == "1" {
+                PaldoraButton("Attach test photo", kind: .ghost, size: .small) { attachments.add([DebugTestImage.jpeg()]) }
+                    .disabled(attachments.remaining == 0)
+                    .accessibilityIdentifier("attach-test-photo")
+            }
+            #endif
+            if showsCount {
+                Text("\(attachments.items.count) of \(PhotoAttachments.postLimit)")
+                    .paldoraText(.caption).foregroundStyle(Theme.textSecondary)
             }
         }
         .onChange(of: picked) {
@@ -54,56 +50,43 @@ struct PhotoAttachmentsView: View {
     }
 }
 
+private struct AddPhotoTile: View {
+    var body: some View { PaldoraUploadTile(state: .add, side: PhotoUploadTile.side) }
+}
+
 struct PhotoUploadTile: View {
+    nonisolated static let side: CGFloat = 112
     let upload: PhotoUpload
     let attachments: PhotoAttachments
 
     var body: some View {
         VStack(spacing: Theme.space1) {
-            ZStack {
+            PaldoraUploadTile(state: tileState, side: Self.side, action: tileState == .failed ? { upload.retry() } : nil) {
                 if let preview = upload.preview {
                     Image(uiImage: preview).resizable().scaledToFill()
                 } else {
-                    Theme.highlight
+                    Theme.brassSoft
                 }
-                overlay
             }
-            .frame(width: 88, height: 88)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.radius))
-            statusRow
+            .accessibilityIdentifier(tileState == .failed ? "retry-photo" : "photo-upload")
+            if case .failed(let message) = upload.state {
+                Text(message).paldoraText(.caption).foregroundStyle(Theme.statusDanger).lineLimit(3)
+                    .frame(width: Self.side, alignment: .leading)
+            }
+            PaldoraButton("Remove", kind: .ghost, size: .small) { attachments.remove(upload) }
+                .accessibilityLabel("Remove photo")
         }
-        .frame(width: 96)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("photo-upload")
+        .frame(width: Self.side)
     }
 
-    @ViewBuilder private var overlay: some View {
+    private var tileState: PaldoraUploadState {
         switch upload.state {
-        case .preparing, .processing: ProgressView().padding(6).background(.thinMaterial, in: Circle())
-        case .uploading(let fraction): ProgressView(value: fraction).padding(Theme.space2)
-        case .ready: Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.success)
-                .padding(4).background(Theme.canvas, in: Circle())
-        case .failed: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger)
-                .padding(4).background(Theme.canvas, in: Circle())
+        case .preparing: .processing
+        case .uploading(let fraction): .uploading(progress: fraction)
+        case .processing: .processing
+        case .ready: .done
+        case .failed: .failed
         }
-    }
-
-    @ViewBuilder private var statusRow: some View {
-        switch upload.state {
-        case .preparing: Text("Preparing").font(Typography.caption).foregroundStyle(Theme.textMuted)
-        case .uploading(let fraction):
-            Text("Uploading \(Int(fraction * 100))%").font(Typography.caption).foregroundStyle(Theme.textMuted)
-        case .processing: Text("Processing").font(Typography.caption).foregroundStyle(Theme.textMuted)
-        case .ready: Text("Ready").font(Typography.caption).foregroundStyle(Theme.success)
-        case .failed(let message):
-            Text(message).font(Typography.caption).foregroundStyle(Theme.danger).lineLimit(3)
-            Button("Retry") { upload.retry() }.buttonStyle(QuietButtonStyle())
-                .accessibilityIdentifier("retry-photo")
-        }
-        Button("Remove") { attachments.remove(upload) }
-            .font(Typography.caption).foregroundStyle(Theme.textMuted)
-            .frame(minHeight: Theme.touchTarget)
-            .accessibilityLabel("Remove photo")
     }
 }
 

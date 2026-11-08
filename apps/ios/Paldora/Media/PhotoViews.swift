@@ -49,7 +49,7 @@ struct PhotoViewer: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Color.black.ignoresSafeArea()
+            Theme.bgInverse.ignoresSafeArea()
             TabView(selection: $index) {
                 ForEach(Array(assetIds.enumerated()), id: \.offset) { offset, id in
                     ZoomablePhoto(assetId: id).tag(offset)
@@ -57,14 +57,9 @@ struct PhotoViewer: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: assetIds.count > 1 ? .automatic : .never))
-            Button { dismiss() } label: {
-                Image(systemName: "xmark.circle.fill").font(.title)
-                    .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                    .foregroundStyle(.white)
-            }
-            .accessibilityLabel("Close photo")
-            .accessibilityIdentifier("close-photo")
-            .padding(Theme.space2)
+            PaldoraIconButton(icon: .close, label: "Close photo", style: .surface) { dismiss() }
+                .accessibilityIdentifier("close-photo")
+                .padding(Theme.space3)
         }
         .accessibilityAddTraits(.isModal)
     }

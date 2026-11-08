@@ -14,29 +14,31 @@ struct TextEntrySheet: View {
     @State private var isWorking = false
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: Theme.space4) {
-                FieldContainer(title: prompt) {
-                    TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Theme.textMuted), axis: .vertical)
-                        .lineLimit(4...10)
-                        .padding(.vertical, Theme.space2)
-                        .accessibilityIdentifier("sheet-text-field")
+        VStack(spacing: 0) {
+            PaldoraNavBar(title: title, leading: .close { dismiss() })
+                .padding(.horizontal, Theme.gutter).padding(.vertical, Theme.space2)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.space4) {
+                    PaldoraFieldContainer(title: prompt) {
+                        TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Theme.textTertiary), axis: .vertical)
+                            .lineLimit(4...10)
+                            .padding(.vertical, Theme.space3)
+                            .accessibilityIdentifier("sheet-text-field")
+                    }
+                    Text("\(text.count) of \(limit)").paldoraText(.caption)
+                        .foregroundStyle(text.count > limit ? Theme.statusDanger : Theme.textSecondary)
+                    if let error { PaldoraBanner(tone: .danger, title: error) }
+                    PaldoraButton(actionTitle, isLoading: isWorking, fullWidth: true, action: send)
+                        .disabled(!canSubmit)
+                        .accessibilityIdentifier("sheet-submit")
                 }
-                Text("\(text.count) of \(limit)").font(Typography.caption)
-                    .foregroundStyle(text.count > limit ? Theme.danger : Theme.textMuted)
-                if let error { InlineMessage(text: error) }
-                Button(action: send) { if isWorking { ProgressView() } else { Text(actionTitle) } }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(!canSubmit)
-                    .accessibilityIdentifier("sheet-submit")
-                Spacer()
+                .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+                .padding(Theme.space5)
+                .frame(maxWidth: .infinity)
             }
-            .padding(Theme.space6)
-            .background(Theme.canvas)
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .scrollDismissesKeyboard(.interactively)
         }
+        .paldoraCanvas()
         .onAppear { text = initialText }
     }
 

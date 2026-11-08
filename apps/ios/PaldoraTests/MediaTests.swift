@@ -165,9 +165,9 @@ struct ImageLoaderTests {
     }
 
     @Test func initialsFallback() {
-        #expect(AvatarView.initials("Mira Rose") == "MR")
-        #expect(AvatarView.initials("kai") == "K")
-        #expect(AvatarView.initials("") == "P")
+        #expect(PaldoraAvatar.initials("Mira Rose") == "MR")
+        #expect(PaldoraAvatar.initials("kai") == "K")
+        #expect(PaldoraAvatar.initials("") == "P")
     }
 }
 

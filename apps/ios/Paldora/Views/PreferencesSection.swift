@@ -10,36 +10,35 @@ struct PreferencesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space4) {
-            Text("Preferences").font(Typography.title).foregroundStyle(Theme.text)
+            Text("Preferences").paldoraText(.titleM).foregroundStyle(Theme.textPrimary)
             VStack(alignment: .leading, spacing: Theme.space2) {
-                Text("Appearance").font(Typography.label).foregroundStyle(Theme.textMuted)
+                PaldoraEyebrow("Appearance")
                 AppearancePicker(selection: model.preferences?.appearance ?? .system) { choice in
                     Task { message = await model.savePreferences(appearance: choice) }
                 }
+                Text("Your Room keeps its own theme. Visitors see it the way you designed it.")
+                    .paldoraText(.caption).foregroundStyle(Theme.textSecondary)
             }
             VStack(alignment: .leading, spacing: Theme.space2) {
-                Text("Reaction shortcuts").font(Typography.label).foregroundStyle(Theme.textMuted)
+                PaldoraEyebrow("Reaction shortcuts")
                 HStack(spacing: Theme.space2) {
                     ForEach(presets.indices, id: \.self) { index in
                         TextField("", text: binding(index))
                             .multilineTextAlignment(.center)
                             .font(.title2)
-                            .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
-                            .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.hairline, lineWidth: 1))
+                            .frame(width: PaldoraHitTarget.minimum, height: PaldoraHitTarget.minimum)
+                            .background(Theme.bgSurface, in: Circle())
+                            .paldoraHairline(Circle())
                             .accessibilityLabel("Reaction shortcut \(index + 1)")
                     }
                 }
                 Text("One emoji each. You can always react with any emoji.")
-                    .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                    .paldoraText(.caption).foregroundStyle(Theme.textSecondary)
             }
-            if let message { InlineMessage(text: message) }
-            if saved { InlineMessage(text: "Shortcuts saved", kind: .success) }
-            Button(action: savePresets) {
-                if isSaving { ProgressView() } else { Text("Save shortcuts") }
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!canSavePresets)
+            if let message { PaldoraBanner(tone: .danger, title: message) }
+            if saved { PaldoraBanner(tone: .success, title: "Shortcuts saved") }
+            PaldoraButton("Save shortcuts", size: .medium, isLoading: isSaving, fullWidth: true, action: savePresets)
+                .disabled(!canSavePresets)
         }
         .onAppear(perform: syncPresets)
         .onChange(of: model.preferences) { syncPresets() }
@@ -79,24 +78,13 @@ struct PreferencesSection: View {
     }
 }
 
-/// Three 44pt choices. Plain buttons keep touch targets and VoiceOver simple.
+/// Light, Dark or System as a Figma segmented control (9.3).
 struct AppearancePicker: View {
     let selection: Appearance
     let onSelect: (Appearance) -> Void
 
-    private let choices: [(Appearance, String)] = [(.system, "System"), (.light, "Light"), (.dark, "Dark")]
-
     var body: some View {
-        HStack(spacing: Theme.space2) {
-            ForEach(choices, id: \.0) { choice, title in
-                Button(title) { onSelect(choice) }
-                    .font(Typography.label)
-                    .foregroundStyle(selection == choice ? Theme.onInk : Theme.text)
-                    .frame(maxWidth: .infinity, minHeight: Theme.touchTarget)
-                    .background(selection == choice ? Theme.ink : Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
-                    .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.hairline, lineWidth: 1))
-                    .accessibilityAddTraits(selection == choice ? .isSelected : [])
-            }
-        }
+        PaldoraSegmentedControl([.init(Appearance.system, "System"), .init(Appearance.light, "Light"), .init(Appearance.dark, "Dark")],
+                                selection: Binding(get: { selection }, set: { onSelect($0) }))
     }
 }

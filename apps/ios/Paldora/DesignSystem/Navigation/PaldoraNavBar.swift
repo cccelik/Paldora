@@ -40,8 +40,8 @@ struct PaldoraNavBar: View {
 
     @ViewBuilder private var leadingButton: some View {
         switch leading {
-        case .back(let action): PaldoraIconButton(icon: .back, label: "Back", action: action)
-        case .close(let action): PaldoraIconButton(icon: .close, label: "Close", action: action)
+        case .back(let action): PaldoraIconButton(icon: .back, label: "Back", action: action).accessibilityIdentifier("nav-back")
+        case .close(let action): PaldoraIconButton(icon: .close, label: "Close", action: action).accessibilityIdentifier("nav-close")
         }
     }
 
@@ -50,7 +50,7 @@ struct PaldoraNavBar: View {
         case .none:
             Color.clear.frame(width: PaldoraHitTarget.minimum, height: PaldoraHitTarget.minimum)
         case .more(let action):
-            PaldoraIconButton(icon: .more, label: "More", action: action)
+            PaldoraIconButton(icon: .more, label: "More", action: action).accessibilityIdentifier("nav-more")
         case .action(let title, let action):
             Button(action: action) {
                 Text(title).paldoraText(.labelM).fontWeight(.semibold).foregroundStyle(Theme.brassText)

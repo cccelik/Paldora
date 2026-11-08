@@ -58,7 +58,7 @@ struct RoomCanvas: View {
 
     private var header: some View {
         AdaptiveStack(alignment: .top) {
-            AvatarView(mediaId: room.owner.avatarMediaId, name: room.owner.displayName, size: 64)
+            PaldoraAvatar(name: room.owner.displayName, size: 64, mediaId: room.owner.avatarMediaId)
             VStack(alignment: .leading, spacing: 4) {
                 Text(room.owner.displayName).font(look.font(.title2, weight: .semibold)).foregroundStyle(look.text)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("room-owner-name")

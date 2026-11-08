@@ -75,3 +75,54 @@ extension View {
                           confirmTitle: "Block", onConfirm: {}, onCancel: {})
     }
 }
+
+// MARK: - App-wide presenter
+
+/// One dialog at a time for the whole app. Screens call `present(...)` from anywhere
+/// (a row, a menu) and the host at the root draws `PaldoraDialogCard` over the scrim,
+/// so a dialog is never clipped to a scroll view. Sheets that need a confirmation
+/// use `.paldoraDialog` locally.
+@Observable
+final class PaldoraDialogCenter {
+    struct Config {
+        var icon: PaldoraIcon
+        var title: String
+        var message: String
+        var confirmTitle: String
+        var isDestructive = true
+        var onConfirm: () -> Void
+    }
+
+    var current: Config?
+    var isPresented: Bool {
+        get { current != nil }
+        set { if !newValue { current = nil } }
+    }
+
+    func present(icon: PaldoraIcon = .alert, title: String, message: String, confirmTitle: String,
+                 isDestructive: Bool = true, onConfirm: @escaping () -> Void) {
+        current = Config(icon: icon, title: title, message: message, confirmTitle: confirmTitle,
+                         isDestructive: isDestructive, onConfirm: onConfirm)
+    }
+
+    func dismiss() { current = nil }
+}
+
+extension View {
+    /// Installs the app-wide dialog host. Place it once near the root and inject the center.
+    func paldoraDialogHost(_ center: PaldoraDialogCenter) -> some View {
+        paldoraDialog(isPresented: Binding(get: { center.isPresented }, set: { center.isPresented = $0 })) {
+            let config = center.current
+            return PaldoraDialogCard(
+                icon: config?.icon ?? .alert, title: config?.title ?? "", message: config?.message ?? "",
+                confirmTitle: config?.confirmTitle ?? "OK", isDestructive: config?.isDestructive ?? true,
+                onConfirm: {
+                    let action = config?.onConfirm
+                    center.dismiss()
+                    action?()
+                },
+                onCancel: { center.dismiss() })
+        }
+        .environment(center)
+    }
+}

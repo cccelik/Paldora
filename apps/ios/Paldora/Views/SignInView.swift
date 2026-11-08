@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Figma 1.2 "Sign in with email". Registration is invite-only, so there is no Apple,
+/// Google or sign-up path; the privacy line says so.
 struct SignInView: View {
     let model: AppModel
     @State private var email = ""
@@ -12,18 +14,15 @@ struct SignInView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.space6) {
-                VStack(alignment: .leading, spacing: Theme.space2) {
-                    BrandMark()
-                    Text("A box for your people.")
-                        .font(Typography.brandSmall)
-                        .foregroundStyle(Theme.textMuted)
-                }
+                BrandMark()
+                PaldoraScreenTitle(eyebrow: "Welcome back", title: "Come on in.",
+                                   subtitle: "Sign in with the email your invite was sent to.")
                 if let notice = model.notice {
-                    InlineMessage(text: notice, kind: .error)
+                    PaldoraBanner(tone: .warning, title: notice)
                         .accessibilityIdentifier("sign-in-notice")
                 }
-                FieldContainer(title: "Email") {
-                    TextField("Email", text: $email, prompt: Text("Your email address").foregroundStyle(Theme.textMuted))
+                VStack(spacing: Theme.space4) {
+                    PaldoraTextField("Email", text: $email, placeholder: "Your email address", identifier: "email-field")
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -31,37 +30,30 @@ struct SignInView: View {
                         .submitLabel(.next)
                         .focused($focus, equals: .email)
                         .onSubmit { focus = .password }
-                        .accessibilityIdentifier("email-field")
+                    VStack(alignment: .trailing, spacing: Theme.space1) {
+                        PaldoraTextField("Password", text: $password, placeholder: "Password",
+                                         errorMessage: model.signInError, isSecure: true, identifier: "password-field")
+                            .textContentType(.password)
+                            .submitLabel(.go)
+                            .focused($focus, equals: .password)
+                            .onSubmit(submit)
+                        PaldoraButton("Forgot password?", kind: .ghost, size: .small) { showReset = true }
+                            .accessibilityIdentifier("forgot-password")
+                    }
                 }
-                FieldContainer(title: "Password") {
-                    SecureField("Password", text: $password, prompt: Text("Password").foregroundStyle(Theme.textMuted))
-                        .textContentType(.password)
-                        .submitLabel(.go)
-                        .focused($focus, equals: .password)
-                        .onSubmit(submit)
-                        .accessibilityIdentifier("password-field")
-                }
-                if let error = model.signInError {
-                    InlineMessage(text: error).accessibilityIdentifier("sign-in-error")
-                }
-                Button(action: submit) {
-                    if model.isSigningIn { ProgressView() } else { Text("Sign in") }
-                }
-                .buttonStyle(PrimaryButtonStyle())
                 .disabled(model.isSigningIn)
-                .accessibilityIdentifier("sign-in-button")
-                Button("Forgot password?") { showReset = true }
-                    .buttonStyle(QuietButtonStyle()).accessibilityIdentifier("forgot-password")
-                Text("Paldora accounts are created by invitation.")
-                    .font(Typography.caption)
-                    .foregroundStyle(Theme.textMuted)
+                PaldoraButton("Sign in", isLoading: model.isSigningIn, fullWidth: true, action: submit)
+                    .disabled(model.isSigningIn)
+                    .accessibilityIdentifier("sign-in-button")
+                Text("Paldora accounts are created by invitation. Ask the person who invited you if you need a new link.")
+                    .paldoraText(.caption).foregroundStyle(Theme.textSecondary)
             }
-            .frame(maxWidth: 440)
-            .padding(Theme.space6)
+            .frame(maxWidth: Theme.readingWidth)
+            .padding(Theme.space5)
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Theme.canvas)
+        .paldoraCanvas()
         .sheet(isPresented: $showReset) { PasswordResetSheet(model: model, initialEmail: email) }
     }
 

@@ -11,10 +11,10 @@ final class ProfileFlowUITests: XCTestCase {
     func testSignInEditDisplayNameAndSignOut() throws {
         let app = try launchSignedIn()
 
-        let profileTab = app.tabBars.buttons["Profile"]
-        XCTAssertTrue(app.tabBars.buttons["Home"].exists)
-        XCTAssertTrue(app.tabBars.buttons["Boxes"].exists)
-        XCTAssertTrue(app.tabBars.buttons["Notifications"].exists)
+        let profileTab = app.tab("Profile")
+        XCTAssertTrue(app.tab("Home").exists)
+        XCTAssertTrue(app.tab("Boxes").exists)
+        XCTAssertTrue(app.tab("Notifications").exists)
         profileTab.tap()
         XCTAssertTrue(app.staticTexts["profile-display-name"].waitForExistence(timeout: 10))
 
@@ -30,8 +30,11 @@ final class ProfileFlowUITests: XCTestCase {
         nameField.typeText(newName)
         let save = app.buttons["save-profile-button"]
         XCTAssertTrue(save.isEnabled)
+        // Scrolling dismisses the keyboard interactively; tap Save only once the layout has settled.
+        app.swipeUp()
+        app.scrollToReveal(save)
         save.tap()
-        XCTAssertTrue(app.staticTexts["profile-saved"].waitForExistence(timeout: 20), "Save did not confirm")
+        XCTAssertTrue(app.element("profile-saved").waitForExistence(timeout: 20), "Save did not confirm")
         let shown = app.staticTexts["profile-display-name"].firstMatch
         XCTAssertEqual(shown.label, newName)
 

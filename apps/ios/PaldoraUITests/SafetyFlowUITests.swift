@@ -15,12 +15,12 @@ final class SafetyFlowUITests: XCTestCase {
         XCTAssertTrue(app.element("sign-in-notice", containing: "password was changed").waitForExistence(timeout: 30),
                       "Neutral sign-in notice missing")
         signIn(app, email: email, password: replacement)
-        XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 30), "New password did not sign in")
+        XCTAssertTrue(app.tab("Profile").waitForExistence(timeout: 30), "New password did not sign in")
 
         // Restore the fixture's password so the other flows keep working.
         try changePassword(app, from: replacement, to: original)
         signIn(app, email: email, password: original)
-        XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 30), "Original password did not sign in")
+        XCTAssertTrue(app.tab("Profile").waitForExistence(timeout: 30), "Original password did not sign in")
     }
 
     private func changePassword(_ app: XCUIApplication, from old: String, to new: String) throws {
@@ -55,7 +55,7 @@ final class SafetyFlowUITests: XCTestCase {
 
     func testReportACommentAndSeeTheReceipt() throws {
         let app = try launchSignedIn()
-        app.tabBars.buttons["Boxes"].tap()
+        app.tab("Boxes").tap()
         let row = app.element("box-row", containing: "Shared UI Box")
         XCTAssertTrue(row.waitForExistence(timeout: 30), "Shared Box not listed")
         for _ in 0..<3 where !app.element("box-post").exists {
@@ -73,10 +73,13 @@ final class SafetyFlowUITests: XCTestCase {
         let category = app.buttons["report-category"]
         XCTAssertTrue(category.waitForExistence(timeout: 10))
         category.tap()
-        app.buttons["Spam"].tap()
+        app.buttons["choice-Spam"].tap()
         app.buttons["send-report"].tap()
         XCTAssertTrue(app.element("report-sent").waitForExistence(timeout: 20), "Report was not accepted")
         app.buttons["Done"].tap()
+        // Pushed screens hide the tab bar: back to the Box list, then Profile.
+        app.goBack()
+        app.goBack()
 
         openSettingsRow(app, "settings-reports")
         XCTAssertTrue(app.element("report-receipt").waitForExistence(timeout: 20), "Receipt missing")

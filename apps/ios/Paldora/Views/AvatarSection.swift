@@ -7,7 +7,7 @@ struct AvatarSection: View {
     let env: FeatureEnvironment
     var hasAvatar = false
     @State private var attachments: PhotoAttachments
-    @State private var confirmRemove = false
+    @Environment(PaldoraDialogCenter.self) private var dialogs
     @State private var error: String?
     @State private var isRemoving = false
 
@@ -20,14 +20,19 @@ struct AvatarSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
-            Text("Profile photo").font(Typography.title).foregroundStyle(Theme.text)
+            PaldoraEyebrow("Profile photo")
             PhotoAttachmentsView(attachments: attachments, title: "Choose a photo", showsCount: false)
             if hasAvatar {
-                Button { confirmRemove = true } label: { if isRemoving { ProgressView() } else { Text("Remove photo") } }
-                    .buttonStyle(QuietButtonStyle(destructive: true)).disabled(isRemoving)
+                PaldoraButton("Remove photo", kind: .ghost, size: .small, isLoading: isRemoving, destructive: true) {
+                    dialogs.present(icon: .trash, title: "Remove your photo?",
+                                    message: "You'll show initials until you add another.", confirmTitle: "Remove photo") {
+                        Task { await remove() }
+                    }
+                }
+                .disabled(isRemoving)
                     .accessibilityIdentifier("remove-avatar")
             }
-            if let error { InlineMessage(text: error) }
+            if let error { PaldoraFieldMessage(text: error) }
         }
         .onChange(of: attachments.readyAssetIds) {
             guard !attachments.readyAssetIds.isEmpty else { return }
@@ -35,10 +40,6 @@ struct AvatarSection: View {
                 await model.loadProfile()
                 attachments.clear()
             }
-        }
-        .confirmationDialog("Remove your profile photo? You'll show initials until you add another.",
-                            isPresented: $confirmRemove, titleVisibility: .visible) {
-            Button("Remove photo", role: .destructive) { Task { await remove() } }
         }
     }
 

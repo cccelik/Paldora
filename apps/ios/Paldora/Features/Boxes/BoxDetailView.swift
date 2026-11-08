@@ -16,9 +16,8 @@ struct BoxDetailView: View {
 
     var body: some View {
         content
-            .background(Theme.canvas)
-            .navigationTitle(model.box?.name ?? "Box")
-            .navigationBarTitleDisplayMode(.inline)
+            .paldoraCanvas()
+            .paldoraNavBar(model.box?.name ?? "Box")
             .task { await model.load(); seenVersion = env.contentVersion }
             .onAppear {
                 // Returning from Manage: pick up renames and archive changes, and leave a Box that is gone.
@@ -29,22 +28,11 @@ struct BoxDetailView: View {
                     if model.phase == .unavailable { dismiss() }
                 }
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    if let box = model.box {
-                        NavigationLink(value: BoxManageRoute(box: box)) {
-                            Image(systemName: "gearshape").frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                        }
-                        .accessibilityLabel("Manage Box")
-                        .accessibilityIdentifier("manage-box")
-                    }
-                }
-            }
     }
 
     @ViewBuilder private var content: some View {
         switch model.phase {
-        case .loading: LoadingBlock(label: "Loading Box")
+        case .loading: ScrollView { LoadingBlock(label: "Loading Box").padding(Theme.gutter) }
         case .failed(let message): ErrorBlock(message: message) { await model.load() }
         case .unavailable: UnavailableBlock()
         case .loaded(let box): loaded(box)
@@ -53,32 +41,37 @@ struct BoxDetailView: View {
 
     private func loaded(_ box: Box) -> some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: Theme.space3) {
-                NavigationLink {
-                    MembersView(env: env, box: box)
-                } label: {
-                    Label(Formatting.countLabel(box.memberCount, singular: "member", plural: "members"),
-                          systemImage: "person.2")
-                        .font(Typography.label).foregroundStyle(Theme.goldText)
-                        .frame(minHeight: Theme.touchTarget, alignment: .leading)
+            LazyVStack(alignment: .leading, spacing: Theme.space4) {
+                PaldoraScreenTitle(eyebrow: box.status == .archived ? "Private Box · archived" : "Private Box", title: box.name,
+                                   subtitle: Formatting.countLabel(box.memberCount, singular: "member", plural: "members"))
+                FlowLayout {
+                    NavigationLink { MembersView(env: env, box: box) } label: {
+                        Label("Members", systemImage: "person.2")
+                    }
+                    .buttonStyle(PaldoraButtonStyle(kind: .secondary, size: .small))
+                    .accessibilityIdentifier("members-link")
+                    NavigationLink(value: MemoriesRoute(scope: .box(id: box.id))) {
+                        Label("Memories", systemImage: "clock.arrow.circlepath")
+                    }
+                    .buttonStyle(PaldoraButtonStyle(kind: .secondary, size: .small))
+                    .accessibilityIdentifier("box-memories-link")
+                    NavigationLink(value: BoxManageRoute(box: box)) {
+                        Label("Manage", systemImage: "gearshape")
+                    }
+                    .buttonStyle(PaldoraButtonStyle(kind: .secondary, size: .small))
+                    .accessibilityLabel("Manage Box")
+                    .accessibilityIdentifier("manage-box")
                 }
-                .accessibilityIdentifier("members-link")
-                NavigationLink(value: MemoriesRoute(scope: .box(id: box.id))) {
-                    Label("Memories", systemImage: "clock.arrow.circlepath")
-                        .font(Typography.label).foregroundStyle(Theme.goldText)
-                        .frame(minHeight: Theme.touchTarget, alignment: .leading)
-                }
-                .accessibilityIdentifier("box-memories-link")
                 if model.canPost {
                     PostComposer(model: model)
                 } else {
-                    Text("This Box is archived. You can read it, but not post.")
-                        .font(Typography.callout).foregroundStyle(Theme.textMuted).paldoraCard()
+                    PaldoraBanner(tone: .warning, title: "This Box is archived",
+                                  message: "You can read it, but nobody can post, comment or react. The owner can restore it.")
                 }
                 posts
             }
             .frame(maxWidth: Theme.readingWidth)
-            .padding(Theme.space4)
+            .padding(.horizontal, Theme.gutter)
             .frame(maxWidth: .infinity)
         }
         .refreshable { await model.load() }
@@ -92,7 +85,7 @@ struct BoxDetailView: View {
         case .unavailable: UnavailableBlock()
         case .loaded:
             if model.posts.items.isEmpty {
-                EmptyBlock(title: "No posts yet", message: "Be the first to post in this Box.")
+                EmptyBlock(title: "Say hello", message: "Be the first to post in this Box.", icon: .chat)
             }
             ForEach(model.posts.items) { post in
                 NavigationLink(value: PostRoute(boxId: post.boxId, postId: post.id)) {
@@ -114,53 +107,43 @@ struct BoxPostRow: View {
     var avatar: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.space2) {
-            AdaptiveStack {
-                AvatarView(mediaId: avatar, name: author)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(author).font(Typography.headline).foregroundStyle(Theme.text)
-                    Text(Formatting.relativeTime(post.createdAt) + (post.kind == .lifeUpdate ? " · Life update" : ""))
-                        .font(Typography.caption).foregroundStyle(Theme.textMuted)
-                }
-            }
-            Text(post.text).font(Typography.body).foregroundStyle(Theme.text)
-                .multilineTextAlignment(.leading).lineLimit(6)
-            PhotoStrip(assetIds: post.mediaAssetIds, interactive: false)
-        }
-        .paldoraCard()
-        .accessibilityElement(children: .combine)
+        PaldoraPostCard(
+            content: PaldoraPostCardContent(
+                authorName: author, avatarMediaId: avatar,
+                context: Formatting.relativeTime(post.createdAt) + (post.kind == .lifeUpdate ? " · Life update" : ""),
+                caption: post.text, reactionCount: 0, commentCount: 0, audience: nil),
+            media: { PhotoStrip(assetIds: post.mediaAssetIds, interactive: false) })
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(author), \(Formatting.relativeTime(post.createdAt)). \(post.text)")
     }
 }
 
+/// Figma 4.2 "New moment": a card-style composer with the upload tiles and a count.
 struct PostComposer: View {
     @Bindable var model: BoxDetailViewModel
     @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.space2) {
-            FieldContainer(title: "Post to this Box") {
-                TextField("What's on your mind?", text: $model.draft, prompt: Text("What's on your mind?").foregroundStyle(Theme.textMuted), axis: .vertical)
+        VStack(alignment: .leading, spacing: Theme.space3) {
+            PaldoraFieldContainer(title: "Post to this Box", isFocused: focused) {
+                TextField("What's on your mind?", text: $model.draft, prompt: Text("What's on your mind?").foregroundStyle(Theme.textTertiary), axis: .vertical)
                     .lineLimit(2...8)
-                    .padding(.vertical, Theme.space2)
+                    .padding(.vertical, Theme.space3)
                     .focused($focused)
                     .accessibilityIdentifier("post-field")
             }
             PhotoAttachmentsView(attachments: model.attachments)
-            HStack {
-                Text("\(model.draft.count) of \(BoxDetailViewModel.textLimit)").font(Typography.caption)
-                    .foregroundStyle(model.draft.count > BoxDetailViewModel.textLimit ? Theme.danger : Theme.textMuted)
-                Spacer()
-            }
-            if let error = model.composeError { InlineMessage(text: error) }
-            Button {
+            Text("\(model.draft.count) of \(BoxDetailViewModel.textLimit)").paldoraText(.caption)
+                .foregroundStyle(model.draft.count > BoxDetailViewModel.textLimit ? Theme.statusDanger : Theme.textSecondary)
+            if let error = model.composeError { PaldoraFieldMessage(text: error) }
+            PaldoraButton("Post", size: .medium, isLoading: model.isPosting, fullWidth: true) {
                 focused = false
                 Task { await model.publish() }
-            } label: {
-                if model.isPosting { ProgressView() } else { Text("Post") }
             }
-            .buttonStyle(PrimaryButtonStyle())
             .disabled(!model.canSubmit)
             .accessibilityIdentifier("publish-post")
         }
+        .padding(Theme.space4)
+        .background(Theme.bgSunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Theme.radiusLg))
     }
 }

@@ -15,14 +15,16 @@ extension View {
     func paldoraCard() -> some View { modifier(CardBackground()) }
 }
 
+/// Loading is a skeleton, never a spinner (Figma 4.6). `compact` draws rows instead of cards.
 struct LoadingBlock: View {
     var label = "Loading"
+    var compact = false
 
     var body: some View {
-        ProgressView(label)
-            .font(Typography.callout)
-            .frame(maxWidth: .infinity, minHeight: 120)
-            .accessibilityIdentifier("loading")
+        Group {
+            if compact { PaldoraRowSkeleton(count: 3) } else { PaldoraListSkeleton(count: 2) }
+        }
+        .accessibilityLabel(label)
     }
 }
 
@@ -32,9 +34,8 @@ struct ErrorBlock: View {
 
     var body: some View {
         VStack(spacing: Theme.space3) {
-            InlineMessage(text: message)
-            Button("Try again") { Task { await retry() } }
-                .buttonStyle(QuietButtonStyle())
+            PaldoraBanner(tone: .danger, title: message)
+            PaldoraButton("Try again", kind: .secondary, size: .medium) { Task { await retry() } }
         }
         .frame(maxWidth: .infinity)
         .padding(Theme.space4)
@@ -44,24 +45,18 @@ struct ErrorBlock: View {
 struct EmptyBlock: View {
     let title: String
     let message: String
+    var icon: PaldoraIcon = .spark
 
     var body: some View {
-        VStack(spacing: Theme.space2) {
-            FourPointStar().fill(Theme.gold).frame(width: 18, height: 18).accessibilityHidden(true)
-            Text(title).font(Typography.brandSmall).foregroundStyle(Theme.text)
-            Text(message).font(Typography.callout).foregroundStyle(Theme.textMuted)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(Theme.space8)
-        .accessibilityElement(children: .combine)
+        PaldoraStateView(icon: icon, title: title, message: message)
+            .accessibilityElement(children: .combine)
     }
 }
 
 /// The one neutral state for missing or inaccessible content.
 struct UnavailableBlock: View {
     var body: some View {
-        EmptyBlock(title: "No longer available", message: "This isn't available anymore.")
+        EmptyBlock(title: "No longer available", message: "This isn't available anymore.", icon: .lock)
             .accessibilityIdentifier("unavailable")
     }
 }
@@ -77,7 +72,7 @@ struct LoadMoreFooter: View {
         if let error {
             ErrorBlock(message: error, retry: loadMore)
         } else if hasMore {
-            ProgressView().frame(maxWidth: .infinity, minHeight: Theme.touchTarget)
+            PaldoraSkeleton(height: 40, radius: 18).frame(maxWidth: .infinity)
                 .task { await loadMore() }
                 .accessibilityLabel("Loading more")
         }

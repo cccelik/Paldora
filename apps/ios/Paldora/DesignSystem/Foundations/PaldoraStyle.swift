@@ -197,5 +197,6 @@ struct PaldoraEyebrow: View {
 
     var body: some View {
         Text(text.uppercased()).paldoraText(.eyebrowPlain).foregroundStyle(color)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }

@@ -35,6 +35,8 @@ final class PagedList<Item: Identifiable & Sendable> where Item.ID: Sendable {
 
     var hasMore: Bool { nextCursor != nil }
     var isRefreshing: Bool { phase == .loading }
+    /// True until the first page (or failure) arrives and nothing is shown yet: draw a skeleton.
+    var isLoadingFirst: Bool { items.isEmpty && (phase == .idle || phase == .loading) }
 
     func loadFirst() async {
         if phase == .idle || phase == .unavailable || isFailed { await refresh() }

@@ -21,7 +21,7 @@ extension XCTestCase {
         app.launchArguments += arguments
         app.launch()
         signIn(app, email: email, password: password)
-        XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 30), "Tab shell did not appear")
+        XCTAssertTrue(app.tab("Profile").waitForExistence(timeout: 30), "Tab shell did not appear")
         return app
     }
 }
@@ -39,7 +39,7 @@ extension XCTestCase {
     /// Profile tab, then Settings, then one Settings row.
     func openSettingsRow(_ app: XCUIApplication, _ id: String) {
         let settings = app.buttons["settings-link"]
-        app.tap(app.tabBars.buttons["Profile"], until: settings)
+        app.tap(app.tab("Profile"), until: settings)
         app.scrollToReveal(settings)
         settings.tap()
         let row = app.buttons[id]
@@ -96,4 +96,20 @@ extension XCUIApplication {
             tries += 1
         }
     }
+}
+
+extension XCUIApplication {
+    /// A tab of the floating tab bar (identifier `tab-<raw value>`).
+    func tab(_ title: String) -> XCUIElement {
+        let ids = ["Home": "home", "Boxes": "boxes", "My Room": "myRoom", "Notifications": "notifications", "Profile": "profile"]
+        return buttons["tab-\(ids[title] ?? title.lowercased())"]
+    }
+
+    /// The top-most screen's nav bar button (earlier screens stay in the tree, covered).
+    func navButton(_ id: String) -> XCUIElement {
+        let all = buttons.matching(identifier: id)
+        return all.element(boundBy: max(0, all.count - 1))
+    }
+
+    func goBack() { navButton("nav-back").tap() }
 }

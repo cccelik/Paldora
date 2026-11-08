@@ -18,15 +18,16 @@ struct PostDetailView: View {
         _model = State(initialValue: PostDetailViewModel(env: env, route: route))
     }
 
+    @State private var showActions = false
+    @Environment(PaldoraDialogCenter.self) private var dialogs
+
     var body: some View {
         content
-            .background(Theme.canvas)
-            .navigationTitle("Post")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { menu }
+            .paldoraCanvas()
+            .paldoraNavBar(env.boxes.name(for: route.boxId) ?? "Post", trailing: hasActions ? .more { showActions = true } : .none)
             .task { await model.load() }
             .sheet(isPresented: $showEdit) {
-                TextEntrySheet(title: "Edit post", prompt: "Post", actionTitle: "Save changes",
+                TextEntrySheet(title: "Edit caption", prompt: "Post", actionTitle: "Save changes",
                                limit: PostDetailViewModel.textLimit, initialText: model.post?.text ?? "") { text in
                     let failure = await model.saveEdit(text)
                     if failure == nil { onMutated() }
@@ -37,16 +38,44 @@ struct PostDetailView: View {
                 TextEntrySheet(title: "Report post", prompt: "What's wrong with this post?", actionTitle: "Send report",
                                limit: 2_000, initialText: "") { await model.report(reason: $0) }
             }
-            .confirmationDialog("Delete this post?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete post", role: .destructive) {
-                    Task { if await model.delete() { onMutated(); dismiss() } }
+            .paldoraBottomSheet(isPresented: $showActions, title: model.isOwnEditablePost ? "Your moment" : "Post") { actions }
+    }
+
+    private var hasActions: Bool { model.isOwnEditablePost || model.canReport }
+
+    /// Figma 4.7: edit and delete on your own post, report on someone else's.
+    @ViewBuilder private var actions: some View {
+        PaldoraListGroup {
+            if model.isOwnEditablePost {
+                PaldoraListRow(title: "Edit caption", subtitle: "Shows \u{201C}edited\u{201D} to members", icon: .edit, trailing: .none) {
+                    showActions = false
+                    showEdit = true
                 }
+                .accessibilityIdentifier("post-edit")
+                PaldoraListDivider()
+                PaldoraListRow(title: "Delete moment", icon: .trash, trailing: .none, isDestructive: true) {
+                    showActions = false
+                    dialogs.present(icon: .trash, title: "Delete this moment?",
+                                    message: "It's removed for everyone in the Box.", confirmTitle: "Delete moment") {
+                        Task { if await model.delete() { onMutated(); dismiss() } }
+                    }
+                }
+                .accessibilityIdentifier("post-delete")
             }
+            if model.canReport {
+                if model.isOwnEditablePost { PaldoraListDivider() }
+                PaldoraListRow(title: "Report", icon: .flag, trailing: .none, isDestructive: true) {
+                    showActions = false
+                    showReport = true
+                }
+                .accessibilityIdentifier("post-report")
+            }
+        }
     }
 
     @ViewBuilder private var content: some View {
         switch model.phase {
-        case .loading: LoadingBlock(label: "Loading post")
+        case .loading: ScrollView { LoadingBlock(label: "Loading post").padding(Theme.gutter) }
         case .failed(let message): ErrorBlock(message: message) { await model.load() }
         case .unavailable: UnavailableBlock()
         case .loaded(let post):
@@ -57,7 +86,7 @@ struct PostDetailView: View {
                     CommentsSection(model: model)
                 }
                 .frame(maxWidth: Theme.readingWidth, alignment: .leading)
-                .padding(Theme.space4)
+                .padding(.horizontal, Theme.gutter)
                 .frame(maxWidth: .infinity)
             }
             .refreshable { await model.load() }
@@ -69,14 +98,15 @@ struct PostDetailView: View {
     /// Author header; opens their Room when their username is known.
     @ViewBuilder private func authorLink(_ post: BoxPost) -> some View {
         let name = model.authorName(post.authorUid)
-        let header = AdaptiveStack {
-            AvatarView(mediaId: model.authorAvatar(post.authorUid), name: name)
+        let header = HStack(spacing: Theme.space3) {
+            PaldoraAvatar(name: name, size: .medium, mediaId: model.authorAvatar(post.authorUid))
             VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(Typography.headline).foregroundStyle(Theme.text)
+                Text(name).paldoraText(.labelM).foregroundStyle(Theme.textPrimary)
                 Text("\(env.boxes.name(for: post.boxId) ?? "Box") · \(Formatting.relativeTime(post.createdAt))"
                      + (post.updatedAt > post.createdAt ? " · edited" : ""))
-                    .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                    .paldoraText(.bodyS).foregroundStyle(Theme.textSecondary)
             }
+            Spacer(minLength: 0)
         }
         if let username = model.authorUsername(post.authorUid) {
             NavigationLink(value: RoomRoute(username: username)) { header }
@@ -88,28 +118,15 @@ struct PostDetailView: View {
     private func postCard(_ post: BoxPost) -> some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
             authorLink(post)
-            Text(post.text).font(Typography.body).foregroundStyle(Theme.text)
+            Text(post.text).paldoraText(.titleS).foregroundStyle(Theme.textPrimary)
                 .accessibilityIdentifier("post-text")
             PhotoStrip(assetIds: post.mediaAssetIds)
-            if let error = model.actionError { InlineMessage(text: error) }
-            if model.reportSent { InlineMessage(text: "Thanks. We'll take a look.", kind: .success) }
+            if let error = model.actionError { PaldoraBanner(tone: .danger, title: error) }
+            if model.reportSent { PaldoraBanner(tone: .success, title: "Thanks. We'll take a look.") }
         }
-        .paldoraCard()
-    }
-
-    @ToolbarContentBuilder private var menu: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            if model.isOwnEditablePost || model.canReport {
-                Menu {
-                    if model.isOwnEditablePost {
-                        Button("Edit", systemImage: "pencil") { showEdit = true }
-                        Button("Delete", systemImage: "trash", role: .destructive) { confirmDelete = true }
-                    }
-                    if model.canReport { Button("Report", systemImage: "flag") { showReport = true } }
-                } label: { Image(systemName: "ellipsis.circle").frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget) }
-                .accessibilityLabel("Post actions")
-                .accessibilityIdentifier("post-actions")
-            }
-        }
+        .padding(Theme.space4)
+        .background(Theme.bgSurface, in: RoundedRectangle(cornerRadius: Theme.radiusXl))
+        .paldoraHairline(RoundedRectangle(cornerRadius: Theme.radiusXl))
+        .paldoraElevation(.soft)
     }
 }

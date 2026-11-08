@@ -28,7 +28,7 @@ struct RemoteImage: View {
         Group {
             switch phase {
             case .loading:
-                Theme.highlight.overlay(ProgressView())
+                Theme.bgSunken.overlay(PaldoraSkeleton(height: 12, radius: 6).padding(Theme.space5))
             case .image(let image):
                 Image(uiImage: image).resizable()
                     .aspectRatio(contentMode: fill ? .fill : .fit)
@@ -74,19 +74,4 @@ struct RemoteImage: View {
         loader?.retry(assetId, variant)
         Task { await load() }
     }
-}
-
-/// Deprecated: an avatar with an initials fallback. Now a wrapper over `PaldoraAvatar`,
-/// which keeps the authenticated thumbnail loading.
-@available(*, deprecated, message: "Use PaldoraAvatar(name:size:mediaId:).")
-struct AvatarView: View {
-    let mediaId: String?
-    let name: String
-    var size: CGFloat = 40
-
-    var body: some View {
-        PaldoraAvatar(name: name, size: size, mediaId: mediaId)
-    }
-
-    static func initials(_ name: String) -> String { PaldoraAvatar.initials(name) }
 }

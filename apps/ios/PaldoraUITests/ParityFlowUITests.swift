@@ -33,7 +33,7 @@ final class ParityFlowUITests: XCTestCase {
         let finish = app.buttons["onboarding-finish"]
         XCTAssertTrue(finish.waitForExistence(timeout: 30), "Avatar step missing")
         finish.tap()
-        XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 30), "Did not reach the app after onboarding")
+        XCTAssertTrue(app.tab("Profile").waitForExistence(timeout: 30), "Did not reach the app after onboarding")
     }
 
     func testBoxRenameInviteRevokeAndOwnerCannotLeave() throws {
@@ -45,7 +45,7 @@ final class ParityFlowUITests: XCTestCase {
         let renamed = "Renamed \(stamp)"
 
         // A Box I own.
-        app.tabBars.buttons["Boxes"].tap()
+        app.tab("Boxes").tap()
         let create = app.buttons["create-box"]
         XCTAssertTrue(create.waitForExistence(timeout: 20))
         create.tap()
@@ -106,6 +106,6 @@ final class ParityFlowUITests: XCTestCase {
         app.buttons["send-reset"].tap()
         let message = app.element("reset-message")
         XCTAssertTrue(message.waitForExistence(timeout: 30), "No confirmation shown")
-        XCTAssertTrue(message.label.contains("If that email has a Paldora account"), "Reset copy must not reveal whether the account exists")
+        XCTAssertTrue(message.label.contains("has an account"), "Reset copy must not reveal whether the account exists")
     }
 }

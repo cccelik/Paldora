@@ -15,29 +15,23 @@ struct ProfileEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space4) {
-            Text("Edit profile").font(Typography.title).foregroundStyle(Theme.text)
-            FieldContainer(title: "Display name") {
-                TextField("Display name", text: $displayName, prompt: Text("Display name").foregroundStyle(Theme.textMuted))
-                    .textContentType(.name)
-                    .accessibilityIdentifier("display-name-field")
-            }
-            FieldContainer(title: "Bio") {
-                TextField("A line about you", text: $bio, prompt: Text("A line about you").foregroundStyle(Theme.textMuted), axis: .vertical)
+            Text("Edit profile").paldoraText(.titleM).foregroundStyle(Theme.textPrimary)
+            PaldoraTextField("Display name", text: $displayName, placeholder: "Display name", identifier: "display-name-field")
+                .textContentType(.name)
+            PaldoraFieldContainer(title: "Bio") {
+                TextField("A line about you", text: $bio, prompt: Text("A line about you").foregroundStyle(Theme.textTertiary), axis: .vertical)
                     .lineLimit(3...6)
-                    .padding(.vertical, Theme.space2)
+                    .padding(.vertical, Theme.space3)
                     .accessibilityIdentifier("bio-field")
             }
             Text("\(bio.count) of \(Self.bioLimit)")
-                .font(Typography.caption)
-                .foregroundStyle(bio.count > Self.bioLimit ? Theme.danger : Theme.textMuted)
-            if let message { InlineMessage(text: message).accessibilityIdentifier("profile-error") }
-            if saved { InlineMessage(text: "Saved", kind: .success).accessibilityIdentifier("profile-saved") }
-            Button(action: save) {
-                if isSaving { ProgressView() } else { Text("Save profile") }
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!canSave)
-            .accessibilityIdentifier("save-profile-button")
+                .paldoraText(.caption)
+                .foregroundStyle(bio.count > Self.bioLimit ? Theme.statusDanger : Theme.textSecondary)
+            if let message { PaldoraBanner(tone: .danger, title: message).accessibilityIdentifier("profile-error") }
+            if saved { PaldoraBanner(tone: .success, title: "Saved").accessibilityIdentifier("profile-saved") }
+            PaldoraButton("Save profile", size: .medium, isLoading: isSaving, fullWidth: true, action: save)
+                .disabled(!canSave)
+                .accessibilityIdentifier("save-profile-button")
         }
         .onAppear(perform: syncFromProfile)
         .onChange(of: profile.profile.updatedAt) { syncFromProfile() }

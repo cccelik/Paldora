@@ -20,6 +20,8 @@ struct BoxManageView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.space6) {
+                PaldoraScreenTitle(eyebrow: model.box.name, title: "Box settings",
+                                   subtitle: "You're \(model.role == .owner ? "the owner" : (model.role == .admin ? "an admin" : "a member"))")
                 ManageMessages(model: model)
                 if BoxRules.canManageMembers(model.role) { InviteSection(model: model) }
                 if BoxRules.canRenameOrArchive(model.role) { RenameSection(model: model) }
@@ -27,13 +29,13 @@ struct BoxManageView: View {
                 if BoxRules.canDelete(model.role) { DeleteSection(model: model) }
             }
             .frame(maxWidth: Theme.readingWidth, alignment: .leading)
-            .padding(Theme.space4)
+            .padding(.horizontal, Theme.gutter)
+            .padding(.bottom, Theme.space8)
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Theme.canvas)
-        .navigationTitle("Manage Box")
-        .navigationBarTitleDisplayMode(.inline)
+        .paldoraCanvas()
+        .paldoraNavBar("Manage Box")
         .task { await model.load() }
         .onChange(of: model.isGone) { if model.isGone { dismiss() } }
     }

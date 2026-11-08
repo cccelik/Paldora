@@ -8,9 +8,9 @@ struct RoomWidgetsEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space3) {
-            Text("Widgets").font(Typography.title).foregroundStyle(Theme.text).accessibilityAddTraits(.isHeader)
+            Text("Widgets").paldoraText(.titleM).foregroundStyle(Theme.textPrimary).accessibilityAddTraits(.isHeader)
             Text("Choose what shows and in what order. On a wide screen, sidebar widgets sit beside the main column.")
-                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+                .paldoraText(.caption).foregroundStyle(Theme.textSecondary)
             ForEach(Array(model.widgets.enumerated()), id: \.element.type) { index, widget in
                 row(widget, index: index)
             }
@@ -20,27 +20,25 @@ struct RoomWidgetsEditor: View {
     private func row(_ widget: RoomWidget, index: Int) -> some View {
         let name = RoomRegistry.label(RoomRegistry.widgetLabels, widget.type)
         return VStack(alignment: .leading, spacing: Theme.space2) {
-            Toggle(name, isOn: Binding(get: { widget.enabled }, set: { model.setEnabled(widget.type, $0) }))
-                .frame(minHeight: Theme.touchTarget)
+            PaldoraToggle(name, isOn: Binding(get: { widget.enabled }, set: { model.setEnabled(widget.type, $0) }))
                 .accessibilityIdentifier("widget-toggle-\(widget.type)")
-            FlowLayout {
-                Picker("Placement", selection: Binding(get: { widget.placement }, set: { model.setPlacement(widget.type, $0) })) {
-                    Text("Main").tag("main")
-                    Text("Sidebar").tag("sidebar")
-                }
-                .pickerStyle(.segmented).accessibilityLabel("\(name) placement")
-                Button { model.move(widget.type, by: -1) } label: { Image(systemName: "arrow.up") }
-                    .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                    .disabled(index == 0).accessibilityLabel("Move \(name) up")
-                    .accessibilityIdentifier("widget-up-\(widget.type)")
-                Button { model.move(widget.type, by: 1) } label: { Image(systemName: "arrow.down") }
-                    .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                    .disabled(index == model.widgets.count - 1).accessibilityLabel("Move \(name) down")
+            PaldoraSegmentedControl([.init("main", "Main"), .init("sidebar", "Sidebar")],
+                                    selection: Binding(get: { widget.placement }, set: { model.setPlacement(widget.type, $0) }))
+                .accessibilityLabel("\(name) placement")
+            HStack(spacing: Theme.space2) {
+                PaldoraIconButton(icon: .down, label: "Move \(name) down", style: .surface) { model.move(widget.type, by: 1) }
+                    .disabled(index == model.widgets.count - 1)
                     .accessibilityIdentifier("widget-down-\(widget.type)")
+                PaldoraIconButton(icon: .down, label: "Move \(name) up", style: .surface) { model.move(widget.type, by: -1) }
+                    .rotationEffect(.degrees(180))
+                    .disabled(index == 0)
+                    .accessibilityIdentifier("widget-up-\(widget.type)")
+                Text("Position \(index + 1) of \(model.widgets.count)").paldoraText(.caption).foregroundStyle(Theme.textSecondary)
             }
-            Text("Position \(index + 1) of \(model.widgets.count)").font(Typography.caption).foregroundStyle(Theme.textMuted)
         }
-        .paldoraCard()
+        .padding(Theme.space4)
+        .background(Theme.bgSurface, in: RoundedRectangle(cornerRadius: Theme.radiusLg))
+        .paldoraHairline(RoundedRectangle(cornerRadius: Theme.radiusLg))
         .accessibilityElement(children: .contain)
     }
 }

@@ -3,68 +3,47 @@ import SwiftUI
 struct CommentReactionSheet: View {
     let model: CommentReactionsViewModel
     @State private var custom = ""
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: Theme.space4) {
-                switch model.phase {
-                case .idle, .loading: LoadingBlock(label: "Loading reactions")
-                case .failed(let message): ErrorBlock(message: message) { await model.load() }
-                case .unavailable: UnavailableBlock()
-                case .loaded: content
-                }
-                Spacer()
+        PaldoraBottomSheetContent(title: "React to comment") {
+            switch model.phase {
+            case .idle, .loading: PaldoraRowSkeleton(count: 2)
+            case .failed(let message): ErrorBlock(message: message) { await model.load() }
+            case .unavailable: UnavailableBlock()
+            case .loaded: content
             }
-            .padding(Theme.space6)
-            .background(Theme.canvas)
-            .navigationTitle("React to comment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
+        .presentationCornerRadius(Theme.radiusSheet)
+        .presentationDragIndicator(.hidden)
         .task { await model.load() }
     }
 
     @ViewBuilder private var content: some View {
         if model.counts.isEmpty {
-            Text("No reactions yet").font(Typography.callout).foregroundStyle(Theme.textMuted)
+            Text("No reactions yet").paldoraText(.bodyM).foregroundStyle(Theme.textSecondary)
         } else {
             FlowLayout {
                 ForEach(model.counts, id: \.kind) { entry in
-                    Text("\(ReactionSection.display(entry.kind)) \(entry.count)").font(Typography.label)
-                        .padding(.horizontal, Theme.space3).frame(minHeight: 32)
-                        .foregroundStyle(Theme.text)
-                        .background(Theme.highlight, in: Capsule())
+                    PaldoraChip(title: "\(ReactionSection.display(entry.kind)) \(entry.count)", style: .brass)
                         .accessibilityLabel("\(entry.count) \(ReactionSection.display(entry.kind)) reactions")
                 }
             }
         }
         HStack(spacing: Theme.space2) {
             ForEach(model.presets, id: \.self) { kind in
-                let selected = model.viewerKind == kind
-                Button { Task { await model.toggle(kind) } } label: {
-                    Text(kind).font(.title2).frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                        .background(selected ? Theme.highlight : Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
-                        .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(selected ? Theme.gold : Theme.hairline, lineWidth: selected ? 2 : 1))
-                }
-                .accessibilityLabel("React with \(kind)")
-                .accessibilityAddTraits(selected ? .isSelected : [])
+                PaldoraEmojiButton(emoji: kind, isSelected: model.viewerKind == kind) { Task { await model.toggle(kind) } }
             }
         }
-        AdaptiveStack {
-            TextField("Any emoji", text: $custom, prompt: Text("Any emoji").foregroundStyle(Theme.textMuted))
-                .padding(.horizontal, Theme.space3).frame(minHeight: Theme.touchTarget)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius))
+        HStack(spacing: Theme.space2) {
+            PaldoraTextField("Any emoji", text: $custom, placeholder: "Any emoji")
                 .onChange(of: custom) { custom = custom.last.map(String.init) ?? "" }
-                .accessibilityLabel("Custom emoji reaction")
-            Button("React") { let kind = custom; custom = ""; Task { await model.react(kind) } }
-                .buttonStyle(QuietButtonStyle()).disabled(!EmojiValidation.isSingleEmoji(custom))
+            PaldoraButton("React", kind: .secondary, size: .small) { let kind = custom; custom = ""; Task { await model.react(kind) } }
+                .disabled(!EmojiValidation.isSingleEmoji(custom))
         }
         if model.viewerKind != nil {
-            Button("Remove my reaction") { Task { await model.react(nil) } }
-                .buttonStyle(QuietButtonStyle(destructive: true))
+            PaldoraButton("Remove my reaction", kind: .ghost, size: .small, destructive: true) { Task { await model.react(nil) } }
         }
-        if let error = model.error { InlineMessage(text: error) }
+        if let error = model.error { PaldoraFieldMessage(text: error) }
     }
 }

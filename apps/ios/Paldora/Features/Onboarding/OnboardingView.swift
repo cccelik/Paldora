@@ -20,7 +20,7 @@ struct OnboardingView: View {
             OnboardingSteps(flow: flow, model: model, env: env)
                 .environment(\.imageLoader, env.images)
         } else {
-            StatusScreen(title: "Couldn't open your box", message: UserMessages.generic,
+            StatusScreen(icon: .alert, title: "Couldn't open your box", message: UserMessages.generic,
                          actionTitle: nil, action: nil, model: model)
         }
     }
@@ -33,71 +33,101 @@ private struct OnboardingSteps: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.space6) {
+            VStack(alignment: .leading, spacing: Theme.space5) {
                 BrandMark()
-                Text("Step \(flow.step.rawValue + 1) of 3").font(Typography.caption).foregroundStyle(Theme.textMuted)
-                    .accessibilityIdentifier("onboarding-step")
+                progress
                 switch flow.step {
                 case .username: username
                 case .profile: profileStep
                 case .avatar: avatar
                 }
-                if let error = flow.error { InlineMessage(text: error).accessibilityIdentifier("onboarding-error") }
-                Button("Sign out") { model.signOut() }.buttonStyle(QuietButtonStyle())
+                if let error = flow.error {
+                    PaldoraBanner(tone: .danger, title: error).accessibilityIdentifier("onboarding-error")
+                }
+                PaldoraButton("Sign out", kind: .ghost, size: .medium, fullWidth: true) { model.signOut() }
             }
-            .frame(maxWidth: 440, alignment: .leading)
-            .padding(Theme.space6)
+            .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+            .padding(Theme.space5)
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Theme.canvas)
+        .paldoraCanvas()
+    }
+
+    /// "Step n of 3" with three segments (Figma 1.8 to 1.10).
+    private var progress: some View {
+        let current = flow.step.rawValue + 1
+        return VStack(alignment: .leading, spacing: Theme.space2) {
+            HStack(spacing: Theme.space1) {
+                ForEach(1...3, id: \.self) { index in
+                    Capsule().fill(index <= current ? Theme.brass : Theme.bgSunken).frame(height: 4)
+                }
+            }
+            .accessibilityHidden(true)
+            Text("Step \(current) of 3").paldoraText(.caption).foregroundStyle(Theme.textSecondary)
+                .accessibilityIdentifier("onboarding-step")
+        }
     }
 
     private var username: some View {
-        VStack(alignment: .leading, spacing: Theme.space3) {
-            Text("Choose a username").font(Typography.title).foregroundStyle(Theme.text)
-            Text("People find you and invite you by username. Letters, numbers and underscores, 3 to 30 characters.")
-                .font(Typography.callout).foregroundStyle(Theme.textMuted)
-            FieldContainer(title: "Username") {
-                TextField("username", text: $flow.username, prompt: Text("username").foregroundStyle(Theme.textMuted)).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .accessibilityIdentifier("onboarding-username")
-            }
-            if let hint = flow.usernameHint { InlineMessage(text: hint) }
+        VStack(alignment: .leading, spacing: Theme.space4) {
+            PaldoraScreenTitle(title: "Choose the name", accent: "on your door.",
+                               subtitle: "Friends find you by it. Only people you accept can ever see what you share.")
+            PaldoraTextField("Username", text: $flow.username, placeholder: "username",
+                             errorMessage: flow.usernameHint, identifier: "onboarding-username")
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
             if let reserved = flow.reservedUsername {
-                Text("Saved as @\(reserved)").font(Typography.caption).foregroundStyle(Theme.textMuted)
+                PaldoraFieldMessage(text: "Saved as @\(reserved)", isError: false)
             }
             primary("Continue", enabled: flow.canSaveUsername, id: "onboarding-username-next") { await flow.saveUsername() }
         }
     }
 
     private var profileStep: some View {
-        VStack(alignment: .leading, spacing: Theme.space3) {
-            Text("About you").font(Typography.title).foregroundStyle(Theme.text)
-            if let reserved = flow.reservedUsername ?? flow.profile.profile.username {
-                Text("Your username is @\(reserved).").font(Typography.callout).foregroundStyle(Theme.textMuted)
-            }
-            FieldContainer(title: "Display name") {
-                TextField("Display name", text: $flow.displayName, prompt: Text("Display name").foregroundStyle(Theme.textMuted)).accessibilityIdentifier("onboarding-display-name")
-            }
-            FieldContainer(title: "Bio (optional)") {
-                TextField("A line about you", text: $flow.bio, prompt: Text("A line about you").foregroundStyle(Theme.textMuted), axis: .vertical).lineLimit(2...5).padding(.vertical, Theme.space2)
+        VStack(alignment: .leading, spacing: Theme.space4) {
+            PaldoraScreenTitle(title: "What should", accent: "we call you?")
+            PaldoraTextField("Display name", text: $flow.displayName, placeholder: "Display name", identifier: "onboarding-display-name")
+            PaldoraFieldContainer(title: "Short bio · optional") {
+                TextField("A line about you", text: $flow.bio, prompt: Text("A line about you").foregroundStyle(Theme.textTertiary), axis: .vertical)
+                    .lineLimit(2...5).padding(.vertical, Theme.space2)
                     .accessibilityIdentifier("onboarding-bio")
             }
+            Text("\(flow.bio.count) / 500").paldoraText(.caption).foregroundStyle(Theme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            preview
             primary("Continue", enabled: flow.canSaveProfile, id: "onboarding-profile-next") { await flow.saveProfile() }
         }
     }
 
+    /// How your name will look to friends (Figma 1.10 preview card).
+    private var preview: some View {
+        let name = flow.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let handle = flow.reservedUsername ?? flow.profile.profile.username
+        return HStack(spacing: Theme.space3) {
+            PaldoraAvatar(name: name.isEmpty ? (handle ?? "You") : name, size: .large)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name.isEmpty ? "Your name" : name).paldoraText(.titleS).foregroundStyle(Theme.textPrimary)
+                if let handle { Text("@\(handle)").paldoraText(.bodyS).foregroundStyle(Theme.textSecondary) }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(Theme.space4)
+        .background(Theme.bgSurface, in: RoundedRectangle(cornerRadius: Theme.radiusLg))
+        .paldoraHairline(RoundedRectangle(cornerRadius: Theme.radiusLg))
+        .accessibilityElement(children: .combine)
+    }
+
     private var avatar: some View {
-        VStack(alignment: .leading, spacing: Theme.space3) {
-            Text("Add a photo").font(Typography.title).foregroundStyle(Theme.text)
-            Text("Optional. You can add or change it later in your profile.").font(Typography.callout).foregroundStyle(Theme.textMuted)
+        VStack(alignment: .leading, spacing: Theme.space4) {
+            PaldoraScreenTitle(title: "Add a face so", accent: "friends know it's you.",
+                               subtitle: "Optional. Only people who can see your Room see your photo. You can change it later in your profile.")
             AvatarSection(model: model, env: env)
             primary("Finish", enabled: !flow.isWorking, id: "onboarding-finish") { await flow.finish() }
         }
     }
 
     private func primary(_ title: String, enabled: Bool, id: String, action: @escaping () async -> Void) -> some View {
-        Button { Task { await action() } } label: { if flow.isWorking { ProgressView() } else { Text(title) } }
-            .buttonStyle(PrimaryButtonStyle()).disabled(!enabled).accessibilityIdentifier(id)
+        PaldoraButton(title, isLoading: flow.isWorking, fullWidth: true) { Task { await action() } }
+            .disabled(!enabled).accessibilityIdentifier(id)
     }
 }

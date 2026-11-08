@@ -18,24 +18,18 @@ struct BoxesView: View {
 
     var body: some View {
         NavigationStack {
-            content
-                .background(Theme.canvas)
-                .navigationTitle("Boxes")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { showCreate = true } label: {
-                            Image(systemName: "plus").frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                        }
-                        .accessibilityLabel("Create a Box")
-                        .accessibilityIdentifier("create-box")
-                    }
-                }
-                .navigationDestination(for: BoxRoute.self) { BoxDetailView(env: env, route: $0) }
-                .navigationDestination(for: BoxManageRoute.self) { BoxManageView(env: env, box: $0.box) }
-                .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
-                .roomRoutes(env: env)
-                .sheet(isPresented: $showCreate) { CreateBoxSheet(model: model) }
+            VStack(spacing: 0) {
+                header
+                content
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .paldoraCanvas()
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: BoxRoute.self) { BoxDetailView(env: env, route: $0) }
+            .navigationDestination(for: BoxManageRoute.self) { BoxManageView(env: env, box: $0.box) }
+            .navigationDestination(for: PostRoute.self) { PostDetailView(env: env, route: $0) }
+            .roomRoutes(env: env)
+            .sheet(isPresented: $showCreate) { CreateBoxSheet(model: model) }
         }
         .task { await model.load(); seenVersion = env.contentVersion }
         .onAppear {
@@ -46,9 +40,24 @@ struct BoxesView: View {
         }
     }
 
+    private var header: some View {
+        HStack(alignment: .top) {
+            let count = model.boxes.items.count
+            PaldoraScreenTitle(eyebrow: count > 0 ? "\(count) private \(count == 1 ? "circle" : "circles")" : "Private circles",
+                               title: "Your Boxes",
+                               subtitle: "Each Box is a small, closed room. Only its members ever see what's inside.")
+            PaldoraIconButton(icon: .plus, label: "Create a Box", style: .primary) { showCreate = true }
+                .accessibilityIdentifier("create-box")
+        }
+        .frame(maxWidth: Theme.readingWidth)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.bottom, Theme.space3)
+        .frame(maxWidth: .infinity)
+    }
+
     @ViewBuilder private var content: some View {
         switch model.boxes.phase {
-        case .idle, .loading: LoadingBlock(label: "Loading your Boxes")
+        case .idle, .loading: ScrollView { LoadingBlock(label: "Loading your Boxes").padding(Theme.gutter) }
         case .failed(let message): ErrorBlock(message: message) { await model.refresh() }
         case .unavailable: UnavailableBlock()
         case .loaded: list
@@ -56,71 +65,71 @@ struct BoxesView: View {
     }
 
     private var list: some View {
-        List {
-            if let error = model.actionError { InlineMessage(text: error).listRowBackground(Theme.canvas) }
-            if !model.invitations.items.isEmpty { InvitationsSection(model: model) }
-            Section {
+        ScrollView {
+            LazyVStack(spacing: Theme.space4) {
+                if let error = model.actionError { PaldoraBanner(tone: .danger, title: error) }
+                if !model.invitations.items.isEmpty { InvitationsSection(model: model) }
                 if model.boxes.items.isEmpty {
-                    EmptyBlock(title: "No Boxes yet",
-                               message: "Create a Box for your people, or accept an invitation.")
-                        .listRowBackground(Theme.canvas)
+                    PaldoraStateView(icon: .box, title: "A Box is a small, private circle.",
+                                     message: "Family, flatmates, the Sunday table. Only members can see what's inside, never the public.") {
+                        PaldoraButton("Make your first Box", size: .medium, fullWidth: true) { showCreate = true }
+                            .padding(.top, Theme.space2)
+                    }
                 }
                 ForEach(model.boxes.items) { box in
-                    NavigationLink(value: BoxRoute(boxId: box.id)) { boxRow(box) }
-                        .listRowBackground(Theme.surface)
+                    NavigationLink(value: BoxRoute(boxId: box.id)) { boxCard(box) }
+                        .buttonStyle(.plain)
                         .accessibilityIdentifier("box-row")
                 }
                 LoadMoreFooter(isLoading: model.boxes.isLoadingMore, error: model.boxes.inlineError,
                                hasMore: model.boxes.hasMore, loadMore: { await model.boxes.loadMore() })
-                    .listRowBackground(Theme.canvas)
-            } header: {
-                SectionHeader("Your Boxes")
             }
+            .frame(maxWidth: Theme.readingWidth)
+            .padding(.horizontal, Theme.gutter)
+            .frame(maxWidth: .infinity)
         }
-        .scrollContentBackground(.hidden)
         .refreshable { await model.refresh() }
     }
 
-    private func boxRow(_ box: Box) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(box.name).font(Typography.headline).foregroundStyle(Theme.text)
-            Text(Formatting.countLabel(box.memberCount, singular: "member", plural: "members")
-                 + (box.status == .archived ? " · archived" : ""))
-                .font(Typography.caption).foregroundStyle(Theme.textMuted)
+    private func boxCard(_ box: Box) -> some View {
+        PaldoraBoxCard(content: .init(
+            name: box.name,
+            subtitle: Formatting.countLabel(box.memberCount, singular: "member", plural: "members")
+                + (box.status == .archived ? " · archived" : ""))) {
+            Theme.brassSoft.overlay { PaldoraIconView(.box, size: 32).foregroundStyle(Theme.brassText) }
         }
-        .frame(minHeight: Theme.touchTarget, alignment: .leading)
-        .accessibilityElement(children: .combine)
     }
 }
 
+/// Figma 3.1 / 3.6: invitations at the top of the list; declining is private.
 struct InvitationsSection: View {
     let model: BoxesViewModel
 
     var body: some View {
-        Section {
+        VStack(alignment: .leading, spacing: Theme.space2) {
             ForEach(model.invitations.items) { invitation in
-                VStack(alignment: .leading, spacing: Theme.space2) {
-                    Text(invitation.boxName).font(Typography.headline).foregroundStyle(Theme.text)
-                    Text("From \(invitation.inviterDisplayName)").font(Typography.caption)
-                        .foregroundStyle(Theme.textMuted)
-                    FlowLayout {
-                        Button("Accept") { Task { await model.accept(invitation) } }
-                            .buttonStyle(QuietButtonStyle())
+                VStack(alignment: .leading, spacing: Theme.space3) {
+                    PaldoraPersonRow(name: invitation.boxName, subtitle: "\(invitation.inviterDisplayName) invited you")
+                    HStack(spacing: Theme.space2) {
+                        PaldoraButton("Join", size: .small) { Task { await model.accept(invitation) } }
                             .accessibilityIdentifier("accept-invitation")
-                        Button("Decline") { Task { await model.decline(invitation) } }
-                            .buttonStyle(QuietButtonStyle(destructive: true))
+                        PaldoraButton("Decline", kind: .ghost, size: .small) { Task { await model.decline(invitation) } }
+                        Spacer(minLength: 0)
                     }
                     .disabled(model.busyInvitation == invitation.id)
+                    Text("You'll only see moments shared after you join. Declining is private.")
+                        .paldoraText(.caption).foregroundStyle(Theme.textSecondary)
                 }
+                .padding(Theme.space3)
+                .background(Theme.brassSoft, in: RoundedRectangle(cornerRadius: Theme.radiusLg))
                 .accessibilityElement(children: .contain)
-                .listRowBackground(Theme.surface)
             }
-        } header: {
-            SectionHeader("Invitations")
         }
     }
 }
 
+/// Figma 3.3 Create a Box (sheet). The API takes a name only today, so there is no
+/// cover, description, colour or invite picker (those need new callables).
 struct CreateBoxSheet: View {
     let model: BoxesViewModel
     @Environment(\.dismiss) private var dismiss
@@ -129,27 +138,28 @@ struct CreateBoxSheet: View {
     @State private var isWorking = false
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: Theme.space4) {
-                FieldContainer(title: "Box name") {
-                    TextField("Name your Box", text: $name, prompt: Text("Name your Box").foregroundStyle(Theme.textMuted))
-                        .accessibilityIdentifier("box-name-field")
+        VStack(spacing: 0) {
+            PaldoraNavBar(title: "New Box", leading: .close { dismiss() })
+                .padding(.horizontal, Theme.gutter).padding(.vertical, Theme.space2)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.space4) {
+                    PaldoraScreenTitle(title: "Make a little room", accent: "for your people.")
+                    PaldoraTextField("Box name", text: $name, placeholder: "Name your Box",
+                                     errorMessage: name.count > BoxesViewModel.nameLimit ? "Use \(BoxesViewModel.nameLimit) characters or fewer." : error,
+                                     identifier: "box-name-field")
+                    Text("\(name.count) of \(BoxesViewModel.nameLimit)").paldoraText(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                    PaldoraButton("Create Box", isLoading: isWorking, fullWidth: true, action: create)
+                        .disabled(!canCreate)
+                        .accessibilityIdentifier("create-box-submit")
                 }
-                Text("\(name.count) of \(BoxesViewModel.nameLimit)").font(Typography.caption)
-                    .foregroundStyle(name.count > BoxesViewModel.nameLimit ? Theme.danger : Theme.textMuted)
-                if let error { InlineMessage(text: error) }
-                Button(action: create) { if isWorking { ProgressView() } else { Text("Create Box") } }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(!canCreate)
-                    .accessibilityIdentifier("create-box-submit")
-                Spacer()
+                .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+                .padding(Theme.space5)
+                .frame(maxWidth: .infinity)
             }
-            .padding(Theme.space6)
-            .background(Theme.canvas)
-            .navigationTitle("New Box")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .scrollDismissesKeyboard(.interactively)
         }
+        .paldoraCanvas()
     }
 
     private var canCreate: Bool {

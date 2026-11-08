@@ -82,7 +82,7 @@ struct RoomWidgetView: View {
                 ForEach(items, id: \.uid) { person in
                     NavigationLink(value: RoomRoute(username: person.username)) {
                         VStack(spacing: 4) {
-                            AvatarView(mediaId: person.avatarMediaId, name: person.displayName, size: 48)
+                            PaldoraAvatar(name: person.displayName, size: 48, mediaId: person.avatarMediaId)
                             Text(person.displayName).font(look.font(.footnote)).foregroundStyle(look.text).lineLimit(1)
                         }
                         .frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)

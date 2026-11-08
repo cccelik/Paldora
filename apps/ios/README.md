@@ -32,7 +32,7 @@ pnpm and Turborepo graph (no `package.json`, not listed in
     `TransportError`; never logs bodies, tokens or emails).
   - `Model/`: `AppModel` (`@Observable`; states loading, signedOut,
     signedIn, accountNotReady, profileUnavailable, notConfigured).
-  - `Design/`: `Theme` (Hearth & Brass colors via `PaldoraColors`), `PaldoraFont` (Fraunces/Geist/Geist Mono from `Resources/Fonts`, `UIAppFonts`, system fallback, Dynamic Type) and `Typography` over `PaldoraTokens`, plus the older shared building blocks in `Components.swift` (`PrimaryButtonStyle`, `QuietButtonStyle`, `FieldContainer`, `InlineMessage`, and `AvatarView` in `Media/RemoteImage.swift` are deprecated wrappers over the design system below; `SectionHeader`, `AdaptiveStack`, `FlowLayout`, `BrandMark` stay).
+  - `Design/`: `Theme` (Hearth & Brass colors via `PaldoraColors`), `PaldoraFont` (Fraunces/Geist/Geist Mono from `Resources/Fonts`, `UIAppFonts`, system fallback, Dynamic Type) and `Typography` over `PaldoraTokens`, plus the shared building blocks in `Components.swift` (`SectionHeader`, `AdaptiveStack`, `FlowLayout`, `BrandMark`). The deprecated wrappers (`PrimaryButtonStyle`, `QuietButtonStyle`, `FieldContainer`, `InlineMessage`, `AvatarView`) were removed in UI overhaul step 2.
   - `DesignSystem/`: the Hearth & Brass component library, built from Figma page "02 · Components" (see "Design system" below).
   - `Views/`: sign-in, status screens, tab shell, and the Profile tab (edit
     display name and bio, appearance, reaction presets, sign out).
@@ -276,11 +276,11 @@ component animation (`paldoraAnimation`). Controls draw at the Figma size but ke
 | `Foundations/` | `PaldoraIcon` / `PaldoraIconView` (51 icons: SF Symbols, plus `spark` and `flame` drawn as shapes; stroke 1.6, active 1.8), `PaldoraElevation` (`soft`, `lift`), `PaldoraMotion`, `PaldoraHitTarget`, `PaldoraTone`, extra text styles, `PaldoraEyebrow` |
 | `Buttons/`     | `PaldoraButton` (+ `PaldoraButtonStyle`), `PaldoraIconButton`                                                                                                                                                                                            |
 | `Inputs/`      | `PaldoraTextField`, `PaldoraFieldContainer`, `PaldoraFieldMessage`                                                                                                                                                                                       |
-| `Controls/`    | `PaldoraChip`, `PaldoraSelectableChip`, `PaldoraToggle` (+ `PaldoraToggleStyle`), `PaldoraRadio`, `PaldoraCheckbox`, `PaldoraSegmentedControl`, `PaldoraListRow`, `PaldoraListGroup`                                                                     |
+| `Controls/`    | `PaldoraChip`, `PaldoraSelectableChip`, `PaldoraEmojiButton`, `PaldoraChoiceRow`, `PaldoraToggle` (+ `PaldoraToggleStyle`), `PaldoraRadio`, `PaldoraCheckbox`, `PaldoraSegmentedControl`, `PaldoraListRow`, `PaldoraListGroup`                           |
 | `Feedback/`    | `PaldoraBanner`, `PaldoraToast`, `PaldoraSkeleton`, `PaldoraPostSkeleton`                                                                                                                                                                                |
-| `Navigation/`  | `PaldoraNavBar`, `PaldoraTabBar` (+ `PaldoraTab`)                                                                                                                                                                                                        |
-| `Content/`     | `PaldoraAvatar`, `PaldoraAvatarStack`, `PaldoraPostCard`, `PaldoraLifeUpdateCard`, `PaldoraBoxCard`, `PaldoraComment`, `PaldoraNotificationRow`, `PaldoraUploadTile`                                                                                     |
-| `Overlays/`    | `PaldoraBottomSheetContent` (+ `.paldoraBottomSheet`), `PaldoraDialogCard` (+ `.paldoraDialog`)                                                                                                                                                          |
+| `Navigation/`  | `PaldoraNavBar`, `PaldoraTabBar` (+ `PaldoraTab`), `PaldoraScreen.swift`: `.paldoraNavBar(_:)`, `.paldoraCanvas()`, `PaldoraScreenTitle`, `PaldoraStateView`, `PaldoraListSkeleton`, `PaldoraRowSkeleton`, `.paldoraToast(_:)`, `PaldoraChrome`          |
+| `Content/`     | `PaldoraAvatar`, `PaldoraAvatarStack`, `PaldoraPersonRow`, `PaldoraPostCard`, `PaldoraLifeUpdateCard`, `PaldoraBoxCard`, `PaldoraComment`, `PaldoraNotificationRow`, `PaldoraUploadTile`                                                                 |
+| `Overlays/`    | `PaldoraBottomSheetContent` (+ `.paldoraBottomSheet`), `PaldoraDialogCard` (+ `.paldoraDialog`), `PaldoraDialogCenter` (+ `.paldoraDialogHost`, one app-wide dialog)                                                                                     |
 | `Gallery/`     | DEBUG-only `ComponentGallery`                                                                                                                                                                                                                            |
 
 Data-bound components take small presentation structs (`PaldoraPostCardContent`,
@@ -337,6 +337,35 @@ audit reports passing pairs, without them it does not).
   with the Figma content; the scrim is the system's, the dialog scrim is 50% `bg/inverse`.
 - The off toggle track has a 1 pt `text/muted` outline (3:1, WCAG 1.4.11); Figma draws the hairline fill alone (1.3:1).
 - Gallery photos are token gradients, not the Figma photographs.
+
+**Screens (UI overhaul step 2).** F1 to F10 of the Figma flows are built on these components:
+the five tabs sit behind the floating `PaldoraTabBar` (the system bar is hidden; `TabView`
+still keeps each tab's state), pushed and presented screens draw `PaldoraNavBar` through
+`.paldoraNavBar(_:)` (the system bar is hidden and the swipe-back gesture restored; the tab
+bar steps aside while one is on screen), confirmations go through `PaldoraDialogCenter`,
+action sheets through `.paldoraBottomSheet`, and loading is always a skeleton. UI-test
+hooks: tabs are `tab-home|boxes|myRoom|notifications|profile`, nav buttons `nav-back`,
+`nav-close`, `nav-more`, choice sheet rows `choice-<title>`.
+
+**Deviations from Figma in the screens (step 2).**
+
+- Not built because the app has no capability for them (CLAUDE.md section D, no fake UI):
+  Welcome with Apple/Google (1.1), invite gate (1.7), in-app set-new-password and link-expired
+  (1.5, 1.6), friend search preview and invite link (2.2), Box cover, colour, description and
+  invite-from-friends picker (3.3, 3.5), a separate Transfer screen (3.9; "Make owner" in
+  Members), new-posts pill, processing swap and offline banner (4.4, 4.6, need SSE or a cache),
+  Who reacted (5.4), notification toasts (5.7), On this day and year/month/Box memory pages
+  (6.4 to 6.7; one filtered Memories screen), account sessions and larger-text toggles (9.2,
+  9.3), moderation screens (10.4 to 10.6, web only). F8 has no iOS counterpart; F11 and F12 are
+  out of scope.
+- Box settings is one scrolling screen of sections instead of sub-screens (3.8).
+- The Life Update composer keeps the nine sections and the Only me toggle plus Box checkboxes
+  (Figma shows type chips and a title that the callable does not have).
+- Room screens use the app chrome only; the Room canvas keeps its current look until step 4.
+- Cover and photo slots show token tints and icons, not the Figma photographs.
+- Contrast: the audited runs set `PALDORA_GALLERY_FLAT=1` (no shadows), because Xcode's audit
+  mis-samples text near soft shadows; disabled controls and the system text-field "clipped"
+  false positive are exempt in the audit, as in the gallery audit.
 
 ## Tests
 

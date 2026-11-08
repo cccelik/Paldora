@@ -21,25 +21,19 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            content
-                .background(Theme.canvas)
-                .navigationTitle("Home")
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationDestination(for: PostRoute.self) { route in
-                    PostDetailView(env: env, route: route) { Task { await feed.refresh() } }
-                }
-                .navigationDestination(for: LifeUpdateRoute.self) { LifeUpdateDetailView(env: env, route: $0) }
-                .roomRoutes(env: env)
-                .navigationDestination(for: LifeUpdateComposeRoute.self) { _ in LifeUpdateComposerView(env: env) }
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { path.append(LifeUpdateComposeRoute()) } label: {
-                            Image(systemName: "square.and.pencil").frame(minWidth: Theme.touchTarget, minHeight: Theme.touchTarget)
-                        }
-                        .accessibilityLabel("New Life Update")
-                        .accessibilityIdentifier("home-new-life-update")
-                    }
-                }
+            VStack(spacing: 0) {
+                header
+                content
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .paldoraCanvas()
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: PostRoute.self) { route in
+                PostDetailView(env: env, route: route) { Task { await feed.refresh() } }
+            }
+            .navigationDestination(for: LifeUpdateRoute.self) { LifeUpdateDetailView(env: env, route: $0) }
+            .roomRoutes(env: env)
+            .navigationDestination(for: LifeUpdateComposeRoute.self) { _ in LifeUpdateComposerView(env: env) }
         }
         .task {
             await env.boxes.loadIfNeeded()
@@ -54,15 +48,28 @@ struct HomeView: View {
         }
     }
 
+    /// Top-level screens have no nav bar: a Display title and one primary action.
+    private var header: some View {
+        HStack(alignment: .top) {
+            PaldoraScreenTitle(title: "Home")
+            PaldoraIconButton(icon: .edit, label: "New Life Update", style: .primary) { path.append(LifeUpdateComposeRoute()) }
+                .accessibilityIdentifier("home-new-life-update")
+        }
+        .frame(maxWidth: Theme.readingWidth)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.bottom, Theme.space3)
+        .frame(maxWidth: .infinity)
+    }
+
     @ViewBuilder private var content: some View {
         switch feed.phase {
-        case .idle, .loading: LoadingBlock(label: "Loading your feed")
+        case .idle, .loading: ScrollView { LoadingBlock(label: "Loading your feed").padding(Theme.gutter) }
         case .failed(let message): ErrorBlock(message: message) { await feed.refresh() }
         case .unavailable: UnavailableBlock()
         case .loaded:
             if feed.items.isEmpty {
                 EmptyBlock(title: "Nothing here yet",
-                           message: "Posts from your Boxes appear here, newest first.")
+                           message: "Posts from your Boxes appear here, newest first.", icon: .home)
             } else {
                 list
             }
@@ -71,8 +78,8 @@ struct HomeView: View {
 
     private var list: some View {
         ScrollView {
-            LazyVStack(spacing: Theme.space3) {
-                if let error = feed.inlineError, !feed.isLoadingMore { InlineMessage(text: error) }
+            LazyVStack(spacing: Theme.space4) {
+                if let error = feed.inlineError, !feed.isLoadingMore { PaldoraBanner(tone: .danger, title: error) }
                 ForEach(feed.items) { item in
                     row(item)
                 }
@@ -80,7 +87,7 @@ struct HomeView: View {
                                hasMore: feed.hasMore, loadMore: { await feed.loadMore() })
             }
             .frame(maxWidth: Theme.readingWidth)
-            .padding(Theme.space4)
+            .padding(.horizontal, Theme.gutter)
             .frame(maxWidth: .infinity)
         }
         .refreshable { await feed.refresh(); await env.badge.refresh() }
@@ -92,6 +99,7 @@ struct HomeView: View {
         if let route = route(of: item) {
             Button { open(item, route) } label: { FeedItemCard(item: item, boxName: name) }
                 .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityIdentifier("feed-item")
         } else {

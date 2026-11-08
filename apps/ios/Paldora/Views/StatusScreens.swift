@@ -1,7 +1,11 @@
 import SwiftUI
 
-/// Full-screen state with an optional primary action and a sign-out.
+/// Full-screen state (Figma 1.11 "Account unavailable" pattern): a brand mark, an icon
+/// medallion, a Title/L heading, one plain sentence, an optional primary action and a
+/// sign-out. Never says who reported or why.
 struct StatusScreen: View {
+    var icon: PaldoraIcon = .alert
+    var tone: PaldoraTone = .info
     let title: String
     let message: String
     let actionTitle: String?
@@ -11,21 +15,18 @@ struct StatusScreen: View {
     var body: some View {
         VStack(spacing: Theme.space6) {
             BrandMark()
-            Text(title).font(Typography.title).foregroundStyle(Theme.text)
-                .multilineTextAlignment(.center)
-            Text(message).font(Typography.body).foregroundStyle(Theme.textMuted)
-                .multilineTextAlignment(.center)
-            if let actionTitle, let action {
-                Button(actionTitle) { Task { await action() } }
-                    .buttonStyle(PrimaryButtonStyle())
+            PaldoraStateView(icon: icon, tone: tone, title: title, message: message) {
+                if let actionTitle, let action {
+                    PaldoraButton(actionTitle, size: .medium, fullWidth: true) { Task { await action() } }
+                        .padding(.top, Theme.space3)
+                }
+                PaldoraButton("Sign out", kind: .ghost, size: .medium, fullWidth: true) { model.signOut() }
+                    .accessibilityIdentifier("status-sign-out")
             }
-            Button("Sign out") { model.signOut() }
-                .buttonStyle(QuietButtonStyle())
         }
-        .frame(maxWidth: Theme.readingWidth)
         .padding(Theme.space6)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.canvas)
+        .paldoraCanvas()
     }
 }
 
@@ -36,14 +37,11 @@ struct NotConfiguredView: View {
     var body: some View {
         VStack(spacing: Theme.space6) {
             BrandMark()
-            Text("Paldora isn't configured").font(Typography.title).foregroundStyle(Theme.text)
-            Text(detail).font(Typography.body).foregroundStyle(Theme.textMuted)
-                .multilineTextAlignment(.center)
+            PaldoraStateView(icon: .info, title: "Paldora isn't configured", message: detail)
         }
-        .frame(maxWidth: Theme.readingWidth)
         .padding(Theme.space6)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.canvas)
+        .paldoraCanvas()
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("not-configured")
     }
