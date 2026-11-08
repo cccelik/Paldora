@@ -17,6 +17,14 @@ test.describe('Room themes', () => {
       await expect(
         canvas.getByRole('heading', { name: 'Alice Moreau', level: 1 }),
       ).toBeVisible();
+      // The theme stylesheet is really applied (an unthemed canvas would pass axe).
+      await expect
+        .poll(() =>
+          canvas.evaluate((el) =>
+            getComputedStyle(el).getPropertyValue('--room-canvas').trim(),
+          ),
+        )
+        .not.toBe('');
       await expectAccessible(page);
       await expectNoOverflow(page);
     });
