@@ -34,7 +34,6 @@ private struct OnboardingSteps: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.space5) {
-                BrandMark()
                 progress
                 switch flow.step {
                 case .username: username
@@ -57,15 +56,16 @@ private struct OnboardingSteps: View {
     /// "Step n of 3" with three segments (Figma 1.8 to 1.10).
     private var progress: some View {
         let current = flow.step.rawValue + 1
-        return VStack(alignment: .leading, spacing: Theme.space2) {
+        return VStack(alignment: .leading, spacing: Theme.space3) {
+            Text("Step \(current) of 3").paldoraText(.caption).foregroundStyle(Theme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .accessibilityIdentifier("onboarding-step")
             HStack(spacing: Theme.space1) {
                 ForEach(1...3, id: \.self) { index in
                     Capsule().fill(index <= current ? Theme.brass : Theme.bgSunken).frame(height: 4)
                 }
             }
             .accessibilityHidden(true)
-            Text("Step \(current) of 3").paldoraText(.caption).foregroundStyle(Theme.textSecondary)
-                .accessibilityIdentifier("onboarding-step")
         }
     }
 
@@ -112,8 +112,7 @@ private struct OnboardingSteps: View {
             Spacer(minLength: 0)
         }
         .padding(Theme.space4)
-        .background(Theme.bgSurface, in: RoundedRectangle(cornerRadius: Theme.radiusLg))
-        .paldoraHairline(RoundedRectangle(cornerRadius: Theme.radiusLg))
+        .background(Theme.brassSoft, in: RoundedRectangle(cornerRadius: Theme.radiusLg))
         .accessibilityElement(children: .combine)
     }
 

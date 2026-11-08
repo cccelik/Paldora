@@ -72,7 +72,7 @@ private struct PaldoraSwipeBackEnabler: UIViewControllerRepresentable {
 }
 
 /// An optional eyebrow, a Display/M title (the last lines may be set in the italic
-/// accent) and a Body/M subtitle: the heading block of Figma's form and flow screens.
+/// accent on their own line) and a Body/M subtitle: the heading block of Figma's form and flow screens.
 struct PaldoraScreenTitle: View {
     var eyebrow: String?
     let title: String
@@ -82,15 +82,16 @@ struct PaldoraScreenTitle: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.space2) {
             if let eyebrow { PaldoraEyebrow(eyebrow, color: Theme.brassText) }
-            Group {
+            // Figma sets the accent in Fraunces Light Italic on its own line under the title.
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).paldoraText(.displayM).foregroundStyle(Theme.textPrimary)
                 if let accent {
-                    Text(title).foregroundStyle(Theme.textPrimary) + Text(" ") + Text(accent).foregroundStyle(Theme.brassText)
-                } else {
-                    Text(title).foregroundStyle(Theme.textPrimary)
+                    Text(accent).paldoraText(.displayAccent).foregroundStyle(Theme.brassText)
                 }
             }
-            .paldoraText(.displayM)
             .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel([title, accent].compactMap { $0 }.joined(separator: " "))
             .accessibilityAddTraits(.isHeader)
             if let subtitle {
                 Text(subtitle).paldoraText(.bodyM).foregroundStyle(Theme.textSecondary)

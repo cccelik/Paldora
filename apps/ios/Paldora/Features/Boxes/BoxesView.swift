@@ -143,7 +143,7 @@ struct CreateBoxSheet: View {
                 .padding(.horizontal, Theme.gutter).padding(.vertical, Theme.space2)
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.space4) {
-                    PaldoraScreenTitle(title: "Make a little room", accent: "for your people.")
+                    PaldoraScreenTitle(title: "Make a little room for your people.")
                     PaldoraTextField("Box name", text: $name, placeholder: "Name your Box",
                                      errorMessage: name.count > BoxesViewModel.nameLimit ? "Use \(BoxesViewModel.nameLimit) characters or fewer." : error,
                                      identifier: "box-name-field")

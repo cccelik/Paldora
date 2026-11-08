@@ -10,6 +10,9 @@ final class FriendsViewModel {
     let friends: PagedList<Friendship>
     let blocked: PagedList<BlockedUser>
     private(set) var notice: Notice?
+
+    /// A result belongs to the screen that produced it; pushed screens start clean.
+    func clearNotice() { notice = nil }
     private(set) var isSending = false
     private let env: FeatureEnvironment
 

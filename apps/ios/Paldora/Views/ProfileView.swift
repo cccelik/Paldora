@@ -55,6 +55,7 @@ struct ProfileView: View {
                     .accessibilityIdentifier("profile-display-name")
                 if let username = profile.profile.username {
                     Text("@\(username)").paldoraText(.bodyM).foregroundStyle(Theme.textOnInverse)
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Text(profile.user.email).paldoraText(.caption).foregroundStyle(Theme.textOnInverse)
                     .lineLimit(3).fixedSize(horizontal: false, vertical: true)

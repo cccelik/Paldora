@@ -66,7 +66,8 @@ struct BoxDetailView: View {
                     PostComposer(model: model)
                 } else {
                     PaldoraBanner(tone: .warning, title: "This Box is archived",
-                                  message: "You can read it, but nobody can post, comment or react. The owner can restore it.")
+                                  message: "You can read it, but nobody can post, comment or react. The owner can restore it.",
+                                  icon: .archive)
                 }
                 posts
             }
@@ -85,7 +86,11 @@ struct BoxDetailView: View {
         case .unavailable: UnavailableBlock()
         case .loaded:
             if model.posts.items.isEmpty {
-                EmptyBlock(title: "Say hello", message: "Be the first to post in this Box.", icon: .chat)
+                if model.canPost {
+                    EmptyBlock(title: "Say hello", message: "Be the first to post in this Box.", icon: .chat)
+                } else {
+                    EmptyBlock(title: "Nothing was shared here", message: "Posting is closed while this Box is archived.", icon: .archive)
+                }
             }
             ForEach(model.posts.items) { post in
                 NavigationLink(value: PostRoute(boxId: post.boxId, postId: post.id)) {

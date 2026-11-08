@@ -47,6 +47,16 @@ if [[ "${1:-}" == "--inner" ]]; then
     node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs" >/dev/null
   echo "Seeded an unfinished fixture account (onboarding)."
 
+  # Two more unfinished accounts: the Light and Dark visual captures each walk onboarding.
+  for n in 2 3; do
+    eval "FRESH${n}_EMAIL=ios-ui-fresh${n}-${suffix}@example.invalid"
+    eval "FRESH${n}_PASSWORD=LocalFresh-$(openssl rand -hex 8)"
+    e="FRESH${n}_EMAIL"; w="FRESH${n}_PASSWORD"
+    PALDORA_FIXTURE_EMAIL="${!e}" PALDORA_FIXTURE_PASSWORD="${!w}" \
+      PALDORA_FIXTURE_USERNAME="" PALDORA_FIXTURE_DISPLAY_NAME="" \
+      node "$REPO_ROOT/packages/firebase-trusted/scripts/seed-local.mjs" >/dev/null
+  done
+
   # A Box the peer owns, shared with the fixture, holding a peer post and comment
   # (the comment is what the UI test reports).
   PALDORA_FIXTURE_OWNER_UID="$PEER_UID" PALDORA_FIXTURE_MEMBER_UID="$FIXTURE_UID" \
@@ -58,6 +68,10 @@ if [[ "${1:-}" == "--inner" ]]; then
   export TEST_RUNNER_PALDORA_UI_PEER_USERNAME="$PEER_USERNAME"
   export TEST_RUNNER_PALDORA_UI_FRESH_EMAIL="$FRESH_EMAIL"
   export TEST_RUNNER_PALDORA_UI_FRESH_PASSWORD="$FRESH_PASSWORD"
+  export TEST_RUNNER_PALDORA_UI_FRESH2_EMAIL="$FRESH2_EMAIL"
+  export TEST_RUNNER_PALDORA_UI_FRESH2_PASSWORD="$FRESH2_PASSWORD"
+  export TEST_RUNNER_PALDORA_UI_FRESH3_EMAIL="$FRESH3_EMAIL"
+  export TEST_RUNNER_PALDORA_UI_FRESH3_PASSWORD="$FRESH3_PASSWORD"
 
   cd "$IOS_DIR"
   xcodegen generate

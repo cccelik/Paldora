@@ -8,12 +8,14 @@ struct PaldoraBanner: View {
     let tone: PaldoraTone
     let title: String
     var message: String?
+    /// Replaces the tone's default icon (Figma's archived banner uses the archive box).
+    var icon: PaldoraIcon?
 
     private static var radius: CGFloat { 18 }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            PaldoraIconView(tone.icon, size: 18).foregroundStyle(tone.iconColor)
+            PaldoraIconView(icon ?? tone.icon, size: 18).foregroundStyle(tone.iconColor)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).paldoraText(.ui14Medium).foregroundStyle(tone.titleColor)
                 if let message {

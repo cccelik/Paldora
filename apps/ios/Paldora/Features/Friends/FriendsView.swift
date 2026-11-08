@@ -206,7 +206,6 @@ struct FriendRequestsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.space5) {
-                PaldoraScreenTitle(title: "Requests")
                 PaldoraSegmentedControl([.init(Tab.received, "Received · \(model.requests.items.count)"),
                                          .init(Tab.sent, "Sent · \(model.sent.items.count)")], selection: $tab)
                 if let notice = model.notice {
@@ -221,6 +220,7 @@ struct FriendRequestsView: View {
         }
         .paldoraCanvas()
         .paldoraNavBar("Requests")
+        .onAppear { model.clearNotice() }
         .refreshable { await model.refresh() }
     }
 
@@ -266,8 +266,9 @@ struct BlockedAccountsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.space5) {
-                PaldoraScreenTitle(title: "Blocked",
-                                   subtitle: "People you've blocked can't find you, see your Room, or interact with anything you share.")
+                Text("People you've blocked can't find you, see your Room, or interact with anything you share.")
+                    .paldoraText(.bodyM).foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let notice = model.notice {
                     PaldoraBanner(tone: notice.isError ? .danger : .success, title: notice.text)
                         .accessibilityIdentifier("friends-notice")
@@ -289,7 +290,8 @@ struct BlockedAccountsView: View {
             .frame(maxWidth: .infinity)
         }
         .paldoraCanvas()
-        .paldoraNavBar("Blocked accounts")
+        .paldoraNavBar("Blocked")
+        .onAppear { model.clearNotice() }
         .refreshable { await model.refresh() }
     }
 }

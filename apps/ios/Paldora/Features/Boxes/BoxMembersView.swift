@@ -24,7 +24,7 @@ struct MembersView: View {
             }
         }
         .paldoraCanvas()
-        .paldoraNavBar("Members")
+        .paldoraNavBar(model.members.items.isEmpty ? "Members" : "Members · \(model.members.items.count)")
         .task { await model.members.loadFirst() }
         .paldoraBottomSheet(isPresented: Binding(get: { selected != nil }, set: { if !$0 { selected = nil } }),
                             title: selected.map(name) ?? "Member") {
@@ -37,7 +37,6 @@ struct MembersView: View {
     private var list: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.space3) {
-                PaldoraScreenTitle(title: "Members", subtitle: Formatting.countLabel(model.members.items.count, singular: "person", plural: "people"))
                 if let notice = model.notice { PaldoraBanner(tone: .success, title: notice) }
                 if let error = model.error { PaldoraBanner(tone: .danger, title: error) }
                 ForEach(model.members.items) { member in row(member) }

@@ -40,7 +40,7 @@ struct SecurityView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .paldoraCanvas()
-        .paldoraNavBar("Security")
+        .paldoraNavBar("Security", showsTitle: false)
     }
 
     private func field(_ title: String, text: Binding<String>, id: String, type: UITextContentType, error: String? = nil) -> some View {

@@ -37,7 +37,7 @@ struct ReportCommentSheet: View {
                         Text("\(model.detail.count) of \(ReportCommentViewModel.detailLimit)").paldoraText(.caption)
                             .foregroundStyle(model.detail.count > ReportCommentViewModel.detailLimit ? Theme.statusDanger : Theme.textSecondary)
                         if let error = model.error { PaldoraBanner(tone: .danger, title: error) }
-                        PaldoraButton("Send report", isLoading: model.isSending, fullWidth: true) { Task { await model.send() } }
+                        PaldoraButton("Send report", kind: .danger, isLoading: model.isSending, fullWidth: true) { Task { await model.send() } }
                             .disabled(!model.canSend).accessibilityIdentifier("send-report")
                         Text("Reporting does not automatically remove content.").paldoraText(.caption).foregroundStyle(Theme.textSecondary)
                     }
@@ -94,7 +94,7 @@ struct MyReportsView: View {
             }
         }
         .paldoraCanvas()
-        .paldoraNavBar("Your reports")
+        .paldoraNavBar("Your reports", showsTitle: false)
         .task { await list.refresh() }
     }
 }
@@ -133,7 +133,7 @@ struct NoticesView: View {
             }
         }
         .paldoraCanvas()
-        .paldoraNavBar("Content notices")
+        .paldoraNavBar("Content notices", showsTitle: false)
         .task { await list.refresh() }
     }
 }

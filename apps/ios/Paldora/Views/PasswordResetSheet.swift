@@ -57,12 +57,12 @@ struct PasswordResetSheet: View {
 
     private func sent(_ address: String) -> some View {
         VStack(spacing: Theme.space5) {
-            PaldoraStateView(icon: .mail, tone: .success, title: "Check your inbox.",
+            PaldoraStateView(icon: .mail, tone: .info, title: "Check your inbox.",
                              message: "If \(address) has an account, a reset link is on its way.")
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("reset-message")
             PaldoraButton(cooldown > 0 ? "Resend in 0:\(String(format: "%02d", cooldown))" : "Resend link",
-                          kind: .secondary, size: .medium, isLoading: isSending, fullWidth: true) { send() }
+                          kind: .ghost, size: .medium, isLoading: isSending, fullWidth: true) { send() }
                 .disabled(cooldown > 0 || isSending)
             PaldoraButton("Wrong address? Go back", kind: .ghost, size: .medium, fullWidth: true) {
                 sentTo = nil
