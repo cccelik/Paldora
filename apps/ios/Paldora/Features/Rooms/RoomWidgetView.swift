@@ -56,7 +56,7 @@ struct RoomWidgetView: View {
             Link(destination: url) {
                 HStack(spacing: Theme.space3) {
                     // Figma 44 pt disc in the accent; the note is drawn in the canvas color (3:1).
-                    Image(systemName: "music.note").foregroundStyle(look.canvas)
+                    PaldoraIconView(.music, size: 20).foregroundStyle(look.canvas)
                         .frame(width: 44, height: 44)
                         .background(look.accentColor, in: RoundedRectangle(cornerRadius: Theme.radiusSm + 4))
                         .accessibilityHidden(true)
@@ -65,7 +65,7 @@ struct RoomWidgetView: View {
                         if let artist = music.artist { Text(artist).font(look.font(.footnote)).foregroundStyle(look.muted) }
                     }
                     Spacer()
-                    Image(systemName: "arrow.up.right").foregroundStyle(look.muted)
+                    PaldoraIconView(.external, size: 16).foregroundStyle(look.muted)
                 }
                 .frame(minHeight: Theme.touchTarget)
             }
@@ -119,7 +119,7 @@ struct RoomWidgetView: View {
     @ViewBuilder private var memories: some View {
         NavigationLink(value: MemoriesRoute(scope: .room(username: room.owner.username))) {
             Label { Text("Browse memories").foregroundStyle(look.text) } icon: {
-                Image(systemName: "clock.arrow.circlepath").foregroundStyle(look.accentColor)
+                PaldoraIconView(.memories, size: 20).foregroundStyle(look.accentColor)
             }
             .font(look.font(.body)).frame(minHeight: Theme.touchTarget)
         }

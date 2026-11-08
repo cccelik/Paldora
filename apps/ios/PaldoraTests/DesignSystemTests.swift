@@ -109,13 +109,17 @@ struct DesignSystemTests {
     // MARK: Icons, upload, list rows
 
     @Test func everyIconHasASymbolOrACustomShape() {
-        #expect(PaldoraIcon.allCases.count == 51)
+        #expect(PaldoraIcon.allCases.count == 54)
         for icon in PaldoraIcon.allCases where icon.systemName == nil {
             #expect([PaldoraIcon.spark, .flame].contains(icon))
         }
         for icon in PaldoraIcon.allCases {
             if let name = icon.systemName { #expect(UIImage(systemName: name) != nil, "\(icon) has no SF Symbol \(name)") }
         }
+        for icon in PaldoraIcon.allCases {
+            if let name = icon.filledSystemName { #expect(UIImage(systemName: name) != nil, "\(icon) has no filled SF Symbol \(name)") }
+        }
+        for tab in PaldoraTab.allCases { #expect(tab.icon.filledSystemName != nil, "\(tab) needs a filled selected icon") }
         #expect(PaldoraIconView.stroke(isActive: false) == 1.6)
         #expect(PaldoraIconView.stroke(isActive: true) == 1.8)
     }

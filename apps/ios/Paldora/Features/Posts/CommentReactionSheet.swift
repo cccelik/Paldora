@@ -25,8 +25,7 @@ struct CommentReactionSheet: View {
         } else {
             FlowLayout {
                 ForEach(model.counts, id: \.kind) { entry in
-                    PaldoraChip(title: "\(ReactionSection.display(entry.kind)) \(entry.count)", style: .brass)
-                        .accessibilityLabel("\(entry.count) \(ReactionSection.display(entry.kind)) reactions")
+                    ReactionSection.countChip(entry.kind, entry.count)
                 }
             }
         }

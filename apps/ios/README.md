@@ -274,17 +274,17 @@ is no hard-coded hex. Light and Dark follow the system. Reduce Motion removes
 component animation (`paldoraAnimation`). Controls draw at the Figma size but keep a
 44 pt hit region (`paldoraHitTarget`) and draw the focus ring on keyboard focus.
 
-| Folder         | Components                                                                                                                                                                                                                                               |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Foundations/` | `PaldoraIcon` / `PaldoraIconView` (51 icons: SF Symbols, plus `spark` and `flame` drawn as shapes; stroke 1.6, active 1.8), `PaldoraElevation` (`soft`, `lift`), `PaldoraMotion`, `PaldoraHitTarget`, `PaldoraTone`, extra text styles, `PaldoraEyebrow` |
-| `Buttons/`     | `PaldoraButton` (+ `PaldoraButtonStyle`), `PaldoraIconButton`                                                                                                                                                                                            |
-| `Inputs/`      | `PaldoraTextField`, `PaldoraFieldContainer`, `PaldoraFieldMessage`                                                                                                                                                                                       |
-| `Controls/`    | `PaldoraChip`, `PaldoraSelectableChip`, `PaldoraEmojiButton`, `PaldoraChoiceRow`, `PaldoraToggle` (+ `PaldoraToggleStyle`), `PaldoraRadio`, `PaldoraCheckbox`, `PaldoraSegmentedControl`, `PaldoraListRow`, `PaldoraListGroup`                           |
-| `Feedback/`    | `PaldoraBanner`, `PaldoraToast`, `PaldoraSkeleton`, `PaldoraPostSkeleton`                                                                                                                                                                                |
-| `Navigation/`  | `PaldoraNavBar`, `PaldoraTabBar` (+ `PaldoraTab`), `PaldoraScreen.swift`: `.paldoraNavBar(_:)`, `.paldoraCanvas()`, `PaldoraScreenTitle`, `PaldoraStateView`, `PaldoraListSkeleton`, `PaldoraRowSkeleton`, `.paldoraToast(_:)`, `PaldoraChrome`          |
-| `Content/`     | `PaldoraAvatar`, `PaldoraAvatarStack`, `PaldoraPersonRow`, `PaldoraPostCard`, `PaldoraLifeUpdateCard`, `PaldoraBoxCard`, `PaldoraComment`, `PaldoraNotificationRow`, `PaldoraUploadTile`                                                                 |
-| `Overlays/`    | `PaldoraBottomSheetContent` (+ `.paldoraBottomSheet`), `PaldoraDialogCard` (+ `.paldoraDialog`), `PaldoraDialogCenter` (+ `.paldoraDialogHost`, one app-wide dialog)                                                                                     |
-| `Gallery/`     | DEBUG-only `ComponentGallery`                                                                                                                                                                                                                            |
+| Folder         | Components                                                                                                                                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Foundations/` | `PaldoraIcon` / `PaldoraIconView` (54 icons: SF Symbols, plus `spark` and `flame` drawn as shapes; stroke 1.6, active 1.8; selected tabs use the `.fill` variants), `PaldoraElevation` (`soft`, `lift`), `PaldoraMotion`, `PaldoraHitTarget`, `PaldoraTone`, extra text styles, `PaldoraEyebrow` |
+| `Buttons/`     | `PaldoraButton` (+ `PaldoraButtonStyle`), `PaldoraIconButton`                                                                                                                                                                                                                                    |
+| `Inputs/`      | `PaldoraTextField`, `PaldoraFieldContainer`, `PaldoraFieldMessage`                                                                                                                                                                                                                               |
+| `Controls/`    | `PaldoraChip`, `PaldoraSelectableChip`, `PaldoraEmojiButton`, `PaldoraChoiceRow`, `PaldoraToggle` (+ `PaldoraToggleStyle`), `PaldoraRadio`, `PaldoraCheckbox`, `PaldoraSegmentedControl`, `PaldoraListRow`, `PaldoraListGroup`                                                                   |
+| `Feedback/`    | `PaldoraBanner`, `PaldoraToast`, `PaldoraSkeleton`, `PaldoraPostSkeleton`                                                                                                                                                                                                                        |
+| `Navigation/`  | `PaldoraNavBar`, `PaldoraTabBar` (+ `PaldoraTab`), `PaldoraScreen.swift`: `.paldoraNavBar(_:)`, `.paldoraCanvas()`, `PaldoraScreenTitle`, `PaldoraStateView`, `PaldoraListSkeleton`, `PaldoraRowSkeleton`, `.paldoraToast(_:)`, `PaldoraChrome`                                                  |
+| `Content/`     | `PaldoraAvatar`, `PaldoraAvatarStack`, `PaldoraPersonRow`, `PaldoraPostCard`, `PaldoraLifeUpdateCard`, `PaldoraBoxCard`, `PaldoraComment`, `PaldoraNotificationRow`, `PaldoraUploadTile`                                                                                                         |
+| `Overlays/`    | `PaldoraBottomSheetContent` (+ `.paldoraBottomSheet`), `PaldoraDialogCard` (+ `.paldoraDialog`), `PaldoraDialogCenter` (+ `.paldoraDialogHost`, one app-wide dialog)                                                                                                                             |
+| `Gallery/`     | DEBUG-only `ComponentGallery`                                                                                                                                                                                                                                                                    |
 
 Data-bound components take small presentation structs (`PaldoraPostCardContent`,
 `PaldoraLifeUpdateCardContent`, `PaldoraBoxCardContent`, `PaldoraCommentContent`,
@@ -340,6 +340,71 @@ audit reports passing pairs, without them it does not).
   with the Figma content; the scrim is the system's, the dialog scrim is 50% `bg/inverse`.
 - The off toggle track has a 1 pt `text/muted` outline (3:1, WCAG 1.4.11); Figma draws the hairline fill alone (1.3:1).
 - Gallery photos are token gradients, not the Figma photographs.
+
+### Icon mapping (icon -> SF Symbol -> meaning)
+
+Every icon is a real SF Symbol (iOS 17+) except the two brand marks. `DesignSystemTests`
+loads `UIImage(systemName:)` for every symbol and every fill variant and fails on nil.
+Inactive icons use the `light` weight, active/selected `regular`; the five tab icons switch
+to the fill variant when selected. Icon-only controls get their spoken label from the
+control (`PaldoraIconButton(label:)`, `.accessibilityLabel`); `PaldoraIconView` itself is
+hidden from VoiceOver. No text glyph (`✦ ★ • × ‹ + …`) or emoji stands in for an icon; the
+camera reaction chip uses `.camera`.
+
+| Icon               | SF Symbol                               | Meaning                          |
+| ------------------ | --------------------------------------- | -------------------------------- |
+| home               | house (fill when selected)              | Home tab                         |
+| box                | shippingbox (fill)                      | Boxes tab, a Box                 |
+| room               | chair.lounge (fill)                     | My Room tab, a Room              |
+| bell               | bell (fill)                             | Activity / notifications         |
+| user               | person (fill)                           | Profile                          |
+| friends            | person.2                                | Friends                          |
+| plus               | plus                                    | Add, create                      |
+| compose            | square.and.pencil                       | New Life Update                  |
+| edit               | pencil                                  | Edit                             |
+| trash              | trash                                   | Delete                           |
+| more               | ellipsis                                | More actions                     |
+| back / chev / down | chevron.left / .right / .down           | Back, disclosure, expand         |
+| close / check      | xmark / checkmark                       | Close, done                      |
+| heart              | heart                                   | Reactions                        |
+| chat               | bubble.left                             | Comments                         |
+| camera             | camera                                  | Camera reaction                  |
+| send               | paperplane                              | Send                             |
+| search             | magnifyingglass                         | Search                           |
+| gear               | gearshape                               | Settings, Box settings           |
+| lock               | lock                                    | Privacy, audience                |
+| shield             | shield                                  | Safety                           |
+| key                | key                                     | Password                         |
+| eye                | eye                                     | Visibility                       |
+| flag               | flag                                    | Report                           |
+| ban                | nosign                                  | Block                            |
+| alert / info       | exclamationmark.triangle / info.circle  | Warning, information             |
+| cal                | calendar                                | Date                             |
+| image              | photo                                   | Photo, unavailable photo         |
+| music              | music.note                              | Room music                       |
+| book               | book                                    | Chapters, journal                |
+| pin                | mappin                                  | Pinned (linked comment)          |
+| mail               | envelope                                | Email                            |
+| palette            | paintpalette                            | Room theme                       |
+| layout             | rectangle.split.2x1                     | Room layout                      |
+| type               | textformat                              | Typography                       |
+| download           | arrow.down.to.line                      | Export, save                     |
+| refresh            | arrow.clockwise                         | Retry                            |
+| archive            | archivebox                              | Archive                          |
+| swap               | arrow.left.arrow.right                  | Transfer, swap                   |
+| star               | star                                    | Favorite, Top Friends            |
+| wifi               | wifi                                    | Connection                       |
+| copy               | doc.on.doc                              | Copy                             |
+| logout             | rectangle.portrait.and.arrow.right      | Sign out                         |
+| link               | link                                    | Link                             |
+| grip               | line.3.horizontal                       | Reorder handle                   |
+| code               | chevron.left.forwardslash.chevron.right | Code                             |
+| memories           | clock.arrow.circlepath                  | Memories                         |
+| external           | arrow.up.right                          | Opens outside the app            |
+| spark, flame       | custom shapes                           | Brand decoration (Figma strokes) |
+
+`RoomDecoration` keeps its own SF Symbols (`sparkle`, `leaf`, `heart.fill`, ...): they are
+themed, VoiceOver-hidden Room ornaments, not controls.
 
 **Screens (UI overhaul step 2).** F1 to F10 of the Figma flows are built on these components:
 the five tabs sit behind the floating `PaldoraTabBar` (the system bar is hidden; `TabView`

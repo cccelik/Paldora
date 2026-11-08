@@ -39,7 +39,7 @@ struct RemoteImage: View {
                 Button { retry() } label: {
                     Theme.highlight.overlay(
                         VStack(spacing: 2) {
-                            Image(systemName: "arrow.clockwise").font(.title3)
+                            PaldoraIconView(.refresh, size: 22)
                             Text("Couldn't load. Tap to retry").font(Typography.caption).multilineTextAlignment(.center)
                         }.foregroundStyle(Theme.textMuted)
                     )
@@ -49,7 +49,7 @@ struct RemoteImage: View {
             case .unavailable:
                 Theme.highlight.overlay(
                     VStack(spacing: 2) {
-                        Image(systemName: "photo").font(.title3)
+                        PaldoraIconView(.image, size: 22)
                         Text("Photo unavailable").font(Typography.caption)
                     }.foregroundStyle(Theme.textMuted)
                 )

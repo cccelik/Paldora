@@ -52,7 +52,7 @@ struct HomeView: View {
     private var header: some View {
         HStack(alignment: .top) {
             PaldoraScreenTitle(title: "Home")
-            PaldoraIconButton(icon: .edit, label: "New Life Update", style: .primary) { path.append(LifeUpdateComposeRoute()) }
+            PaldoraIconButton(icon: .compose, label: "New Life Update", style: .primary) { path.append(LifeUpdateComposeRoute()) }
                 .accessibilityIdentifier("home-new-life-update")
         }
         .frame(maxWidth: Theme.readingWidth)

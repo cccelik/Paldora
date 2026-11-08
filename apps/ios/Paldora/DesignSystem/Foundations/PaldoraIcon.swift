@@ -13,6 +13,20 @@ enum PaldoraIcon: String, CaseIterable {
     case gear, lock, cal, image, spark, music, close, check, friends, book, camera, send, pin
     case flame, edit, eye, shield, mail, palette, flag, ban, trash, download, key, grip, code
     case refresh, alert, archive, swap, info, star, layout, type, wifi, copy, logout, link
+    /// Added for SF Symbols parity: Memories, an external link, and "new" (compose).
+    case memories, external, compose
+
+    /// The filled variant drawn when the icon is the selected tab (nil: no fill, keep the outline).
+    var filledSystemName: String? {
+        switch self {
+        case .home: "house.fill"
+        case .box: "shippingbox.fill"
+        case .room: "chair.lounge.fill"
+        case .bell: "bell.fill"
+        case .user: "person.fill"
+        default: nil
+        }
+    }
 
     /// The SF Symbol, or nil for the glyphs drawn by `PaldoraIconShape`.
     var systemName: String? {
@@ -43,7 +57,7 @@ enum PaldoraIcon: String, CaseIterable {
         case .camera: "camera"
         case .send: "paperplane"
         case .pin: "mappin"
-        case .edit: "square.and.pencil"
+        case .edit: "pencil"
         case .eye: "eye"
         case .shield: "shield"
         case .mail: "envelope"
@@ -67,6 +81,9 @@ enum PaldoraIcon: String, CaseIterable {
         case .copy: "doc.on.doc"
         case .logout: "rectangle.portrait.and.arrow.right"
         case .link: "link"
+        case .memories: "clock.arrow.circlepath"
+        case .external: "arrow.up.right"
+        case .compose: "square.and.pencil"
         }
     }
 }
@@ -77,18 +94,21 @@ struct PaldoraIconView: View {
     let icon: PaldoraIcon
     var size: CGFloat = 20
     var isActive = false
+    /// Selected tabs use the fill variant where one exists; everything else keeps the outline.
+    var filled = false
     @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
-    init(_ icon: PaldoraIcon, size: CGFloat = 20, isActive: Bool = false) {
+    init(_ icon: PaldoraIcon, size: CGFloat = 20, isActive: Bool = false, filled: Bool = false) {
         self.icon = icon
         self.size = size
         self.isActive = isActive
+        self.filled = filled
     }
 
     var body: some View {
         let side = size * scale
         Group {
-            if let name = icon.systemName {
+            if let name = (filled ? icon.filledSystemName : nil) ?? icon.systemName {
                 Image(systemName: name).font(.system(size: side, weight: isActive ? .regular : .light))
             } else {
                 PaldoraIconShape(icon: icon)

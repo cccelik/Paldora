@@ -72,8 +72,7 @@ struct ReactionSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Theme.space2) {
                     ForEach(model.reactionCounts, id: \.kind) { entry in
-                        PaldoraChip(title: "\(Self.display(entry.kind)) \(entry.count)", style: .brass)
-                            .accessibilityLabel("\(entry.count) \(Self.display(entry.kind)) reactions")
+                        Self.countChip(entry.kind, entry.count)
                     }
                 }
             }
@@ -81,5 +80,16 @@ struct ReactionSection: View {
         }
     }
 
-    static func display(_ kind: String) -> String { kind == "real" ? "📷" : kind }
+    /// A camera reaction ("real") is drawn with the camera SF Symbol; emoji kinds show the emoji.
+    static func display(_ kind: String) -> String { kind == "real" ? "Photo" : kind }
+
+    @ViewBuilder static func countChip(_ kind: String, _ count: Int) -> some View {
+        if kind == "real" {
+            PaldoraChip(title: "\(count)", style: .brass, leading: .icon(.camera))
+                .accessibilityLabel("\(count) photo reactions")
+        } else {
+            PaldoraChip(title: "\(kind) \(count)", style: .brass)
+                .accessibilityLabel("\(count) \(kind) reactions")
+        }
+    }
 }

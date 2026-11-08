@@ -67,7 +67,7 @@ struct PaldoraTabBar: View {
         } label: {
             VStack(spacing: 3) {
                 // Figma: inactive icons are dimmed to about 65% (172,168,163), the label stays full.
-                PaldoraIconView(tab.icon, size: 21, isActive: isActive)
+                PaldoraIconView(tab.icon, size: 21, isActive: isActive, filled: isActive)
                     .opacity(isActive ? 1 : Self.inactiveIconOpacity)
                     .overlay(alignment: .topTrailing) {
                         if badge > 0 {
