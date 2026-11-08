@@ -8,6 +8,7 @@ import {
   putToSignedUrl,
   uploadFailureMessage,
 } from '@/lib/media/image-upload';
+import { type PreparedMedia } from '@/lib/media/prepare-image';
 import { untilSettled } from '@/lib/media/media-polling';
 import { type MediaAssetView } from '@paldora/validation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,7 +26,8 @@ type StatusCheck = (
 
 /** What one purpose's single-photo upload needs: its actions and words. */
 export interface MediaUploadSteps {
-  readonly fileProblem: (file: File) => Promise<string | null>;
+  /** Checks the file and resizes it when needed; the result is what gets uploaded. */
+  readonly prepareFile: (file: File) => Promise<PreparedMedia>;
   readonly prepare: PreparePhoto;
   readonly complete: StatusCheck;
   readonly status: StatusCheck;
@@ -87,18 +89,20 @@ export function useMediaUpload(steps: MediaUploadSteps) {
   };
 
   async function upload(file: File): Promise<FinishedUpload | null> {
-    const problem = await steps.fileProblem(file);
-    if (problem) return fail(problem);
     setPhase('uploading');
     setMessage({ text: steps.copy.uploading, tone: 'success' });
+    const ready = await steps.prepareFile(file);
+    if (!ready.ok) return fail(ready.problem);
+    // Preview the original; upload the (possibly resized) file.
     showPreview(file);
+    const toSend = ready.file;
     const prepared = await steps.prepare({
-      contentType: asContentType(file.type),
-      contentLength: file.size,
+      contentType: asContentType(toSend.type),
+      contentLength: toSend.size,
     });
     if (prepared.status !== 'success') return fail(prepared.message);
     try {
-      await putToSignedUrl(file, prepared.data);
+      await putToSignedUrl(toSend, prepared.data);
     } catch (error) {
       return fail(uploadFailureMessage(error, steps.copy.putFailed));
     }

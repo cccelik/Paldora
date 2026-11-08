@@ -4,10 +4,10 @@ import { completePostPhoto, postPhotoStatus } from '@/actions/post-photos';
 import { type ActionOutcome } from '@/lib/actions/action-result';
 import {
   asContentType,
-  checkMediaFile,
   putToSignedUrl,
   uploadFailureMessage,
 } from '@/lib/media/image-upload';
+import { prepareMediaFile } from '@/lib/media/prepare-image';
 import { untilProcessed } from '@/lib/media/media-polling';
 import { type PreparedUpload } from '@/lib/media/upload';
 import {
@@ -115,12 +115,14 @@ export function usePhotoAttachments(
     [prepare, patch],
   );
 
-  /** Type, size and pixel checks first; a rejected photo stays visible with its reason. */
+  /** Type, size and pixel checks (resizing when needed) first; a rejected photo stays visible with its reason. */
   const validateThenUpload = useCallback(
     async (key: number, file: File) => {
-      const problem = await checkMediaFile(file, purpose);
-      if (problem) return patch(key, { phase: 'failed', message: problem });
-      return upload(key, file);
+      const ready = await prepareMediaFile(file, purpose);
+      if (!ready.ok) {
+        return patch(key, { phase: 'failed', message: ready.problem });
+      }
+      return upload(key, ready.file);
     },
     [purpose, patch, upload],
   );

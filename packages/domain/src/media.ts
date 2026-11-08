@@ -51,6 +51,12 @@ export interface MediaPurposePolicy {
   /** Upper bound on decoded pixels, checked before any resize work. */
   readonly maxInputPixels: number;
   /**
+   * Longest edge the browser sends. Larger photos are downscaled before
+   * upload (web) and must be on iOS too; the server cap above stays the
+   * safety net.
+   */
+  readonly maxLongEdge: number;
+  /**
    * D2: the raw upload is deleted after processing; this re-encoded,
    * metadata-free master is the long-term copy.
    */
@@ -78,6 +84,7 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     contentTypes: MEDIA_CONTENT_TYPES,
     maxBytes: megabytes(10),
     maxInputPixels: 40_000_000,
+    maxLongEdge: 1024,
     master: { size: 2048, fit: 'inside', quality: 86 },
     display: { size: 512, fit: 'square', quality: 82 },
     thumbnail: { size: 160, fit: 'square', quality: 78 },
@@ -87,6 +94,7 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     contentTypes: MEDIA_CONTENT_TYPES,
     maxBytes: megabytes(10),
     maxInputPixels: 40_000_000,
+    maxLongEdge: 4096,
     master: { size: 2560, fit: 'inside', quality: 86 },
     display: { size: 1600, fit: 'inside', quality: 82 },
     thumbnail: { size: 640, fit: 'inside', quality: 78 },
@@ -100,6 +108,7 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     contentTypes: MEDIA_CONTENT_TYPES,
     maxBytes: megabytes(5),
     maxInputPixels: 25_000_000,
+    maxLongEdge: 1280,
     master: { size: 1280, fit: 'inside', quality: 86 },
     display: { size: 1024, fit: 'inside', quality: 82 },
     thumbnail: { size: 320, fit: 'inside', quality: 78 },
@@ -114,6 +123,7 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     contentTypes: MEDIA_CONTENT_TYPES,
     maxBytes: megabytes(10),
     maxInputPixels: 40_000_000,
+    maxLongEdge: 4096,
     master: { size: 2560, fit: 'inside', quality: 86 },
     display: { size: 1600, fit: 'inside', quality: 82 },
     thumbnail: { size: 640, fit: 'inside', quality: 78 },
@@ -128,6 +138,7 @@ export const MEDIA_PURPOSE_POLICIES: Readonly<
     contentTypes: MEDIA_CONTENT_TYPES,
     maxBytes: megabytes(10),
     maxInputPixels: 40_000_000,
+    maxLongEdge: 2400,
     master: { size: 2560, fit: 'inside', quality: 86 },
     display: { size: 1600, height: 533, fit: 'cover', quality: 82 },
     thumbnail: { size: 640, height: 213, fit: 'cover', quality: 78 },

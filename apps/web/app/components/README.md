@@ -83,3 +83,21 @@ plus 388px rail from 1280px), `PageLoading` (route `loading.tsx` skeletons) and
 `ariaLabel` and `controls`; `LifeUpdateCard` takes `ariaLabel`, `children` and a
 light `footer` panel (interactive controls need a light surface on the inverse
 card).
+
+## Photo resizing before upload
+
+Every photo purpose (post, Life Update, avatar, Room banner) goes through
+`lib/media/prepare-image.ts` (`prepareMediaFile`) before the prepare, PUT and
+complete flow. A photo within the purpose's `maxLongEdge`, `maxInputPixels` and
+`maxBytes` (all in `MEDIA_PURPOSE_POLICIES`) is uploaded untouched. Otherwise it
+is decoded with EXIF orientation applied, downscaled keeping its aspect ratio
+and re-encoded (WebP, or JPEG when WebP can't be written; PNG only when it has
+transparency and fits). The result is what is uploaded, with its own content type
+and length. Undecodable files within the byte limit are passed on, so the server
+(which keeps its pixel cap and all other checks) gives the precise reason.
+Camera frames are already downscaled in `lib/media/camera.ts`.
+
+Privacy: a resized photo is re-encoded in the browser, so the original's EXIF
+and GPS data never leave the device. An untouched photo still carries them until
+the worker strips them. iOS needs the same downscale before upload (not yet
+implemented): same per-purpose long edges from the policy table.

@@ -639,3 +639,14 @@ activity, memories, arrows). Text arrows in `BackLink`, the Life Update back
 link and the Room reorder buttons became icons. Mapping table:
 `apps/web/app/components/README.md`; decision: ADR 025. Unit test:
 `ui/icons.test.tsx`.
+
+## Web photo resizing before upload (2026-11-08)
+
+Large originals (phone cameras, 100+ MP, over 10 MB) are now downscaled in the
+browser instead of rejected: `apps/web/app/lib/media/prepare-image.ts`, used by
+the post, Life Update, avatar and Room banner uploads. The per-purpose long edge
+is the new `maxLongEdge` policy field in `packages/domain/src/media.ts` (post and
+Life Update 4096, banner 2400, avatar 1024, reaction 1280). Re-encoding drops the
+original EXIF/GPS data for resized photos. Follow-up: iOS must apply the same
+downscale (long edge from the policy table, honour orientation, drop metadata)
+before its upload; not implemented here. Unit tests: `prepare-image.test.ts`.
