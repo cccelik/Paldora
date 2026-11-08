@@ -1,4 +1,6 @@
 // Records scene frames: node record.mjs <desktop|phone|vertical> [sceneId ...]
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { OUT, PROFILES, Recorder, chromium, openSession } from './lib.mjs';
 import { cleanupComposerPost, scenes } from './scenes.mjs';
@@ -23,7 +25,20 @@ const wanted = {
     'appearance',
   ],
   phone: ['mHome', 'mBox', 'mRoom'],
-  vertical: ['mHome', 'mBox', 'mThread', 'mRoom', 'mMemories', 'mDark'],
+  vertical: [
+    'mHome',
+    'mBox',
+    'mThread',
+    'mRoom',
+    'mMemories',
+    'mDark',
+    'mReact',
+    'mBoxGrid',
+    'mSplitLight',
+    'mSplitDark',
+    'mThemeStills',
+    'mLife',
+  ],
 }[profileName];
 const list = only.length ? only : wanted;
 
@@ -33,7 +48,31 @@ const credentials = {
   password: 'a-local-test-password',
 };
 
-const browser = await chromium.launch();
+// Fake camera feed: a warm animated gradient (no fake person), so the camera
+// reaction UI shows something on brand. Chromium reads it as a y4m file.
+mkdirSync(path.join(OUT, 'assets'), { recursive: true });
+const cam = path.join(OUT, 'assets', 'camera.y4m');
+if (!existsSync(cam)) {
+  execFileSync('ffmpeg', [
+    '-y',
+    '-v',
+    'error',
+    '-f',
+    'lavfi',
+    '-i',
+    'gradients=s=640x480:c0=0xC39A52:c1=0x2C2621:c2=0xF1E6CF:speed=0.03:d=8:r=30',
+    '-pix_fmt',
+    'yuv420p',
+    cam,
+  ]);
+}
+const browser = await chromium.launch({
+  args: [
+    '--use-fake-ui-for-media-stream',
+    '--use-fake-device-for-media-stream',
+    `--use-file-for-fake-video-capture=${cam}`,
+  ],
+});
 const { context, page } = await openSession(
   browser,
   profile,

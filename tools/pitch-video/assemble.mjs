@@ -12,7 +12,7 @@ const outFile =
   process.argv[3] ??
   path.join(
     ROOT,
-    vertical ? 'Paldora-launch-mobile.mp4' : 'Paldora-launch.mp4',
+    vertical ? 'Paldora-launch-v1-mobile.mp4' : 'Paldora-launch-v1.mp4',
   );
 const [W, H] = vertical ? [1080, 1920] : [1920, 1080];
 const CH = vertical ? 1700 : 1000; // footage height; the rest is the caption bar

@@ -226,6 +226,87 @@ export const scenes = {
     await page.emulateMedia({ colorScheme: 'light' });
   },
 
+  // ---- v2 pitch cut: extra footage ----
+  async boxGrid({ page, r }) {
+    await prep(page, '/boxes');
+    await r.hold(0.4);
+    const tiles = page.locator('a[href^="/boxes/"]');
+    for (const i of [3, 0, 1, 5]) {
+      const c = await r.center(tiles.nth(i));
+      await r.moveTo(c.x, c.y, 0.5);
+      await r.hold(0.12);
+    }
+    await r.hold(0.3);
+  },
+
+  async react({ page, r }) {
+    const href = await boxUrl(page, 'Close Friends');
+    await prep(page, href);
+    const art = page.locator('article', { hasText: 'Finally glazed' }).first();
+    await r.scrollToLocator(art, 0.01, 40);
+    await r.hold(0.5);
+    await r.click(art.getByRole('button', { name: 'More reactions' }), 0.6);
+    await r.hold(1.0);
+    await page.keyboard.press('Escape');
+    await r.hold(0.4);
+    await r.click(art.getByRole('button', { name: 'Camera' }), 0.6, true);
+    await r.quiet(() =>
+      page.getByRole('button', { name: 'Take photo' }).isVisible(),
+    );
+    await r.hold(1.6);
+    await page.keyboard.press('Escape');
+    await r.hold(0.3);
+  },
+
+  async splitLight({ page, r }) {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await splitPath(page, r);
+  },
+
+  async splitDark({ page, r }) {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await splitPath(page, r);
+    await page.emulateMedia({ colorScheme: 'light' });
+  },
+
+  async themeStills({ page, r }) {
+    for (const t of THEMES) {
+      await page.goto(`${ORIGIN}/design-preview/rooms/${t}`);
+      await page.waitForLoadState('load');
+      await page.waitForTimeout(600);
+      await page.evaluate(() => {
+        for (const el of document.querySelectorAll('p, div, span')) {
+          if (
+            el.children.length === 0 &&
+            /^No .* yet\.?$/.test(el.textContent.trim())
+          ) {
+            el.parentElement.style.display = 'none';
+          }
+        }
+        window.scrollTo(0, window.innerWidth < 500 ? 56 : 248);
+      });
+      r.cursor = { x: -200, y: -200 };
+      await r.snap();
+    }
+  },
+
+  async mLife({ page, r }) {
+    await prep(page, '/life-updates/new');
+    const inputs = page.locator('textarea');
+    await r.click(inputs.nth(0), 0.5);
+    await r.type(inputs.nth(0), 'Moved into a studio with an east window.', 3);
+    const who = page.getByText(/who it.s for/i);
+    await r.scrollToLocator(who, 0.9, 100);
+    for (const name of [
+      'Close Friends',
+      'Page Turners Book Club',
+      'Starfall Fandom Circle',
+    ]) {
+      await r.click(page.getByLabel(name, { exact: false }).first(), 0.4);
+    }
+    await r.hold(0.8);
+  },
+
   // ---- mobile (390px) ----
   async mHome({ page, r }) {
     await prep(page, '/home');
@@ -297,6 +378,13 @@ export const scenes = {
   },
 };
 
+async function splitPath(page, r) {
+  await prep(page, '/home');
+  await r.hold(0.6);
+  await r.scrollBy(520, 2.0);
+  await r.hold(0.4);
+}
+
 /** Removes the post the composer scene created, so re-runs leave no residue. */
 export async function cleanupComposerPost(page) {
   const href = await boxUrl(page, 'Wren and Me');
@@ -317,3 +405,10 @@ export async function cleanupComposerPost(page) {
   }
   return -1;
 }
+
+// Same choreography at 390px.
+scenes.mReact = scenes.react;
+scenes.mBoxGrid = scenes.boxGrid;
+scenes.mSplitLight = scenes.splitLight;
+scenes.mSplitDark = scenes.splitDark;
+scenes.mThemeStills = scenes.themeStills;

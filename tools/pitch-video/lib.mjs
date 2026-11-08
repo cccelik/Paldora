@@ -167,6 +167,7 @@ export async function openSession(browser, profile, origin, credentials) {
     bypassCSP: true, // recording only: lets the overlay use inline styles
     colorScheme: 'light',
     reducedMotion: 'no-preference',
+    permissions: ['camera'],
   });
   await context.addInitScript(OVERLAY);
   const page = await context.newPage();

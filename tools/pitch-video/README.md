@@ -43,3 +43,23 @@ node tools/pitch-video/assemble.mjs vertical  # -> Paldora-launch-mobile.mp4
   tokens (`design/tokens/paldora.tokens.json`). The audio is a generated ambient
   pad (ffmpeg `aevalsrc`), no external assets.
 - Edit the story, captions and timing in `story.mjs`; scene choreography is in `scenes.mjs`.
+
+## v2: music-driven pitch cut (current)
+
+`Paldora-launch.mp4` (main), `Paldora-launch-short.mp4` (socials) and
+`Paldora-launch-mobile.mp4` (vertical) are pitch cuts on a 110 BPM bar grid.
+The v1 feature tour is kept as `Paldora-launch-v1*.mp4`.
+
+```bash
+# footage (extra scenes: react, boxGrid, splitLight/Dark, themeStills; mobile: mReact, mBoxGrid, mSplit*, mThemeStills, mLife)
+node tools/pitch-video/record.mjs desktop react boxGrid splitLight splitDark themeStills
+node tools/pitch-video/record.mjs vertical mReact mBoxGrid mSplitLight mSplitDark mThemeStills mLife
+node tools/pitch-video/record.mjs phone mBox mRoom
+# music (original synth, loudnorm to -14 LUFS), then frames + mux
+for c in main short vertical; do node tools/pitch-video/music.mjs $c; node tools/pitch-video/compose.mjs $c; done
+node tools/pitch-video/compose.mjs main --still 10,24   # preview single frames
+```
+
+`story2.mjs` holds BPM, music arrangement, copy and the per-cut timelines;
+`stage.html` is the in-browser compositor; `music.mjs` the synth.
+The camera reaction scene feeds Chromium a generated gradient as the fake camera.
