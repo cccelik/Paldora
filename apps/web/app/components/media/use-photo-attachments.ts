@@ -4,12 +4,17 @@ import { completePostPhoto, postPhotoStatus } from '@/actions/post-photos';
 import { type ActionOutcome } from '@/lib/actions/action-result';
 import {
   asContentType,
-  photoFileProblem,
+  checkMediaFile,
   putToSignedUrl,
+  uploadFailureMessage,
 } from '@/lib/media/image-upload';
 import { untilProcessed } from '@/lib/media/media-polling';
 import { type PreparedUpload } from '@/lib/media/upload';
-import { POST_MEDIA_MAX_ITEMS, type MediaContentType } from '@paldora/domain';
+import {
+  POST_MEDIA_MAX_ITEMS,
+  type MediaContentType,
+  type MediaPurpose,
+} from '@paldora/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 export interface Attachment {
   readonly key: number;
@@ -50,6 +55,7 @@ const retainedItems = (photos: readonly RetainedPhoto[]): Attachment[] =>
 export function usePhotoAttachments(
   prepare: PreparePhoto,
   retained: readonly RetainedPhoto[] = [],
+  purpose: MediaPurpose = 'post_image',
 ) {
   const [items, setItems] = useState<readonly Attachment[]>(() =>
     retainedItems(retained),
@@ -81,10 +87,10 @@ export function usePhotoAttachments(
       }
       try {
         await putToSignedUrl(file, prepared.data);
-      } catch {
+      } catch (error) {
         return patch(key, {
           phase: 'failed',
-          message: 'Couldn’t upload this photo.',
+          message: uploadFailureMessage(error, 'Couldn’t upload this photo.'),
         });
       }
       const completed = await completePostPhoto(prepared.data.mediaAssetId);
@@ -109,6 +115,16 @@ export function usePhotoAttachments(
     [prepare, patch],
   );
 
+  /** Type, size and pixel checks first; a rejected photo stays visible with its reason. */
+  const validateThenUpload = useCallback(
+    async (key: number, file: File) => {
+      const problem = await checkMediaFile(file, purpose);
+      if (problem) return patch(key, { phase: 'failed', message: problem });
+      return upload(key, file);
+    },
+    [purpose, patch, upload],
+  );
+
   const add = useCallback(
     (files: readonly File[]) => {
       const room = POST_MEDIA_MAX_ITEMS - items.length;
@@ -117,20 +133,14 @@ export function usePhotoAttachments(
         nextKey.current += 1;
         const previewUrl = URL.createObjectURL(file);
         urls.current.add(previewUrl);
-        const problem = photoFileProblem(file);
         setItems((current) => [
           ...current,
-          {
-            key,
-            previewUrl,
-            phase: problem ? 'failed' : 'uploading',
-            ...(problem ? { message: problem } : {}),
-          },
+          { key, previewUrl, phase: 'uploading' },
         ]);
-        if (!problem) void upload(key, file);
+        void validateThenUpload(key, file);
       }
     },
-    [items.length, upload],
+    [items.length, validateThenUpload],
   );
 
   const remove = useCallback((key: number) => {
@@ -138,6 +148,13 @@ export function usePhotoAttachments(
   }, []);
 
   const clear = useCallback(() => setItems([]), []);
+  /** After posting: drop what was posted, keep failed photos so the person still sees why. */
+  const clearPosted = useCallback(
+    () =>
+      setItems((current) => current.filter((item) => item.phase === 'failed')),
+    [],
+  );
+  const failedCount = items.filter((item) => item.phase === 'failed').length;
 
   const busy = items.some(
     (item) => item.phase === 'uploading' || item.phase === 'processing',
@@ -150,6 +167,8 @@ export function usePhotoAttachments(
     add,
     remove,
     clear,
+    clearPosted,
+    failedCount,
     busy,
     readyIds,
     full: items.length >= POST_MEDIA_MAX_ITEMS,

@@ -50,6 +50,7 @@ export function FirebaseLifeUpdateEditor({
   const photos = usePhotoAttachments(
     useCallback<PreparePhoto>((file) => prepareLifeUpdatePhoto(file), []),
     retained,
+    'life_update_image',
   );
   const problem = draftProblem({
     drafts,

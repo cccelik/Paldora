@@ -33,11 +33,11 @@ export function PostComposer({ boxId }: { boxId: string }) {
   const photos = usePhotoAttachments(prepare);
   const form = useRef<HTMLFormElement>(null);
   const picker = useRef<HTMLInputElement>(null);
-  const { clear } = photos;
+  const { clearPosted } = photos;
 
   useActionSuccess(state, () => {
     setText('');
-    clear();
+    clearPosted();
   });
 
   const empty = text.trim().length === 0 && photos.readyIds.length === 0;
@@ -77,6 +77,14 @@ export function PostComposer({ boxId }: { boxId: string }) {
           event.target.value = '';
         }}
       />
+      {photos.failedCount > 0 ? (
+        <p role="alert" className={styles.photoNotice}>
+          {photos.failedCount === 1
+            ? '1 photo couldn’t be added and won’t be posted.'
+            : `${photos.failedCount} photos couldn’t be added and won’t be posted.`}{' '}
+          You can still post your text.
+        </p>
+      ) : null}
       <ActionFeedback state={state} />
       <div className={styles.row}>
         <Button

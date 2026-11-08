@@ -60,6 +60,8 @@ export function LifeUpdateComposer({
   );
   const photos = usePhotoAttachments(
     useCallback<PreparePhoto>((file) => prepareLifeUpdatePhoto(file), []),
+    [],
+    'life_update_image',
   );
   const form = useRef<HTMLFormElement>(null);
   // One key per mounted form: a double submit or retry publishes once.

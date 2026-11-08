@@ -14,6 +14,11 @@ const allowedKeys = new Set([
   'durationMs',
   'count',
   'errorName',
+  'reason',
+  'declaredType',
+  'detectedFormat',
+  'width',
+  'height',
 ]);
 const sensitive = [
   /[^\s@]+@[^\s@]+\.[^\s@]+/u,

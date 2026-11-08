@@ -10,12 +10,12 @@ import {
   useMediaUpload,
   type MediaUploadSteps,
 } from '@/components/media/use-media-upload';
-import { avatarFileProblem } from '@/lib/media/image-upload';
+import { checkMediaFile } from '@/lib/media/image-upload';
 import { useRouter } from 'next/navigation';
 export type { UploadPhase } from '@/components/media/use-media-upload';
 
 const avatarSteps: MediaUploadSteps = {
-  fileProblem: avatarFileProblem,
+  fileProblem: (file) => checkMediaFile(file, 'avatar'),
   prepare: prepareAvatarUpload,
   complete: completeAvatarUpload,
   status: avatarUploadStatus,

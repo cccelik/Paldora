@@ -17,11 +17,11 @@ import {
 } from '@/components/rooms/use-room-save';
 import { Button, FormMessage } from '@/components/ui';
 import { idleResult, type ActionResult } from '@/lib/actions/action-result';
-import { mediaFileProblem, PHOTO_ACCEPT } from '@/lib/media/image-upload';
+import { checkMediaFile, PHOTO_ACCEPT } from '@/lib/media/image-upload';
 import { type RoomView } from '@paldora/validation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 const bannerSteps: MediaUploadSteps = {
-  fileProblem: (file) => mediaFileProblem(file, 'room_banner'),
+  fileProblem: (file) => checkMediaFile(file, 'room_banner'),
   prepare: prepareRoomBanner,
   // Completion and status work for any upload the person owns.
   complete: completePostPhoto,

@@ -11,6 +11,7 @@ import {
 } from '@paldora/firebase-trusted';
 import { uuidSchema } from '@paldora/validation';
 import { boundedBody } from '@/lib/media/bounded-body';
+import { uploadErrorResponse } from '@/lib/media/upload-error-response';
 
 export const runtime = 'nodejs';
 const noStore = { 'Cache-Control': 'private, no-store' };
@@ -56,11 +57,7 @@ export async function PUT(
       },
       error,
     );
-    if (error instanceof NativeMediaError)
-      return new Response(null, {
-        status: error.code === 'UNAVAILABLE' ? 404 : 400,
-        headers: noStore,
-      });
+    if (error instanceof NativeMediaError) return uploadErrorResponse(error);
     throw error;
   }
 }

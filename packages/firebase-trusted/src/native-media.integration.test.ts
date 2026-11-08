@@ -119,6 +119,29 @@ describe('private native media lifecycle', () => {
       expect((await bucket.file(path).exists())[0]).toBe(false);
   });
 
+  it('reports a pixel-limit rejection with a non-sensitive reason', async () => {
+    const owner = await user();
+    const huge = await sharp({
+      create: {
+        width: 7000,
+        height: 7000,
+        channels: 3,
+        background: '#ffffff',
+      },
+    })
+      .png()
+      .toBuffer();
+    const asset = await media.reserve(owner, {
+      purpose: 'avatar',
+      contentType: 'image/png',
+      contentLength: huge.length,
+    });
+    await expect(
+      media.upload(owner, asset.id, huge, 'image/png'),
+    ).rejects.toMatchObject({ code: 'INVALID', reason: 'TOO_MANY_PIXELS' });
+    expect((await media.status(owner, asset.id)).status).toBe('failed');
+  });
+
   it('rejects wrong bytes and cannot republish after a deletion wins', async () => {
     const owner = await user();
     const bytes = await image();
@@ -129,7 +152,7 @@ describe('private native media lifecycle', () => {
     });
     await expect(
       media.upload(owner, invalid.id, Buffer.alloc(bytes.length), 'image/jpeg'),
-    ).rejects.toMatchObject({ code: 'INVALID' });
+    ).rejects.toMatchObject({ code: 'INVALID', reason: 'UNDECODABLE' });
     expect((await media.status(owner, invalid.id)).status).toBe('failed');
     const valid = await media.reserve(owner, {
       purpose: 'avatar',

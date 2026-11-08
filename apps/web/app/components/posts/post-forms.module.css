@@ -15,3 +15,11 @@
   align-items: flex-start;
   gap: var(--pal-space-2);
 }
+
+.photoNotice {
+  margin: 0;
+  padding: var(--pal-space-2) var(--pal-space-3);
+  border-radius: var(--pal-radius-lg);
+  background: var(--pal-accent-ember-soft);
+  color: var(--pal-text-primary);
+}

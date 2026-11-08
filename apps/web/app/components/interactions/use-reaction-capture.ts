@@ -13,7 +13,7 @@ import {
   unsupportedReason,
   type CameraProblem,
 } from '@/lib/media/camera';
-import { putToSignedUrl } from '@/lib/media/image-upload';
+import { putToSignedUrl, uploadFailureMessage } from '@/lib/media/image-upload';
 import { untilProcessed } from '@/lib/media/media-polling';
 import { MEDIA_PURPOSE_POLICIES } from '@paldora/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -57,8 +57,11 @@ async function uploadFrame(boxId: string, frame: Blob): Promise<Uploaded> {
   }
   try {
     await putToSignedUrl(frame, prepared.data);
-  } catch {
-    return { ok: false, message: 'The photo didn’t upload.' };
+  } catch (error) {
+    return {
+      ok: false,
+      message: uploadFailureMessage(error, 'The photo didn’t upload.'),
+    };
   }
   const completed = await completeReactionImage(prepared.data.mediaAssetId);
   if (completed.status !== 'success') {

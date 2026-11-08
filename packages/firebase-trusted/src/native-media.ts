@@ -25,6 +25,14 @@ import {
 import { nativeBlockPairId } from './native-box-invitations.js';
 import { logEvent } from './log.js';
 
+/** Why an uploaded file was refused. Non-sensitive, safe to show the owner. */
+export const MEDIA_REJECTION_REASONS = [
+  'TOO_MANY_PIXELS',
+  'WRONG_TYPE',
+  'UNDECODABLE',
+] as const;
+export type MediaRejectionReason = (typeof MEDIA_REJECTION_REASONS)[number];
+
 export class NativeMediaError extends Error {
   public constructor(
     public readonly code:
@@ -34,9 +42,18 @@ export class NativeMediaError extends Error {
       | 'EXPIRED'
       | 'NOT_READY'
       | 'STORAGE_UNAVAILABLE',
+    /** Only set for `INVALID` upload rejections. */
+    public readonly reason?: MediaRejectionReason,
   ) {
     super(code);
   }
+}
+
+/** sharp reports an over-limit image with this message; anything else is undecodable. */
+export function uploadRejectionReason(error: unknown): MediaRejectionReason {
+  return error instanceof Error && /pixel limit/iu.test(error.message)
+    ? 'TOO_MANY_PIXELS'
+    : 'UNDECODABLE';
 }
 
 type Variant = 'master' | 'display' | 'thumbnail';
@@ -371,7 +388,17 @@ export class NativeMedia {
             : metadata.format === 'webp'
               ? 'image/webp'
               : null;
-      if (actual !== type) throw new NativeMediaError('INVALID');
+      if (actual !== type) {
+        logEvent('WARNING', {
+          event: 'media.upload_rejected',
+          reason: 'WRONG_TYPE',
+          declaredType: type,
+          detectedFormat: metadata.format ?? 'unknown',
+          width: metadata.width ?? 0,
+          height: metadata.height ?? 0,
+        });
+        throw new NativeMediaError('INVALID', 'WRONG_TYPE');
+      }
       validated = true;
       await this.bucket.file(selected.rawPath).save(bytes, {
         resumable: false,
@@ -413,7 +440,14 @@ export class NativeMedia {
           tx.update(snapshot.ref, { uploadInFlight: false, updatedAt: now });
       });
       if (error instanceof NativeMediaError) throw error;
-      throw new NativeMediaError(validated ? 'STORAGE_UNAVAILABLE' : 'INVALID');
+      if (validated) throw new NativeMediaError('STORAGE_UNAVAILABLE');
+      const reason = uploadRejectionReason(error);
+      logEvent('WARNING', {
+        event: 'media.upload_rejected',
+        reason,
+        declaredType: type,
+      });
+      throw new NativeMediaError('INVALID', reason);
     }
   }
 

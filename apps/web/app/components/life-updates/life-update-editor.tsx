@@ -56,6 +56,7 @@ export function LifeUpdateEditor({
   const photos = usePhotoAttachments(
     useCallback<PreparePhoto>((file) => prepareLifeUpdatePhoto(file), []),
     retained,
+    'life_update_image',
   );
   const form = useRef<HTMLFormElement>(null);
   const onSection = useCallback((key: LifeUpdateSectionKey, value: string) => {
